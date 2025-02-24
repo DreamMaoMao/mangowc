@@ -32,10 +32,10 @@ in
     home.packages = [ maomaowm ];
 
     xdg.configFile = {
-      "maomaowm/config.conf" = {
+      "maomao/config.conf" = {
         text = config.wayland.windowManager.maomaowm.settings;
       };
-      "maomaowm/autostart.sh" = {
+      "maomao/autostart.sh" = {
         text = config.wayland.windowManager.maomaowm.autostart_sh;
       };
     };
