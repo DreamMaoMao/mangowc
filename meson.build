@@ -1,38 +1,13 @@
-project('maomao', ['c', 'cpp'],
-  version : '0.1.5'
-)
+project('maomao', ['c', 'cpp'], version: '0.1.5')
 
 subdir('protocols')
 
-# fs = import('fs')
-#
-# # 获取用户的主目录
-# home_dir = run_command('sh', '-c', 'echo $HOME', check: true).stdout().strip()
-# config_dir = join_paths(home_dir, '.config', 'maomao')
-#
-# # 如果目标目录不存在，则创建它
-# if not fs.is_dir(config_dir)
-#     run_command('mkdir', '-p', config_dir, check: true)
-# endif
-#
-# # 拷贝 config.conf
-# config_file = join_paths(config_dir, 'config.conf')
-# if not fs.exists(config_file)
-#     run_command('cp', 'config.conf', config_file, check: true)
-# endif
-#
-# # 拷贝 autostart.sh
-# autostart_file = join_paths(config_dir, 'autostart.sh')
-# if not fs.exists(autostart_file)
-#     run_command('cp', 'autostart.sh', autostart_file, check: true)
-# endif
-
 cc = meson.get_compiler('c')
 libm = cc.find_library('m')
-xcb = dependency('xcb', required : get_option('xwayland'))
-xlibs = dependency('xcb-icccm', required : get_option('xwayland'))
+xcb = dependency('xcb', required: get_option('xwayland'))
+xlibs = dependency('xcb-icccm', required: get_option('xwayland'))
 wayland_server_dep = dependency('wayland-server')
-wlroots_dep = dependency('wlroots', version : ['>=0.17.0', '<0.18.0'])
+wlroots_dep = dependency('wlroots', version: ['>=0.17.0', '<0.18.0'])
 xkbcommon_dep = dependency('xkbcommon')
 libinput_dep = dependency('libinput')
 libwayland_client_dep = dependency('wayland-client')
@@ -42,19 +17,20 @@ c_args = [
   '-Wno-unused-function',
   '-DWLR_USE_UNSTABLE',
   '-D_POSIX_C_SOURCE=200809L',
-  '-DVERSION="@0@"'.format(meson.project_version())
+  '-DVERSION="@0@"'.format(meson.project_version()),
 ]
 
 if xcb.found() and xlibs.found()
   c_args += '-DXWAYLAND'
   c_args += '-DIM'
- endif
+endif
 
-executable('maomao',
+executable(
+  'maomao',
   'maomao.c',
   'util.c',
   wayland_sources,
-  dependencies : [
+  dependencies: [
     libm,
     xcb,
     xlibs,
@@ -64,12 +40,22 @@ executable('maomao',
     libinput_dep,
     libwayland_client_dep,
   ],
-  install : true,
-  c_args : c_args
+  install: true,
+  c_args: c_args,
 )
 
+sysconfdir = get_option('sysconfdir')
 prefix = get_option('prefix')
-desktop_install_dir = join_paths(prefix, 'share/wayland-sessions')
-install_data('maomao.desktop', install_dir : desktop_install_dir)
-install_data('config.conf', install_dir : '/etc/maomao')
 
+config = configuration_data()
+config.set('sysconfdir', sysconfdir)
+config.set('prefix', prefix)
+configure_file(
+  configuration: config,
+  input: 'config.in',
+  output: 'config.conf',
+  install_dir: join_paths(sysconfdir, 'maomao'),
+)
+
+desktop_install_dir = join_paths(prefix, 'share/wayland-sessions')
+install_data('maomao.desktop', install_dir: desktop_install_dir)
