@@ -31,12 +31,14 @@ in
   config = lib.mkIf config.wayland.windowManager.maomaowm.enable {
     home.packages = [ maomaowm ];
 
-    xdg.configFile = {
-      "maomao/config.conf" = {
+    home.file = {
+      ".config/maomao/config.conf" = {
         text = config.wayland.windowManager.maomaowm.settings;
       };
-      "maomao/autostart.sh" = {
+
+      ".config/maomao/autostart.sh" = {
         text = config.wayland.windowManager.maomaowm.autostart_sh;
+        executable = true;
       };
     };
   };
