@@ -1,5 +1,5 @@
 
-# 
+#
 
 Master-Stack Layout
 
@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/c9bf9415-fad1-4400-bcdc-3ad2d76de85a
 
 # Maomaowm
 
-This project is developed based on `dwl(0.5)` , 
+This project is developed based on `dwl(0.5)` ,
 adding many operation that supported in hyprland and a hyprland-like keybinds,
 niri-like scroll layout and sway-like scratchpad.
 See below for more features.
@@ -34,10 +34,10 @@ See below for more features.
 
 # window open rules
 ## options
-- appid: type-string if match it or title, the rule match   
-- title: type-string if match it or appid, the rule match  
+- appid: type-string if match it or title, the rule match
+- title: type-string if match it or appid, the rule match
 - tags: type-num(1-9) which tags to open the window
-- isfloating: type-num(0 or 1) 
+- isfloating: type-num(0 or 1)
 - isfullscreen: type-num(0 or 1)
 - scroller_proportion: type-float(0.1-1.0)
 - animation_type : type-string(zoom,slide)
@@ -66,7 +66,7 @@ yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist w
 
 ```
 
-# install 
+# install
 # wlroots(0.17)
 ```
 git clone -b 0.17.4 https://gitlab.freedesktop.org/wlroots/wlroots.git
@@ -99,10 +99,71 @@ like `MAOMAOCONFIG=/home/xxx/maomao`
 - the fallback config path is in `/etc/maomao/config.conf`, you can find the default config here
 
 
+# NixOS+Home-manager
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    maomaowm.url = "github:DreamMaoMao/maomaowm";
+
+  };
+  outputs =
+    inputs@{ self, flake-parts, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      debug = true;
+      systems = [ "x86_64-linux" ];
+      flake = {
+        nixosConfigurations = {
+          hostname = inputs.nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            modules = [
+              inputs.home-manager.nixosModules.home-manager
+              {
+                home-manager = {
+                  useGlobalPkgs = true;
+                  useUserPackages = true;
+                  backupFileExtension = "backup";
+                  users."username".imports =
+                    [
+                      (
+                        { ... }:
+                        {
+                          wayland.windowManager.maomaowm = {
+                            enable = true;
+                            settings = ''
+                              # see config.conf
+                            '';
+                            autostart_sh = ''
+                              # see autostart.sh
+                            '';
+                          };
+                        }
+                      )
+                    ]
+                    ++ [
+                      # Add maomaowm hm module
+                      inputs.maomaowm.hmModules.maomaowm
+                    ];
+                };
+              }
+            ];
+          };
+        };
+      };
+    };
+}
+```
+
+
 # my dotfile
 [maomao-config](https://github.com/DreamMaoMao/dotfile/tree/main/maomao)
 
-# thanks for some refer repo 
+# thanks for some refer repo
 - https://github.com/dqrk0jeste/owl - for basal window animaition
 
 - https://github.com/djpohly/dwl - for basal dwl feature

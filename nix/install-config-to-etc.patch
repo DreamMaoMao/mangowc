@@ -1,0 +1,45 @@
+diff --git a/meson.build b/meson.build
+index eeec918..e0de85a 100644
+--- a/meson.build
++++ b/meson.build
+@@ -4,6 +4,10 @@ project('maomao', ['c', 'cpp'],
+ 
+ subdir('protocols')
+ 
++sysconfdir = get_option('sysconfdir')
++prefix = get_option('prefix')
++add_project_arguments('-DSYSCONFDIR="/@0@"'.format(join_paths(prefix, sysconfdir)), language : 'c')
++
+ # fs = import('fs')
+ #
+ # # 获取用户的主目录
+@@ -68,8 +72,7 @@ executable('maomao',
+   c_args : c_args
+ )
+ 
+-prefix = get_option('prefix')
+ desktop_install_dir = join_paths(prefix, 'share/wayland-sessions')
+ install_data('maomao.desktop', install_dir : desktop_install_dir)
+-install_data('config.conf', install_dir : '/etc/maomao')
++install_data('config.conf', install_dir : join_paths(sysconfdir, 'maomao'))
+ 
+diff --git a/parse_config.h b/parse_config.h
+index 395251d..e241f00 100644
+--- a/parse_config.h
++++ b/parse_config.h
+@@ -1024,7 +1024,7 @@ void parse_config(void) {
+     // 检查文件是否存在
+     if (access(filename, F_OK) != 0) {
+       // 如果文件不存在，则使用 /etc/maomao/config.conf
+-      snprintf(filename, sizeof(filename), "/etc/maomao/config.conf");
++      snprintf(filename, sizeof(filename), "%s/maomao/config.conf", SYSCONFDIR);
+     }
+   } else {
+     // 使用 MAOMAOCONFIG 环境变量作为配置文件夹路径
+@@ -1049,4 +1049,4 @@ void reload_config(const Arg *arg) {
+     }
+   }
+   arrange(selmon, false);
+-}
+\ No newline at end of file
++}

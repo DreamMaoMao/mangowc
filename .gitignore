@@ -1,5 +1,6 @@
 /.cache
 /.vscode
+/result
 config.h
 maomao
 maomao.o
