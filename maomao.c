@@ -4215,15 +4215,19 @@ void scene_buffer_apply_size(struct wlr_scene_buffer *buffer, int sx, int sy,
     return;
   }
 
-  struct wlr_scene_surface *surface = wlr_scene_surface_try_from_buffer(buffer);
-  if (wlr_subsurface_try_from_wlr_surface(surface->surface) != NULL) {
-    wlr_scene_buffer_set_dest_size(
-        buffer, buffer->dst_width * scale_data->width_scale,
-        buffer->dst_height * scale_data->height_scale);
-  } else {
-    wlr_scene_buffer_set_dest_size(buffer, scale_data->width,
-                                   scale_data->height);
-  }
+  struct wlr_scene_surface *scene_surface = wlr_scene_surface_try_from_buffer(buffer);
+  if(scene_surface == NULL) return;
+
+  struct wlr_surface *surface = scene_surface->surface;
+
+  uint32_t surface_width = surface->current.width;
+  uint32_t surface_height = surface->current.height;
+
+  surface_width *= scale_data->width_scale;
+  surface_height *= scale_data->height_scale;
+
+  wlr_scene_buffer_set_dest_size(buffer, surface_width, surface_height);
+
 }
 
 void snap_scene_buffer_apply_size(struct wlr_scene_buffer *buffer, int sx,
