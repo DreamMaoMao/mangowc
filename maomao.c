@@ -3487,7 +3487,7 @@ keypress(struct wl_listener *listener, void *data)
     event->state == WL_KEYBOARD_KEY_STATE_RELEASED &&
     (keycode == 133 || keycode == 37 || keycode == 64 || keycode == 50 ||
      keycode == 134 || keycode == 105 || keycode == 108 || keycode == 62) &&
-    selmon->sel) {
+    selmon && selmon->sel) {
     if (selmon->isoverview && selmon->sel) {
       toggleoverview(&(Arg){.i = -1});
     }
