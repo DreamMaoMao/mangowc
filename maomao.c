@@ -2168,61 +2168,61 @@ cleanupkeyboard(struct wl_listener *listener, void *data) {
   free(kb);
 }
 
-void // 0.5 custom
-cleanupmon(struct wl_listener *listener, void *data) {
-  Monitor *m = wl_container_of(listener, m, destroy);
-  LayerSurface *l, *tmp;
-  size_t i;
-
-  /* m->layers[i] are intentionally not unlinked */
-  for (i = 0; i < LENGTH(m->layers); i++) {
-    wl_list_for_each_safe(l, tmp, &m->layers[i], link)
-        wlr_layer_surface_v1_destroy(l->layer_surface);
-  }
-
-  wl_list_remove(&m->destroy.link);
-  wl_list_remove(&m->frame.link);
-  wl_list_remove(&m->link);
-  wl_list_remove(&m->request_state.link);
-  m->wlr_output->data = NULL;
-  wlr_output_layout_remove(output_layout, m->wlr_output);
-  wlr_scene_output_destroy(m->scene_output);
-
-  closemon(m);
-  // wlr_scene_node_destroy(&m->fullscreen_bg->node);
-  free(m);
-}
-
-void closemon(Monitor *m) // 0.5 custom
+void
+cleanupmon(struct wl_listener *listener, void *data)
 {
-  /* update selmon if needed and
-   * move closed monitor's clients to the focused one */
-  Client *c;
-  int i = 0, nmons = wl_list_length(&mons);
-  if (!nmons) {
-    selmon = NULL;
-  } else if (m == selmon) {
-    do /* don't switch to disabled mons */
-      selmon = wl_container_of(mons.next, selmon, link);
-    while (!selmon->wlr_output->enabled && i++ < nmons);
-  }
+	Monitor *m = wl_container_of(listener, m, destroy);
+	LayerSurface *l, *tmp;
+	size_t i;
 
-  wl_list_for_each(c, &clients, link) {
-    if (c->isfloating && c->geom.x > m->m.width)
-      resize(c,
-             (struct wlr_box){.x = c->geom.x - m->w.width,
-                              .y = c->geom.y,
-                              .width = c->geom.width,
-                              .height = c->geom.height},
-             0);
-    if (c->mon == m) {
-      setmon(c, selmon, c->tags);
-      reset_foreign_tolevel(c);
-    }
-  }
-  focusclient(focustop(selmon), 1);
-  printstatus();
+	/* m->layers[i] are intentionally not unlinked */
+	for (i = 0; i < LENGTH(m->layers); i++) {
+		wl_list_for_each_safe(l, tmp, &m->layers[i], link)
+			wlr_layer_surface_v1_destroy(l->layer_surface);
+	}
+
+	wl_list_remove(&m->destroy.link);
+	wl_list_remove(&m->frame.link);
+	wl_list_remove(&m->link);
+	wl_list_remove(&m->request_state.link);
+	m->wlr_output->data = NULL;
+	wlr_output_layout_remove(output_layout, m->wlr_output);
+	wlr_scene_output_destroy(m->scene_output);
+
+	closemon(m);
+	// wlr_scene_node_destroy(&m->fullscreen_bg->node);
+	free(m);
 }
+
+void
+closemon(Monitor *m)
+{
+	/* update selmon if needed and
+	 * move closed monitor's clients to the focused one */
+	Client *c;
+	int i = 0, nmons = wl_list_length(&mons);
+	if (!nmons) {
+		selmon = NULL;
+	} else if (m == selmon) {
+		do /* don't switch to disabled mons */
+			selmon = wl_container_of(mons.next, selmon, link);
+		while (!selmon->wlr_output->enabled && i++ < nmons);
+
+		if (!selmon->wlr_output->enabled)
+			selmon = NULL;
+	}
+
+	wl_list_for_each(c, &clients, link) {
+		if (c->isfloating && c->geom.x > m->m.width)
+			resize(c, (struct wlr_box){.x = c->geom.x - m->w.width, .y = c->geom.y,
+					.width = c->geom.width, .height = c->geom.height}, 0);
+		if (c->mon == m)
+			setmon(c, selmon, c->tags);
+	}
+	focusclient(focustop(selmon), 1);
+	printstatus();
+}
+
 
 void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
   LayerSurface *l = wl_container_of(listener, l, surface_commit);
@@ -6256,110 +6256,110 @@ void unmapnotify(struct wl_listener *listener, void *data) {
   motionnotify(0, NULL, 0, 0, 0, 0);
 }
 
-void // 0.5 custom
-updatemons(struct wl_listener *listener, void *data) {
-  /*
-   * Called whenever the output layout changes: adding or removing a
-   * monitor, changing an output's mode or position, etc. This is where
-   * the change officially happens and we update geometry, window
-   * positions, focus, and the stored configuration in wlroots'
-   * output-manager implementation.
-   */
-  struct wlr_output_configuration_v1 *config =
-      wlr_output_configuration_v1_create();
-  Client *c;
-  struct wlr_output_configuration_head_v1 *config_head;
-  Monitor *m;
+void
+updatemons(struct wl_listener *listener, void *data)
+{
+	/*
+	 * Called whenever the output layout changes: adding or removing a
+	 * monitor, changing an output's mode or position, etc. This is where
+	 * the change officially happens and we update geometry, window
+	 * positions, focus, and the stored configuration in wlroots'
+	 * output-manager implementation.
+	 */
+	struct wlr_output_configuration_v1 *config
+			= wlr_output_configuration_v1_create();
+	Client *c;
+	struct wlr_output_configuration_head_v1 *config_head;
+	Monitor *m;
 
-  /* First remove from the layout the disabled monitors */
-  wl_list_for_each(m, &mons, link) {
-    if (m->wlr_output->enabled || m->asleep)
-      continue;
-    config_head =
-        wlr_output_configuration_head_v1_create(config, m->wlr_output);
-    config_head->state.enabled = 0;
-    /* Remove this output from the layout to avoid cursor enter inside it */
-    wlr_output_layout_remove(output_layout, m->wlr_output);
-    closemon(m);
-    m->m = m->w = (struct wlr_box){0};
-  }
-  /* Insert outputs that need to */
-  wl_list_for_each(m, &mons, link) {
-    if (m->wlr_output->enabled &&
-        !wlr_output_layout_get(output_layout, m->wlr_output))
-      wlr_output_layout_add_auto(output_layout, m->wlr_output);
-  }
+	/* First remove from the layout the disabled monitors */
+	wl_list_for_each(m, &mons, link) {
+		if (m->wlr_output->enabled || m->asleep)
+			continue;
+		config_head = wlr_output_configuration_head_v1_create(config, m->wlr_output);
+		config_head->state.enabled = 0;
+		/* Remove this output from the layout to avoid cursor enter inside it */
+		wlr_output_layout_remove(output_layout, m->wlr_output);
+		closemon(m);
+		m->m = m->w = (struct wlr_box){0};
+	}
+	/* Insert outputs that need to */
+	wl_list_for_each(m, &mons, link) {
+		if (m->wlr_output->enabled
+				&& !wlr_output_layout_get(output_layout, m->wlr_output))
+			wlr_output_layout_add_auto(output_layout, m->wlr_output);
+	}
 
-  /* Now that we update the output layout we can get its box */
-  wlr_output_layout_get_box(output_layout, NULL, &sgeom);
+	/* Now that we update the output layout we can get its box */
+	wlr_output_layout_get_box(output_layout, NULL, &sgeom);
 
-  /* Make sure the clients are hidden when dwl is locked */
-  wlr_scene_node_set_position(&locked_bg->node, sgeom.x, sgeom.y);
-  wlr_scene_rect_set_size(locked_bg, sgeom.width, sgeom.height);
+	// wlr_scene_node_set_position(&root_bg->node, sgeom.x, sgeom.y);
+	// wlr_scene_rect_set_size(root_bg, sgeom.width, sgeom.height);
 
-  wl_list_for_each(m, &mons, link) {
-    if (!m->wlr_output->enabled)
-      continue;
-    config_head =
-        wlr_output_configuration_head_v1_create(config, m->wlr_output);
+	/* Make sure the clients are hidden when dwl is locked */
+	wlr_scene_node_set_position(&locked_bg->node, sgeom.x, sgeom.y);
+	wlr_scene_rect_set_size(locked_bg, sgeom.width, sgeom.height);
 
-    /* Get the effective monitor geometry to use for surfaces */
-    wlr_output_layout_get_box(output_layout, m->wlr_output, &m->m);
-    m->w = m->m;
-    wlr_scene_output_set_position(m->scene_output, m->m.x, m->m.y);
+	wl_list_for_each(m, &mons, link) {
+		if (!m->wlr_output->enabled)
+			continue;
+		config_head = wlr_output_configuration_head_v1_create(config, m->wlr_output);
 
-    // wlr_scene_node_set_position(&m->fullscreen_bg->node, m->m.x, m->m.y);
-    // wlr_scene_rect_set_size(m->fullscreen_bg, m->m.width, m->m.height);
+		/* Get the effective monitor geometry to use for surfaces */
+		wlr_output_layout_get_box(output_layout, m->wlr_output, &m->m);
+		m->w = m->m;
+		wlr_scene_output_set_position(m->scene_output, m->m.x, m->m.y);
 
-    if (m->lock_surface) {
-      struct wlr_scene_tree *scene_tree = m->lock_surface->surface->data;
-      wlr_scene_node_set_position(&scene_tree->node, m->m.x, m->m.y);
-      wlr_session_lock_surface_v1_configure(m->lock_surface, m->m.width,
-                                            m->m.height);
-    }
+		// wlr_scene_node_set_position(&m->fullscreen_bg->node, m->m.x, m->m.y);
+		// wlr_scene_rect_set_size(m->fullscreen_bg, m->m.width, m->m.height);
 
-    /* Calculate the effective monitor geometry to use for clients */
-    arrangelayers(m);
-    /* Don't move clients to the left output when plugging monitors */
-    arrange(m, false);
-    /* make sure fullscreen clients have the right size */
-    if ((c = focustop(m)) && c->isfullscreen)
-      resize(c, m->m, 0);
+		if (m->lock_surface) {
+			struct wlr_scene_tree *scene_tree = m->lock_surface->surface->data;
+			wlr_scene_node_set_position(&scene_tree->node, m->m.x, m->m.y);
+			wlr_session_lock_surface_v1_configure(m->lock_surface, m->m.width, m->m.height);
+		}
+
+		/* Calculate the effective monitor geometry to use for clients */
+		arrangelayers(m);
+		/* Don't move clients to the left output when plugging monitors */
+		arrange(m,false);
+		/* make sure fullscreen clients have the right size */
+		if ((c = focustop(m)) && c->isfullscreen)
+			resize(c, m->m, 0);
 
 		/* Try to re-set the gamma LUT when updating monitors,
 		 * it's only really needed when enabling a disabled output, but meh. */
 		m->gamma_lut_changed = 1;
 
-    config_head->state.x = m->m.x;
-    config_head->state.y = m->m.y;
-    if (!selmon) {
-      selmon = m;
-    }
-  }
+		config_head->state.x = m->m.x;
+		config_head->state.y = m->m.y;
 
-  if (selmon && selmon->wlr_output->enabled) {
-    wl_list_for_each(c, &clients, link) {
-      if (!c->mon && client_surface(c)->mapped) {
-        setmon(c, selmon, c->tags);
-        reset_foreign_tolevel(c);
-      }
-    }
-    focusclient(focustop(selmon), 1);
-    if (selmon->lock_surface) {
-      client_notify_enter(selmon->lock_surface->surface,
-                          wlr_seat_get_keyboard(seat));
-      client_activate_surface(selmon->lock_surface->surface, 1);
-    }
-  }
+		if (!selmon) {
+			selmon = m;
+		}
+	}
 
-  /* FIXME: figure out why the cursor image is at 0,0 after turning all
-   * the monitors on.
-   * Move the cursor image where it used to be. It does not generate a
-   * wl_pointer.motion event for the clients, it's only the image what it's
-   * at the wrong position after all. */
-  wlr_cursor_move(cursor, NULL, 0, 0);
+	if (selmon && selmon->wlr_output->enabled) {
+		wl_list_for_each(c, &clients, link) {
+			if (!c->mon && client_surface(c)->mapped)
+				setmon(c, selmon, c->tags);
+		}
+		focusclient(focustop(selmon), 1);
+		if (selmon->lock_surface) {
+			client_notify_enter(selmon->lock_surface->surface,
+					wlr_seat_get_keyboard(seat));
+			client_activate_surface(selmon->lock_surface->surface, 1);
+		}
+	}
 
-  wlr_output_manager_v1_set_configuration(output_mgr, config);
+	/* FIXME: figure out why the cursor image is at 0,0 after turning all
+	 * the monitors on.
+	 * Move the cursor image where it used to be. It does not generate a
+	 * wl_pointer.motion event for the clients, it's only the image what it's
+	 * at the wrong position after all. */
+	wlr_cursor_move(cursor, NULL, 0, 0);
+
+	wlr_output_manager_v1_set_configuration(output_mgr, config);
 }
 
 void updatetitle(struct wl_listener *listener, void *data) {
