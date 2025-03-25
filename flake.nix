@@ -1,6 +1,7 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
     flake-parts.url = "github:hercules-ci/flake-parts";
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -39,7 +40,9 @@
           inherit (pkgs)
             callPackage
             ;
-          maomaowm = callPackage ./nix { };
+          maomaowm = callPackage ./nix {
+            wlroots = inputs.nixpkgs-wayland.packages.${pkgs.system}.wlroots;
+          };
           shellOverride = old: {
             nativeBuildInputs = old.nativeBuildInputs ++ [ ];
             buildInputs = old.buildInputs ++ [ ];

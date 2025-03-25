@@ -15,11 +15,10 @@
   enableXWayland ? true,
   meson,
   ninja,
-  callPackage,
+  wlroots,
 }:
 let
   pname = "maomaowm";
-  wlroots_0_19 = callPackage ./wlroots_0_19.nix { };
 in
 stdenv.mkDerivation {
   inherit pname;
@@ -42,7 +41,7 @@ stdenv.mkDerivation {
       pixman
       wayland
       wayland-protocols
-      wlroots_0_19
+      wlroots
     ]
     ++ lib.optionals enableXWayland [
       libX11
