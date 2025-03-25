@@ -6341,8 +6341,10 @@ updatemons(struct wl_listener *listener, void *data)
 
 	if (selmon && selmon->wlr_output->enabled) {
 		wl_list_for_each(c, &clients, link) {
-			if (!c->mon && client_surface(c)->mapped)
+			if (!c->mon && client_surface(c)->mapped) {
 				setmon(c, selmon, c->tags);
+        reset_foreign_tolevel(c);
+      }
 		}
 		focusclient(focustop(selmon), 1);
 		if (selmon->lock_surface) {

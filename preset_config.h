@@ -29,7 +29,7 @@ double default_mfact = 0.55f;               // master 窗口比例
 double default_smfact = 0.5f;               // 第一个stack窗口比例
 unsigned int default_nmaster = 1;           // 默认master数量
 /* logging */
-int log_level = WLR_DEBUG;
+int log_level = WLR_ERROR;
 unsigned int numlockon = 1; // 是否打开右边小键盘
 unsigned int capslock = 0; // 是否启用快捷键
 
