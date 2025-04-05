@@ -6942,7 +6942,6 @@ void zoom(const Arg *arg) {
 }
 
 void movewin(const Arg *arg) {
-    /* top, bottom, left, right */
   Client *c, *tc;
   int nx, ny;
   int buttom, top, left, right, tar;
@@ -7042,7 +7041,72 @@ void movewin(const Arg *arg) {
 }
 
 void resizewin(const Arg *arg) {
+  Client *c, *tc;
+  int nw, nh;
+  int buttom, top, left, right, tar;
+  c = selmon->sel;
+  if (!c || c->isfullscreen)
+    return;
+  if (!c->isfloating)
+    togglefloating(NULL);
+  nw = c->geom.width;
+  nh = c->geom.height;
 
+  switch (arg->i) {
+  case UP:
+    nh -= selmon->w.height / 8;
+    nh = MAX(nh, selmon->w.height / 10);
+    break;
+  case DOWN:
+    tar = -99999;
+    buttom = c->geom.y + c->geom.height;
+    nh += selmon->w.height / 8;
+
+    wl_list_for_each(tc, &clients, link) {
+      if (!VISIBLEON(tc, selmon) || !tc->isfloating || tc == c)
+        continue;
+      if (c->geom.x + c->geom.width < tc->geom.x ||
+          c->geom.x > tc->geom.x + tc->geom.width)
+        continue;
+      top = tc->geom.y - gappiv;
+      if (buttom < top && (nh + c->geom.y) > top) {
+        tar = MIN(tar, top - c->geom.y);
+      };
+    }
+    nh = tar == -99999 ? nh : tar;
+    if (c->geom.y + nh + gappov > selmon->w.y + selmon->w.height)
+      nh = selmon->w.y + selmon->w.height - c->geom.y - gappov;
+    break;
+  case LEFT:
+    nw -= selmon->w.width / 16;
+    nw = MAX(nw, selmon->w.width / 10);
+    break;
+  case RIGHT: // 右
+    tar = 99999;
+    right = c->geom.x + c->geom.width;
+    nw += selmon->w.width / 16;
+    wl_list_for_each(tc, &clients, link) {
+      if (!VISIBLEON(tc, selmon) || !tc->isfloating || tc == c)
+        continue;
+      if (c->geom.y + c->geom.height < tc->geom.y ||
+          c->geom.y > tc->geom.y + tc->geom.height)
+        continue;
+      left = tc->geom.x - gappih;
+      if (right < left && (nw + c->geom.x) > left) {
+        tar = MIN(tar, left - c->geom.x);
+      };
+    }
+
+    nw = tar == 99999 ? nw : tar;
+    if (c->geom.x + nw + gappoh > selmon->w.x + selmon->w.width)
+      nw = selmon->w.x + selmon->w.width - c->geom.x - gappoh;
+    break;
+  }
+
+  resize(c,
+         (struct wlr_box){
+             .x = c->geom.x, .y = c->geom.y, .width = nw, .height = nh},
+         1);
 }
 
 #ifdef XWAYLAND
