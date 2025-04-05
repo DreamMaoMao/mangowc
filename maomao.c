@@ -3034,7 +3034,7 @@ dirtomon(enum wlr_direction dir) {
   if (!wlr_output_layout_get(output_layout, selmon->wlr_output))
     return selmon;
   if ((next = wlr_output_layout_adjacent_output(
-           output_layout, dir, selmon->wlr_output, selmon->m.x, selmon->m.y)))
+           output_layout, 1 << dir, selmon->wlr_output, selmon->m.x, selmon->m.y)))
     return next->data;
   if ((next = wlr_output_layout_farthest_output(
            output_layout, dir ^ (WLR_DIRECTION_LEFT | WLR_DIRECTION_RIGHT),
