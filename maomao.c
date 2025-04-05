@@ -7070,7 +7070,7 @@ void resizewin(const Arg *arg) {
         continue;
       top = tc->geom.y - gappiv;
       if (buttom < top && (nh + c->geom.y) > top) {
-        tar = MIN(tar, top - c->geom.y);
+        tar = MAX(tar, top - c->geom.y);
       };
     }
     nh = tar == -99999 ? nh : tar;
@@ -7081,7 +7081,7 @@ void resizewin(const Arg *arg) {
     nw -= selmon->w.width / 16;
     nw = MAX(nw, selmon->w.width / 10);
     break;
-  case RIGHT: // 右
+  case RIGHT:
     tar = 99999;
     right = c->geom.x + c->geom.width;
     nw += selmon->w.width / 16;
