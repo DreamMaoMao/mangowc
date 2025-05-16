@@ -130,6 +130,8 @@ typedef struct {
   float *scroller_proportion_preset;
   int scroller_proportion_preset_count;
 
+  int border_radius;
+
   char **circle_layout;
   int circle_layout_count;
 
@@ -758,6 +760,8 @@ void parse_config_line(Config *config, const char *line) {
     config->focus_cross_monitor = atoi(value);
   } else if (strcmp(key, "focus_cross_tag") == 0) {
     config->focus_cross_tag = atoi(value);
+  }  else if (strcmp(key, "border_radius") == 0) {
+    config->border_radius = atoi(value);
   } else if (strcmp(key, "single_scratchpad") == 0) {
     config->single_scratchpad = atoi(value);
   } else if (strcmp(key, "no_border_when_single") == 0) {
@@ -1763,6 +1767,7 @@ void override_config(void) {
   scroller_focus_center = config.scroller_focus_center;
   focus_cross_monitor = config.focus_cross_monitor;
   focus_cross_tag = config.focus_cross_tag;
+  border_radius = config.border_radius;
   single_scratchpad = config.single_scratchpad;
   no_border_when_single = config.no_border_when_single;
   snap_distance = config.snap_distance;
@@ -1865,6 +1870,7 @@ void set_value_default() {
   config.scroller_prefer_center = scroller_prefer_center;
   config.focus_cross_monitor = focus_cross_monitor;
   config.focus_cross_tag = focus_cross_tag;
+  config.border_radius = border_radius;
   config.single_scratchpad = single_scratchpad;
   config.no_border_when_single = no_border_when_single;
   config.snap_distance = snap_distance;
@@ -2016,7 +2022,6 @@ void reload_config(const Arg *arg) {
   init_baked_points();
   handlecursoractivity();
   run_exec();
-
   // reset border width when config change
   wl_list_for_each(c, &clients, link) {
     if (c && !c->iskilling) {
