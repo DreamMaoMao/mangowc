@@ -355,6 +355,8 @@ typedef struct {
 	const char *name;
 } Layout;
 
+struct workspace;
+
 struct Monitor {
 	struct wl_list link;
 	struct wlr_output *wlr_output;
@@ -386,6 +388,10 @@ struct Monitor {
 	int gamma_lut_changed;
 	int asleep;
 	unsigned int visible_clients;
+
+	struct workspace *workspace_current;
+	struct workspace *workspace_last;
+	struct dwl_ext_workspace_group *ext_group;
 };
 
 typedef struct {
@@ -657,7 +663,7 @@ static int hidecursor(void *data);
 static bool check_hit_no_border(Client *c);
 static void reset_keyboard_layout(void);
 static void client_update_oldmonname_record(Client *c, Monitor *m);
-
+static unsigned int get_tags_first_tag_num(unsigned int source_tags);
 #include "data/static_keymap.h"
 #include "dispatch/dispatch.h"
 
@@ -674,6 +680,7 @@ static struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 static struct wlr_backend *backend;
 static struct wlr_backend *headless_backend;
 static struct wlr_scene *scene;
+struct wlr_scene_tree *ws_tree;
 static struct wlr_scene_tree *layers[NUM_LAYERS];
 static struct wlr_renderer *drw;
 static struct wlr_allocator *alloc;
@@ -816,6 +823,7 @@ static struct wlr_xwayland *xwayland;
 
 #include "client/client.h"
 #include "config/parse_config.h"
+#include "ext-workspace/tag-worksapce.h"
 #include "layout/layout.h"
 #include "text_input/ime.h"
 
@@ -2972,12 +2980,17 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 	Monitor *m = wl_container_of(listener, m, destroy);
 	LayerSurface *l, *tmp;
 	unsigned int i;
+	// struct dwl_ext_workspace *w;
 
 	/* m->layers[i] are intentionally not unlinked */
 	for (i = 0; i < LENGTH(m->layers); i++) {
 		wl_list_for_each_safe(l, tmp, &m->layers[i], link)
 			wlr_layer_surface_v1_destroy(l->layer_surface);
 	}
+
+	// clean ext-workspaces grouplab
+	dwl_ext_workspace_group_output_leave(m->ext_group, m->wlr_output);
+	dwl_ext_workspace_group_destroy(m->ext_group);
 
 	wl_list_remove(&m->destroy.link);
 	wl_list_remove(&m->frame.link);
@@ -3461,8 +3474,6 @@ void createmon(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	printstatus();
-
 	/* The xdg-protocol specifies:
 	 *
 	 * If the fullscreened surface is not opaque, the compositor must make
@@ -3486,6 +3497,14 @@ void createmon(struct wl_listener *listener, void *data) {
 		wlr_output_layout_add_auto(output_layout, wlr_output);
 	else
 		wlr_output_layout_add(output_layout, wlr_output, m->m.x, m->m.y);
+	m->ext_group = dwl_ext_workspace_group_create(ext_manager);
+	dwl_ext_workspace_group_output_enter(m->ext_group, m->wlr_output);
+
+	for (i = 1; i <= LENGTH(tags); i++) {
+		add_workspace(i, m);
+	}
+
+	printstatus();
 }
 
 void // fix for 0.5
@@ -5070,14 +5089,49 @@ void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 	wlr_seat_pointer_notify_motion(seat, time, sx, sy);
 }
 
-void // 17
-printstatus(void) {
-	Monitor *m = NULL;
+void printstatus(void) {
+	Monitor *m;
+	unsigned int current_tag;
+	struct workspace *w;
+	Client *c;
+	bool has_clients = false;
+	bool is_active = false;
+
 	wl_list_for_each(m, &mons, link) {
 		if (!m->wlr_output->enabled) {
 			continue;
 		}
-		dwl_ipc_output_printstatus(m); // 更新waybar上tag的状态 这里很关键
+
+		// Get current tag for this monitor
+		current_tag = get_tags_first_tag_num(m->tagset[m->seltags]);
+		// Update workspace active states
+		if (workspaces.next != &workspaces) { // If workspaces list is not empty
+			wl_list_for_each(w, &workspaces, link) {
+				if (w && w->m == m) {
+					is_active = (w->tag == current_tag) && !m->isoverview;
+					has_clients = false;
+					wl_list_for_each(c, &clients, link) {
+						if (c->tags & 1 << (w->tag - 1) & TAGMASK) {
+							has_clients = true;
+							break;
+						}
+					}
+					if (is_active) {
+						dwl_ext_workspace_set_active(w->ext_workspace,
+													 is_active);
+					} else if (has_clients) {
+						dwl_ext_workspace_set_hidden(w->ext_workspace, false);
+						dwl_ext_workspace_set_active(w->ext_workspace, false);
+					} else {
+						dwl_ext_workspace_set_active(w->ext_workspace, false);
+						dwl_ext_workspace_set_hidden(w->ext_workspace, true);
+					}
+				}
+			}
+		}
+
+		// Update IPC output status
+		dwl_ipc_output_printstatus(m);
 	}
 }
 
@@ -6243,6 +6297,27 @@ unsigned int get_tags_first_tag(unsigned int source_tags) {
 	}
 }
 
+unsigned int get_tags_first_tag_num(unsigned int source_tags) {
+	unsigned int i, tag;
+	tag = 0;
+
+	if (!source_tags) {
+		return selmon->pertag->curtag;
+	}
+
+	for (i = 0; !(tag & 1) && source_tags != 0 && i < LENGTH(tags); i++) {
+		tag = source_tags >> i;
+	}
+
+	if (i == 1) {
+		return 1;
+	} else if (i > 9) {
+		return 9;
+	} else {
+		return i;
+	}
+}
+
 void show_hide_client(Client *c) {
 	unsigned int target = get_tags_first_tag(c->oldtags);
 	tag_client(&(Arg){.ui = target}, c);
@@ -6410,6 +6485,8 @@ void setup(void) {
 		layers[i] = wlr_scene_tree_create(&scene->tree);
 	drag_icon = wlr_scene_tree_create(&scene->tree);
 	wlr_scene_node_place_below(&drag_icon->node, &layers[LyrBlock]->node);
+
+	ws_tree = wlr_scene_tree_create(&scene->tree);
 
 	/* Create a renderer with the default implementation */
 	if (!(drw = wlr_renderer_autocreate(backend)))
@@ -6620,6 +6697,8 @@ void setup(void) {
 		wlr_xdg_foreign_registry_create(dpy);
 	wlr_xdg_foreign_v1_create(dpy, foreign_registry);
 	wlr_xdg_foreign_v2_create(dpy, foreign_registry);
+
+	workspaces_init();
 #ifdef XWAYLAND
 	/*
 	 * Initialise the XWayland X server.
