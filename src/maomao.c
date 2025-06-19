@@ -2991,6 +2991,7 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 	// clean ext-workspaces grouplab
 	dwl_ext_workspace_group_output_leave(m->ext_group, m->wlr_output);
 	dwl_ext_workspace_group_destroy(m->ext_group);
+	cleanup_workspaces_by_monitor(m);
 
 	wl_list_remove(&m->destroy.link);
 	wl_list_remove(&m->frame.link);
@@ -3501,7 +3502,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	dwl_ext_workspace_group_output_enter(m->ext_group, m->wlr_output);
 
 	for (i = 1; i <= LENGTH(tags); i++) {
-		add_workspace(i, m);
+		add_workspace_by_tag(i, m);
 	}
 
 	printstatus();
@@ -7060,13 +7061,13 @@ void toggleoverview(const Arg *arg) {
 
 	if (selmon->isoverview) {
 		for (i = 1; i <= LENGTH(tags); i++) {
-			remove_workspace(i, selmon);
+			remove_workspace_by_tag(i, selmon);
 		}
-		add_workspace(0, selmon);
+		add_workspace_by_tag(0, selmon);
 	} else {
-		remove_workspace(0, selmon);
+		remove_workspace_by_tag(0, selmon);
 		for (i = 1; i <= LENGTH(tags); i++) {
-			add_workspace(i, selmon);
+			add_workspace_by_tag(i, selmon);
 		}
 	}
 

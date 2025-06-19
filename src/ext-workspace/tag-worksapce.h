@@ -95,7 +95,28 @@ static char *get_name_from_tag(unsigned int tag) {
 	return name;
 }
 
-static void remove_workspace(unsigned int tag, Monitor *m) {
+void destroy_workspace(struct workspace *workspace) {
+	// Clean up external workspace
+	wl_list_remove(&workspace->on_ext.activate.link);
+	dwl_ext_workspace_destroy(workspace->ext_workspace);
+
+	// Remove from the list and free resources
+	wl_list_remove(&workspace->link);
+	wlr_scene_node_destroy(&workspace->tree->node);
+	free(workspace->name);
+	free(workspace);
+}
+
+void cleanup_workspaces_by_monitor(Monitor *m) {
+	struct workspace *workspace, *tmp;
+	wl_list_for_each_safe(workspace, tmp, &workspaces, link) {
+		if (workspace->m == m) {
+			destroy_workspace(workspace);
+		}
+	}
+}
+
+static void remove_workspace_by_tag(unsigned int tag, Monitor *m) {
 	char *name = get_name_from_tag(tag);
 	struct workspace *workspace, *tmp;
 	wl_list_for_each_safe(workspace, tmp, &workspaces, link) {
@@ -122,22 +143,14 @@ static void remove_workspace(unsigned int tag, Monitor *m) {
 				}
 			}
 
-			// Clean up external workspace
-			wl_list_remove(&workspace->on_ext.activate.link);
-			dwl_ext_workspace_destroy(workspace->ext_workspace);
-
-			// Remove from the list and free resources
-			wl_list_remove(&workspace->link);
-			wlr_scene_node_destroy(&workspace->tree->node);
-			free(workspace->name);
-			free(workspace);
+			destroy_workspace(workspace);
 			return;
 		}
 	}
 }
 
 /* Internal API */
-static void add_workspace(int tag, Monitor *m) {
+static void add_workspace_by_tag(int tag, Monitor *m) {
 	char *name = get_name_from_tag(tag);
 	struct workspace *workspace = znew(*workspace);
 	workspace->name = xstrdup(name);
