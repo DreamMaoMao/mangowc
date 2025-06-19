@@ -5089,22 +5089,25 @@ void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 	wlr_seat_pointer_notify_motion(seat, time, sx, sy);
 }
 
-bool tag_has_clients(unsigned int tag) {
+unsigned int get_tag_status(unsigned int tag) {
 	Client *c;
-	bool has_clients = false;
+	unsigned int status = 0;
 	wl_list_for_each(c, &clients, link) {
 		if (c->tags & 1 << (tag - 1) & TAGMASK) {
-			has_clients = true;
-			break;
+			if (c->isurgent) {
+				status = 2;
+				break;
+			}
+			status = 1;
 		}
 	}
-	return has_clients;
+	return status;
 }
 
 void dwl_ext_workspace_printstatus(Monitor *m) {
 	unsigned int current_tag;
 	struct workspace *w;
-	bool has_clients = false;
+	unsigned int tag_status = 0;
 	bool is_active = false;
 
 	current_tag = get_tags_first_tag_num(m->tagset[m->seltags]);
@@ -5112,14 +5115,21 @@ void dwl_ext_workspace_printstatus(Monitor *m) {
 	wl_list_for_each(w, &workspaces, link) {
 		if (w && w->m == m) {
 			is_active = (w->tag == current_tag) || m->isoverview;
-			has_clients = tag_has_clients(w->tag);
+			tag_status = get_tag_status(w->tag);
 			if (is_active) {
+				dwl_ext_workspace_set_urgent(w->ext_workspace, false);
 				dwl_ext_workspace_set_hidden(w->ext_workspace, false);
 				dwl_ext_workspace_set_active(w->ext_workspace, true);
-			} else if (has_clients) {
+			} else if (tag_status == 2) {
+				dwl_ext_workspace_set_hidden(w->ext_workspace, false);
+				dwl_ext_workspace_set_active(w->ext_workspace, false);
+				dwl_ext_workspace_set_urgent(w->ext_workspace, true);
+			} else if (tag_status == 1) {
+				dwl_ext_workspace_set_urgent(w->ext_workspace, false);
 				dwl_ext_workspace_set_hidden(w->ext_workspace, false);
 				dwl_ext_workspace_set_active(w->ext_workspace, false);
 			} else {
+				dwl_ext_workspace_set_urgent(w->ext_workspace, false);
 				dwl_ext_workspace_set_active(w->ext_workspace, false);
 				dwl_ext_workspace_set_hidden(w->ext_workspace, true);
 			}
