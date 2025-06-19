@@ -5111,7 +5111,7 @@ void dwl_ext_workspace_printstatus(Monitor *m) {
 
 	wl_list_for_each(w, &workspaces, link) {
 		if (w && w->m == m) {
-			is_active = (w->tag == current_tag) && !m->isoverview;
+			is_active = (w->tag == current_tag) || m->isoverview;
 			has_clients = tag_has_clients(w->tag);
 			if (is_active) {
 				dwl_ext_workspace_set_hidden(w->ext_workspace, false);
@@ -7037,6 +7037,7 @@ void increase_proportion(const Arg *arg) {
 void toggleoverview(const Arg *arg) {
 
 	Client *c;
+	int i;
 
 	if (selmon->isoverview && ov_tab_mode && arg->i != -1 && selmon->sel) {
 		focusstack(&(Arg){.i = 1});
@@ -7083,6 +7084,18 @@ void toggleoverview(const Arg *arg) {
 				!c->isunglobal && !client_should_ignore_focus(c) &&
 				client_surface(c)->mapped)
 				overview_restore(c, &(Arg){.ui = target});
+		}
+	}
+
+	if (selmon->isoverview) {
+		for (i = 1; i <= LENGTH(tags); i++) {
+			remove_workspace(i, selmon);
+		}
+		add_workspace(0, selmon);
+	} else {
+		remove_workspace(0, selmon);
+		for (i = 1; i <= LENGTH(tags); i++) {
+			add_workspace(i, selmon);
 		}
 	}
 

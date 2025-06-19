@@ -58,10 +58,12 @@ static void handle_ext_workspace_activate(struct wl_listener *listener,
 	wlr_log(WLR_INFO, "ext activating workspace %s", workspace->name);
 }
 
-/* Internal API */
-static void add_workspace(int tag, Monitor *m) {
+static char *get_name_from_tag(unsigned int tag) {
 	char *name = NULL;
 	switch (tag) {
+	case 0:
+		name = "overview";
+		break;
 	case 1:
 		name = "1";
 		break;
@@ -90,6 +92,53 @@ static void add_workspace(int tag, Monitor *m) {
 		name = "9";
 		break;
 	}
+	return name;
+}
+
+static void remove_workspace(unsigned int tag, Monitor *m) {
+	char *name = get_name_from_tag(tag);
+	struct workspace *workspace, *tmp;
+	wl_list_for_each_safe(workspace, tmp, &workspaces, link) {
+		if (strcmp(workspace->name, name) == 0 && workspace->m == m) {
+			// If this is the current workspace, we need to handle that
+			if (m->workspace_current == workspace) {
+				// Find another workspace to make current (maybe the overview?)
+				struct workspace *new_current = NULL;
+				if (!wl_list_empty(&workspaces)) {
+					struct workspace *first =
+						wl_container_of(workspaces.next, first, link);
+					if (first != workspace) {
+						new_current = first;
+					} else if (workspaces.next->next != &workspaces) {
+						new_current = wl_container_of(workspaces.next->next,
+													  new_current, link);
+					}
+				}
+				m->workspace_current = new_current;
+				if (new_current) {
+					wlr_scene_node_set_enabled(&new_current->tree->node, true);
+					dwl_ext_workspace_set_active(new_current->ext_workspace,
+												 true);
+				}
+			}
+
+			// Clean up external workspace
+			wl_list_remove(&workspace->on_ext.activate.link);
+			dwl_ext_workspace_destroy(workspace->ext_workspace);
+
+			// Remove from the list and free resources
+			wl_list_remove(&workspace->link);
+			wlr_scene_node_destroy(&workspace->tree->node);
+			free(workspace->name);
+			free(workspace);
+			return;
+		}
+	}
+}
+
+/* Internal API */
+static void add_workspace(int tag, Monitor *m) {
+	char *name = get_name_from_tag(tag);
 	struct workspace *workspace = znew(*workspace);
 	workspace->name = xstrdup(name);
 	workspace->tag = tag;
