@@ -388,9 +388,6 @@ struct Monitor {
 	int gamma_lut_changed;
 	int asleep;
 	unsigned int visible_clients;
-
-	struct workspace *workspace_current;
-	struct workspace *workspace_last;
 	struct dwl_ext_workspace_group *ext_group;
 };
 
@@ -680,7 +677,6 @@ static struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 static struct wlr_backend *backend;
 static struct wlr_backend *headless_backend;
 static struct wlr_scene *scene;
-struct wlr_scene_tree *ws_tree;
 static struct wlr_scene_tree *layers[NUM_LAYERS];
 static struct wlr_renderer *drw;
 static struct wlr_allocator *alloc;
@@ -6503,8 +6499,6 @@ void setup(void) {
 		layers[i] = wlr_scene_tree_create(&scene->tree);
 	drag_icon = wlr_scene_tree_create(&scene->tree);
 	wlr_scene_node_place_below(&drag_icon->node, &layers[LyrBlock]->node);
-
-	ws_tree = wlr_scene_tree_create(&scene->tree);
 
 	/* Create a renderer with the default implementation */
 	if (!(drw = wlr_renderer_autocreate(backend)))
