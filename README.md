@@ -188,6 +188,6 @@ Here's an example of using the modules in a flake:
 
 - https://codeberg.org/dwl/dwl - basal dwl feature
 
-- https://github.com/labwc/labwc - sample of text-input protocol
+- https://github.com/labwc/labwc - sample of wayland protocol
 
 - https://github.com/swaywm/sway - sample of wayland protocol
