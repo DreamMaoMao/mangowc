@@ -7059,6 +7059,18 @@ void toggleoverview(const Arg *arg) {
 	unsigned int visible_client_number = 0;
 
 	if (selmon->isoverview) {
+		for (i = 1; i <= LENGTH(tags); i++) {
+			remove_workspace(i, selmon);
+		}
+		add_workspace(0, selmon);
+	} else {
+		remove_workspace(0, selmon);
+		for (i = 1; i <= LENGTH(tags); i++) {
+			add_workspace(i, selmon);
+		}
+	}
+
+	if (selmon->isoverview) {
 		wl_list_for_each(c, &clients,
 						 link) if (c && c->mon == selmon &&
 								   !client_is_unmanaged(c) &&
@@ -7094,18 +7106,6 @@ void toggleoverview(const Arg *arg) {
 				!c->isunglobal && !client_should_ignore_focus(c) &&
 				client_surface(c)->mapped)
 				overview_restore(c, &(Arg){.ui = target});
-		}
-	}
-
-	if (selmon->isoverview) {
-		for (i = 1; i <= LENGTH(tags); i++) {
-			remove_workspace(i, selmon);
-		}
-		add_workspace(0, selmon);
-	} else {
-		remove_workspace(0, selmon);
-		for (i = 1; i <= LENGTH(tags); i++) {
-			add_workspace(i, selmon);
 		}
 	}
 
