@@ -117,10 +117,9 @@ void cleanup_workspaces_by_monitor(Monitor *m) {
 }
 
 static void remove_workspace_by_tag(unsigned int tag, Monitor *m) {
-	char *name = get_name_from_tag(tag);
 	struct workspace *workspace, *tmp;
 	wl_list_for_each_safe(workspace, tmp, &workspaces, link) {
-		if (strcmp(workspace->name, name) == 0 && workspace->m == m) {
+		if (workspace->tag == tag && workspace->m == m) {
 			// If this is the current workspace, we need to handle that
 			if (m->workspace_current == workspace) {
 				// Find another workspace to make current (maybe the overview?)
