@@ -5089,46 +5089,53 @@ void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 	wlr_seat_pointer_notify_motion(seat, time, sx, sy);
 }
 
-void printstatus(void) {
-	Monitor *m;
+bool tag_has_clients(unsigned int tag) {
+	Client *c;
+	bool has_clients = false;
+	wl_list_for_each(c, &clients, link) {
+		if (c->tags & 1 << (tag - 1) & TAGMASK) {
+			has_clients = true;
+			break;
+		}
+	}
+	return has_clients;
+}
+
+void dwl_ext_workspace_printstatus(Monitor *m) {
 	unsigned int current_tag;
 	struct workspace *w;
-	Client *c;
 	bool has_clients = false;
 	bool is_active = false;
 
+	current_tag = get_tags_first_tag_num(m->tagset[m->seltags]);
+
+	wl_list_for_each(w, &workspaces, link) {
+		if (w && w->m == m) {
+			is_active = (w->tag == current_tag) && !m->isoverview;
+			has_clients = tag_has_clients(w->tag);
+			if (is_active) {
+				dwl_ext_workspace_set_hidden(w->ext_workspace, false);
+				dwl_ext_workspace_set_active(w->ext_workspace, true);
+			} else if (has_clients) {
+				dwl_ext_workspace_set_hidden(w->ext_workspace, false);
+				dwl_ext_workspace_set_active(w->ext_workspace, false);
+			} else {
+				dwl_ext_workspace_set_active(w->ext_workspace, false);
+				dwl_ext_workspace_set_hidden(w->ext_workspace, true);
+			}
+		}
+	}
+}
+
+void printstatus(void) {
+	Monitor *m;
 	wl_list_for_each(m, &mons, link) {
 		if (!m->wlr_output->enabled) {
 			continue;
 		}
 
-		// Get current tag for this monitor
-		current_tag = get_tags_first_tag_num(m->tagset[m->seltags]);
 		// Update workspace active states
-		if (workspaces.next != &workspaces) { // If workspaces list is not empty
-			wl_list_for_each(w, &workspaces, link) {
-				if (w && w->m == m) {
-					is_active = (w->tag == current_tag) && !m->isoverview;
-					has_clients = false;
-					wl_list_for_each(c, &clients, link) {
-						if (c->tags & 1 << (w->tag - 1) & TAGMASK) {
-							has_clients = true;
-							break;
-						}
-					}
-					if (is_active) {
-						dwl_ext_workspace_set_active(w->ext_workspace,
-													 is_active);
-					} else if (has_clients) {
-						dwl_ext_workspace_set_hidden(w->ext_workspace, false);
-						dwl_ext_workspace_set_active(w->ext_workspace, false);
-					} else {
-						dwl_ext_workspace_set_active(w->ext_workspace, false);
-						dwl_ext_workspace_set_hidden(w->ext_workspace, true);
-					}
-				}
-			}
-		}
+		dwl_ext_workspace_printstatus(m);
 
 		// Update IPC output status
 		dwl_ipc_output_printstatus(m);

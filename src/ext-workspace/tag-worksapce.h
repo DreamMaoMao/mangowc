@@ -4,7 +4,6 @@
 
 typedef struct Monitor Monitor;
 
-/* Double use: as config in config/rcxml.c and as instance in workspaces.c */
 struct workspace {
 	struct wl_list link;
 
@@ -22,24 +21,16 @@ struct workspace {
 	} on_ext;
 };
 
-/* Workspaces */
 struct dwl_ext_workspace_manager *ext_manager;
 struct wl_list workspaces; /* struct workspace.link */
 
-/*
- * update_focus should normally be set to true. It is set to false only
- * when this function is called from desktop_focus_view(), in order to
- * avoid unnecessary extra focus changes and possible recursion.
- */
 void workspaces_switch_to(struct workspace *target) {
 	if (target == target->m->workspace_current) {
 		return;
 	}
 
-	/* Disable the old workspace */
 	wlr_scene_node_set_enabled(&target->m->workspace_current->tree->node,
 							   false);
-
 	dwl_ext_workspace_set_active(target->m->workspace_current->ext_workspace,
 								 false);
 
@@ -52,15 +43,9 @@ void workspaces_switch_to(struct workspace *target) {
 		view(&(Arg){.ui = tag}, true);
 	}
 
-	/* Enable the new workspace */
 	wlr_scene_node_set_enabled(&target->tree->node, true);
-
-	/* Save the last visited workspace */
 	target->m->workspace_last = target->m->workspace_current;
-
-	/* Make sure new views will spawn on the new workspace */
 	target->m->workspace_current = target;
-
 	dwl_ext_workspace_set_active(target->ext_workspace, true);
 }
 
@@ -119,7 +104,6 @@ static void add_workspace(int tag, Monitor *m) {
 
 	bool active = m->workspace_current == workspace;
 
-	/* ext */
 	workspace->ext_workspace =
 		dwl_ext_workspace_create(ext_manager, /*id*/ NULL);
 	dwl_ext_workspace_assign_to_group(workspace->ext_workspace, m->ext_group);
