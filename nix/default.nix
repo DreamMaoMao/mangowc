@@ -35,17 +35,6 @@
       };
     }
   );
-  scenefx-0-4 = scenefx.overrideAttrs (
-    final: prev: {
-      buildInputs =
-        prev.buildInputs
-        ++ [
-          libgbm
-          libxcb
-          xcbutilwm
-        ];
-    }
-  );
 in
   stdenv.mkDerivation {
     inherit pname;
@@ -73,7 +62,7 @@ in
         wayland
         wayland-protocols
         wlroots-git
-        scenefx-0-4
+        scenefx
         libGL
       ]
       ++ lib.optionals enableXWayland [
