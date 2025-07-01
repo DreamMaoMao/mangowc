@@ -6,7 +6,7 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
 1. **Lightweight & Fast Build**
 
-   - _Maomao_ is as lightweight as _dwl_, and can be built completed within a few seconds. Despite this, _Maomao_ does not compromise on functionality.
+   - _Maomao_ is as lightweight as _dwl_, and can be built completely within a few seconds. Despite this, _Maomao_ does not compromise on functionality.
 
 2. **Feature Highlights**
    - In addition to basic WM functionality, Maomao provides:
