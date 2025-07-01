@@ -6,12 +6,12 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
 1. **Lightweight & Fast Build**
 
-   - _Maomao_ is as lightweight as _dwl_, and its build can be completed within few seconds. Despite this, _maomao_ does not compromise on functionality.
+   - _Maomao_ is as lightweight as _dwl_, and can be built completed within a few seconds. Despite this, _Maomao_ does not compromise on functionality.
 
 2. **Feature Highlights**
    - In addition to basic WM functionality, Maomao provides:
      - Excellent xwayland support.
-     - Base tag not workspace (supports separate window layouts for each tag)
+     - Base tags not workspaces (supports separate window layouts for each tag)
      - Smooth and customizable complete animations (window open/move/close, tag enter/leave,layer open/close/move)
      - Excellent input method support (text input v2/v3)
      - Flexible window layouts with easy switching (scroller, master, monocle, spiral, etc.)
@@ -20,10 +20,10 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Sway-like scratchpad and named scratchpad
      - Minimize window to scratchpad
      - Hycov-like overview
-     - Window effects from scenefx(blur, shadow, corner radius, opacity)
+     - Window effects from scenefx (blur, shadow, corner radius, opacity)
 
 3. **Some disadvantages**
-   - Since it uses the fully automatic layout like dwm style, it not allow you to manually adjust the window size when window is in tiled state. It only allows you to change the layout parameters to adjust the window ratio.
+   - Since it uses the fully automatic layout like dwm style, it does not allow you to manually adjust the window size when the window is in tiled state. It only allows you to change the layout parameters to adjust the window ratio.
 
 
 Master-Stack Layout
@@ -129,7 +129,7 @@ git clone https://github.com/DreamMaoMao/maomao-config.git ~/.config/maomao
 [wlogout](https://github.com/DreamMaoMao/dotfile/tree/main/wlogout)
 [swaync](https://github.com/DreamMaoMao/dotfile/tree/main/swaync)
 
-## Config Document
+## Config Documentation
 
 Refer to the [wiki](https://github.com/DreamMaoMao/maomaowm/wiki/)
 
