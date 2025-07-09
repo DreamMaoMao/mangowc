@@ -5856,17 +5856,14 @@ void togglefullscreen(const Arg *arg) {
 	if (!sel)
 		return;
 
-	// if(sel->isfloating)
-	// 	setfloating(sel, 0);
+	sel->is_scratchpad_show = 0;
+	sel->is_in_scratchpad = 0;
+	sel->isnamedscratchpad = 0;
 
 	if (sel->isfullscreen || sel->ismaxmizescreen)
 		setfullscreen(sel, 0);
 	else
 		setfullscreen(sel, 1);
-
-	sel->is_scratchpad_show = 0;
-	sel->is_in_scratchpad = 0;
-	sel->isnamedscratchpad = 0;
 }
 
 void togglemaxmizescreen(const Arg *arg) {
@@ -5874,17 +5871,14 @@ void togglemaxmizescreen(const Arg *arg) {
 	if (!sel)
 		return;
 
-	// if(sel->isfloating)
-	// 	setfloating(sel, 0);
+	sel->is_scratchpad_show = 0;
+	sel->is_in_scratchpad = 0;
+	sel->isnamedscratchpad = 0;
 
 	if (sel->isfullscreen || sel->ismaxmizescreen)
 		setmaxmizescreen(sel, 0);
 	else
 		setmaxmizescreen(sel, 1);
-
-	sel->is_scratchpad_show = 0;
-	sel->is_in_scratchpad = 0;
-	sel->isnamedscratchpad = 0;
 }
 
 void togglegaps(const Arg *arg) {
