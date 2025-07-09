@@ -7,11 +7,6 @@
 #include <libinput.h>
 #include <limits.h>
 #include <linux/input-event-codes.h>
-#include <scenefx/render/fx_renderer/fx_renderer.h>
-#include <scenefx/types/fx/blur_data.h>
-#include <scenefx/types/fx/clipped_region.h>
-#include <scenefx/types/fx/corner_location.h>
-#include <scenefx/types/wlr_scene.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -61,6 +56,7 @@
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
+#include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_server_decoration.h>
@@ -132,7 +128,6 @@ enum { XDGShell, LayerShell, X11 };					/* client types */
 enum { AxisUp, AxisDown, AxisLeft, AxisRight };		// 滚轮滚动的方向
 enum {
 	LyrBg,
-	LyrBlur,
 	LyrBottom,
 	LyrTile,
 	LyrFloat,
@@ -217,7 +212,6 @@ typedef struct {
 	int height;
 	double percent;
 	float opacity;
-	enum corner_location corner_location;
 	bool should_scale;
 } animationScale;
 
@@ -229,8 +223,7 @@ struct Client {
 		current; /* layout-relative, includes border */
 	Monitor *mon;
 	struct wlr_scene_tree *scene;
-	struct wlr_scene_rect *border; /* top, bottom, left, right */
-	struct wlr_scene_shadow *shadow;
+	struct wlr_scene_rect *border[4]; /* top, bottom, left, right */
 	struct wlr_scene_tree *scene_surface;
 	struct wl_list link;
 	struct wl_list flink;
@@ -356,7 +349,6 @@ typedef struct {
 	Monitor *mon;
 	struct wlr_scene_tree *scene;
 	struct wlr_scene_tree *popups;
-	struct wlr_scene_shadow *shadow;
 	struct wlr_scene_layer_surface_v1 *scene_layer;
 	struct wl_list link;
 	struct wl_list fadeout_link;
@@ -370,9 +362,7 @@ typedef struct {
 
 	struct dwl_animation animation;
 	bool dirty;
-	int noblur;
 	int noanim;
-	int noshadow;
 	bool need_output_flush;
 } LayerSurface;
 
@@ -413,7 +403,6 @@ struct Monitor {
 	int asleep;
 	unsigned int visible_clients;
 	unsigned int visible_tiling_clients;
-	struct wlr_scene_optimized_blur *blur;
 	char last_surface_ws_name[256];
 };
 
@@ -655,7 +644,6 @@ static double find_animation_curve_at(double t, int type);
 
 static void apply_opacity_to_rect_nodes(Client *c, struct wlr_scene_node *node,
 										double animation_passed);
-static enum corner_location set_client_corner_location(Client *c);
 static double output_frame_duration_ms();
 static struct wlr_scene_tree *
 wlr_scene_tree_snapshot(struct wlr_scene_node *node,
@@ -1151,7 +1139,7 @@ void gpureset(struct wl_listener *listener, void *data) {
 
 	wlr_log(WLR_DEBUG, "gpu reset");
 
-	if (!(drw = fx_renderer_create(backend)))
+	if (!(drw = wlr_renderer_autocreate(backend)))
 		die("couldn't recreate renderer");
 
 	if (!(alloc = wlr_allocator_autocreate(backend, drw)))
@@ -2430,10 +2418,6 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 	wlr_scene_output_destroy(m->scene_output);
 
 	closemon(m);
-	if (m->blur) {
-		wlr_scene_node_destroy(&m->blur->node);
-		m->blur = NULL;
-	}
 	free(m);
 }
 
@@ -2474,23 +2458,6 @@ void closemon(Monitor *m) {
 	}
 }
 
-static void iter_layer_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
-									 int sy, void *user_data) {
-	struct wlr_scene_surface *scene_surface =
-		wlr_scene_surface_try_from_buffer(buffer);
-	if (!scene_surface) {
-		return;
-	}
-
-	wlr_scene_buffer_set_backdrop_blur(buffer, true);
-	wlr_scene_buffer_set_backdrop_blur_ignore_transparent(buffer, true);
-	if (blur_optimized) {
-		wlr_scene_buffer_set_backdrop_blur_optimized(buffer, true);
-	} else {
-		wlr_scene_buffer_set_backdrop_blur_optimized(buffer, false);
-	}
-}
-
 void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 	LayerSurface *l = wl_container_of(listener, l, map);
 	struct wlr_layer_surface_v1 *layer_surface = l->layer_surface;
@@ -2510,8 +2477,6 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 
 	l->noanim = 0;
 	l->dirty = false;
-	l->noblur = 0;
-	l->shadow = NULL;
 	l->need_output_flush = true;
 
 	// 应用layer规则
@@ -2520,26 +2485,10 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 			break;
 		if (strcmp(config.layer_rules[ji].layer_name,
 				   l->layer_surface->namespace) == 0) {
-			if (config.layer_rules[ji].noblur > 0) {
-				l->noblur = 1;
-			}
 			if (config.layer_rules[ji].noanim > 0) {
 				l->noanim = 1;
 			}
-			if (config.layer_rules[ji].noshadow > 0) {
-				l->noshadow = 1;
-			}
 		}
-	}
-
-	// 初始化阴影
-	if (layer_surface->current.exclusive_zone == 0 &&
-		layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM &&
-		layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND) {
-		l->shadow = wlr_scene_shadow_create(l->scene, 0, 0, border_radius,
-											shadows_blur, shadowscolor);
-		wlr_scene_node_lower_to_bottom(&l->shadow->node);
-		wlr_scene_node_set_enabled(&l->shadow->node, true);
 	}
 
 	// 初始化动画
@@ -2595,29 +2544,6 @@ void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
 		l->animation.action = MOVE;
 		l->need_output_flush = true;
 		layer_set_pending_state(l);
-	}
-
-	if (blur && blur_layer) {
-		// 设置非背景layer模糊
-
-		if (!l->noblur &&
-			layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM &&
-			layer_surface->current.layer !=
-				ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND) {
-
-			wlr_scene_node_for_each_buffer(&l->scene->node,
-										   iter_layer_scene_buffers, l);
-		}
-	}
-
-	if (blur) {
-		// 如果背景层发生变化,标记优化的模糊背景缓存需要更新
-		if (layer_surface->current.layer ==
-			ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND) {
-			if (l->mon) {
-				wlr_scene_optimized_blur_mark_dirty(l->mon->blur);
-			}
-		}
 	}
 
 	if (layer_surface == exclusive_focus &&
@@ -3002,14 +2928,6 @@ void createmon(struct wl_listener *listener, void *data) {
 		wlr_output_layout_add_auto(output_layout, wlr_output);
 	else
 		wlr_output_layout_add(output_layout, wlr_output, m->m.x, m->m.y);
-
-	if (blur) {
-		m->blur = wlr_scene_optimized_blur_create(&scene->tree, 0, 0);
-		wlr_scene_node_set_position(&m->blur->node, m->m.x, m->m.y);
-		wlr_scene_node_reparent(&m->blur->node, layers[LyrBlur]);
-		wlr_scene_optimized_blur_set_size(m->blur, m->m.width, m->m.height);
-		// wlr_scene_node_set_enabled(&m->blur->node, 1);
-	}
 }
 
 void // fix for 0.5
@@ -3821,34 +3739,6 @@ void locksession(struct wl_listener *listener, void *data) {
 	wlr_session_lock_v1_send_locked(session_lock);
 }
 
-static void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
-								   int sy, void *user_data) {
-	Client *c = user_data;
-
-	struct wlr_scene_surface *scene_surface =
-		wlr_scene_surface_try_from_buffer(buffer);
-	if (!scene_surface) {
-		return;
-	}
-
-	struct wlr_surface *surface = scene_surface->surface;
-	/* we dont blur subsurfaces */
-	if (wlr_subsurface_try_from_wlr_surface(surface) != NULL)
-		return;
-
-	if (blur && c) {
-		wlr_scene_buffer_set_backdrop_blur(buffer, true);
-		wlr_scene_buffer_set_backdrop_blur_ignore_transparent(buffer, true);
-		if (blur_optimized) {
-			wlr_scene_buffer_set_backdrop_blur_optimized(buffer, true);
-		} else {
-			wlr_scene_buffer_set_backdrop_blur_optimized(buffer, false);
-		}
-	} else {
-		wlr_scene_buffer_set_backdrop_blur(buffer, false);
-	}
-}
-
 void init_client_properties(Client *c) {
 	c->ismaxmizescreen = 0;
 	c->isfullscreen = 0;
@@ -3884,6 +3774,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 	/* Called when the surface is mapped, or ready to display on-screen. */
 	Client *p = NULL;
 	Client *c = wl_container_of(listener, c, map);
+	int i;
 	/* Create scene tree for this client and its border */
 	c->scene = client_surface(c)->data = wlr_scene_tree_create(layers[LyrTile]);
 	wlr_scene_node_set_enabled(&c->scene->node, c->type != XDGShell);
@@ -3931,22 +3822,11 @@ mapnotify(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	c->border = wlr_scene_rect_create(c->scene, 0, 0,
-									  c->isurgent ? urgentcolor : bordercolor);
-	wlr_scene_node_lower_to_bottom(&c->border->node);
-	wlr_scene_node_set_position(&c->border->node, 0, 0);
-	wlr_scene_rect_set_corner_radius(c->border, border_radius,
-									 border_radius_location_default);
-	wlr_scene_node_set_enabled(&c->border->node, true);
-
-	c->shadow = wlr_scene_shadow_create(c->scene, 0, 0, border_radius,
-										shadows_blur, shadowscolor);
-
-	wlr_scene_node_lower_to_bottom(&c->shadow->node);
-	wlr_scene_node_set_enabled(&c->shadow->node, true);
-
-	wlr_scene_node_for_each_buffer(&c->scene_surface->node,
-								   iter_xdg_scene_buffers, c);
+	for (i = 0; i < 4; i++) {
+		c->border[i] = wlr_scene_rect_create(
+			c->scene, 0, 0, c->isurgent ? urgentcolor : bordercolor);
+		c->border[i]->node.data = c;
+	}
 
 	/* Initialize client geometry with room for border */
 	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
@@ -5345,8 +5225,8 @@ void setup(void) {
 	wlr_scene_node_place_below(&drag_icon->node, &layers[LyrBlock]->node);
 
 	/* Create a renderer with the default implementation */
-	if (!(drw = fx_renderer_create(backend)))
-		die("couldn't create renderer");
+	if (!(drw = wlr_renderer_autocreate(backend)))
+		die("couldn't recreate renderer");
 
 	wl_signal_add(&drw->events.lost, &gpu_reset);
 
@@ -5537,11 +5417,6 @@ void setup(void) {
 	output_mgr = wlr_output_manager_v1_create(dpy);
 	wl_signal_add(&output_mgr->events.apply, &output_mgr_apply);
 	wl_signal_add(&output_mgr->events.test, &output_mgr_test);
-
-	// blur
-	wlr_scene_set_blur_data(scene, blur_params.num_passes, blur_params.radius,
-							blur_params.noise, blur_params.brightness,
-							blur_params.contrast, blur_params.saturation);
 
 	/* create text_input-, and input_method-protocol relevant globals */
 	input_method_manager = wlr_input_method_manager_v2_create(dpy);
@@ -6225,11 +6100,6 @@ void updatemons(struct wl_listener *listener, void *data) {
 		 Otherwise, incorrect floating window calculations will occur here.
 		 */
 		wlr_scene_output_set_position(m->scene_output, m->m.x, m->m.y);
-
-		if (blur && m->blur) {
-			wlr_scene_node_set_position(&m->blur->node, m->m.x, m->m.y);
-			wlr_scene_optimized_blur_set_size(m->blur, m->m.width, m->m.height);
-		}
 
 		if (m->lock_surface) {
 			struct wlr_scene_tree *scene_tree = m->lock_surface->surface->data;

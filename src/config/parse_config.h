@@ -125,9 +125,7 @@ typedef struct {
 
 typedef struct {
 	char *layer_name; // 布局名称
-	int noblur;
 	int noanim;
-	int noshadow;
 } ConfigLayerRule;
 
 typedef struct {
@@ -158,7 +156,6 @@ typedef struct {
 	int focus_cross_monitor;
 	int focus_cross_tag;
 	int no_border_when_single;
-	int no_radius_when_single;
 	int snap_distance;
 	int enable_floating_snap;
 	int drag_tile_to_tile;
@@ -210,20 +207,6 @@ typedef struct {
 	unsigned int click_method;
 	unsigned int send_events_mode;
 	unsigned int button_map;
-
-	int blur;
-	int blur_layer;
-	int blur_optimized;
-	int border_radius;
-	struct blur_data blur_params;
-	int shadows;
-	int shadow_only_floating;
-	int layer_shadows;
-	unsigned int shadows_size;
-	float shadows_blur;
-	int shadows_position_x;
-	int shadows_position_y;
-	float shadowscolor[4];
 
 	int smartgaps;
 	unsigned int gappih;
@@ -919,40 +902,6 @@ void parse_config_line(Config *config, const char *line) {
 		config->focus_cross_tag = atoi(value);
 	} else if (strcmp(key, "focus_cross_tag") == 0) {
 		config->focus_cross_tag = atoi(value);
-	} else if (strcmp(key, "blur") == 0) {
-		config->blur = atoi(value);
-	} else if (strcmp(key, "blur_layer") == 0) {
-		config->blur_layer = atoi(value);
-	} else if (strcmp(key, "blur_optimized") == 0) {
-		config->blur_optimized = atoi(value);
-	} else if (strcmp(key, "border_radius") == 0) {
-		config->border_radius = atoi(value);
-	} else if (strcmp(key, "blur_params_num_passes") == 0) {
-		config->blur_params.num_passes = atoi(value);
-	} else if (strcmp(key, "blur_params_radius") == 0) {
-		config->blur_params.radius = atoi(value);
-	} else if (strcmp(key, "blur_params_noise") == 0) {
-		config->blur_params.noise = atof(value);
-	} else if (strcmp(key, "blur_params_brightness") == 0) {
-		config->blur_params.brightness = atof(value);
-	} else if (strcmp(key, "blur_params_contrast") == 0) {
-		config->blur_params.contrast = atof(value);
-	} else if (strcmp(key, "blur_params_saturation") == 0) {
-		config->blur_params.saturation = atof(value);
-	} else if (strcmp(key, "shadows") == 0) {
-		config->shadows = atoi(value);
-	} else if (strcmp(key, "shadow_only_floating") == 0) {
-		config->shadow_only_floating = atoi(value);
-	} else if (strcmp(key, "layer_shadows") == 0) {
-		config->layer_shadows = atoi(value);
-	} else if (strcmp(key, "shadows_size") == 0) {
-		config->shadows_size = atoi(value);
-	} else if (strcmp(key, "shadows_blur") == 0) {
-		config->shadows_blur = atof(value);
-	} else if (strcmp(key, "shadows_position_x") == 0) {
-		config->shadows_position_x = atoi(value);
-	} else if (strcmp(key, "shadows_position_y") == 0) {
-		config->shadows_position_y = atoi(value);
 	} else if (strcmp(key, "single_scratchpad") == 0) {
 		config->single_scratchpad = atoi(value);
 	} else if (strcmp(key, "xwayland_persistence") == 0) {
@@ -961,8 +910,6 @@ void parse_config_line(Config *config, const char *line) {
 		config->syncobj_enable = atoi(value);
 	} else if (strcmp(key, "no_border_when_single") == 0) {
 		config->no_border_when_single = atoi(value);
-	} else if (strcmp(key, "no_radius_when_single") == 0) {
-		config->no_radius_when_single = atoi(value);
 	} else if (strcmp(key, "snap_distance") == 0) {
 		config->snap_distance = atoi(value);
 	} else if (strcmp(key, "enable_floating_snap") == 0) {
@@ -1210,13 +1157,6 @@ void parse_config_line(Config *config, const char *line) {
 			convert_hex_to_rgba(config->rootcolor, color);
 		}
 
-	} else if (strcmp(key, "shadowscolor") == 0) {
-		long int color = parse_color(value);
-		if (color == -1) {
-			fprintf(stderr, "Error: Invalid shadowscolor format: %s\n", value);
-		} else {
-			convert_hex_to_rgba(config->shadowscolor, color);
-		}
 	} else if (strcmp(key, "bordercolor") == 0) {
 		long int color = parse_color(value);
 		if (color == -1) {
@@ -1333,9 +1273,7 @@ void parse_config_line(Config *config, const char *line) {
 
 		// 设置默认值
 		rule->layer_name = NULL;
-		rule->noblur = 0;
 		rule->noanim = 0;
-		rule->noshadow = 0;
 
 		char *token = strtok(value, ",");
 		while (token != NULL) {
@@ -1350,12 +1288,8 @@ void parse_config_line(Config *config, const char *line) {
 
 				if (strcmp(key, "layer_name") == 0) {
 					rule->layer_name = strdup(val);
-				} else if (strcmp(key, "noblur") == 0) {
-					rule->noblur = CLAMP_INT(atoi(val), 0, 1);
 				} else if (strcmp(key, "noanim") == 0) {
 					rule->noanim = CLAMP_INT(atoi(val), 0, 1);
-				} else if (strcmp(key, "noshadow") == 0) {
-					rule->noshadow = CLAMP_INT(atoi(val), 0, 1);
 				}
 			}
 			token = strtok(NULL, ",");
@@ -2166,7 +2100,6 @@ void override_config(void) {
 	snap_distance = CLAMP_INT(config.snap_distance, 0, 99999);
 	cursor_size = CLAMP_INT(config.cursor_size, 4, 512);
 	no_border_when_single = CLAMP_INT(config.no_border_when_single, 0, 1);
-	no_radius_when_single = CLAMP_INT(config.no_radius_when_single, 0, 1);
 	cursor_hide_timeout =
 		CLAMP_INT(config.cursor_hide_timeout, 0, 36000); // 0-10小时
 	drag_tile_to_tile = CLAMP_INT(config.drag_tile_to_tile, 0, 1);
@@ -2210,26 +2143,8 @@ void override_config(void) {
 	borderpx = CLAMP_INT(config.borderpx, 0, 200);
 	smartgaps = CLAMP_INT(config.smartgaps, 0, 1);
 
-	blur = CLAMP_INT(config.blur, 0, 1);
-	blur_layer = CLAMP_INT(config.blur_layer, 0, 1);
-	blur_optimized = CLAMP_INT(config.blur_optimized, 0, 1);
-	border_radius = CLAMP_INT(config.border_radius, 0, 100);
-	blur_params.num_passes = CLAMP_INT(config.blur_params.num_passes, 0, 10);
-	blur_params.radius = CLAMP_INT(config.blur_params.radius, 0, 100);
-	blur_params.noise = CLAMP_FLOAT(config.blur_params.noise, 0, 1);
-	blur_params.brightness = CLAMP_FLOAT(config.blur_params.brightness, 0, 1);
-	blur_params.contrast = CLAMP_FLOAT(config.blur_params.contrast, 0, 1);
-	blur_params.saturation = CLAMP_FLOAT(config.blur_params.saturation, 0, 1);
-	shadows = CLAMP_INT(config.shadows, 0, 1);
-	shadow_only_floating = CLAMP_INT(config.shadow_only_floating, 0, 1);
-	layer_shadows = CLAMP_INT(config.layer_shadows, 0, 1);
-	shadows_size = CLAMP_INT(config.shadows_size, 0, 100);
-	shadows_blur = CLAMP_INT(config.shadows_blur, 0, 100);
-	shadows_position_x = CLAMP_INT(config.shadows_position_x, -1000, 1000);
-	shadows_position_y = CLAMP_INT(config.shadows_position_y, -1000, 1000);
 	focused_opacity = CLAMP_FLOAT(config.focused_opacity, 0.0f, 1.0f);
 	unfocused_opacity = CLAMP_FLOAT(config.unfocused_opacity, 0.0f, 1.0f);
-	memcpy(shadowscolor, config.shadowscolor, sizeof(shadowscolor));
 
 	// 复制颜色数组
 	memcpy(rootcolor, config.rootcolor, sizeof(rootcolor));
@@ -2311,7 +2226,6 @@ void set_value_default() {
 	config.xwayland_persistence = xwayland_persistence;
 	config.syncobj_enable = syncobj_enable;
 	config.no_border_when_single = no_border_when_single;
-	config.no_radius_when_single = no_radius_when_single;
 	config.snap_distance = snap_distance;
 	config.drag_tile_to_tile = drag_tile_to_tile;
 	config.enable_floating_snap = enable_floating_snap;
@@ -2351,26 +2265,8 @@ void set_value_default() {
 	config.send_events_mode = send_events_mode;
 	config.button_map = button_map;
 
-	config.blur = blur;
-	config.blur_layer = blur_layer;
-	config.blur_optimized = blur_optimized;
-	config.border_radius = border_radius;
-	config.blur_params.num_passes = blur_params_num_passes;
-	config.blur_params.radius = blur_params_radius;
-	config.blur_params.noise = blur_params_noise;
-	config.blur_params.brightness = blur_params_brightness;
-	config.blur_params.contrast = blur_params_contrast;
-	config.blur_params.saturation = blur_params_saturation;
-	config.shadows = shadows;
-	config.shadow_only_floating = shadow_only_floating;
-	config.layer_shadows = layer_shadows;
-	config.shadows_size = shadows_size;
-	config.shadows_blur = shadows_blur;
-	config.shadows_position_x = shadows_position_x;
-	config.shadows_position_y = shadows_position_y;
 	config.focused_opacity = focused_opacity;
 	config.unfocused_opacity = unfocused_opacity;
-	memcpy(config.shadowscolor, shadowscolor, sizeof(shadowscolor));
 
 	memcpy(config.animation_curve_move, animation_curve_move,
 		   sizeof(animation_curve_move));
@@ -2482,33 +2378,6 @@ void parse_config(void) {
 	override_config();
 }
 
-void reset_blur_params(void) {
-	if (blur) {
-		Monitor *m;
-		wl_list_for_each(m, &mons, link) {
-			if (m->blur != NULL) {
-				wlr_scene_node_destroy(&m->blur->node);
-			}
-			m->blur = wlr_scene_optimized_blur_create(&scene->tree, 0, 0);
-			wlr_scene_node_reparent(&m->blur->node, layers[LyrBlur]);
-			wlr_scene_optimized_blur_set_size(m->blur, m->m.width, m->m.height);
-			wlr_scene_set_blur_data(
-				scene, blur_params.num_passes, blur_params.radius,
-				blur_params.noise, blur_params.brightness, blur_params.contrast,
-				blur_params.saturation);
-		}
-	} else {
-		Monitor *m;
-		wl_list_for_each(m, &mons, link) {
-
-			if (m->blur) {
-				wlr_scene_node_destroy(&m->blur->node);
-				m->blur = NULL;
-			}
-		}
-	}
-}
-
 void reload_config(const Arg *arg) {
 	Client *c;
 	Monitor *m;
@@ -2519,7 +2388,6 @@ void reload_config(const Arg *arg) {
 	init_baked_points();
 	handlecursoractivity();
 	reset_keyboard_layout();
-	reset_blur_params();
 	run_exec();
 
 	// reset border width when config change

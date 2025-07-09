@@ -38,7 +38,6 @@ xkbcommon_dep = dependency('xkbcommon')
 libinput_dep = dependency('libinput')
 libwayland_client_dep = dependency('wayland-client')
 pcre2_dep = dependency('libpcre2-8')
-libscenefx_dep = dependency('scenefx-0.4',version: '>=0.4.1')
 
 
 # 获取 Git Commit Hash 和最新的 tag
@@ -76,7 +75,6 @@ executable('maomao',
     libm,
     xcb,
     xlibs,
-    libscenefx_dep,
     wayland_server_dep,
     wlroots_dep,
     xkbcommon_dep,

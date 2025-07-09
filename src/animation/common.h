@@ -99,16 +99,15 @@ static bool scene_node_snapshot(struct wlr_scene_node *node, int lx, int ly,
 
 	struct wlr_scene_node *snapshot_node = NULL;
 	switch (node->type) {
-	case WLR_SCENE_NODE_TREE: {
+	case WLR_SCENE_NODE_TREE:;
 		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
-
 		struct wlr_scene_node *child;
 		wl_list_for_each(child, &scene_tree->children, link) {
 			scene_node_snapshot(child, lx, ly, snapshot_tree);
 		}
 		break;
-	}
-	case WLR_SCENE_NODE_RECT: {
+	case WLR_SCENE_NODE_RECT:;
+
 		struct wlr_scene_rect *scene_rect = wlr_scene_rect_from_node(node);
 
 		struct wlr_scene_rect *snapshot_rect =
@@ -118,20 +117,10 @@ static bool scene_node_snapshot(struct wlr_scene_node *node, int lx, int ly,
 		if (snapshot_rect == NULL) {
 			return false;
 		}
-
-		wlr_scene_rect_set_clipped_region(scene_rect,
-										  snapshot_rect->clipped_region);
-		wlr_scene_rect_set_backdrop_blur(scene_rect, false);
-		// wlr_scene_rect_set_backdrop_blur_optimized(
-		// 	scene_rect, snapshot_rect->backdrop_blur_optimized);
-		wlr_scene_rect_set_corner_radius(
-			scene_rect, snapshot_rect->corner_radius, snapshot_rect->corners);
-		wlr_scene_rect_set_color(scene_rect, snapshot_rect->color);
-
 		snapshot_node = &snapshot_rect->node;
 		break;
-	}
-	case WLR_SCENE_NODE_BUFFER: {
+	case WLR_SCENE_NODE_BUFFER:;
+
 		struct wlr_scene_buffer *scene_buffer =
 			wlr_scene_buffer_from_node(node);
 
@@ -156,15 +145,6 @@ static bool scene_node_snapshot(struct wlr_scene_node *node, int lx, int ly,
 
 		// Effects
 		wlr_scene_buffer_set_opacity(snapshot_buffer, scene_buffer->opacity);
-		wlr_scene_buffer_set_corner_radius(snapshot_buffer,
-										   scene_buffer->corner_radius,
-										   scene_buffer->corners);
-
-		// wlr_scene_buffer_set_backdrop_blur_optimized(
-		// 	snapshot_buffer, scene_buffer->backdrop_blur_optimized);
-		// wlr_scene_buffer_set_backdrop_blur_ignore_transparent(
-		// 	snapshot_buffer, scene_buffer->backdrop_blur_ignore_transparent);
-		wlr_scene_buffer_set_backdrop_blur(snapshot_buffer, false);
 
 		snapshot_buffer->node.data = scene_buffer->node.data;
 
@@ -177,31 +157,6 @@ static bool scene_node_snapshot(struct wlr_scene_node *node, int lx, int ly,
 			wlr_scene_buffer_set_buffer(snapshot_buffer, scene_buffer->buffer);
 		}
 		break;
-	}
-	case WLR_SCENE_NODE_SHADOW: {
-		struct wlr_scene_shadow *scene_shadow =
-			wlr_scene_shadow_from_node(node);
-
-		struct wlr_scene_shadow *snapshot_shadow = wlr_scene_shadow_create(
-			snapshot_tree, scene_shadow->width, scene_shadow->height,
-			scene_shadow->corner_radius, scene_shadow->blur_sigma,
-			scene_shadow->color);
-		if (snapshot_shadow == NULL) {
-			return false;
-		}
-		snapshot_node = &snapshot_shadow->node;
-
-		wlr_scene_shadow_set_clipped_region(snapshot_shadow,
-											scene_shadow->clipped_region);
-
-		snapshot_shadow->node.data = scene_shadow->node.data;
-
-		wlr_scene_node_set_enabled(&snapshot_shadow->node, false);
-
-		break;
-	}
-	case WLR_SCENE_NODE_OPTIMIZED_BLUR:
-		return true;
 	}
 
 	if (snapshot_node != NULL) {

@@ -145,55 +145,6 @@ void set_layer_open_animaiton(LayerSurface *l, struct wlr_box geo) {
 	}
 }
 
-void layer_draw_shadow(LayerSurface *l) {
-
-	if (!l->mapped || !l->shadow)
-		return;
-
-	if (!shadows || !layer_shadows || l->noshadow) {
-		wlr_scene_shadow_set_size(l->shadow, 0, 0);
-		return;
-	}
-
-	uint32_t width, height;
-	layer_actual_size(l, &width, &height);
-
-	uint32_t delta = shadows_size;
-
-	/* we calculate where to clip the shadow */
-	struct wlr_box layer_box = {
-		.x = 0,
-		.y = 0,
-		.width = width,
-		.height = height,
-	};
-
-	struct wlr_box shadow_box = {
-		.x = shadows_position_x,
-		.y = shadows_position_y,
-		.width = width + 2 * delta,
-		.height = height + 2 * delta,
-	};
-
-	struct wlr_box intersection_box;
-	wlr_box_intersection(&intersection_box, &layer_box, &shadow_box);
-	/* clipped region takes shadow relative coords, so we translate everything
-	 * by its position */
-	intersection_box.x -= shadows_position_x;
-	intersection_box.y -= shadows_position_y;
-
-	struct clipped_region clipped_region = {
-		.area = intersection_box,
-		.corner_radius = border_radius,
-		.corners = border_radius_location_default,
-	};
-
-	wlr_scene_node_set_position(&l->shadow->node, shadow_box.x, shadow_box.y);
-
-	wlr_scene_shadow_set_size(l->shadow, shadow_box.width, shadow_box.height);
-	wlr_scene_shadow_set_clipped_region(l->shadow, clipped_region);
-}
-
 void fadeout_layer_animation_next_tick(LayerSurface *l) {
 	if (!l)
 		return;
@@ -404,9 +355,7 @@ bool layer_draw_frame(LayerSurface *l) {
 
 	if (animations && layer_animations && l->animation.running && !l->noanim) {
 		layer_animation_next_tick(l);
-		layer_draw_shadow(l);
 	} else {
-		layer_draw_shadow(l);
 		l->need_output_flush = false;
 	}
 	return true;
