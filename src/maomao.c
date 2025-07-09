@@ -4573,9 +4573,9 @@ setfloating(Client *c, int floating) {
 }
 
 void reset_maxmizescreen_size(Client *c) {
-	c->geom.x = c->mon->w.x + gappov;
-	c->geom.y = c->mon->w.y + gappoh;
-	c->geom.width = c->mon->w.width - 2 * gappov;
+	c->geom.x = c->mon->w.x + gappoh;
+	c->geom.y = c->mon->w.y + gappov;
+	c->geom.width = c->mon->w.width - 2 * gappoh;
 	c->geom.height = c->mon->w.height - 2 * gappov;
 	resize(c, c->geom, 0);
 }
@@ -4599,9 +4599,9 @@ void setmaxmizescreen(Client *c, int maxmizescreen) {
 			toggleoverview(&arg);
 		}
 
-		maxmizescreen_box.x = c->mon->w.x + gappov;
-		maxmizescreen_box.y = c->mon->w.y + gappoh;
-		maxmizescreen_box.width = c->mon->w.width - 2 * gappov;
+		maxmizescreen_box.x = c->mon->w.x + gappoh;
+		maxmizescreen_box.y = c->mon->w.y + gappov;
+		maxmizescreen_box.width = c->mon->w.width - 2 * gappoh;
 		maxmizescreen_box.height = c->mon->w.height - 2 * gappov;
 		wlr_scene_node_raise_to_top(&c->scene->node); // 将视图提升到顶层
 		resize(c, maxmizescreen_box, 0);
@@ -5669,9 +5669,10 @@ void overview_restore(Client *c, const Arg *arg) {
 		// XRaiseWindow(dpy, c->win); // 提升悬浮窗口到顶层
 		resize(c, c->overview_backup_geom, 0);
 	} else if (c->isfullscreen || c->ismaxmizescreen) {
-		if (want_restore_fullscreen(
-				c)) { // 如果同tag有其他窗口,且其他窗口是将要聚焦的,那么不恢复该窗口的全屏状态
-			resize(c, c->overview_backup_geom, 0);
+		if (want_restore_fullscreen(c) && c->ismaxmizescreen) {
+			setmaxmizescreen(c, 1);
+		} else if (want_restore_fullscreen(c) && c->isfullscreen) {
+			setfullscreen(c, 1);
 		} else {
 			c->isfullscreen = 0;
 			c->ismaxmizescreen = 0;
