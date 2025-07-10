@@ -110,12 +110,16 @@
 		wl_signal_add((E), _l);                                                \
 	} while (0)
 
-#define APPLY_INT_PROP(prop, cond)                                             \
-	if (r->prop cond)                                                          \
+#define APPLY_INT_PROP(prop)                                                   \
+	if (r->prop >= 0)                                                          \
 	c->prop = r->prop
 
-#define APPLY_FLOAT_PROP(prop, cond)                                           \
-	if (r->prop cond)                                                          \
+#define APPLY_FLOAT_PROP(prop)                                                 \
+	if (r->prop > 0.0f)                                                        \
+	c->prop = r->prop
+
+#define APPLY_STRING_PROP(prop)                                                \
+	if (r->prop != NULL)                                                       \
 	c->prop = r->prop
 
 #define BAKED_POINTS_COUNT 256
@@ -1254,30 +1258,28 @@ static bool is_window_rule_matches(const ConfigWinRule *r, const char *appid,
 }
 
 static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
-	APPLY_INT_PROP(isterm, >= 0);
-	APPLY_INT_PROP(noswallow, >= 0);
-	APPLY_INT_PROP(nofadein, >= 0);
-	APPLY_INT_PROP(nofadeout, >= 0);
-	APPLY_INT_PROP(no_force_center, >= 0);
-	APPLY_INT_PROP(isfloating, >= 0);
-	APPLY_INT_PROP(isfullscreen, >= 0);
-	APPLY_INT_PROP(isnoborder, >= 0);
-	APPLY_INT_PROP(isopensilent, >= 0);
-	APPLY_INT_PROP(isnamedscratchpad, >= 0);
-	APPLY_INT_PROP(isglobal, >= 0);
-	APPLY_INT_PROP(isoverlay, >= 0);
-	APPLY_INT_PROP(isunglobal, >= 0);
-	APPLY_INT_PROP(scratchpad_width, >= 0);
-	APPLY_INT_PROP(scratchpad_height, >= 0);
+	APPLY_INT_PROP(isterm);
+	APPLY_INT_PROP(noswallow);
+	APPLY_INT_PROP(nofadein);
+	APPLY_INT_PROP(nofadeout);
+	APPLY_INT_PROP(no_force_center);
+	APPLY_INT_PROP(isfloating);
+	APPLY_INT_PROP(isfullscreen);
+	APPLY_INT_PROP(isnoborder);
+	APPLY_INT_PROP(isopensilent);
+	APPLY_INT_PROP(isnamedscratchpad);
+	APPLY_INT_PROP(isglobal);
+	APPLY_INT_PROP(isoverlay);
+	APPLY_INT_PROP(isunglobal);
+	APPLY_INT_PROP(scratchpad_width);
+	APPLY_INT_PROP(scratchpad_height);
 
-	APPLY_FLOAT_PROP(scroller_proportion, > 0.0f);
-	APPLY_FLOAT_PROP(focused_opacity, > 0.0f);
-	APPLY_FLOAT_PROP(unfocused_opacity, > 0.0f);
+	APPLY_FLOAT_PROP(scroller_proportion);
+	APPLY_FLOAT_PROP(focused_opacity);
+	APPLY_FLOAT_PROP(unfocused_opacity);
 
-	if (r->animation_type_open)
-		c->animation_type_open = r->animation_type_open;
-	if (r->animation_type_close)
-		c->animation_type_close = r->animation_type_close;
+	APPLY_STRING_PROP(animation_type_open);
+	APPLY_STRING_PROP(animation_type_close);
 }
 
 int applyrulesgeom(Client *c) {
