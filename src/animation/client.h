@@ -8,28 +8,6 @@ void set_rect_size(struct wlr_scene_rect *rect, int width, int height) {
 	wlr_scene_rect_set_size(rect, GEZERO(width), GEZERO(height));
 }
 
-void apply_opacity_to_rect_nodes(Client *c, struct wlr_scene_node *node,
-								 double animation_passed) {
-	if (node->type == WLR_SCENE_NODE_RECT) {
-		struct wlr_scene_rect *rect = wlr_scene_rect_from_node(node);
-		// Assuming the rect has a color field and we can modify it
-		rect->color[0] = 0;
-		rect->color[1] = 0;
-		rect->color[2] = 0;
-		rect->color[3] = 0;
-		wlr_scene_rect_set_color(rect, rect->color);
-	}
-
-	// If the node is a tree, recursively traverse its children
-	if (node->type == WLR_SCENE_NODE_TREE) {
-		struct wlr_scene_tree *scene_tree = wlr_scene_tree_from_node(node);
-		struct wlr_scene_node *child;
-		wl_list_for_each(child, &scene_tree->children, link) {
-			apply_opacity_to_rect_nodes(c, child, animation_passed);
-		}
-	}
-}
-
 int is_special_animaiton_rule(Client *c) {
 	int visible_client_number = 0;
 	Client *count_c;
@@ -59,9 +37,17 @@ void set_client_open_animaiton(Client *c, struct wlr_box geo) {
 	int vertical, vertical_value;
 	int special_direction;
 	int center_x, center_y;
-	if ((!c->animation_type_open && strcmp(animation_type_open, "zoom") == 0) ||
-		(c->animation_type_open &&
-		 strcmp(c->animation_type_open, "zoom") == 0)) {
+
+	if ((!c->animation_type_open && strcmp(animation_type_open, "fade") == 0)) {
+		c->animainit_geom.width = geo.width;
+		c->animainit_geom.height = geo.height;
+		c->animainit_geom.x = geo.x;
+		c->animainit_geom.y = geo.y;
+		return;
+	} else if ((!c->animation_type_open &&
+				strcmp(animation_type_open, "zoom") == 0) ||
+			   (c->animation_type_open &&
+				strcmp(c->animation_type_open, "zoom") == 0)) {
 		c->animainit_geom.width = geo.width * zoom_initial_ratio;
 		c->animainit_geom.height = geo.height * zoom_initial_ratio;
 		c->animainit_geom.x = geo.x + (geo.width - c->animainit_geom.width) / 2;
@@ -519,8 +505,6 @@ void fadeout_client_animation_next_tick(Client *c) {
 		wlr_scene_node_for_each_buffer(&c->scene->node,
 									   scene_buffer_apply_opacity, &opacity);
 
-	apply_opacity_to_rect_nodes(c, &c->scene->node, animation_passed);
-
 	if ((c->animation_type_close &&
 		 strcmp(c->animation_type_close, "zoom") == 0) ||
 		(!c->animation_type_close &&
@@ -653,10 +637,16 @@ void init_fadeout_client(Client *c) {
 
 	fadeout_cient->animation.initial.x = 0;
 	fadeout_cient->animation.initial.y = 0;
-	if ((c->animation_type_close &&
-		 strcmp(c->animation_type_close, "slide") == 0) ||
-		(!c->animation_type_close &&
-		 strcmp(animation_type_close, "slide") == 0)) {
+
+	if (strcmp(animation_type_close, "fade") == 0) {
+		fadeout_cient->current.x = 0;
+		fadeout_cient->current.y = 0;
+		fadeout_cient->current.width = 0;
+		fadeout_cient->current.height = 0;
+	} else if ((c->animation_type_close &&
+				strcmp(c->animation_type_close, "slide") == 0) ||
+			   (!c->animation_type_close &&
+				strcmp(animation_type_close, "slide") == 0)) {
 		fadeout_cient->current.y =
 			c->geom.y + c->geom.height / 2 > c->mon->m.y + c->mon->m.height / 2
 				? c->mon->m.height -
