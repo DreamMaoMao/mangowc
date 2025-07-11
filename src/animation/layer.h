@@ -92,56 +92,46 @@ void get_layer_target_geometry(LayerSurface *l, struct wlr_box *target_box) {
 	target_box->height = box.height;
 }
 
-void set_layer_open_animaiton(LayerSurface *l, struct wlr_box geo) {
+void set_layer_dir_animaiton(LayerSurface *l, struct wlr_box *geo) {
 	int slide_direction;
 	int horizontal, horizontal_value;
 	int vertical, vertical_value;
 	int center_x, center_y;
 
-	if (!l || !l->mapped)
+	if (!l)
 		return;
 
 	center_x = l->geom.x + l->geom.width / 2;
 	center_y = l->geom.y + l->geom.height / 2;
-	horizontal =
-		l->mon->w.x + l->mon->w.width - center_x < center_x - l->mon->w.x
-			? RIGHT
-			: LEFT;
+	horizontal = center_x > l->mon->m.x + l->mon->m.width / 2 ? RIGHT : LEFT;
 	horizontal_value = horizontal == LEFT
-						   ? center_x - l->mon->w.x
-						   : l->mon->w.x + l->mon->w.width - center_x;
-	vertical =
-		l->mon->w.y + l->mon->w.height - center_y < center_y - l->mon->w.y
-			? DOWN
-			: UP;
+						   ? center_x - l->mon->m.x
+						   : l->mon->m.x + l->mon->m.width - center_x;
+	vertical = center_y > l->mon->m.y + l->mon->m.height / 2 ? DOWN : UP;
 	vertical_value = vertical == UP ? center_y - l->mon->w.y
-									: l->mon->w.y + l->mon->w.height - center_y;
+									: l->mon->m.y + l->mon->m.height - center_y;
 	slide_direction = horizontal_value < vertical_value ? horizontal : vertical;
 
-	l->animainit_geom.width = l->geom.width;
-	l->animainit_geom.height = l->geom.height;
 	switch (slide_direction) {
 	case UP:
-		l->animainit_geom.x = l->geom.x;
-		l->animainit_geom.y = l->mon->m.y - l->geom.height;
+		geo->x = l->geom.x;
+		geo->y = l->mon->m.y - l->geom.height;
 		break;
 	case DOWN:
-		l->animainit_geom.x = l->geom.x;
-		l->animainit_geom.y =
-			l->geom.y + l->mon->m.height - (l->geom.y - l->mon->m.y);
+		geo->x = l->geom.x;
+		geo->y = l->mon->m.y + l->mon->m.height;
 		break;
 	case LEFT:
-		l->animainit_geom.x = l->mon->m.x - l->geom.width;
-		l->animainit_geom.y = l->geom.y;
+		geo->x = l->mon->m.x - l->geom.width;
+		geo->y = l->geom.y;
 		break;
 	case RIGHT:
-		l->animainit_geom.x =
-			l->geom.x + l->mon->m.width - (l->geom.x - l->mon->m.x);
-		l->animainit_geom.y = l->geom.y;
+		geo->x = l->mon->m.x + l->mon->m.width;
+		geo->y = l->geom.y;
 		break;
 	default:
-		l->animainit_geom.x = l->geom.x;
-		l->animainit_geom.y = 0 - l->geom.height;
+		geo->x = l->geom.x;
+		geo->y = 0 - l->geom.height;
 	}
 }
 
@@ -273,12 +263,10 @@ void init_fadeout_layers(LayerSurface *l) {
 	fadeout_layer->animation.initial.x = 0;
 	fadeout_layer->animation.initial.y = 0;
 
-	fadeout_layer->current.y =
-		l->geom.y + l->geom.height / 2 > l->mon->m.y + l->mon->m.height / 2
-			? l->mon->m.height -
-				  (l->animation.current.y - l->mon->m.y) // down out
-			: l->mon->m.y - l->geom.height;				 // up out
-	fadeout_layer->current.x = 0;						 // x无偏差，垂直划出
+	set_layer_dir_animaiton(l, &fadeout_layer->current);
+
+	fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
+	fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
 
 	fadeout_layer->animation.passed_frames = 0;
 	fadeout_layer->animation.total_frames =
@@ -294,7 +282,7 @@ void layer_set_pending_state(LayerSurface *l) {
 
 	l->pending = l->geom;
 	if (l->animation.action == OPEN)
-		set_layer_open_animaiton(l, l->geom);
+		set_layer_dir_animaiton(l, &l->animainit_geom);
 	else
 		l->animainit_geom = l->animation.current;
 	// 判断是否需要动画
