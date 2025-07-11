@@ -42,6 +42,8 @@ typedef struct {
 	float scroller_proportion;
 	const char *animation_type_open;
 	const char *animation_type_close;
+	const char *layer_animation_type_open;
+	const char *layer_animation_type_close;
 	int isnoborder;
 	int isopensilent;
 	int isnamedscratchpad;
@@ -125,6 +127,9 @@ typedef struct {
 
 typedef struct {
 	char *layer_name; // 布局名称
+	char *animation_type_open;
+	char *animation_type_close;
+	int noblur;
 	int noanim;
 } ConfigLayerRule;
 
@@ -133,6 +138,8 @@ typedef struct {
 	int layer_animations;
 	char animation_type_open[10];
 	char animation_type_close[10];
+	char layer_animation_type_open[10];
+	char layer_animation_type_close[10];
 	int animation_fade_in;
 	int animation_fade_out;
 	int tag_animation_direction;
@@ -842,6 +849,14 @@ void parse_config_line(Config *config, const char *line) {
 		snprintf(config->animation_type_close,
 				 sizeof(config->animation_type_close), "%.9s",
 				 value); // string limit to 9 char
+	} else if (strcmp(key, "layer_animation_type_open") == 0) {
+		snprintf(config->layer_animation_type_open,
+				 sizeof(config->layer_animation_type_open), "%.9s",
+				 value); // string limit to 9 char
+	} else if (strcmp(key, "layer_animation_type_close") == 0) {
+		snprintf(config->layer_animation_type_close,
+				 sizeof(config->layer_animation_type_close), "%.9s",
+				 value); // string limit to 9 char
 	} else if (strcmp(key, "animation_fade_in") == 0) {
 		config->animation_fade_in = atoi(value);
 	} else if (strcmp(key, "animation_fade_out") == 0) {
@@ -1276,6 +1291,9 @@ void parse_config_line(Config *config, const char *line) {
 
 		// 设置默认值
 		rule->layer_name = NULL;
+		rule->animation_type_open = NULL;
+		rule->animation_type_close = NULL;
+		rule->noblur = 0;
 		rule->noanim = 0;
 
 		char *token = strtok(value, ",");
@@ -1291,6 +1309,12 @@ void parse_config_line(Config *config, const char *line) {
 
 				if (strcmp(key, "layer_name") == 0) {
 					rule->layer_name = strdup(val);
+				} else if (strcmp(key, "animation_type_open") == 0) {
+					rule->animation_type_open = strdup(val);
+				} else if (strcmp(key, "animation_type_close") == 0) {
+					rule->animation_type_close = strdup(val);
+				} else if (strcmp(key, "noblur") == 0) {
+					rule->noblur = CLAMP_INT(atoi(val), 0, 1);
 				} else if (strcmp(key, "noanim") == 0) {
 					rule->noanim = CLAMP_INT(atoi(val), 0, 1);
 				}
@@ -1990,7 +2014,12 @@ void free_config(void) {
 	// 释放 layer_rules
 	if (config.layer_rules) {
 		for (int i = 0; i < config.layer_rules_count; i++) {
-			free((void *)config.layer_rules[i].layer_name);
+			if (config.layer_rules[i].layer_name)
+				free((void *)config.layer_rules[i].layer_name);
+			if (config.layer_rules[i].animation_type_open)
+				free((void *)config.layer_rules[i].animation_type_open);
+			if (config.layer_rules[i].animation_type_close)
+				free((void *)config.layer_rules[i].animation_type_close);
 		}
 		free(config.layer_rules);
 		config.layer_rules = NULL;
@@ -2055,6 +2084,10 @@ void override_config(void) {
 	// 打开关闭动画类型
 	animation_type_open = config.animation_type_open;
 	animation_type_close = config.animation_type_close;
+
+	// layer打开关闭动画类型
+	layer_animation_type_open = config.layer_animation_type_open;
+	layer_animation_type_close = config.layer_animation_type_close;
 
 	// 动画时间限制在合理范围(1-50000ms)
 	animation_duration_move =

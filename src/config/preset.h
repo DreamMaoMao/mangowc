@@ -8,14 +8,16 @@
 	 ((hex >> 8) & 0xFF) / 255.0f, (hex & 0xFF) / 255.0f}
 
 /* animaion */
-char *animation_type_open = "slide";	  // 是否启用动画 //slide,zoom
-char *animation_type_close = "slide";	  // 是否启用动画 //slide,zoom
-int animations = 1;						  // 是否启用动画
-int layer_animations = 0;				  // 是否启用layer动画
-int tag_animation_direction = HORIZONTAL; // 标签动画方向
-int animation_fade_in = 1;				  // Enable animation fade in
-int animation_fade_out = 1;				  // Enable animation fade out
-float zoom_initial_ratio = 0.5;			  // 动画起始窗口比例
+char *animation_type_open = "slide";		// 是否启用动画 //slide,zoom
+char *animation_type_close = "slide";		// 是否启用动画 //slide,zoom
+char *layer_animation_type_open = "slide";	// 是否启用layer动画 //slide,zoom
+char *layer_animation_type_close = "slide"; // 是否启用layer动画 //slide,zoom
+int animations = 1;							// 是否启用动画
+int layer_animations = 0;					// 是否启用layer动画
+int tag_animation_direction = HORIZONTAL;	// 标签动画方向
+int animation_fade_in = 1;					// Enable animation fade in
+int animation_fade_out = 1;					// Enable animation fade out
+float zoom_initial_ratio = 0.5;				// 动画起始窗口比例
 float fadein_begin_opacity = 0.5;  // Begin opac window ratio for animations
 float fadeout_begin_opacity = 0.5; // Begin opac window ratio for animations
 uint32_t animation_duration_move = 500;	 // Animation move speed
