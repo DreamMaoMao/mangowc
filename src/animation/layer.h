@@ -164,7 +164,7 @@ void fadeout_layer_animation_next_tick(LayerSurface *l) {
 		.height = height,
 	};
 
-	double opacity = MAX(fadeout_begin_opacity - animation_passed, 0);
+	double opacity = MAX(fadeout_begin_opacity - animation_passed, 0.0f);
 
 	if (animation_fade_out)
 		wlr_scene_node_for_each_buffer(&l->scene->node,
@@ -202,6 +202,12 @@ void layer_animation_next_tick(LayerSurface *l) {
 					 (l->current.x - l->animation.initial.x) * factor;
 	unsigned int y = l->animation.initial.y +
 					 (l->current.y - l->animation.initial.y) * factor;
+
+	double opacity = MIN(fadein_begin_opacity + animation_passed, 1.0f);
+
+	if (animation_fade_in)
+		wlr_scene_node_for_each_buffer(&l->scene->node,
+									   scene_buffer_apply_opacity, &opacity);
 
 	wlr_scene_node_set_position(&l->scene->node, x, y);
 
@@ -263,10 +269,15 @@ void init_fadeout_layers(LayerSurface *l) {
 	fadeout_layer->animation.initial.x = 0;
 	fadeout_layer->animation.initial.y = 0;
 
-	set_layer_dir_animaiton(l, &fadeout_layer->current);
-
-	fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
-	fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
+	if (strcmp(animation_type_close, "zoom") == 0 ||
+		strcmp(animation_type_close, "fade") == 0) {
+		fadeout_layer->current.x = 0;
+		fadeout_layer->current.y = 0;
+	} else {
+		set_layer_dir_animaiton(l, &fadeout_layer->current);
+		fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
+		fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
+	}
 
 	fadeout_layer->animation.passed_frames = 0;
 	fadeout_layer->animation.total_frames =
@@ -281,10 +292,17 @@ void layer_set_pending_state(LayerSurface *l) {
 		return;
 
 	l->pending = l->geom;
-	if (l->animation.action == OPEN)
-		set_layer_dir_animaiton(l, &l->animainit_geom);
-	else
+	if (l->animation.action == OPEN) {
+		if (strcmp(animation_type_open, "fade") == 0 ||
+			strcmp(animation_type_open, "zoom") == 0) {
+			l->animainit_geom.x = l->geom.x;
+			l->animainit_geom.y = l->geom.y;
+		} else {
+			set_layer_dir_animaiton(l, &l->animainit_geom);
+		}
+	} else {
 		l->animainit_geom = l->animation.current;
+	}
 	// 判断是否需要动画
 	if (!animations || !layer_animations || l->noanim ||
 		l->layer_surface->current.layer ==
