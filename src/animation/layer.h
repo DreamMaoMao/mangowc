@@ -269,14 +269,16 @@ void init_fadeout_layers(LayerSurface *l) {
 	fadeout_layer->animation.initial.x = 0;
 	fadeout_layer->animation.initial.y = 0;
 
-	if (strcmp(animation_type_close, "zoom") == 0 ||
-		strcmp(animation_type_close, "fade") == 0) {
-		fadeout_layer->current.x = 0;
-		fadeout_layer->current.y = 0;
-	} else {
+	if ((!l->animation_type_close &&
+		 strcmp(layer_animation_type_close, "slide") == 0) ||
+		(l->animation_type_close &&
+		 strcmp(l->animation_type_close, "slide") == 0)) {
 		set_layer_dir_animaiton(l, &fadeout_layer->current);
 		fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
 		fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
+	} else {
+		fadeout_layer->current.x = 0;
+		fadeout_layer->current.y = 0;
 	}
 
 	fadeout_layer->animation.passed_frames = 0;
@@ -293,12 +295,15 @@ void layer_set_pending_state(LayerSurface *l) {
 
 	l->pending = l->geom;
 	if (l->animation.action == OPEN) {
-		if (strcmp(animation_type_open, "fade") == 0 ||
-			strcmp(animation_type_open, "zoom") == 0) {
+		if ((!l->animation_type_open &&
+			 strcmp(layer_animation_type_open, "slide") == 0) ||
+			(l->animation_type_open &&
+			 strcmp(l->animation_type_open, "slide") == 0)) {
+
+			set_layer_dir_animaiton(l, &l->animainit_geom);
+		} else {
 			l->animainit_geom.x = l->geom.x;
 			l->animainit_geom.y = l->geom.y;
-		} else {
-			set_layer_dir_animaiton(l, &l->animainit_geom);
 		}
 	} else {
 		l->animainit_geom = l->animation.current;
