@@ -658,16 +658,16 @@ void init_fadeout_client(Client *c) {
 	} else {
 		fadeout_cient->current.y =
 			(fadeout_cient->geom.height -
-			 fadeout_cient->geom.height * zoom_initial_ratio) /
+			 fadeout_cient->geom.height * zoom_end_ratio) /
 			2;
 		fadeout_cient->current.x =
 			(fadeout_cient->geom.width -
-			 fadeout_cient->geom.width * zoom_initial_ratio) /
+			 fadeout_cient->geom.width * zoom_end_ratio) /
 			2;
 		fadeout_cient->current.width =
-			fadeout_cient->geom.width * zoom_initial_ratio;
+			fadeout_cient->geom.width * zoom_end_ratio;
 		fadeout_cient->current.height =
-			fadeout_cient->geom.height * zoom_initial_ratio;
+			fadeout_cient->geom.height * zoom_end_ratio;
 	}
 
 	fadeout_cient->animation.passed_frames = 0;
