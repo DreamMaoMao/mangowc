@@ -101,6 +101,9 @@ void set_layer_dir_animaiton(LayerSurface *l, struct wlr_box *geo) {
 	if (!l)
 		return;
 
+	geo->width = l->geom.width;
+	geo->height = l->geom.height;
+
 	center_x = l->geom.x + l->geom.width / 2;
 	center_y = l->geom.y + l->geom.height / 2;
 	horizontal = center_x > l->mon->m.x + l->mon->m.width / 2 ? RIGHT : LEFT;
@@ -276,9 +279,15 @@ void init_fadeout_layers(LayerSurface *l) {
 		set_layer_dir_animaiton(l, &fadeout_layer->current);
 		fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
 		fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
+		fadeout_layer->current.width =
+			fadeout_layer->current.width - l->geom.width;
+		fadeout_layer->current.height =
+			fadeout_layer->current.height - l->geom.height;
 	} else {
 		fadeout_layer->current.x = 0;
 		fadeout_layer->current.y = 0;
+		fadeout_layer->current.width = 0;
+		fadeout_layer->current.height = 0;
 	}
 
 	fadeout_layer->animation.passed_frames = 0;
@@ -304,6 +313,8 @@ void layer_set_pending_state(LayerSurface *l) {
 		} else {
 			l->animainit_geom.x = l->geom.x;
 			l->animainit_geom.y = l->geom.y;
+			l->animainit_geom.width = l->geom.width;
+			l->animainit_geom.height = l->geom.height;
 		}
 	} else {
 		l->animainit_geom = l->animation.current;
