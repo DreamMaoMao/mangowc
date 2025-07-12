@@ -383,7 +383,7 @@ void client_apply_clip(Client *c) {
 
 	int bw = (int)c->bw;
 
-	if (!animations) {
+	if (!animations || !c->animation.running) {
 		c->animation.running = false;
 		c->need_output_flush = false;
 		c->animainit_geom = c->current = c->pending = c->animation.current =
@@ -604,8 +604,10 @@ void init_fadeout_client(Client *c) {
 		return;
 	}
 
-	if (c->animation_type_close &&
-		strcmp(c->animation_type_close, "none") == 0) {
+	if ((c->animation_type_close &&
+		 strcmp(c->animation_type_close, "none") == 0) ||
+		(!c->animation_type_close &&
+		 strcmp(animation_type_close, "none") == 0)) {
 		return;
 	}
 
@@ -692,6 +694,12 @@ void client_commit(Client *c) {
 		// 标记动画开始
 		c->animation.running = true;
 		c->animation.should_animate = false;
+	} else {
+		// 如果动画没有开始,且被判定为不应该动画，
+		// 则设置总帧数为1,不然其他地方一旦获取动画
+		// 进度，总帧数作为分母会造成除零
+		if (!c->animation.running)
+			c->animation.total_frames = 1;
 	}
 	// 请求刷新屏幕
 	wlr_output_schedule_frame(c->mon->wlr_output);
@@ -710,6 +718,14 @@ void client_set_pending_state(Client *c) {
 		c->animation.should_animate = false;
 	} else {
 		c->animation.should_animate = true;
+	}
+
+	if (((c->animation_type_open &&
+		  strcmp(c->animation_type_open, "none") == 0) ||
+		 (!c->animation_type_open &&
+		  strcmp(animation_type_open, "none") == 0)) &&
+		c->animation.action == OPEN) {
+		c->animation.should_animate = false;
 	}
 
 	// 开始动画
@@ -819,11 +835,6 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 
 	if ((c->isglobal || c->isunglobal) && c->isfloating &&
 		c->animation.action == TAG) {
-		c->animainit_geom = c->geom;
-	}
-
-	if (c->animation_type_open && strcmp(c->animation_type_open, "none") == 0 &&
-		c->animation.action == OPEN) {
 		c->animainit_geom = c->geom;
 	}
 

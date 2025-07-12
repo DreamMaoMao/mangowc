@@ -253,6 +253,13 @@ void init_fadeout_layers(LayerSurface *l) {
 		return;
 	}
 
+	if ((l->animation_type_close &&
+		 strcmp(l->animation_type_close, "none") == 0) ||
+		(!l->animation_type_close &&
+		 strcmp(layer_animation_type_close, "none") == 0)) {
+		return;
+	}
+
 	if (l->layer_surface->current.layer == ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM ||
 		l->layer_surface->current.layer == ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND)
 		return;
@@ -339,6 +346,14 @@ void layer_set_pending_state(LayerSurface *l) {
 		l->animation.should_animate = true;
 	}
 
+	if (((l->animation_type_open &&
+		  strcmp(l->animation_type_open, "none") == 0) ||
+		 (!l->animation_type_open &&
+		  strcmp(layer_animation_type_open, "none") == 0)) &&
+		l->animation.action == OPEN) {
+		l->animation.should_animate = false;
+	}
+
 	l->animation.duration = animation_duration_open;
 	l->animation.action = OPEN;
 	// 开始动画
@@ -367,6 +382,12 @@ void layer_commit(LayerSurface *l) {
 		// 标记动画开始
 		l->animation.running = true;
 		l->animation.should_animate = false;
+	} else {
+		// 如果动画没有开始,且被判定为不应该动画，
+		// 则设置总帧数为1,不然其他地方一旦获取动画
+		// 进度，总帧数作为分母会造成除零
+		if (!l->animation.running)
+			l->animation.total_frames = 1;
 	}
 	// 请求刷新屏幕
 	wlr_output_schedule_frame(l->mon->wlr_output);
