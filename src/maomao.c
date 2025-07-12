@@ -367,7 +367,6 @@ typedef struct {
 	struct dwl_animation animation;
 	bool dirty;
 	int noanim;
-	int noshadow;
 	char *animation_type_open;
 	char *animation_type_close;
 	bool need_output_flush;
@@ -2492,9 +2491,6 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 				   l->layer_surface->namespace) == 0) {
 			if (config.layer_rules[ji].noanim > 0) {
 				l->noanim = 1;
-			}
-			if (config.layer_rules[ji].noshadow > 0) {
-				l->noshadow = 1;
 			}
 			if (config.layer_rules[ji].animation_type_open) {
 				l->animation_type_open =
