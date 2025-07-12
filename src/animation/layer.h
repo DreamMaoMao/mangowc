@@ -148,6 +148,43 @@ void set_layer_dir_animaiton(LayerSurface *l, struct wlr_box *geo) {
 	}
 }
 
+void layer_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx,
+									 int sy, void *data) {
+	animationScale *scale_data = (animationScale *)data;
+
+	struct wlr_scene_surface *scene_surface =
+		wlr_scene_surface_try_from_buffer(buffer);
+
+	if (scene_surface == NULL)
+		return;
+
+	struct wlr_surface *surface = scene_surface->surface;
+
+	if (scale_data->width_scale >= 0.99f) {
+		scale_data->width_scale = 1.0f;
+	}
+
+	if (scale_data->height_scale >= 0.99f) {
+		scale_data->height_scale = 1.0f;
+	}
+
+	unsigned int surface_width = surface->current.width;
+	unsigned int surface_height = surface->current.height;
+	surface_width = scale_data->width_scale * surface_width;
+	surface_height = scale_data->height_scale * surface_height;
+
+	if (surface_height > 0 && surface_width > 0) {
+		wlr_scene_buffer_set_dest_size(buffer, surface_width, surface_height);
+	}
+}
+
+void layer_fadeout_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer,
+											 int sx, int sy, void *data) {
+	animationScale *scale_data = (animationScale *)data;
+	wlr_scene_buffer_set_dest_size(buffer, scale_data->width,
+								   scale_data->height);
+}
+
 void fadeout_layer_animation_next_tick(LayerSurface *l) {
 	if (!l)
 		return;
@@ -169,6 +206,20 @@ void fadeout_layer_animation_next_tick(LayerSurface *l) {
 					 (l->current.y - l->animation.initial.y) * factor;
 
 	wlr_scene_node_set_position(&l->scene->node, x, y);
+
+	animationScale scale_data;
+	scale_data.width = width;
+	scale_data.height = height;
+
+	if (((!l->animation_type_close &&
+		  strcmp(layer_animation_type_close, "zoom") == 0) ||
+		 (l->animation_type_close &&
+		  strcmp(l->animation_type_close, "zoom") == 0)) &&
+		(width != l->current.width || height != l->current.height)) {
+		wlr_scene_node_for_each_buffer(&l->scene->node,
+									   layer_fadeout_scene_buffer_apply_effect,
+									   &scale_data);
+	}
 
 	l->animation.current = (struct wlr_box){
 		.x = x,
@@ -224,6 +275,19 @@ void layer_animation_next_tick(LayerSurface *l) {
 
 	wlr_scene_node_set_position(&l->scene->node, x, y);
 
+	animationScale scale_data;
+	scale_data.width_scale = (float)width / (float)l->current.width;
+	scale_data.height_scale = (float)height / (float)l->current.height;
+
+	if (((!l->animation_type_open &&
+		  strcmp(layer_animation_type_open, "zoom") == 0) ||
+		 (l->animation_type_open &&
+		  strcmp(l->animation_type_open, "zoom") == 0)) &&
+		(scale_data.width_scale != 1.0 || scale_data.height_scale != 1.0)) {
+		wlr_scene_node_for_each_buffer(
+			&l->scene->node, layer_scene_buffer_apply_effect, &scale_data);
+	}
+
 	l->animation.current = (struct wlr_box){
 		.x = x,
 		.y = y,
@@ -266,6 +330,14 @@ void init_fadeout_layers(LayerSurface *l) {
 
 	LayerSurface *fadeout_layer = ecalloc(1, sizeof(*fadeout_layer));
 
+	const struct wlr_layer_surface_v1_state *state = &l->layer_surface->current;
+	struct wlr_box usable_area;
+
+	if (state->exclusive_zone > 0 || state->exclusive_zone == -1)
+		usable_area = l->mon->m;
+	else
+		usable_area = l->mon->w;
+
 	wlr_scene_node_set_enabled(&l->scene->node, true);
 	fadeout_layer->scene =
 		wlr_scene_tree_snapshot(&l->scene->node, layers[LyrFadeOut]);
@@ -282,6 +354,8 @@ void init_fadeout_layers(LayerSurface *l) {
 			l->animation.current;
 	fadeout_layer->mon = l->mon;
 	fadeout_layer->animation.action = CLOSE;
+	fadeout_layer->animation_type_close = l->animation_type_close;
+	fadeout_layer->animation_type_open = l->animation_type_open;
 
 	// 这里snap节点的坐标设置是使用的相对坐标，所以不能加上原来坐标
 	// 这跟普通node有区别
@@ -290,9 +364,26 @@ void init_fadeout_layers(LayerSurface *l) {
 	fadeout_layer->animation.initial.y = 0;
 
 	if ((!l->animation_type_close &&
-		 strcmp(layer_animation_type_close, "slide") == 0) ||
+		 strcmp(layer_animation_type_close, "zoom") == 0) ||
 		(l->animation_type_close &&
-		 strcmp(l->animation_type_close, "slide") == 0)) {
+		 strcmp(l->animation_type_close, "zoom") == 0)) {
+		fadeout_layer->current.width = (float)l->geom.width * zoom_end_ratio;
+		fadeout_layer->current.height = (float)l->geom.height * zoom_end_ratio;
+		fadeout_layer->current.x = usable_area.x + usable_area.width / 2 -
+								   fadeout_layer->current.width / 2;
+		fadeout_layer->current.y = usable_area.y + usable_area.height / 2 -
+								   fadeout_layer->current.height / 2;
+		// 算出偏差
+		fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
+		fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
+
+		// wlr_log(WLR_ERROR,"%d %d %d
+		// %d",fadeout_layer->current.x,fadeout_layer->current.y,fadeout_layer->current.width,fadeout_layer->current.height);
+
+	} else if ((!l->animation_type_close &&
+				strcmp(layer_animation_type_close, "slide") == 0) ||
+			   (l->animation_type_close &&
+				strcmp(l->animation_type_close, "slide") == 0)) {
 		set_layer_dir_animaiton(l, &fadeout_layer->current);
 		fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
 		fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
@@ -319,12 +410,31 @@ void layer_set_pending_state(LayerSurface *l) {
 	if (!l || !l->mapped)
 		return;
 
+	const struct wlr_layer_surface_v1_state *state = &l->layer_surface->current;
+	struct wlr_box usable_area;
+
+	if (state->exclusive_zone > 0 || state->exclusive_zone == -1)
+		usable_area = l->mon->m;
+	else
+		usable_area = l->mon->w;
 	l->pending = l->geom;
+
 	if (l->animation.action == OPEN) {
+
 		if ((!l->animation_type_open &&
-			 strcmp(layer_animation_type_open, "slide") == 0) ||
+			 strcmp(layer_animation_type_open, "zoom") == 0) ||
 			(l->animation_type_open &&
-			 strcmp(l->animation_type_open, "slide") == 0)) {
+			 strcmp(l->animation_type_open, "zoom") == 0)) {
+			l->animainit_geom.width = l->geom.width * zoom_initial_ratio;
+			l->animainit_geom.height = l->geom.height * zoom_initial_ratio;
+			l->animainit_geom.x = usable_area.x + usable_area.width / 2 -
+								  l->animainit_geom.width / 2;
+			l->animainit_geom.y = usable_area.y + usable_area.height / 2 -
+								  l->animainit_geom.height / 2;
+		} else if ((!l->animation_type_open &&
+					strcmp(layer_animation_type_open, "slide") == 0) ||
+				   (l->animation_type_open &&
+					strcmp(l->animation_type_open, "slide") == 0)) {
 
 			set_layer_dir_animaiton(l, &l->animainit_geom);
 		} else {

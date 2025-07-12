@@ -144,6 +144,7 @@ typedef struct {
 	int animation_fade_out;
 	int tag_animation_direction;
 	float zoom_initial_ratio;
+	float zoom_end_ratio;
 	float fadein_begin_opacity;
 	float fadeout_begin_opacity;
 	uint32_t animation_duration_move;
@@ -865,6 +866,8 @@ void parse_config_line(Config *config, const char *line) {
 		config->tag_animation_direction = atoi(value);
 	} else if (strcmp(key, "zoom_initial_ratio") == 0) {
 		config->zoom_initial_ratio = atof(value);
+	} else if (strcmp(key, "zoom_end_ratio") == 0) {
+		config->zoom_end_ratio = atof(value);
 	} else if (strcmp(key, "fadein_begin_opacity") == 0) {
 		config->fadein_begin_opacity = atof(value);
 	} else if (strcmp(key, "fadeout_begin_opacity") == 0) {
@@ -2077,6 +2080,7 @@ void override_config(void) {
 	animation_fade_in = CLAMP_INT(config.animation_fade_in, 0, 1);
 	animation_fade_out = CLAMP_INT(config.animation_fade_out, 0, 1);
 	zoom_initial_ratio = CLAMP_FLOAT(config.zoom_initial_ratio, 0.1f, 1.0f);
+	zoom_end_ratio = CLAMP_FLOAT(config.zoom_end_ratio, 0.1f, 1.0f);
 	fadein_begin_opacity = CLAMP_FLOAT(config.fadein_begin_opacity, 0.0f, 1.0f);
 	fadeout_begin_opacity =
 		CLAMP_FLOAT(config.fadeout_begin_opacity, 0.0f, 1.0f);
@@ -2213,6 +2217,7 @@ void set_value_default() {
 	config.animation_fade_out = animation_fade_out; // Enable animation fade out
 	config.tag_animation_direction = tag_animation_direction; // 标签动画方向
 	config.zoom_initial_ratio = zoom_initial_ratio; // 动画起始窗口比例
+	config.zoom_end_ratio = zoom_end_ratio;			// 动画结束窗口比例
 	config.fadein_begin_opacity =
 		fadein_begin_opacity; // Begin opac window ratio for animations
 	config.fadeout_begin_opacity = fadeout_begin_opacity;
