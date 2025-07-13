@@ -416,7 +416,7 @@ void layer_set_pending_state(LayerSurface *l) {
 
 	l->pending = l->geom;
 
-	if (l->animation.action == OPEN) {
+	if (l->animation.action == OPEN && !l->animation.running) {
 
 		if ((!l->animation_type_open &&
 			 strcmp(layer_animation_type_open, "zoom") == 0) ||
@@ -461,8 +461,6 @@ void layer_set_pending_state(LayerSurface *l) {
 		l->animation.should_animate = false;
 	}
 
-	l->animation.duration = animation_duration_open;
-	l->animation.action = OPEN;
 	// 开始动画
 	layer_commit(l);
 	l->dirty = true;
