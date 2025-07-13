@@ -164,10 +164,10 @@ void layer_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx,
 
 	struct wlr_surface *surface = scene_surface->surface;
 
-	unsigned int surface_width = surface->current.width;
-	unsigned int surface_height = surface->current.height;
-	surface_width = scale_data->width_scale * surface_width;
-	surface_height = scale_data->height_scale * surface_height;
+	unsigned int surface_width =
+		surface->current.width * scale_data->width_scale;
+	unsigned int surface_height =
+		surface->current.height * scale_data->height_scale;
 
 	if (surface_height > 0 && surface_width > 0) {
 		wlr_scene_buffer_set_dest_size(buffer, surface_width, surface_height);
@@ -309,12 +309,8 @@ void init_fadeout_layers(LayerSurface *l) {
 		return;
 	}
 
-	if (!l->mon)
+	if (!l->mon || !l->scene)
 		return;
-
-	if (!l->scene) {
-		return;
-	}
 
 	if ((l->animation_type_close &&
 		 strcmp(l->animation_type_close, "none") == 0) ||
@@ -351,7 +347,7 @@ void init_fadeout_layers(LayerSurface *l) {
 	fadeout_layer->animation_type_close = l->animation_type_close;
 	fadeout_layer->animation_type_open = l->animation_type_open;
 
-	// 这里snap节点的坐标设置是使用的相对坐标，所以不能加上原来坐标
+	// 这里snap节点的坐标设置是使用的相对坐标，不能用绝对坐标
 	// 这跟普通node有区别
 
 	fadeout_layer->animation.initial.x = 0;
@@ -361,24 +357,24 @@ void init_fadeout_layers(LayerSurface *l) {
 		 strcmp(layer_animation_type_close, "zoom") == 0) ||
 		(l->animation_type_close &&
 		 strcmp(l->animation_type_close, "zoom") == 0)) {
+		// 算出要设置的绝对坐标和大小
 		fadeout_layer->current.width = (float)l->geom.width * zoom_end_ratio;
 		fadeout_layer->current.height = (float)l->geom.height * zoom_end_ratio;
 		fadeout_layer->current.x = usable_area.x + usable_area.width / 2 -
 								   fadeout_layer->current.width / 2;
 		fadeout_layer->current.y = usable_area.y + usable_area.height / 2 -
 								   fadeout_layer->current.height / 2;
-		// 算出偏差
+		// 算出偏差坐标，大小不用因为后续不使用他的大小偏差去设置，而是直接缩放buffer
 		fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
 		fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
-
-		// wlr_log(WLR_ERROR,"%d %d %d
-		// %d",fadeout_layer->current.x,fadeout_layer->current.y,fadeout_layer->current.width,fadeout_layer->current.height);
 
 	} else if ((!l->animation_type_close &&
 				strcmp(layer_animation_type_close, "slide") == 0) ||
 			   (l->animation_type_close &&
 				strcmp(l->animation_type_close, "slide") == 0)) {
+		// 获取slide动画的结束绝对坐标和大小
 		set_layer_dir_animaiton(l, &fadeout_layer->current);
+		// 算出也能够有设置的偏差坐标和大小
 		fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
 		fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
 		fadeout_layer->current.width =
@@ -386,15 +382,19 @@ void init_fadeout_layers(LayerSurface *l) {
 		fadeout_layer->current.height =
 			fadeout_layer->current.height - l->geom.height;
 	} else {
+		// fade动画坐标大小不用变
 		fadeout_layer->current.x = 0;
 		fadeout_layer->current.y = 0;
 		fadeout_layer->current.width = 0;
 		fadeout_layer->current.height = 0;
 	}
 
+	// 计算动画帧数
 	fadeout_layer->animation.passed_frames = 0;
 	fadeout_layer->animation.total_frames =
 		fadeout_layer->animation.duration / output_frame_duration_ms();
+
+	// 将节点插入到关闭动画链表中，屏幕刷新哪里会检查链表中是否有节点可以应用于动画
 	wlr_scene_node_set_enabled(&fadeout_layer->scene->node, true);
 	wl_list_insert(&fadeout_layers, &fadeout_layer->fadeout_link);
 }
