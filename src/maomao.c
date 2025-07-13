@@ -2505,6 +2505,7 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 
 	// 初始化动画
 	if (animations && layer_animations && !l->noanim) {
+		l->animation.duration = animation_duration_open;
 		l->animation.action = OPEN;
 		layer_set_pending_state(l);
 	}
@@ -2554,6 +2555,7 @@ void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
 		l->geom.width = box.width;
 		l->geom.height = box.height;
 		l->animation.action = MOVE;
+		l->animation.duration = animation_duration_move;
 		l->need_output_flush = true;
 		layer_set_pending_state(l);
 	}
