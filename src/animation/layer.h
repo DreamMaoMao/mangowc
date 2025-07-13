@@ -401,6 +401,9 @@ void init_fadeout_layers(LayerSurface *l) {
 	// 将节点插入到关闭动画链表中，屏幕刷新哪里会检查链表中是否有节点可以应用于动画
 	wlr_scene_node_set_enabled(&fadeout_layer->scene->node, true);
 	wl_list_insert(&fadeout_layers, &fadeout_layer->fadeout_link);
+
+	// 请求刷新屏幕
+	wlr_output_schedule_frame(l->mon->wlr_output);
 }
 
 void layer_set_pending_state(LayerSurface *l) {

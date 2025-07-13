@@ -692,6 +692,9 @@ void init_fadeout_client(Client *c) {
 		fadeout_cient->animation.duration / output_frame_duration_ms();
 	wlr_scene_node_set_enabled(&fadeout_cient->scene->node, true);
 	wl_list_insert(&fadeout_clients, &fadeout_cient->fadeout_link);
+
+	// 请求刷新屏幕
+	wlr_output_schedule_frame(c->mon->wlr_output);
 }
 
 void client_commit(Client *c) {
