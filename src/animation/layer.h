@@ -305,7 +305,7 @@ void layer_animation_next_tick(LayerSurface *l) {
 
 void init_fadeout_layers(LayerSurface *l) {
 
-	if (!layer_animations || l->noanim) {
+	if (!animations || !layer_animations || l->noanim) {
 		return;
 	}
 
