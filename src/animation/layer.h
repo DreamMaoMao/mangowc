@@ -160,14 +160,6 @@ void layer_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx,
 
 	struct wlr_surface *surface = scene_surface->surface;
 
-	if (scale_data->width_scale >= 0.99f) {
-		scale_data->width_scale = 1.0f;
-	}
-
-	if (scale_data->height_scale >= 0.99f) {
-		scale_data->height_scale = 1.0f;
-	}
-
 	unsigned int surface_width = surface->current.width;
 	unsigned int surface_height = surface->current.height;
 	surface_width = scale_data->width_scale * surface_width;
@@ -211,11 +203,10 @@ void fadeout_layer_animation_next_tick(LayerSurface *l) {
 	scale_data.width = width;
 	scale_data.height = height;
 
-	if (((!l->animation_type_close &&
-		  strcmp(layer_animation_type_close, "zoom") == 0) ||
-		 (l->animation_type_close &&
-		  strcmp(l->animation_type_close, "zoom") == 0)) &&
-		(width != l->current.width || height != l->current.height)) {
+	if ((!l->animation_type_close &&
+		 strcmp(layer_animation_type_close, "zoom") == 0) ||
+		(l->animation_type_close &&
+		 strcmp(l->animation_type_close, "zoom") == 0)) {
 		wlr_scene_node_for_each_buffer(&l->scene->node,
 									   layer_fadeout_scene_buffer_apply_effect,
 									   &scale_data);
@@ -276,14 +267,18 @@ void layer_animation_next_tick(LayerSurface *l) {
 	wlr_scene_node_set_position(&l->scene->node, x, y);
 
 	animationScale scale_data;
-	scale_data.width_scale = (float)width / (float)l->current.width;
-	scale_data.height_scale = (float)height / (float)l->current.height;
+	if (factor == 1.0) {
+		scale_data.width_scale = 1.0f;
+		scale_data.height_scale = 1.0f;
+	} else {
+		scale_data.width_scale = (float)width / (float)l->current.width;
+		scale_data.height_scale = (float)height / (float)l->current.height;
+	}
 
-	if (((!l->animation_type_open &&
-		  strcmp(layer_animation_type_open, "zoom") == 0) ||
-		 (l->animation_type_open &&
-		  strcmp(l->animation_type_open, "zoom") == 0)) &&
-		(scale_data.width_scale != 1.0 || scale_data.height_scale != 1.0)) {
+	if ((!l->animation_type_open &&
+		 strcmp(layer_animation_type_open, "zoom") == 0) ||
+		(l->animation_type_open &&
+		 strcmp(l->animation_type_open, "zoom") == 0)) {
 		wlr_scene_node_for_each_buffer(
 			&l->scene->node, layer_scene_buffer_apply_effect, &scale_data);
 	}
