@@ -358,15 +358,19 @@ void init_fadeout_layers(LayerSurface *l) {
 		(l->animation_type_close &&
 		 strcmp(l->animation_type_close, "zoom") == 0)) {
 		// 算出要设置的绝对坐标和大小
-		fadeout_layer->current.width = (float)l->geom.width * zoom_end_ratio;
-		fadeout_layer->current.height = (float)l->geom.height * zoom_end_ratio;
+		fadeout_layer->current.width =
+			(float)l->animation.current.width * zoom_end_ratio;
+		fadeout_layer->current.height =
+			(float)l->animation.current.height * zoom_end_ratio;
 		fadeout_layer->current.x = usable_area.x + usable_area.width / 2 -
 								   fadeout_layer->current.width / 2;
 		fadeout_layer->current.y = usable_area.y + usable_area.height / 2 -
 								   fadeout_layer->current.height / 2;
 		// 算出偏差坐标，大小不用因为后续不使用他的大小偏差去设置，而是直接缩放buffer
-		fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
-		fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
+		fadeout_layer->current.x =
+			fadeout_layer->current.x - l->animation.current.x;
+		fadeout_layer->current.y =
+			fadeout_layer->current.y - l->animation.current.y;
 
 	} else if ((!l->animation_type_close &&
 				strcmp(layer_animation_type_close, "slide") == 0) ||
