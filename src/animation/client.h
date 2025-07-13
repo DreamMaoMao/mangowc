@@ -406,8 +406,10 @@ void client_apply_clip(Client *c, float factor) {
 		}
 
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
-		buffer_set_effect(
-			c, (animationScale){0, 0, 0, 0, opacity, opacity, false});
+
+		buffer_set_effect(c, (animationScale){1.0f, 1.0f, clip_box.width,
+											  clip_box.height, opacity, opacity,
+											  true});
 		return;
 	}
 
