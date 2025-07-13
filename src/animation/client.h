@@ -38,7 +38,9 @@ void set_client_open_animaiton(Client *c, struct wlr_box geo) {
 	int special_direction;
 	int center_x, center_y;
 
-	if ((!c->animation_type_open && strcmp(animation_type_open, "fade") == 0)) {
+	if ((!c->animation_type_open && strcmp(animation_type_open, "fade") == 0) ||
+		(c->animation_type_open &&
+		 strcmp(c->animation_type_open, "fade") == 0)) {
 		c->animainit_geom.width = geo.width;
 		c->animainit_geom.height = geo.height;
 		c->animainit_geom.x = geo.x;
@@ -652,7 +654,10 @@ void init_fadeout_client(Client *c) {
 	fadeout_cient->animation.initial.x = 0;
 	fadeout_cient->animation.initial.y = 0;
 
-	if (strcmp(animation_type_close, "fade") == 0) {
+	if ((!c->animation_type_close &&
+		 strcmp(animation_type_close, "fade") == 0) ||
+		(c->animation_type_close &&
+		 strcmp(c->animation_type_close, "fade") == 0)) {
 		fadeout_cient->current.x = 0;
 		fadeout_cient->current.y = 0;
 		fadeout_cient->current.width = 0;
