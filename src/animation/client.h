@@ -363,7 +363,7 @@ struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
 	return offset;
 }
 
-void client_apply_clip(Client *c) {
+void client_apply_clip(Client *c, float factor) {
 
 	if (c->iskilling || !client_surface(c)->mapped)
 		return;
@@ -465,6 +465,16 @@ void client_apply_clip(Client *c) {
 	scale_data.height_scale = (float)scale_data.height / acutal_surface_height;
 	scale_data.percent = percent;
 	scale_data.opacity = opacity;
+
+	if (factor == 1.0) {
+		scale_data.width_scale = 1.0;
+		scale_data.height_scale = 1.0;
+	} else {
+		scale_data.width_scale = (float)scale_data.width / acutal_surface_width;
+		scale_data.height_scale =
+			(float)scale_data.height / acutal_surface_height;
+	}
+
 	buffer_set_effect(c, scale_data);
 }
 
@@ -593,6 +603,8 @@ void client_animation_next_tick(Client *c) {
 	} else {
 		c->animation.passed_frames++;
 	}
+
+	client_apply_clip(c, factor);
 }
 
 void init_fadeout_client(Client *c) {
@@ -870,13 +882,12 @@ bool client_draw_frame(Client *c) {
 
 	if (animations && c->animation.running) {
 		client_animation_next_tick(c);
-		client_apply_clip(c);
 	} else {
 		wlr_scene_node_set_position(&c->scene->node, c->pending.x,
 									c->pending.y);
 		c->animation.current = c->animainit_geom = c->animation.initial =
 			c->pending = c->current = c->geom;
-		client_apply_clip(c);
+		client_apply_clip(c, 1.0);
 		c->need_output_flush = false;
 	}
 	return true;
