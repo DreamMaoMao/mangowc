@@ -12,6 +12,15 @@ void layer_actual_size(LayerSurface *l, unsigned int *width,
 	}
 }
 
+void get_layer_area_bound(LayerSurface *l, struct wlr_box *bound) {
+	const struct wlr_layer_surface_v1_state *state = &l->layer_surface->current;
+
+	if (state->exclusive_zone > 0 || state->exclusive_zone == -1)
+		*bound = l->mon->m;
+	else
+		*bound = l->mon->w;
+}
+
 void get_layer_target_geometry(LayerSurface *l, struct wlr_box *target_box) {
 
 	if (!l || !l->mapped)
@@ -101,13 +110,8 @@ void set_layer_dir_animaiton(LayerSurface *l, struct wlr_box *geo) {
 	if (!l)
 		return;
 
-	const struct wlr_layer_surface_v1_state *state = &l->layer_surface->current;
 	struct wlr_box usable_area;
-
-	if (state->exclusive_zone > 0 || state->exclusive_zone == -1)
-		usable_area = l->mon->m;
-	else
-		usable_area = l->mon->w;
+	get_layer_area_bound(l, &usable_area);
 
 	geo->width = l->geom.width;
 	geo->height = l->geom.height;
@@ -325,13 +329,8 @@ void init_fadeout_layers(LayerSurface *l) {
 
 	LayerSurface *fadeout_layer = ecalloc(1, sizeof(*fadeout_layer));
 
-	const struct wlr_layer_surface_v1_state *state = &l->layer_surface->current;
 	struct wlr_box usable_area;
-
-	if (state->exclusive_zone > 0 || state->exclusive_zone == -1)
-		usable_area = l->mon->m;
-	else
-		usable_area = l->mon->w;
+	get_layer_area_bound(l, &usable_area);
 
 	wlr_scene_node_set_enabled(&l->scene->node, true);
 	fadeout_layer->scene =
@@ -405,13 +404,9 @@ void layer_set_pending_state(LayerSurface *l) {
 	if (!l || !l->mapped)
 		return;
 
-	const struct wlr_layer_surface_v1_state *state = &l->layer_surface->current;
 	struct wlr_box usable_area;
+	get_layer_area_bound(l, &usable_area);
 
-	if (state->exclusive_zone > 0 || state->exclusive_zone == -1)
-		usable_area = l->mon->m;
-	else
-		usable_area = l->mon->w;
 	l->pending = l->geom;
 
 	if (l->animation.action == OPEN) {
