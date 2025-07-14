@@ -1009,6 +1009,7 @@ void swallow(Client *c, Client *w) {
 
 	wlr_scene_node_set_enabled(&w->scene->node, false);
 	wlr_scene_node_set_enabled(&c->scene->node, true);
+	wlr_scene_node_set_enabled(&c->scene_surface->node, true);
 
 	if (!c->foreign_toplevel && c->mon)
 		add_foreign_toplevel(c);
