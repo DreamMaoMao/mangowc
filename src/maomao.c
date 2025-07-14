@@ -196,7 +196,7 @@ struct dwl_animation {
 	bool tagouted;
 	bool tagouting;
 	bool begin_fade_in;
-	bool from_rule;
+	bool tag_from_rule;
 	unsigned int total_frames;
 	unsigned int passed_frames;
 	unsigned int duration;
@@ -1415,7 +1415,7 @@ void applyrules(Client *c) {
 
 	if (!c->isopensilent && c->mon &&
 		!(c->tags & (1 << (c->mon->pertag->curtag - 1)))) {
-		c->animation.from_rule = true;
+		c->animation.tag_from_rule = true;
 		view(&(Arg){.ui = c->tags}, true);
 	}
 
@@ -1495,7 +1495,7 @@ arrange(Monitor *m, bool want_animation) {
 					wlr_scene_node_set_enabled(&c->scene->node, true);
 				}
 				client_set_suspended(c, false);
-				if (!c->animation.from_rule && want_animation &&
+				if (!c->animation.tag_from_rule && want_animation &&
 					m->pertag->prevtag != 0 && m->pertag->curtag != 0 &&
 					animations) {
 					c->animation.tagining = true;
@@ -1534,7 +1534,7 @@ arrange(Monitor *m, bool want_animation) {
 					c->animainit_geom.y = c->animation.current.y;
 				}
 
-				c->animation.from_rule = false;
+				c->animation.tag_from_rule = false;
 				c->animation.tagouting = false;
 				c->animation.tagouted = false;
 				resize(c, c->geom, 0);
