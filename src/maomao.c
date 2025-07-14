@@ -1493,6 +1493,7 @@ arrange(Monitor *m, bool want_animation) {
 					!is_scroller_layout(c->mon)) {
 					c->is_clip_to_hide = false;
 					wlr_scene_node_set_enabled(&c->scene->node, true);
+					wlr_scene_node_set_enabled(&c->scene_surface->node, true);
 				}
 				client_set_suspended(c, false);
 				if (!c->animation.tag_from_rule && want_animation &&
