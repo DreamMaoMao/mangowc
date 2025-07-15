@@ -284,7 +284,7 @@ struct Client {
 	int iskilling;
 	int isnamedscratchpad;
 	struct wlr_box bounds;
-	bool is_open_animation;
+	bool is_pending_open_animation;
 	bool is_restoring_from_ov;
 	float scroller_proportion;
 	bool need_output_flush;
@@ -3778,7 +3778,7 @@ void init_client_properties(Client *c) {
 	c->isurgent = 0;
 	c->need_output_flush = 0;
 	c->scroller_proportion = scroller_default_proportion;
-	c->is_open_animation = true;
+	c->is_pending_open_animation = true;
 	c->drag_to_tile = false;
 	c->fake_no_border = false;
 	c->focused_opacity = focused_opacity;
@@ -3878,7 +3878,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 	}
 
 	// make sure the animation is open type
-	c->is_open_animation = true;
+	c->is_pending_open_animation = true;
 	resize(c, c->geom, 0);
 	printstatus();
 }
