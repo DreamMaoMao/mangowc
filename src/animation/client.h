@@ -721,8 +721,11 @@ void client_commit(Client *c) {
 		// 如果动画没有开始,且被判定为不应该动画，
 		// 则设置总帧数为1,不然其他地方一旦获取动画
 		// 进度，总帧数作为分母会造成除零
-		if (!c->animation.running)
+		// 比如动画类型为none的时候
+		if (!c->animation.running) {
+			c->animation.passed_frames = 1;
 			c->animation.total_frames = 1;
+		}
 	}
 	// 请求刷新屏幕
 	wlr_output_schedule_frame(c->mon->wlr_output);
