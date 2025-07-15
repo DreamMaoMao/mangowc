@@ -375,7 +375,7 @@ void scroller(Monitor *m) {
 	for (i = 0; i < n; i++) {
 		c = tempClients[i];
 		if (root_client == c) {
-			if (!c->is_open_animation &&
+			if (!c->is_pending_open_animation &&
 				c->geom.x >= m->w.x + scroller_structs &&
 				c->geom.x + c->geom.width <=
 					m->w.x + m->w.width - scroller_structs) {

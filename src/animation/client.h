@@ -574,7 +574,7 @@ void client_animation_next_tick(Client *c) {
 		.height = height,
 	};
 
-	c->is_open_animation = false;
+	c->is_pending_open_animation = false;
 
 	if (animation_passed == 1.0) {
 
@@ -735,7 +735,7 @@ void client_set_pending_state(Client *c) {
 	} else if (animations && c->animation.tagining) {
 		c->animation.should_animate = true;
 	} else if (!animations || c == grabc ||
-			   (!c->is_open_animation &&
+			   (!c->is_pending_open_animation &&
 				wlr_box_equal(&c->current, &c->pending))) {
 		c->animation.should_animate = false;
 	} else {
@@ -788,7 +788,7 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 			bbox); // 去掉这个推荐的窗口大小,因为有时推荐的窗口特别大导致平铺异常
 	}
 
-	if (!c->is_open_animation) {
+	if (!c->is_pending_open_animation) {
 		c->animation.begin_fade_in = false;
 	}
 
@@ -801,7 +801,7 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 	} else if (c->animation.tagining) {
 		c->animation.duration = animation_duration_tag;
 		c->animation.action = TAG;
-	} else if (c->is_open_animation) {
+	} else if (c->is_pending_open_animation) {
 		c->animation.duration = animation_duration_open;
 		c->animation.action = OPEN;
 	} else {
@@ -815,7 +815,7 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 	} else if (c->animation.tagining) {
 		c->animainit_geom.height = c->animation.current.height;
 		c->animainit_geom.width = c->animation.current.width;
-	} else if (c->is_open_animation) {
+	} else if (c->is_pending_open_animation) {
 		set_client_open_animaiton(c, c->geom);
 	} else {
 		c->animainit_geom = c->animation.current;
