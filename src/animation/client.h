@@ -385,7 +385,7 @@ void client_apply_clip(Client *c, float factor) {
 
 	int bw = (int)c->bw;
 
-	if (!animations || !c->animation.running) {
+	if (!animations) {
 		c->animation.running = false;
 		c->need_output_flush = false;
 		c->animainit_geom = c->current = c->pending = c->animation.current =
@@ -397,9 +397,9 @@ void client_apply_clip(Client *c, float factor) {
 
 		apply_border(c);
 
-		scale_data.opacity = c->isfullscreen	? 1
-							 : c == selmon->sel ? c->focused_opacity
-												: c->unfocused_opacity;
+		opacity = c->isfullscreen	 ? 1
+				  : c == selmon->sel ? c->focused_opacity
+									 : c->unfocused_opacity;
 
 		if (clip_box.width <= 0 || clip_box.height <= 0) {
 			return;
