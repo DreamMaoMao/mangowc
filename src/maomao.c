@@ -662,7 +662,7 @@ Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title);
 bool switch_scratchpad_client_state(Client *c);
 
 #include "data/static_keymap.h"
-#include "dispatch/dispatch.h"
+#include "dispatch/bind_declare.h"
 #include "layout/layout.h"
 
 /* variables */
@@ -811,7 +811,7 @@ static struct wlr_xwayland *xwayland;
 #include "animation/common.h"
 #include "animation/layer.h"
 #include "config/parse_config.h"
-#include "dispatch/action.h"
+#include "dispatch/bind_define.h"
 #include "ext-protocol/all.h"
 #include "fetch/fetch.h"
 #include "layout/horizontal.h"
