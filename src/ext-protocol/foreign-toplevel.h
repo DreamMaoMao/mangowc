@@ -2,14 +2,6 @@
 
 static struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 
-static void handle_foreign_activate_request(struct wl_listener *listener,
-											void *data);
-static void handle_foreign_fullscreen_request(struct wl_listener *listener,
-											  void *data);
-static void handle_foreign_close_request(struct wl_listener *listener,
-										 void *data);
-static void handle_foreign_destroy(struct wl_listener *listener, void *data);
-
 void handle_foreign_activate_request(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, foreign_activate_request);
 	unsigned int target;
