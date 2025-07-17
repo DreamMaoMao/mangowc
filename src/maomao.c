@@ -813,6 +813,7 @@ static struct wlr_xwayland *xwayland;
 #include "config/parse_config.h"
 #include "dispatch/action.h"
 #include "ext-protocol/all.h"
+#include "fetch/fetch.h"
 #include "layout/horizontal.h"
 #include "layout/vertical.h"
 
@@ -822,26 +823,6 @@ void client_change_mon(Client *c, Monitor *m) {
 	if (c->isfloating) {
 		c->oldgeom = c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
 	}
-}
-
-bool check_hit_no_border(Client *c) {
-	int i;
-	bool hit_no_border = false;
-	if (!render_border) {
-		hit_no_border = true;
-	}
-
-	for (i = 0; i < config.tag_rules_count; i++) {
-		if (c->tags & (1 << (config.tag_rules[i].id - 1)) &&
-			config.tag_rules[i].no_render_border) {
-			hit_no_border = true;
-		}
-	}
-
-	if (no_border_when_single && c && c->mon && c->mon->visible_clients == 1) {
-		hit_no_border = true;
-	}
-	return hit_no_border;
 }
 
 void applybounds(Client *c, struct wlr_box *bbox) {
@@ -914,48 +895,11 @@ void client_update_oldmonname_record(Client *c, Monitor *m) {
 	c->oldmonname[sizeof(c->oldmonname) - 1] = '\0';
 }
 
-pid_t getparentprocess(pid_t p) {
-	unsigned int v = 0;
-
-	FILE *f;
-	char buf[256];
-	snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
-
-	if (!(f = fopen(buf, "r")))
-		return 0;
-
-	// 检查fscanf返回值，确保成功读取了1个参数
-	if (fscanf(f, "%*u %*s %*c %u", &v) != 1) {
-		fclose(f);
-		return 0;
-	}
-
-	fclose(f);
-
-	return (pid_t)v;
-}
-
 int isdescprocess(pid_t p, pid_t c) {
 	while (p != c && c != 0)
 		c = getparentprocess(c);
 
 	return (int)c;
-}
-
-Client *termforwin(Client *w) {
-	Client *c;
-
-	if (!w->pid || w->isterm || w->noswallow)
-		return NULL;
-
-	wl_list_for_each(c, &fstack, flink) {
-		if (c->isterm && !c->swallowing && c->pid &&
-			isdescprocess(c->pid, w->pid)) {
-			return c;
-		}
-	}
-
-	return NULL;
 }
 
 void swallow(Client *c, Client *w) {
@@ -1007,37 +951,6 @@ bool switch_scratchpad_client_state(Client *c) {
 	}
 
 	return false;
-}
-
-Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title) {
-	Client *target_client = NULL;
-	const char *appid, *title;
-	Client *c = NULL;
-	wl_list_for_each(c, &clients, link) {
-		if (c->mon != selmon) {
-			continue;
-		}
-
-		if (!(appid = client_get_appid(c)))
-			appid = broken;
-		if (!(title = client_get_title(c)))
-			title = broken;
-
-		if (arg_id && strncmp(arg_id, "none", 4) == 0)
-			arg_id = NULL;
-
-		if (arg_title && strncmp(arg_title, "none", 4) == 0)
-			arg_title = NULL;
-
-		if ((arg_title && regex_match(arg_title, title) && !arg_id) ||
-			(arg_id && regex_match(arg_id, appid) && !arg_title) ||
-			(arg_id && regex_match(arg_id, appid) && arg_title &&
-			 regex_match(arg_title, title))) {
-			target_client = c;
-			break;
-		}
-	}
-	return target_client;
 }
 
 void apply_named_scratchpad(Client *target_client) {
@@ -1118,66 +1031,6 @@ void toggle_hotarea(int x_root, int y_root) {
 				y_root > (selmon->m.y + selmon->m.height))) {
 		selmon->is_in_hotarea = 0;
 	}
-}
-
-struct wlr_box // 计算客户端居中坐标
-setclient_coordinate_center(Client *c, struct wlr_box geom, int offsetx,
-							int offsety) {
-	struct wlr_box tempbox;
-	int offset = 0;
-	int len = 0;
-	Monitor *m = c->mon ? c->mon : selmon;
-
-	unsigned int cbw = check_hit_no_border(c) ? c->bw : 0;
-
-	if (!c->no_force_center) {
-		tempbox.x = m->w.x + (m->w.width - geom.width) / 2;
-		tempbox.y = m->w.y + (m->w.height - geom.height) / 2;
-	} else {
-		tempbox.x = geom.x;
-		tempbox.y = geom.y;
-	}
-
-	tempbox.width = geom.width;
-	tempbox.height = geom.height;
-
-	if (offsetx != 0) {
-		len = (m->w.width - c->geom.width - 2 * m->gappoh) / 2;
-		offset = len * (offsetx / 100.0);
-		tempbox.x += offset;
-
-		// 限制窗口在屏幕内
-		if (tempbox.x < m->m.x) {
-			tempbox.x = m->m.x - cbw;
-		}
-		if (tempbox.x + tempbox.width > m->m.x + m->m.width) {
-			tempbox.x = m->m.x + m->m.width - tempbox.width + cbw;
-		}
-	}
-	if (offsety != 0) {
-		len = (m->w.height - c->geom.height - 2 * m->gappov) / 2;
-		offset = len * (offsety / 100.0);
-		tempbox.y += offset;
-
-		// 限制窗口在屏幕内
-		if (tempbox.y < m->m.y) {
-			tempbox.y = m->m.y - cbw;
-		}
-		if (tempbox.y + tempbox.height > m->m.y + m->m.height) {
-			tempbox.y = m->m.y + m->m.height - tempbox.height + cbw;
-		}
-	}
-
-	return tempbox;
-}
-
-/* Helper: Check if rule matches client */
-static bool is_window_rule_matches(const ConfigWinRule *r, const char *appid,
-								   const char *title) {
-	return (r->title && regex_match(r->title, title) && !r->id) ||
-		   (r->id && regex_match(r->id, appid) && !r->title) ||
-		   (r->id && regex_match(r->id, appid) && r->title &&
-			regex_match(r->title, title));
 }
 
 static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
@@ -1368,15 +1221,6 @@ void applyrules(Client *c) {
 	setborder_color(c);
 }
 
-bool is_scroller_layout(Monitor *m) {
-	if (strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "scroller") == 0)
-		return true;
-	if (strcmp(m->pertag->ltidxs[m->pertag->curtag]->name,
-			   "vertical_scroller") == 0)
-		return true;
-	return false;
-}
-
 void // 17
 arrange(Monitor *m, bool want_animation) {
 	Client *c;
@@ -1529,27 +1373,6 @@ void arrangelayer(Monitor *m, struct wl_list *list, struct wlr_box *usable_area,
 	}
 }
 
-Client *center_select(Monitor *m) {
-	Client *c = NULL;
-	Client *target_c = NULL;
-	long int mini_distance = -1;
-	int dirx, diry;
-	long int distance;
-	wl_list_for_each(c, &clients, link) {
-		if (c && VISIBLEON(c, m) && client_surface(c)->mapped &&
-			!c->isfloating && !client_is_unmanaged(c)) {
-			dirx = c->geom.x + c->geom.width / 2 - (m->w.x + m->w.width / 2);
-			diry = c->geom.y + c->geom.height / 2 - (m->w.y + m->w.height / 2);
-			distance = dirx * dirx + diry * diry;
-			if (distance < mini_distance || mini_distance == -1) {
-				mini_distance = distance;
-				target_c = c;
-			}
-		}
-	}
-	return target_c;
-}
-
 void apply_window_snap(Client *c) {
 	int snap_up = 99999, snap_down = 99999, snap_left = 99999,
 		snap_right = 99999;
@@ -1653,186 +1476,6 @@ void apply_window_snap(Client *c) {
 	resize(c, c->geom, 0);
 }
 
-Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
-								 bool align) {
-	Client *c;
-	Client **tempClients = NULL; // 初始化为 NULL
-	int last = -1;
-
-	// 第一次遍历，计算客户端数量
-	wl_list_for_each(c, &clients, link) {
-		if (c && (findfloating || !c->isfloating) && !c->isunglobal &&
-			(focus_cross_monitor || c->mon == selmon) &&
-			(c->tags & c->mon->tagset[c->mon->seltags])) {
-			last++;
-		}
-	}
-
-	if (last < 0) {
-		return NULL; // 没有符合条件的客户端
-	}
-
-	// 动态分配内存
-	tempClients = malloc((last + 1) * sizeof(Client *));
-	if (!tempClients) {
-		// 处理内存分配失败的情况
-		return NULL;
-	}
-
-	// 第二次遍历，填充 tempClients
-	last = -1;
-	wl_list_for_each(c, &clients, link) {
-		if (c && (findfloating || !c->isfloating) && !c->isunglobal &&
-			(focus_cross_monitor || c->mon == selmon) &&
-			(c->tags & c->mon->tagset[c->mon->seltags])) {
-			last++;
-			tempClients[last] = c;
-		}
-	}
-
-	int sel_x = tc->geom.x;
-	int sel_y = tc->geom.y;
-	long long int distance = LLONG_MAX;
-	Client *tempFocusClients = NULL;
-
-	switch (arg->i) {
-	case UP:
-		for (int _i = 0; _i <= last; _i++) {
-			if (tempClients[_i]->geom.y < sel_y &&
-				tempClients[_i]->geom.x == sel_x) {
-				int dis_x = tempClients[_i]->geom.x - sel_x;
-				int dis_y = tempClients[_i]->geom.y - sel_y;
-				long long int tmp_distance =
-					dis_x * dis_x + dis_y * dis_y; // 计算距离
-				if (tmp_distance < distance) {
-					distance = tmp_distance;
-					tempFocusClients = tempClients[_i];
-				}
-			}
-		}
-		if (!tempFocusClients && !align) {
-			for (int _i = 0; _i <= last; _i++) {
-				if (tempClients[_i]->geom.y < sel_y) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
-						dis_x * dis_x + dis_y * dis_y; // 计算距离
-					if (tmp_distance < distance) {
-						distance = tmp_distance;
-						tempFocusClients = tempClients[_i];
-					}
-				}
-			}
-		}
-		break;
-	case DOWN:
-		for (int _i = 0; _i <= last; _i++) {
-			if (tempClients[_i]->geom.y > sel_y &&
-				tempClients[_i]->geom.x == sel_x) {
-				int dis_x = tempClients[_i]->geom.x - sel_x;
-				int dis_y = tempClients[_i]->geom.y - sel_y;
-				long long int tmp_distance =
-					dis_x * dis_x + dis_y * dis_y; // 计算距离
-				if (tmp_distance < distance) {
-					distance = tmp_distance;
-					tempFocusClients = tempClients[_i];
-				}
-			}
-		}
-		if (!tempFocusClients && !align) {
-			for (int _i = 0; _i <= last; _i++) {
-				if (tempClients[_i]->geom.y > sel_y) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
-						dis_x * dis_x + dis_y * dis_y; // 计算距离
-					if (tmp_distance < distance) {
-						distance = tmp_distance;
-						tempFocusClients = tempClients[_i];
-					}
-				}
-			}
-		}
-		break;
-	case LEFT:
-		for (int _i = 0; _i <= last; _i++) {
-			if (tempClients[_i]->geom.x < sel_x &&
-				tempClients[_i]->geom.y == sel_y) {
-				int dis_x = tempClients[_i]->geom.x - sel_x;
-				int dis_y = tempClients[_i]->geom.y - sel_y;
-				long long int tmp_distance =
-					dis_x * dis_x + dis_y * dis_y; // 计算距离
-				if (tmp_distance < distance) {
-					distance = tmp_distance;
-					tempFocusClients = tempClients[_i];
-				}
-			}
-		}
-		if (!tempFocusClients && !align) {
-			for (int _i = 0; _i <= last; _i++) {
-				if (tempClients[_i]->geom.x < sel_x) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
-						dis_x * dis_x + dis_y * dis_y; // 计算距离
-					if (tmp_distance < distance) {
-						distance = tmp_distance;
-						tempFocusClients = tempClients[_i];
-					}
-				}
-			}
-		}
-		break;
-	case RIGHT:
-		for (int _i = 0; _i <= last; _i++) {
-			if (tempClients[_i]->geom.x > sel_x &&
-				tempClients[_i]->geom.y == sel_y) {
-				int dis_x = tempClients[_i]->geom.x - sel_x;
-				int dis_y = tempClients[_i]->geom.y - sel_y;
-				long long int tmp_distance =
-					dis_x * dis_x + dis_y * dis_y; // 计算距离
-				if (tmp_distance < distance) {
-					distance = tmp_distance;
-					tempFocusClients = tempClients[_i];
-				}
-			}
-		}
-		if (!tempFocusClients && !align) {
-			for (int _i = 0; _i <= last; _i++) {
-				if (tempClients[_i]->geom.x > sel_x) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
-						dis_x * dis_x + dis_y * dis_y; // 计算距离
-					if (tmp_distance < distance) {
-						distance = tmp_distance;
-						tempFocusClients = tempClients[_i];
-					}
-				}
-			}
-		}
-		break;
-	}
-
-	free(tempClients); // 释放内存
-	return tempFocusClients;
-}
-
-Client *direction_select(const Arg *arg) {
-
-	Client *tc = selmon->sel;
-
-	if (!tc)
-		return NULL;
-
-	if (tc && (tc->isfullscreen || tc->ismaxmizescreen)) {
-		// 不支持全屏窗口的焦点切换
-		return NULL;
-	}
-
-	return find_client_by_direction(tc, arg, true, false);
-}
-
 void arrangelayers(Monitor *m) {
 	int i;
 	struct wlr_box usable_area = m->m;
@@ -1873,24 +1516,6 @@ void arrangelayers(Monitor *m) {
 			return;
 		}
 	}
-}
-
-char *get_autostart_path(char *autostart_path, unsigned int buf_size) {
-	const char *maomaoconfig = getenv("MAOMAOCONFIG");
-
-	if (maomaoconfig && maomaoconfig[0] != '\0') {
-		snprintf(autostart_path, buf_size, "%s/autostart.sh", maomaoconfig);
-	} else {
-		const char *homedir = getenv("HOME");
-		if (!homedir) {
-			fprintf(stderr, "Error: HOME environment variable not set.\n");
-			return NULL;
-		}
-		snprintf(autostart_path, buf_size, "%s/.config/maomao/autostart.sh",
-				 homedir);
-	}
-
-	return autostart_path;
 }
 
 void // 鼠标滚轮事件
@@ -3102,23 +2727,6 @@ void destroykeyboardgroup(struct wl_listener *listener, void *data) {
 	free(group);
 }
 
-Monitor *dirtomon(enum wlr_direction dir) {
-	struct wlr_output *next;
-	if (!wlr_output_layout_get(output_layout, selmon->wlr_output))
-		return selmon;
-	if ((next = wlr_output_layout_adjacent_output(output_layout, 1 << dir,
-												  selmon->wlr_output,
-												  selmon->m.x, selmon->m.y)))
-		return next->data;
-	if ((next = wlr_output_layout_farthest_output(
-			 output_layout,
-			 dir ^ (WLR_DIRECTION_LEFT | WLR_DIRECTION_RIGHT |
-					WLR_DIRECTION_UP | WLR_DIRECTION_DOWN),
-			 selmon->wlr_output, selmon->m.x, selmon->m.y)))
-		return next->data;
-	return selmon;
-}
-
 void focusclient(Client *c, int lift) {
 	struct wlr_surface *old_keyboard_focus_surface =
 		seat->keyboard_state.focused_surface;
@@ -3232,21 +2840,6 @@ void focusclient(Client *c, int lift) {
 	dwl_im_relay_set_focus(dwl_input_method_relay, client_surface(c));
 	/* Activate the new client */
 	client_activate_surface(client_surface(c), 1);
-}
-
-/* We probably should change the name of this, it sounds like
- * will focus the topmost client of this mon, when actually will
- * only return that client */
-Client * // 0.5
-focustop(Monitor *m) {
-	Client *c;
-	wl_list_for_each(c, &fstack, flink) {
-		if (c->iskilling || c->isunglobal)
-			continue;
-		if (VISIBLEON(c, m))
-			return c;
-	}
-	return NULL;
 }
 
 void // 0.6
@@ -4417,62 +4010,6 @@ void setgaps(int oh, int ov, int ih, int iv) {
 	arrange(selmon, false);
 }
 
-char *get_layout_abbr(const char *full_name) {
-	// 1. 尝试在映射表中查找
-	for (int i = 0; layout_mappings[i].full_name != NULL; i++) {
-		if (strcmp(full_name, layout_mappings[i].full_name) == 0) {
-			return strdup(layout_mappings[i].abbr);
-		}
-	}
-
-	// 2. 尝试从名称中提取并转换为小写
-	const char *open = strrchr(full_name, '(');
-	const char *close = strrchr(full_name, ')');
-	if (open && close && close > open) {
-		unsigned int len = close - open - 1;
-		if (len > 0 && len <= 4) {
-			char *abbr = malloc(len + 1);
-			if (abbr) {
-				// 提取并转换为小写
-				for (unsigned int j = 0; j < len; j++) {
-					abbr[j] = tolower(open[j + 1]);
-				}
-				abbr[len] = '\0';
-				return abbr;
-			}
-		}
-	}
-
-	// 3. 提取前2-3个字母并转换为小写
-	char *abbr = malloc(4);
-	if (abbr) {
-		unsigned int j = 0;
-		for (unsigned int i = 0; full_name[i] != '\0' && j < 3; i++) {
-			if (isalpha(full_name[i])) {
-				abbr[j++] = tolower(full_name[i]);
-			}
-		}
-		abbr[j] = '\0';
-
-		// 确保至少2个字符
-		if (j >= 2)
-			return abbr;
-		free(abbr);
-	}
-
-	// 4. 回退方案：使用首字母小写
-	char *fallback = malloc(3);
-	if (fallback) {
-		fallback[0] = tolower(full_name[0]);
-		fallback[1] = full_name[1] ? tolower(full_name[1]) : '\0';
-		fallback[2] = '\0';
-		return fallback;
-	}
-
-	// 5. 最终回退：返回 "xx"
-	return strdup("xx");
-}
-
 void reset_keyboard_layout(void) {
 	if (!kb_group || !kb_group->wlr_group || !seat) {
 		wlr_log(WLR_ERROR, "Invalid keyboard group or seat");
@@ -4616,28 +4153,6 @@ void setsel(struct wl_listener *listener, void *data) {
 	 */
 	struct wlr_seat_request_set_selection_event *event = data;
 	wlr_seat_set_selection(seat, event->source, event->serial);
-}
-
-// 获取tags中最前面的tag的tagmask
-unsigned int get_tags_first_tag(unsigned int source_tags) {
-	unsigned int i, tag;
-	tag = 0;
-
-	if (!source_tags) {
-		return selmon->pertag->curtag;
-	}
-
-	for (i = 0; !(tag & 1) && source_tags != 0 && i < LENGTH(tags); i++) {
-		tag = source_tags >> i;
-	}
-
-	if (i == 1) {
-		return 1;
-	} else if (i > 9) {
-		return 1 << 8;
-	} else {
-		return 1 << (i - 1);
-	}
 }
 
 void show_hide_client(Client *c) {
@@ -5489,52 +5004,6 @@ void virtualpointer(struct wl_listener *listener, void *data) {
 		wlr_cursor_map_input_to_output(cursor, device, event->suggested_output);
 
 	handlecursoractivity();
-}
-
-Monitor *xytomon(double x, double y) {
-	struct wlr_output *o = wlr_output_layout_output_at(output_layout, x, y);
-	return o ? o->data : NULL;
-}
-
-void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
-			  LayerSurface **pl, double *nx, double *ny) {
-	struct wlr_scene_node *node, *pnode;
-	struct wlr_surface *surface = NULL;
-	Client *c = NULL;
-	LayerSurface *l = NULL;
-	int layer;
-
-	for (layer = NUM_LAYERS - 1; !surface && layer >= 0; layer--) {
-
-		// ignore text-input layer
-		if (layer == LyrIMPopup)
-			continue;
-
-		if (layer == LyrFadeOut)
-			continue;
-
-		if (!(node = wlr_scene_node_at(&layers[layer]->node, x, y, nx, ny)))
-			continue;
-
-		if (node->type == WLR_SCENE_NODE_BUFFER)
-			surface = wlr_scene_surface_try_from_buffer(
-						  wlr_scene_buffer_from_node(node))
-						  ->surface;
-		/* Walk the tree to find a node that knows the client */
-		for (pnode = node; pnode && !c; pnode = &pnode->parent->node)
-			c = pnode->data;
-		if (c && c->type == LayerShell) {
-			c = NULL;
-			l = pnode->data;
-		}
-	}
-
-	if (psurface)
-		*psurface = surface;
-	if (pc)
-		*pc = c;
-	if (pl)
-		*pl = l;
 }
 
 #ifdef XWAYLAND
