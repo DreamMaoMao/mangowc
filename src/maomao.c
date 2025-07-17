@@ -895,13 +895,6 @@ void client_update_oldmonname_record(Client *c, Monitor *m) {
 	c->oldmonname[sizeof(c->oldmonname) - 1] = '\0';
 }
 
-int isdescprocess(pid_t p, pid_t c) {
-	while (p != c && c != 0)
-		c = getparentprocess(c);
-
-	return (int)c;
-}
-
 void swallow(Client *c, Client *w) {
 	c->bw = w->bw;
 	c->isfloating = w->isfloating;

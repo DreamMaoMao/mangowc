@@ -19,6 +19,13 @@ pid_t getparentprocess(pid_t p) {
 	return (pid_t)v;
 }
 
+int isdescprocess(pid_t p, pid_t c) {
+	while (p != c && c != 0)
+		c = getparentprocess(c);
+
+	return (int)c;
+}
+
 char *get_autostart_path(char *autostart_path, unsigned int buf_size) {
 	const char *maomaoconfig = getenv("MAOMAOCONFIG");
 
