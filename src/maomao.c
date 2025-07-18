@@ -110,17 +110,17 @@
 		wl_signal_add((E), _l);                                                \
 	} while (0)
 
-#define APPLY_INT_PROP(prop)                                                   \
-	if (r->prop >= 0)                                                          \
-	c->prop = r->prop
+#define APPLY_INT_PROP(obj, rule, prop)                                        \
+	if (rule->prop >= 0)                                                       \
+	obj->prop = rule->prop
 
-#define APPLY_FLOAT_PROP(prop)                                                 \
-	if (r->prop > 0.0f)                                                        \
-	c->prop = r->prop
+#define APPLY_FLOAT_PROP(obj, rule, prop)                                      \
+	if (rule->prop > 0.0f)                                                     \
+	obj->prop = rule->prop
 
-#define APPLY_STRING_PROP(prop)                                                \
-	if (r->prop != NULL)                                                       \
-	c->prop = r->prop
+#define APPLY_STRING_PROP(obj, rule, prop)                                     \
+	if (rule->prop != NULL)                                                    \
+	obj->prop = rule->prop
 
 #define BAKED_POINTS_COUNT 256
 
@@ -1027,28 +1027,28 @@ void toggle_hotarea(int x_root, int y_root) {
 }
 
 static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
-	APPLY_INT_PROP(isterm);
-	APPLY_INT_PROP(noswallow);
-	APPLY_INT_PROP(nofadein);
-	APPLY_INT_PROP(nofadeout);
-	APPLY_INT_PROP(no_force_center);
-	APPLY_INT_PROP(isfloating);
-	APPLY_INT_PROP(isfullscreen);
-	APPLY_INT_PROP(isnoborder);
-	APPLY_INT_PROP(isopensilent);
-	APPLY_INT_PROP(isnamedscratchpad);
-	APPLY_INT_PROP(isglobal);
-	APPLY_INT_PROP(isoverlay);
-	APPLY_INT_PROP(isunglobal);
-	APPLY_INT_PROP(scratchpad_width);
-	APPLY_INT_PROP(scratchpad_height);
+	APPLY_INT_PROP(c, r, isterm);
+	APPLY_INT_PROP(c, r, noswallow);
+	APPLY_INT_PROP(c, r, nofadein);
+	APPLY_INT_PROP(c, r, nofadeout);
+	APPLY_INT_PROP(c, r, no_force_center);
+	APPLY_INT_PROP(c, r, isfloating);
+	APPLY_INT_PROP(c, r, isfullscreen);
+	APPLY_INT_PROP(c, r, isnoborder);
+	APPLY_INT_PROP(c, r, isopensilent);
+	APPLY_INT_PROP(c, r, isnamedscratchpad);
+	APPLY_INT_PROP(c, r, isglobal);
+	APPLY_INT_PROP(c, r, isoverlay);
+	APPLY_INT_PROP(c, r, isunglobal);
+	APPLY_INT_PROP(c, r, scratchpad_width);
+	APPLY_INT_PROP(c, r, scratchpad_height);
 
-	APPLY_FLOAT_PROP(scroller_proportion);
-	APPLY_FLOAT_PROP(focused_opacity);
-	APPLY_FLOAT_PROP(unfocused_opacity);
+	APPLY_FLOAT_PROP(c, r, scroller_proportion);
+	APPLY_FLOAT_PROP(c, r, focused_opacity);
+	APPLY_FLOAT_PROP(c, r, unfocused_opacity);
 
-	APPLY_STRING_PROP(animation_type_open);
-	APPLY_STRING_PROP(animation_type_close);
+	APPLY_STRING_PROP(c, r, animation_type_open);
+	APPLY_STRING_PROP(c, r, animation_type_close);
 }
 
 int applyrulesgeom(Client *c) {
@@ -1987,6 +1987,7 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 	LayerSurface *l = wl_container_of(listener, l, map);
 	struct wlr_layer_surface_v1 *layer_surface = l->layer_surface;
 	int ji;
+	ConfigLayerRule *r;
 
 	l->mapped = 1;
 
@@ -2010,17 +2011,11 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 			break;
 		if (strcmp(config.layer_rules[ji].layer_name,
 				   l->layer_surface->namespace) == 0) {
-			if (config.layer_rules[ji].noanim > 0) {
-				l->noanim = 1;
-			}
-			if (config.layer_rules[ji].animation_type_open) {
-				l->animation_type_open =
-					config.layer_rules[ji].animation_type_open;
-			}
-			if (config.layer_rules[ji].animation_type_close) {
-				l->animation_type_close =
-					config.layer_rules[ji].animation_type_close;
-			}
+
+			r = &config.layer_rules[ji];
+			APPLY_INT_PROP(l, r, noanim);
+			APPLY_STRING_PROP(l, r, animation_type_open);
+			APPLY_STRING_PROP(l, r, animation_type_close);
 		}
 	}
 
