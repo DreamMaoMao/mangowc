@@ -50,7 +50,7 @@ typedef struct {
 	int isunglobal;
 	int isglobal;
 	int isoverlay;
-	int monitor;
+	const char *monitor;
 	int offsetx;
 	int offsety;
 	int width;
@@ -1354,7 +1354,7 @@ void parse_config_line(Config *config, const char *line) {
 		rule->isoverlay = -1;
 		rule->isterm = -1;
 		rule->noswallow = -1;
-		rule->monitor = -1;
+		rule->monitor = NULL;
 		rule->offsetx = 0;
 		rule->offsety = 0;
 		rule->nofadein = -1;
@@ -1398,7 +1398,7 @@ void parse_config_line(Config *config, const char *line) {
 				} else if (strcmp(key, "tags") == 0) {
 					rule->tags = 1 << (atoi(val) - 1);
 				} else if (strcmp(key, "monitor") == 0) {
-					rule->monitor = atoi(val);
+					rule->monitor = strdup(val);
 				} else if (strcmp(key, "offsetx") == 0) {
 					rule->offsetx = atoi(val);
 				} else if (strcmp(key, "offsety") == 0) {
@@ -1891,10 +1891,21 @@ void free_config(void) {
 	if (config.window_rules) {
 		for (int i = 0; i < config.window_rules_count; i++) {
 			ConfigWinRule *rule = &config.window_rules[i];
-			free((void *)rule->id);
-			free((void *)rule->title);
-			free((void *)rule->animation_type_open);
-			free((void *)rule->animation_type_close);
+			if (rule->id)
+				free((void *)rule->id);
+			if (rule->title)
+				free((void *)rule->title);
+			if (rule->animation_type_open)
+				free((void *)rule->animation_type_open);
+			if (rule->animation_type_close)
+				free((void *)rule->animation_type_close);
+			if (rule->monitor)
+				free((void *)rule->monitor);
+			rule->id = NULL;
+			rule->title = NULL;
+			rule->animation_type_open = NULL;
+			rule->animation_type_close = NULL;
+			rule->monitor = NULL;
 			// 释放 globalkeybinding 的 arg.v（如果动态分配）
 			if (rule->globalkeybinding.arg.v) {
 				free((void *)rule->globalkeybinding.arg.v);
