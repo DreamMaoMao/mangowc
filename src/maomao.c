@@ -2343,6 +2343,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	int ji, jk;
 	struct wlr_output_state state;
 	Monitor *m;
+	bool custom_monitor_mode = false;
 
 	if (!wlr_output_init_render(wlr_output, alloc, drw))
 		return;
@@ -2392,6 +2393,12 @@ void createmon(struct wl_listener *listener, void *data) {
 			}
 			scale = r->scale;
 			rr = r->rr;
+
+			if (r->width > 0 && r->height > 0 && r->refresh > 0) {
+				custom_monitor_mode = true;
+				wlr_output_state_set_custom_mode(&state, r->width, r->height,
+												 r->refresh * 1000);
+			}
 			wlr_output_state_set_scale(&state, r->scale);
 			wlr_output_state_set_transform(&state, r->rr);
 			break;
@@ -2402,7 +2409,9 @@ void createmon(struct wl_listener *listener, void *data) {
 	 * monitor supports only a specific set of modes. We just pick the
 	 * monitor's preferred mode; a more sophisticated compositor would let
 	 * the user configure it. */
-	wlr_output_state_set_mode(&state, wlr_output_preferred_mode(wlr_output));
+	if (!custom_monitor_mode)
+		wlr_output_state_set_mode(&state,
+								  wlr_output_preferred_mode(wlr_output));
 
 	/* Set up event listeners */
 	LISTEN(&wlr_output->events.frame, &m->frame, rendermon);
