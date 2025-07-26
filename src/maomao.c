@@ -2438,6 +2438,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	for (i = 1; i <= config.tag_rules_count; i++) {
 		for (jk = 0; jk < LENGTH(layouts); jk++) {
 			if (config.tag_rules_count > 0 &&
+				config.tag_rules[i - 1].layout_name &&
 				strcmp(layouts[jk].name, config.tag_rules[i - 1].layout_name) ==
 					0) {
 				m->pertag->ltidxs[config.tag_rules[i - 1].id] = &layouts[jk];
