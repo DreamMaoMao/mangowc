@@ -356,9 +356,10 @@ static inline void client_set_tiled(Client *c, uint32_t edges) {
 	if (wl_resource_get_version(c->surface.xdg->toplevel->resource) >=
 		XDG_TOPLEVEL_STATE_TILED_RIGHT_SINCE_VERSION) {
 		wlr_xdg_toplevel_set_tiled(c->surface.xdg->toplevel, edges);
+	} else {
+		wlr_xdg_toplevel_set_maximized(c->surface.xdg->toplevel,
+									   edges != WLR_EDGE_NONE);
 	}
-	wlr_xdg_toplevel_set_maximized(c->surface.xdg->toplevel,
-								   edges != WLR_EDGE_NONE);
 }
 
 static inline void client_set_suspended(Client *c, int suspended) {
