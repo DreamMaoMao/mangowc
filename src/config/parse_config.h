@@ -2495,6 +2495,7 @@ void reload_config(const Arg *arg) {
 				!rule_monitor_name) {
 				for (jk = 0; jk < LENGTH(layouts); jk++) {
 					if (config.tag_rules_count > 0 &&
+						config.tag_rules[i - 1].layout_name &&
 						strcmp(layouts[jk].name,
 							   config.tag_rules[i - 1].layout_name) == 0) {
 						m->pertag->ltidxs[config.tag_rules[i - 1].id] =
