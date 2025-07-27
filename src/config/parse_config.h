@@ -70,14 +70,15 @@ typedef struct {
 } ConfigWinRule;
 
 typedef struct {
-	const char *name;			// 显示器名称
-	float mfact;				// 主区域比例
-	int nmaster;				// 主区域窗口数量
-	const char *layout;			// 布局名称（字符串）
-	int rr;						// 旋转和翻转（假设为整数）
-	float scale;				// 显示器缩放比例
-	int x, y;					// 显示器位置
-	int width, height, refresh; // 显示器分辨率和刷新率
+	const char *name;	// 显示器名称
+	float mfact;		// 主区域比例
+	int nmaster;		// 主区域窗口数量
+	const char *layout; // 布局名称（字符串）
+	int rr;				// 旋转和翻转（假设为整数）
+	float scale;		// 显示器缩放比例
+	int x, y;			// 显示器位置
+	int width, height;	// 显示器分辨率
+	float refresh;		// 刷新率
 } ConfigMonitorRule;
 
 // 修改后的宏定义
@@ -1505,7 +1506,7 @@ void parse_config_line(Config *config, const char *line) {
 			rule->y = atoi(raw_y);
 			rule->width = atoi(raw_width);
 			rule->height = atoi(raw_height);
-			rule->refresh = atoi(raw_refresh);
+			rule->refresh = atof(raw_refresh);
 
 			if (!rule->name || !rule->layout) {
 				if (rule->name)
@@ -2473,7 +2474,8 @@ void reapply_monitor_rules(void) {
 
 				if (mr->width > 0 && mr->height > 0 && mr->refresh > 0) {
 					wlr_output_state_set_custom_mode(
-						&state, mr->width, mr->height, mr->refresh * 1000);
+						&state, mr->width, mr->height,
+						(int)roundf(mr->refresh * 1000));
 				}
 
 				wlr_output_state_set_scale(&state, mr->scale);
