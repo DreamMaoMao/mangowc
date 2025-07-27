@@ -2485,6 +2485,7 @@ void reapply_monitor_rules(void) {
 
 		wlr_output_commit_state(m->wlr_output, &state);
 		wlr_output_state_finish(&state);
+		updatemons(NULL, NULL);
 	}
 }
 
