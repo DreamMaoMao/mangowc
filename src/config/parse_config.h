@@ -2439,17 +2439,57 @@ void parse_config(void) {
 	override_config();
 }
 
-void reload_config(const Arg *arg) {
-	Client *c;
+void reapply_monitor_rules(void) {
+	ConfigMonitorRule *mr;
 	Monitor *m;
-	int i, jk;
-	Keyboard *kb;
-	char *rule_monitor_name = NULL;
-	parse_config();
-	init_baked_points();
-	handlecursoractivity();
-	reset_keyboard_layout();
-	run_exec();
+	int ji, jk;
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
+
+	wl_list_for_each(m, &mons, link) {
+		if (!m->wlr_output->enabled) {
+			continue;
+		}
+
+		for (ji = 0; ji < config.monitor_rules_count; ji++) {
+			if (config.monitor_rules_count < 1)
+				break;
+
+			mr = &config.monitor_rules[ji];
+			if (!mr->name || regex_match(mr->name, m->wlr_output->name)) {
+
+				m->mfact = mr->mfact;
+				m->nmaster = mr->nmaster;
+				m->m.x = mr->x;
+				m->m.y = mr->y;
+
+				if (mr->layout) {
+					for (jk = 0; jk < LENGTH(layouts); jk++) {
+						if (strcmp(layouts[jk].name, mr->layout) == 0) {
+							m->lt = &layouts[jk];
+						}
+					}
+				}
+
+				if (mr->width > 0 && mr->height > 0 && mr->refresh > 0) {
+					wlr_output_state_set_custom_mode(
+						&state, mr->width, mr->height, mr->refresh * 1000);
+				}
+
+				wlr_output_state_set_scale(&state, mr->scale);
+				wlr_output_state_set_transform(&state, mr->rr);
+				wlr_output_layout_add(output_layout, m->wlr_output, mr->x,
+									  mr->y);
+			}
+		}
+
+		wlr_output_commit_state(m->wlr_output, &state);
+		wlr_output_state_finish(&state);
+	}
+}
+
+void reapply_border(void) {
+	Client *c;
 
 	// reset border width when config change
 	wl_list_for_each(c, &clients, link) {
@@ -2459,14 +2499,20 @@ void reload_config(const Arg *arg) {
 			}
 		}
 	}
+}
 
-	// reset keyboard repeat rate when config change
+void reapply_keyboard(void) {
+	Keyboard *kb;
 	wl_list_for_each(kb, &keyboards, link) {
 		wlr_keyboard_set_repeat_info(kb->wlr_keyboard, repeat_rate,
 									 repeat_delay);
 	}
+}
 
-	// reset master status when config change
+void reapply_master(void) {
+
+	int i;
+	Monitor *m;
 	for (i = 0; i <= LENGTH(tags); i++) {
 		wl_list_for_each(m, &mons, link) {
 			if (!m->wlr_output->enabled) {
@@ -2481,8 +2527,12 @@ void reload_config(const Arg *arg) {
 			m->gappov = gappov;
 		}
 	}
+}
 
-	// reset tag status by tag rules
+void reapply_tagrule(void) {
+	Monitor *m;
+	int i, jk;
+	char *rule_monitor_name = NULL;
 	wl_list_for_each(m, &mons, link) {
 		if (!m->wlr_output->enabled) {
 			continue;
@@ -2505,6 +2555,21 @@ void reload_config(const Arg *arg) {
 			}
 		}
 	}
+}
+
+void reload_config(const Arg *arg) {
+	parse_config();
+	init_baked_points();
+	handlecursoractivity();
+	reset_keyboard_layout();
+	run_exec();
+
+	reapply_border();
+	reapply_keyboard();
+	reapply_master();
+
+	reapply_tagrule();
+	reapply_monitor_rules();
 
 	arrange(selmon, false);
 }
