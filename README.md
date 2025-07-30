@@ -1,15 +1,14 @@
-# Maomaowm
+# Mango
 
 This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
-"Since many people have asked about the meaning of this compositor's name, 'Maomao' is an online alias I've been using for years - it comes from the first two characters of the Chinese word for 'caterpillar' (毛毛虫). You can basically think of it as meaning 'caterpillar'.
 
 1. **Lightweight & Fast Build**
 
-   - _Maomao_ is as lightweight as _dwl_, and can be built completely within a few seconds. Despite this, _Maomao_ does not compromise on functionality.
+   - _Mango_ is as lightweight as _dwl_, and can be built completely within a few seconds. Despite this, _Mango_ does not compromise on functionality.
 
 2. **Feature Highlights**
-   - In addition to basic WM functionality, Maomao provides:
+   - In addition to basic WM functionality, Mango provides:
      - Excellent xwayland support.
      - Base tags not workspaces (supports separate window layouts for each tag)
      - Smooth and customizable complete animations (window open/move/close, tag enter/leave,layer open/close/move)
@@ -67,7 +66,7 @@ https://github.com/user-attachments/assets/c9bf9415-fad1-4400-bcdc-3ad2d76de85a
 ## Arch Linux
 
 ```bash
-yay -S maomaowm-git
+yay -S mango-git
 
 ```
 
@@ -82,12 +81,12 @@ eselect repository enable guru
 emerge --sync guru
 ```
 
-Then, add `gui-libs/scenefx` and `gui-wm/maomaowm` to the `package.accept_keywords`.
+Then, add `gui-libs/scenefx` and `gui-wm/mango` to the `package.accept_keywords`.
 
 Finally, install the package:
 
 ```bash
-emerge --ask --verbose gui-wm/maomaowm
+emerge --ask --verbose gui-wm/mango
 ```
 
 Patching wlroots is done by getting the patch with git from [the repository](https://github.com/DreamMaoMao/wlroots.git)
@@ -107,8 +106,8 @@ cd scenefx
 meson build -Dprefix=/usr
 sudo ninja -C build install
 
-git clone https://github.com/DreamMaoMao/maomaowm.git
-cd maomaowm
+git clone https://github.com/DreamMaoMao/mango.git
+cd mango
 meson build -Dprefix=/usr
 sudo ninja -C build install
 ```
@@ -130,7 +129,7 @@ sudo ninja -C build install
 - alt+return: open foot terminal
 - alt+q: kill client
 - alt+left/right/up/down: focus direction
-- super+m: quit maomao
+- super+m: quit mango
 
 ## My Dotfiles
 
@@ -143,19 +142,19 @@ yay -S rofi-wayland foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cl
 - use my config
 
 ```bash
-git clone https://github.com/DreamMaoMao/maomao-config.git ~/.config/maomao
+git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 ```
 
 
 ## Config Documentation
 
-Refer to the [wiki](https://github.com/DreamMaoMao/maomaowm/wiki/)
+Refer to the [wiki](https://github.com/DreamMaoMao/mango/wiki/)
 
 # NixOS + Home-manager
 
-The repo contains a flake that provides a NixOS module and a home-manager module for maomaowm.
-Use the NixOS module to install maomaowm with other necessary components of a working Wayland environment.
-Use the home-manager module to declare configuration and autostart for maomaowm.
+The repo contains a flake that provides a NixOS module and a home-manager module for mango.
+Use the NixOS module to install mango with other necessary components of a working Wayland environment.
+Use the home-manager module to declare configuration and autostart for mango.
 
 Here's an example of using the modules in a flake:
 
@@ -168,7 +167,7 @@ Here's an example of using the modules in a flake:
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-parts.url = "github:hercules-ci/flake-parts";
-    maomaowm.url = "github:DreamMaoMao/maomaowm";
+    mango.url = "github:DreamMaoMao/mango";
   };
   outputs =
     inputs@{ self, flake-parts, ... }:
@@ -182,10 +181,10 @@ Here's an example of using the modules in a flake:
             modules = [
               inputs.home-manager.nixosModules.home-manager
 
-              # Add maomaowm nixos module
-              inputs.maomaowm.nixosModules.maomaowm
+              # Add mango nixos module
+              inputs.mango.nixosModules.mango
               {
-                programs.maomaowm.enable = true;
+                programs.mango.enable = true;
               }
               {
                 home-manager = {
@@ -197,7 +196,7 @@ Here's an example of using the modules in a flake:
                       (
                         { ... }:
                         {
-                          wayland.windowManager.maomaowm = {
+                          wayland.windowManager.mango = {
                             enable = true;
                             settings = ''
                               # see config.conf
@@ -211,8 +210,8 @@ Here's an example of using the modules in a flake:
                       )
                     ]
                     ++ [
-                      # Add maomaowm hm module
-                      inputs.maomaowm.hmModules.maomaowm
+                      # Add mango hm module
+                      inputs.mango.hmModules.mango
                     ];
                 };
               }
@@ -224,18 +223,18 @@ Here's an example of using the modules in a flake:
 }
 ```
 
-# Packaging maomaowm
+# Packaging mango
 
-To package maomaowm for other distributions, you can check the reference setup for:
+To package mango for other distributions, you can check the reference setup for:
 
-- [nix](https://github.com/DreamMaoMao/maomaowm/blob/main/nix/default.nix)
-- [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=maomaowm-git).
+- [nix](https://github.com/DreamMaoMao/mango/blob/main/nix/default.nix)
+- [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mango-git).
 
-Currently building maomaowm requires a patched version of `wlroots-0.19`. If possible, the patch can be extracted from the [latest commit](https://github.com/DreamMaoMao/wlroots.git)
+Currently building mango requires a patched version of `wlroots-0.19`. If possible, the patch can be extracted from the [latest commit](https://github.com/DreamMaoMao/wlroots.git)
 and applied on `prepare` step. If it is not possible, you will need to create a separate `wlroots` package and make it a build dependency.
 You might also need to package `scenefx` for your distribution, check availability [here](https://github.com/wlrfx/scenefx.git).
 
-If you encounter build errors when packaging `maomaowm`, feel free to create an issue and ask a question, but
+If you encounter build errors when packaging `mango`, feel free to create an issue and ask a question, but
 Read The Friendly Manual on packaging software in your distribution first.
 
 # Thanks to These Reference Repositories

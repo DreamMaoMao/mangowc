@@ -1,7 +1,7 @@
 // TODO: remove this file in the future, replace all global variables with
 // config.xxx
 
-/* speedie's maomao config */
+/* speedie's mango config */
 
 #define COLOR(hex)                                                             \
 	{((hex >> 24) & 0xFF) / 255.0f, ((hex >> 16) & 0xFF) / 255.0f,             \

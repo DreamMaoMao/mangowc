@@ -4176,7 +4176,7 @@ void create_output(struct wlr_backend *backend, void *data) {
 void setup(void) {
 
 	setenv("XCURSOR_SIZE", "24", 1);
-	setenv("XDG_CURRENT_DESKTOP", "maomao", 1);
+	setenv("XDG_CURRENT_DESKTOP", "mango", 1);
 
 	parse_config();
 	init_baked_points();
@@ -5144,7 +5144,7 @@ int main(int argc, char *argv[]) {
 		else if (c == 'd')
 			log_level = WLR_DEBUG;
 		else if (c == 'v')
-			die("maomao " VERSION);
+			die("mango " VERSION);
 		else
 			goto usage;
 	}

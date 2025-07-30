@@ -2408,11 +2408,11 @@ void parse_config(void) {
 	config.tag_rules_count = 0;
 	config.cursor_theme = NULL;
 
-	// 获取 MAOMAOCONFIG 环境变量
-	const char *maomaoconfig = getenv("MAOMAOCONFIG");
+	// 获取 MANGOCONFIG 环境变量
+	const char *mangoconfig = getenv("MANGOCONFIG");
 
-	// 如果 MAOMAOCONFIG 环境变量不存在或为空，则使用 HOME 环境变量
-	if (!maomaoconfig || maomaoconfig[0] == '\0') {
+	// 如果 MANGOCONFIG 环境变量不存在或为空，则使用 HOME 环境变量
+	if (!mangoconfig || mangoconfig[0] == '\0') {
 		// 获取当前用户家目录
 		const char *homedir = getenv("HOME");
 		if (!homedir) {
@@ -2420,18 +2420,18 @@ void parse_config(void) {
 			return;
 		}
 		// 构建日志文件路径
-		snprintf(filename, sizeof(filename), "%s/.config/maomao/config.conf",
+		snprintf(filename, sizeof(filename), "%s/.config/mango/config.conf",
 				 homedir);
 
 		// 检查文件是否存在
 		if (access(filename, F_OK) != 0) {
-			// 如果文件不存在，则使用 /etc/maomao/config.conf
-			snprintf(filename, sizeof(filename), "%s/maomao/config.conf",
+			// 如果文件不存在，则使用 /etc/mango/config.conf
+			snprintf(filename, sizeof(filename), "%s/mango/config.conf",
 					 SYSCONFDIR);
 		}
 	} else {
-		// 使用 MAOMAOCONFIG 环境变量作为配置文件夹路径
-		snprintf(filename, sizeof(filename), "%s/config.conf", maomaoconfig);
+		// 使用 MANGOCONFIG 环境变量作为配置文件夹路径
+		snprintf(filename, sizeof(filename), "%s/config.conf", mangoconfig);
 	}
 
 	set_value_default();

@@ -2,8 +2,8 @@
 /.vscode
 /result
 config.h
-maomao
-maomao.o
+mango
+mango.o
 util.o
 *-protocol.h
 *-protocol.c

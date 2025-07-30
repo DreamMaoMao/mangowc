@@ -164,7 +164,7 @@ I would probably just submit raphi's patchset but I don't think that would be po
     </request>
 
     <request name="quit" since="2">
-      <description summary="Quit maomao">This request allows clients to instruct the compositor to quit maomao.</description>
+      <description summary="Quit mango">This request allows clients to instruct the compositor to quit mango.</description>
     </request>
 
     <request name="dispatch" since="2">

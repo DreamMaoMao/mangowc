@@ -23,8 +23,8 @@
       ];
 
       flake = {
-        hmModules.maomaowm = import ./nix/hm-modules.nix self;
-        nixosModules.maomaowm = import ./nix/nixos-modules.nix self;
+        hmModules.mango = import ./nix/hm-modules.nix self;
+        nixosModules.mango = import ./nix/nixos-modules.nix self;
       };
 
       perSystem = {
@@ -36,7 +36,7 @@
           (pkgs)
           callPackage
           ;
-        maomaowm = callPackage ./nix {
+        mango = callPackage ./nix {
           inherit (inputs.mmsg.packages.${pkgs.system}) mmsg;
           inherit (inputs.scenefx.packages.${pkgs.system}) scenefx;
         };
@@ -45,14 +45,14 @@
           buildInputs = old.buildInputs ++ [];
         };
       in {
-        packages.default = maomaowm;
+        packages.default = mango;
         overlayAttrs = {
-          inherit (config.packages) maomaowm;
+          inherit (config.packages) mango;
         };
         packages = {
-          inherit maomaowm;
+          inherit mango;
         };
-        devShells.default = maomaowm.overrideAttrs shellOverride;
+        devShells.default = mango.overrideAttrs shellOverride;
         formatter = pkgs.alejandra;
       };
       systems = [

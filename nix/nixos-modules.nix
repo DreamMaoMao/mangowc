@@ -4,15 +4,15 @@ self: {
   pkgs,
   ...
 }: let
-  cfg = config.programs.maomaowm;
+  cfg = config.programs.mango;
 in {
   options = {
-    programs.maomaowm = {
-      enable = lib.mkEnableOption "maomaowm, a wayland compositor based on dwl";
+    programs.mango = {
+      enable = lib.mkEnableOption "mango, a wayland compositor based on dwl";
       package = lib.mkOption {
         type = lib.types.package;
-        default = self.packages.${pkgs.system}.maomaowm;
-        description = "The maomaowm package to use";
+        default = self.packages.${pkgs.system}.mango;
+        description = "The mango package to use";
       };
     };
   };
