@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Something in maomaowm isn't working correctly
+about: Something in mango isn't working correctly
 title: ""
 labels: "A: bug"
 assignees: ""
@@ -8,13 +8,13 @@ assignees: ""
 
 ## Info
 
-<!--Paste maomao version from running "maomao -v"-->
+<!--Paste mango version from running "mango -v"-->
 <!--
 Wlroots library needs to be built from this repository to avoid crashes
 https://github.com/DreamMaoMao/wlroots.git
 -->
 
-maomao version:
+mango version:
 wlroots version:
 
 ## Description

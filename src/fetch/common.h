@@ -27,17 +27,17 @@ int isdescprocess(pid_t p, pid_t c) {
 }
 
 char *get_autostart_path(char *autostart_path, unsigned int buf_size) {
-	const char *maomaoconfig = getenv("MAOMAOCONFIG");
+	const char *mangoconfig = getenv("MANGOCONFIG");
 
-	if (maomaoconfig && maomaoconfig[0] != '\0') {
-		snprintf(autostart_path, buf_size, "%s/autostart.sh", maomaoconfig);
+	if (mangoconfig && mangoconfig[0] != '\0') {
+		snprintf(autostart_path, buf_size, "%s/autostart.sh", mangoconfig);
 	} else {
 		const char *homedir = getenv("HOME");
 		if (!homedir) {
 			fprintf(stderr, "Error: HOME environment variable not set.\n");
 			return NULL;
 		}
-		snprintf(autostart_path, buf_size, "%s/.config/maomao/autostart.sh",
+		snprintf(autostart_path, buf_size, "%s/.config/mango/autostart.sh",
 				 homedir);
 	}
 

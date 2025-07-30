@@ -22,7 +22,7 @@
   wlroots_0_19,
   libGL,
 }: let
-  pname = "maomaowm";
+  pname = "mango";
   # Use patched wlroots from github.com/DreamMaoMao/wlroots
   wlroots-git = wlroots_0_19.overrideAttrs (
     final: prev: {
@@ -71,14 +71,14 @@ in
       ];
 
     passthru = {
-      providedSessions = ["maomao"];
+      providedSessions = ["mango"];
       inherit mmsg;
     };
 
     meta = {
-      mainProgram = "maomao";
+      mainProgram = "mango";
       description = "A streamlined but feature-rich Wayland compositor";
-      homepage = "https://github.com/DreamMaoMao/maomaowm";
+      homepage = "https://github.com/DreamMaoMao/mango";
       license = lib.licenses.gpl3Plus;
       maintainers = [];
       platforms = lib.platforms.unix;

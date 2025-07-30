@@ -4,8 +4,8 @@ self: {
   pkgs,
   ...
 }: let
-  inherit (self.packages.${pkgs.system}) maomaowm;
-  cfg = config.wayland.windowManager.maomaowm;
+  inherit (self.packages.${pkgs.system}) mango;
+  cfg = config.wayland.windowManager.mango;
   variables = lib.concatStringsSep " " cfg.systemd.variables;
   extraCommands = lib.concatStringsSep " && " cfg.systemd.extraCommands;
   systemdActivation = ''${pkgs.dbus}/bin/dbus-update-activation-environment --systemd ${variables}; ${extraCommands}'';
@@ -15,7 +15,7 @@ self: {
   '';
 in {
   options = {
-    wayland.windowManager.maomaowm = with lib; {
+    wayland.windowManager.mango = with lib; {
       enable = mkOption {
         type = types.bool;
         default = false;
@@ -26,8 +26,8 @@ in {
           default = pkgs.stdenv.isLinux;
           example = false;
           description = ''
-            Whether to enable {file}`maomao-session.target` on
-            maomao startup. This links to
+            Whether to enable {file}`mango-session.target` on
+            mango startup. This links to
             {file}`graphical-session.target`.
             Some important environment variables will be imported to systemd
             and dbus user environment before reaching the target, including
@@ -59,7 +59,7 @@ in {
           type = types.listOf types.str;
           default = [
             "systemctl --user reset-failed"
-            "systemctl --user start maomao-session.target"
+            "systemctl --user start mango-session.target"
           ];
           description = ''
             Extra commands to run after D-Bus activation.
@@ -71,7 +71,7 @@ in {
         '';
       };
       settings = mkOption {
-        description = "maomaowm config content";
+        description = "mango config content";
         type = types.str;
         default = "";
         example = ''
@@ -92,30 +92,30 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [maomaowm];
+    home.packages = [mango];
     home.activation =
       lib.optionalAttrs (cfg.autostart_sh != "") {
-        createMaomaoScript = lib.hm.dag.entryAfter ["clearMaomaoConfig"] ''
-          cat ${autostart_sh} > $HOME/.config/maomao/autostart.sh
-          chmod +x $HOME/.config/maomao/autostart.sh
+        createMangoScript = lib.hm.dag.entryAfter ["clearMangoConfig"] ''
+          cat ${autostart_sh} > $HOME/.config/mango/autostart.sh
+          chmod +x $HOME/.config/mango/autostart.sh
         '';
       }
       // lib.optionalAttrs (cfg.settings != "") {
-        createMaomaoConfig = lib.hm.dag.entryAfter ["clearMaomaoConfig"] ''
-          cat > $HOME/.config/maomao/config.conf <<EOF
+        createMangoConfig = lib.hm.dag.entryAfter ["clearMangoConfig"] ''
+          cat > $HOME/.config/mango/config.conf <<EOF
           ${cfg.settings}
           EOF
         '';
       }
       // {
-        clearMaomaoConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
-          rm -rf $HOME/.config/maomao
-          mkdir -p $HOME/.config/maomao
+        clearMangoConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+          rm -rf $HOME/.config/mango
+          mkdir -p $HOME/.config/mango
         '';
       };
-    systemd.user.targets.maomao-session = lib.mkIf cfg.systemd.enable {
+    systemd.user.targets.mango-session = lib.mkIf cfg.systemd.enable {
       Unit = {
-        Description = "maomao compositor session";
+        Description = "mango compositor session";
         Documentation = ["man:systemd.special(7)"];
         BindsTo = ["graphical-session.target"];
         Wants =
