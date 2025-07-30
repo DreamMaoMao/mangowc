@@ -1,5 +1,8 @@
 # Mango
 
+<img width="255" height="256" alt="mango-transparency-256" src="https://github.com/user-attachments/assets/54caff2c-932f-4998-a090-2a5292ebbfa4" />
+
+
 This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
 
