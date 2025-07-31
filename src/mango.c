@@ -1469,14 +1469,38 @@ void apply_window_snap(Client *c) {
 	resize(c, c->geom, 0);
 }
 
-void arrangelayers(Monitor *m) {
-	int i;
-	struct wlr_box usable_area = m->m;
+void reset_exclusive_layer(Monitor *m) {
 	LayerSurface *l;
+	int i;
 	unsigned int layers_above_shell[] = {
 		ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
 		ZWLR_LAYER_SHELL_V1_LAYER_TOP,
 	};
+
+	if (!m)
+		return;
+
+	for (i = 0; i < (int)LENGTH(layers_above_shell); i++) {
+		wl_list_for_each_reverse(l, &m->layers[layers_above_shell[i]], link) {
+			if (locked ||
+				l->layer_surface->current.keyboard_interactive !=
+					ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE ||
+				!l->mapped || l == exclusive_focus)
+				continue;
+			/* Deactivate the focused client. */
+			focusclient(NULL, 0);
+			exclusive_focus = l;
+			client_notify_enter(l->layer_surface->surface,
+								wlr_seat_get_keyboard(seat));
+			return;
+		}
+	}
+}
+
+void arrangelayers(Monitor *m) {
+	int i;
+	struct wlr_box usable_area = m->m;
+
 	if (!m->wlr_output->enabled)
 		return;
 
@@ -1494,21 +1518,7 @@ void arrangelayers(Monitor *m) {
 		arrangelayer(m, &m->layers[i], &usable_area, 0);
 
 	/* Find topmost keyboard interactive layer, if such a layer exists */
-	for (i = 0; i < (int)LENGTH(layers_above_shell); i++) {
-		wl_list_for_each_reverse(l, &m->layers[layers_above_shell[i]], link) {
-			if (locked ||
-				l->layer_surface->current.keyboard_interactive !=
-					ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE ||
-				!l->mapped || l == exclusive_focus)
-				continue;
-			/* Deactivate the focused client. */
-			focusclient(NULL, 0);
-			exclusive_focus = l;
-			client_notify_enter(l->layer_surface->surface,
-								wlr_seat_get_keyboard(seat));
-			return;
-		}
-	}
+	reset_exclusive_layer(m);
 }
 
 void // 鼠标滚轮事件
@@ -2647,13 +2657,20 @@ void destroylocksurface(struct wl_listener *listener, void *data) {
 	m->lock_surface = NULL;
 	wl_list_remove(&m->destroy_lock_surface.link);
 
-	if (lock_surface->surface != seat->keyboard_state.focused_surface)
+	if (lock_surface->surface != seat->keyboard_state.focused_surface) {
+		if (exclusive_focus) {
+			exclusive_focus = NULL;
+			reset_exclusive_layer(m);
+		}
 		return;
+	}
 
 	if (locked && cur_lock && !wl_list_empty(&cur_lock->surfaces)) {
 		surface = wl_container_of(cur_lock->surfaces.next, surface, link);
 		client_notify_enter(surface->surface, wlr_seat_get_keyboard(seat));
 	} else if (!locked) {
+		exclusive_focus = NULL;
+		reset_exclusive_layer(selmon);
 		focusclient(focustop(selmon), 1);
 	} else {
 		wlr_seat_keyboard_clear_focus(seat);
