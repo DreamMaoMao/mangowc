@@ -217,7 +217,7 @@ typedef struct {
 	double percent;
 	float opacity;
 	bool should_scale;
-} animationScale;
+} BufferData;
 
 typedef struct Client Client;
 struct Client {
@@ -625,7 +625,7 @@ static void scene_buffer_apply_opacity(struct wlr_scene_buffer *buffer, int sx,
 static Client *direction_select(const Arg *arg);
 static void view_in_mon(const Arg *arg, bool want_animation, Monitor *m);
 
-static void buffer_set_effect(Client *c, animationScale scale_data);
+static void buffer_set_effect(Client *c, BufferData buffer_data);
 static void snap_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer,
 										   int sx, int sy, void *data);
 static void client_set_pending_state(Client *c);

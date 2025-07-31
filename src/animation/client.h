@@ -110,28 +110,28 @@ void set_client_open_animaiton(Client *c, struct wlr_box geo) {
 
 void snap_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx,
 									int sy, void *data) {
-	animationScale *scale_data = (animationScale *)data;
-	wlr_scene_buffer_set_dest_size(buffer, scale_data->width,
-								   scale_data->height);
+	BufferData *buffer_data = (BufferData *)data;
+	wlr_scene_buffer_set_dest_size(buffer, buffer_data->width,
+								   buffer_data->height);
 }
 
 void scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx, int sy,
 							   void *data) {
-	animationScale *scale_data = (animationScale *)data;
+	BufferData *buffer_data = (BufferData *)data;
 
-	if (scale_data->should_scale && scale_data->height_scale < 1 &&
-		scale_data->width_scale < 1) {
-		scale_data->should_scale = false;
+	if (buffer_data->should_scale && buffer_data->height_scale < 1 &&
+		buffer_data->width_scale < 1) {
+		buffer_data->should_scale = false;
 	}
 
-	if (scale_data->should_scale && scale_data->height_scale == 1 &&
-		scale_data->width_scale < 1) {
-		scale_data->should_scale = false;
+	if (buffer_data->should_scale && buffer_data->height_scale == 1 &&
+		buffer_data->width_scale < 1) {
+		buffer_data->should_scale = false;
 	}
 
-	if (scale_data->should_scale && scale_data->height_scale < 1 &&
-		scale_data->width_scale == 1) {
-		scale_data->should_scale = false;
+	if (buffer_data->should_scale && buffer_data->height_scale < 1 &&
+		buffer_data->width_scale == 1) {
+		buffer_data->should_scale = false;
 	}
 
 	struct wlr_scene_surface *scene_surface =
@@ -142,34 +142,34 @@ void scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx, int sy,
 
 	struct wlr_surface *surface = scene_surface->surface;
 
-	if (scale_data->should_scale) {
+	if (buffer_data->should_scale) {
 
 		unsigned int surface_width = surface->current.width;
 		unsigned int surface_height = surface->current.height;
 
-		surface_width = scale_data->width_scale < 1
+		surface_width = buffer_data->width_scale < 1
 							? surface_width
-							: scale_data->width_scale * surface_width;
-		surface_height = scale_data->height_scale < 1
+							: buffer_data->width_scale * surface_width;
+		surface_height = buffer_data->height_scale < 1
 							 ? surface_height
-							 : scale_data->height_scale * surface_height;
+							 : buffer_data->height_scale * surface_height;
 
-		if (surface_width > scale_data->width &&
+		if (surface_width > buffer_data->width &&
 			wlr_subsurface_try_from_wlr_surface(surface) == NULL) {
-			surface_width = scale_data->width;
+			surface_width = buffer_data->width;
 		}
 
-		if (surface_height > scale_data->height &&
+		if (surface_height > buffer_data->height &&
 			wlr_subsurface_try_from_wlr_surface(surface) == NULL) {
-			surface_height = scale_data->height;
+			surface_height = buffer_data->height;
 		}
 
-		if (surface_width > scale_data->width &&
+		if (surface_width > buffer_data->width &&
 			wlr_subsurface_try_from_wlr_surface(surface) != NULL) {
 			return;
 		}
 
-		if (surface_height > scale_data->height &&
+		if (surface_height > buffer_data->height &&
 			wlr_subsurface_try_from_wlr_surface(surface) != NULL) {
 			return;
 		}
@@ -184,14 +184,14 @@ void scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx, int sy,
 	if (wlr_xdg_popup_try_from_wlr_surface(surface) != NULL)
 		return;
 
-	float target_opacity = scale_data->percent + fadein_begin_opacity;
-	if (target_opacity > scale_data->opacity) {
-		target_opacity = scale_data->opacity;
+	float target_opacity = buffer_data->percent + fadein_begin_opacity;
+	if (target_opacity > buffer_data->opacity) {
+		target_opacity = buffer_data->opacity;
 	}
 	wlr_scene_buffer_set_opacity(buffer, target_opacity);
 }
 
-void buffer_set_effect(Client *c, animationScale data) {
+void buffer_set_effect(Client *c, BufferData data) {
 
 	if (!c || c->iskilling)
 		return;
@@ -373,7 +373,7 @@ void client_apply_clip(Client *c, float factor) {
 	struct wlr_box clip_box;
 	bool should_render_client_surface = false;
 	struct ivec2 offset;
-	animationScale scale_data;
+	BufferData buffer_data;
 	float opacity, percent;
 
 	int bw = (int)c->bw;
@@ -400,7 +400,7 @@ void client_apply_clip(Client *c, float factor) {
 
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
 
-		buffer_set_effect(c, (animationScale){1.0f, 1.0f, clip_box.width,
+		buffer_set_effect(c, (BufferData){1.0f, 1.0f, clip_box.width,
 											  clip_box.height, opacity, opacity,
 											  true});
 		return;
@@ -463,31 +463,31 @@ void client_apply_clip(Client *c, float factor) {
 	if (acutal_surface_width <= 0 || acutal_surface_height <= 0)
 		return;
 
-	scale_data.should_scale = true;
-	scale_data.width = clip_box.width;
-	scale_data.height = clip_box.height;
-	scale_data.width_scale = (float)scale_data.width / acutal_surface_width;
-	scale_data.height_scale = (float)scale_data.height / acutal_surface_height;
-	scale_data.percent = percent;
-	scale_data.opacity = opacity;
+	buffer_data.should_scale = true;
+	buffer_data.width = clip_box.width;
+	buffer_data.height = clip_box.height;
+	buffer_data.width_scale = (float)buffer_data.width / acutal_surface_width;
+	buffer_data.height_scale = (float)buffer_data.height / acutal_surface_height;
+	buffer_data.percent = percent;
+	buffer_data.opacity = opacity;
 
 	if (factor == 1.0) {
-		scale_data.width_scale = 1.0;
-		scale_data.height_scale = 1.0;
+		buffer_data.width_scale = 1.0;
+		buffer_data.height_scale = 1.0;
 	} else {
-		scale_data.width_scale = (float)scale_data.width / acutal_surface_width;
-		scale_data.height_scale =
-			(float)scale_data.height / acutal_surface_height;
+		buffer_data.width_scale = (float)buffer_data.width / acutal_surface_width;
+		buffer_data.height_scale =
+			(float)buffer_data.height / acutal_surface_height;
 	}
 
-	buffer_set_effect(c, scale_data);
+	buffer_set_effect(c, buffer_data);
 }
 
 void fadeout_client_animation_next_tick(Client *c) {
 	if (!c)
 		return;
 
-	animationScale scale_data;
+	BufferData buffer_data;
 
 	double animation_passed =
 		(double)c->animation.passed_frames / c->animation.total_frames;
@@ -525,13 +525,13 @@ void fadeout_client_animation_next_tick(Client *c) {
 		(!c->animation_type_close &&
 		 strcmp(animation_type_close, "zoom") == 0)) {
 
-		scale_data.width = width;
-		scale_data.height = height;
-		scale_data.width_scale = animation_passed;
-		scale_data.height_scale = animation_passed;
+		buffer_data.width = width;
+		buffer_data.height = height;
+		buffer_data.width_scale = animation_passed;
+		buffer_data.height_scale = animation_passed;
 
 		wlr_scene_node_for_each_buffer(
-			&c->scene->node, snap_scene_buffer_apply_effect, &scale_data);
+			&c->scene->node, snap_scene_buffer_apply_effect, &buffer_data);
 	}
 
 	if (animation_passed == 1.0) {
