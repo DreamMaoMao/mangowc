@@ -154,7 +154,7 @@ void set_layer_dir_animaiton(LayerSurface *l, struct wlr_box *geo) {
 
 void layer_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx,
 									 int sy, void *data) {
-	animationScale *scale_data = (animationScale *)data;
+	BufferData *buffer_data = (BufferData *)data;
 
 	struct wlr_scene_surface *scene_surface =
 		wlr_scene_surface_try_from_buffer(buffer);
@@ -165,9 +165,9 @@ void layer_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx,
 	struct wlr_surface *surface = scene_surface->surface;
 
 	unsigned int surface_width =
-		surface->current.width * scale_data->width_scale;
+		surface->current.width * buffer_data->width_scale;
 	unsigned int surface_height =
-		surface->current.height * scale_data->height_scale;
+		surface->current.height * buffer_data->height_scale;
 
 	if (surface_height > 0 && surface_width > 0) {
 		wlr_scene_buffer_set_dest_size(buffer, surface_width, surface_height);
@@ -176,9 +176,9 @@ void layer_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx,
 
 void layer_fadeout_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer,
 											 int sx, int sy, void *data) {
-	animationScale *scale_data = (animationScale *)data;
-	wlr_scene_buffer_set_dest_size(buffer, scale_data->width,
-								   scale_data->height);
+	BufferData *buffer_data = (BufferData *)data;
+	wlr_scene_buffer_set_dest_size(buffer, buffer_data->width,
+								   buffer_data->height);
 }
 
 void fadeout_layer_animation_next_tick(LayerSurface *l) {
@@ -203,9 +203,9 @@ void fadeout_layer_animation_next_tick(LayerSurface *l) {
 
 	wlr_scene_node_set_position(&l->scene->node, x, y);
 
-	animationScale scale_data;
-	scale_data.width = width;
-	scale_data.height = height;
+	BufferData buffer_data;
+	buffer_data.width = width;
+	buffer_data.height = height;
 
 	if ((!l->animation_type_close &&
 		 strcmp(layer_animation_type_close, "zoom") == 0) ||
@@ -213,7 +213,7 @@ void fadeout_layer_animation_next_tick(LayerSurface *l) {
 		 strcmp(l->animation_type_close, "zoom") == 0)) {
 		wlr_scene_node_for_each_buffer(&l->scene->node,
 									   layer_fadeout_scene_buffer_apply_effect,
-									   &scale_data);
+									   &buffer_data);
 	}
 
 	l->animation.current = (struct wlr_box){
@@ -270,13 +270,13 @@ void layer_animation_next_tick(LayerSurface *l) {
 
 	wlr_scene_node_set_position(&l->scene->node, x, y);
 
-	animationScale scale_data;
+	BufferData buffer_data;
 	if (factor == 1.0) {
-		scale_data.width_scale = 1.0f;
-		scale_data.height_scale = 1.0f;
+		buffer_data.width_scale = 1.0f;
+		buffer_data.height_scale = 1.0f;
 	} else {
-		scale_data.width_scale = (float)width / (float)l->current.width;
-		scale_data.height_scale = (float)height / (float)l->current.height;
+		buffer_data.width_scale = (float)width / (float)l->current.width;
+		buffer_data.height_scale = (float)height / (float)l->current.height;
 	}
 
 	if ((!l->animation_type_open &&
@@ -284,7 +284,7 @@ void layer_animation_next_tick(LayerSurface *l) {
 		(l->animation_type_open &&
 		 strcmp(l->animation_type_open, "zoom") == 0)) {
 		wlr_scene_node_for_each_buffer(
-			&l->scene->node, layer_scene_buffer_apply_effect, &scale_data);
+			&l->scene->node, layer_scene_buffer_apply_effect, &buffer_data);
 	}
 
 	l->animation.current = (struct wlr_box){
