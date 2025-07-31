@@ -2019,8 +2019,8 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 	for (ji = 0; ji < config.layer_rules_count; ji++) {
 		if (config.layer_rules_count < 1)
 			break;
-		if (strcmp(config.layer_rules[ji].layer_name,
-				   l->layer_surface->namespace) == 0) {
+		if (regex_match(config.layer_rules[ji].layer_name,
+						l->layer_surface->namespace)) {
 
 			r = &config.layer_rules[ji];
 			APPLY_INT_PROP(l, r, noanim);
