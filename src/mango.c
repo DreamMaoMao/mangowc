@@ -1209,9 +1209,6 @@ void applyrules(Client *c) {
 		wlr_scene_node_reparent(&selmon->sel->scene->node, layers[LyrOverlay]);
 		wlr_scene_node_raise_to_top(&selmon->sel->scene->node);
 	}
-
-	// update border color
-	setborder_color(c);
 }
 
 void // 17
@@ -3238,6 +3235,9 @@ mapnotify(struct wl_listener *listener, void *data) {
 	} else {
 		applyrules(c);
 	}
+
+	// set border color
+	setborder_color(c);
 
 	// make sure the animation is open type
 	c->is_pending_open_animation = true;
