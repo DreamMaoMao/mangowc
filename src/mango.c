@@ -2655,7 +2655,7 @@ void destroylocksurface(struct wl_listener *listener, void *data) {
 	wl_list_remove(&m->destroy_lock_surface.link);
 
 	if (lock_surface->surface != seat->keyboard_state.focused_surface) {
-		if (exclusive_focus) {
+		if (exclusive_focus && !locked) {
 			exclusive_focus = NULL;
 			reset_exclusive_layer(m);
 		}
