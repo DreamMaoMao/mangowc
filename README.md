@@ -1,4 +1,4 @@
-# Mango
+# MangoWC
 
 <img width="255" height="256" alt="mango-transparency-256" src="https://github.com/user-attachments/assets/54caff2c-932f-4998-a090-2a5292ebbfa4" />
 
@@ -69,7 +69,7 @@ https://github.com/user-attachments/assets/c9bf9415-fad1-4400-bcdc-3ad2d76de85a
 ## Arch Linux
 
 ```bash
-yay -S mango-git
+yay -S mangowc-git
 
 ```
 
@@ -109,8 +109,8 @@ cd scenefx
 meson build -Dprefix=/usr
 sudo ninja -C build install
 
-git clone https://github.com/DreamMaoMao/mango.git
-cd mango
+git clone https://github.com/DreamMaoMao/mangowc.git
+cd mangowc
 meson build -Dprefix=/usr
 sudo ninja -C build install
 ```
