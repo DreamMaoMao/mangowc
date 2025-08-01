@@ -234,6 +234,7 @@ struct Client {
 	struct wlr_scene_tree *image_capture_tree;
 	struct wlr_scene *image_capture_scene;
 	struct wlr_ext_image_capture_source_v1 *image_capture_source;
+	struct wlr_scene_surface *image_capture_scene_surface;
 
 	struct wl_list link;
 	struct wl_list flink;
@@ -251,8 +252,6 @@ struct Client {
 	struct wl_listener set_title;
 	struct wl_listener fullscreen;
 #ifdef XWAYLAND
-	struct wlr_scene_surface *image_capture_scene_surface;
-
 	struct wl_listener activate;
 	struct wl_listener associate;
 	struct wl_listener dissociate;
@@ -3209,11 +3208,8 @@ mapnotify(struct wl_listener *listener, void *data) {
 	c->ext_foreign_toplevel = wlr_ext_foreign_toplevel_handle_v1_create(
 		foreign_toplevel_list, &foreign_toplevel_state);
 	c->ext_foreign_toplevel->data = c;
-
-#ifdef XWAYLAND
 	c->image_capture_scene_surface = wlr_scene_surface_create(
 		&c->image_capture_scene->tree, client_surface(c));
-#endif
 
 	/* Handle unmanaged clients first so we can return prior create borders */
 	if (client_is_unmanaged(c)) {
@@ -4819,12 +4815,7 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 		c->swallowing = NULL;
 	}
 
-#ifdef XWAYLAND
-	if (client_is_x11(c)) {
-		wlr_scene_node_destroy(&c->image_capture_scene_surface->buffer->node);
-		c->image_capture_scene_surface = NULL;
-	}
-#endif
+	wlr_scene_node_destroy(&c->image_capture_scene_surface->buffer->node);
 	wlr_scene_node_destroy(&c->image_capture_scene->tree.node);
 	wlr_scene_node_destroy(&c->scene->node);
 	printstatus();
