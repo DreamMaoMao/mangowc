@@ -401,8 +401,8 @@ void client_apply_clip(Client *c, float factor) {
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
 
 		buffer_set_effect(c, (BufferData){1.0f, 1.0f, clip_box.width,
-											  clip_box.height, opacity, opacity,
-											  true});
+										  clip_box.height, opacity, opacity,
+										  true});
 		return;
 	}
 
@@ -467,7 +467,8 @@ void client_apply_clip(Client *c, float factor) {
 	buffer_data.width = clip_box.width;
 	buffer_data.height = clip_box.height;
 	buffer_data.width_scale = (float)buffer_data.width / acutal_surface_width;
-	buffer_data.height_scale = (float)buffer_data.height / acutal_surface_height;
+	buffer_data.height_scale =
+		(float)buffer_data.height / acutal_surface_height;
 	buffer_data.percent = percent;
 	buffer_data.opacity = opacity;
 
@@ -475,7 +476,8 @@ void client_apply_clip(Client *c, float factor) {
 		buffer_data.width_scale = 1.0;
 		buffer_data.height_scale = 1.0;
 	} else {
-		buffer_data.width_scale = (float)buffer_data.width / acutal_surface_width;
+		buffer_data.width_scale =
+			(float)buffer_data.width / acutal_surface_width;
 		buffer_data.height_scale =
 			(float)buffer_data.height / acutal_surface_height;
 	}
