@@ -2119,8 +2119,8 @@ void commitnotify(struct wl_listener *listener, void *data) {
 		setmon(c, NULL, 0,
 			   true); /* Make sure to reapply rules in mapnotify() */
 
-		client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
-								WLR_EDGE_RIGHT);
+		// client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
+		// 						WLR_EDGE_RIGHT);
 
 		uint32_t serial = wlr_xdg_surface_schedule_configure(c->surface.xdg);
 		if (serial > 0) {
@@ -2142,17 +2142,15 @@ void commitnotify(struct wl_listener *listener, void *data) {
 		c->animation.tagining)
 		return;
 
-	if (c == grabc)
+	if (c == grabc || !c->dirty)
 		return;
 
-	struct wlr_box *new_geo = &c->surface.xdg->geometry;
-	bool need_resize = new_geo->width != c->geom.width - 2 * c->bw ||
-					   new_geo->height != c->geom.height - 2 * c->bw ||
-					   new_geo->x != 0 || new_geo->y != 0;
+	resize(c, c->geom, 0);
 
-	if (need_resize) {
-		resize(c, c->geom, 0);
-	}
+	struct wlr_box *new_geo = &c->surface.xdg->geometry;
+	c->dirty = new_geo->width != c->geom.width - 2 * c->bw ||
+			   new_geo->height != c->geom.height - 2 * c->bw ||
+			   new_geo->x != 0 || new_geo->y != 0;
 }
 
 void destroydecoration(struct wl_listener *listener, void *data) {
