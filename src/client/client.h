@@ -345,6 +345,9 @@ static inline uint32_t client_set_size(Client *c, uint32_t width,
 }
 
 static inline void client_set_tiled(Client *c, uint32_t edges) {
+	struct wlr_xdg_toplevel *toplevel;
+	struct wlr_xdg_toplevel_state state;
+	bool need_maximize = false;
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
 		wlr_xwayland_surface_set_maximized(c->surface.xwayland,
@@ -353,13 +356,25 @@ static inline void client_set_tiled(Client *c, uint32_t edges) {
 		return;
 	}
 #endif
+
+	toplevel = c->surface.xdg->toplevel;
+	state = toplevel->current;
+
 	if (wl_resource_get_version(c->surface.xdg->toplevel->resource) >=
 		XDG_TOPLEVEL_STATE_TILED_RIGHT_SINCE_VERSION) {
 		wlr_xdg_toplevel_set_tiled(c->surface.xdg->toplevel, edges);
+	} else {
+		need_maximize = true;
 	}
 
-	wlr_xdg_toplevel_set_maximized(c->surface.xdg->toplevel,
-								   edges != WLR_EDGE_NONE);
+	// exclude some windows that cannot be maximized,
+	// such as the login window of linuxqq
+	if (state.min_width == 0 || state.min_height == 0)
+		need_maximize = false;
+
+	if (need_maximize) {
+		wlr_xdg_toplevel_set_maximized(toplevel, edges != WLR_EDGE_NONE);
+	}
 }
 
 static inline void client_set_suspended(Client *c, int suspended) {
