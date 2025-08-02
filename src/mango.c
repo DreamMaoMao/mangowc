@@ -3309,10 +3309,20 @@ minimizenotify(struct wl_listener *listener, void *data) {
 	// 		< XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION)
 	// 	wlr_xdg_surface_schedule_configure(c->surface.xdg);
 	// togglemaxmizescreen(&(Arg){0});
+
 	Client *c = wl_container_of(listener, c, minimize);
+	struct wlr_xwayland_minimize_event *event = data;
 
 	if (!c || !c->mon || c->iskilling || c->isminied)
 		return;
+
+	if (!client_is_x11(c)) {
+		if (!c->surface.xdg->toplevel->requested.minimized)
+			return;
+	} else {
+		if (!event->minimize)
+			return;
+	}
 
 	set_minized(c);
 }
