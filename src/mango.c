@@ -842,12 +842,12 @@ void applybounds(Client *c, struct wlr_box *bbox) {
 
 /*清除全屏标志,还原全屏时清0的border*/
 void clear_fullscreen_flag(Client *c) {
-	if (c->isfullscreen || c->ismaxmizescreen) {
-		c->isfullscreen = 0;
-		c->isfloating = 0;
-		c->ismaxmizescreen = 0;
-		c->bw = c->isnoborder ? 0 : borderpx;
+	if (c->isfullscreen) {
 		setfullscreen(c, false);
+	}
+
+	if (c->ismaxmizescreen) {
+		setmaxmizescreen(c, 0);
 	}
 }
 
@@ -3939,6 +3939,10 @@ void setmaxmizescreen(Client *c, int maxmizescreen) {
 																	: LyrTile]);
 
 	if (maxmizescreen) {
+
+		if (c->isfullscreen)
+			setfullscreen(c, 0);
+
 		if (c->isfloating)
 			c->oldgeom = c->geom;
 		if (selmon->isoverview) {
@@ -3956,8 +3960,6 @@ void setmaxmizescreen(Client *c, int maxmizescreen) {
 	} else {
 		c->bw = c->isnoborder ? 0 : borderpx;
 		c->ismaxmizescreen = 0;
-		c->isfullscreen = 0;
-		setfullscreen(c, false);
 		if (c->isfloating)
 			setfloating(c, 1);
 		arrange(c->mon, false);
@@ -3970,7 +3972,8 @@ void setfakefullscreen(Client *c, int fakefullscreen) {
 		return;
 	if (c->isfullscreen)
 		setfullscreen(c, 0);
-	client_set_fullscreen(c, fakefullscreen);
+	else
+		client_set_fullscreen(c, fakefullscreen);
 }
 
 void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带全屏
@@ -3994,6 +3997,9 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 	}
 
 	if (fullscreen) {
+		if (c->ismaxmizescreen)
+			setmaxmizescreen(c, 0);
+
 		if (c->isfloating)
 			c->oldgeom = c->geom;
 		if (selmon->isoverview) {
@@ -4009,8 +4015,7 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 	} else {
 		c->bw = c->isnoborder ? 0 : borderpx;
 		c->isfullscreen = 0;
-		c->isfullscreen = 0;
-		c->ismaxmizescreen = 0;
+		c->isfakefullscreen = 0;
 		if (c->isfloating)
 			setfloating(c, 1);
 		arrange(c->mon, false);
