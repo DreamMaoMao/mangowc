@@ -976,7 +976,7 @@ void togglefullscreen(const Arg *arg) {
 	sel->is_in_scratchpad = 0;
 	sel->isnamedscratchpad = 0;
 
-	if (sel->isfullscreen || sel->ismaxmizescreen)
+	if (sel->isfullscreen)
 		setfullscreen(sel, 0);
 	else
 		setfullscreen(sel, 1);
@@ -1011,7 +1011,7 @@ void togglemaxmizescreen(const Arg *arg) {
 	sel->is_in_scratchpad = 0;
 	sel->isnamedscratchpad = 0;
 
-	if (sel->isfullscreen || sel->ismaxmizescreen)
+	if (sel->ismaxmizescreen)
 		setmaxmizescreen(sel, 0);
 	else
 		setmaxmizescreen(sel, 1);
