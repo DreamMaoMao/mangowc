@@ -3900,15 +3900,6 @@ setfloating(Client *c, int floating) {
 	if (!c || !c->mon || !client_surface(c)->mapped || c->iskilling)
 		return;
 
-	if (c->isoverlay) {
-		wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
-	} else if (client_should_overtop(c) && c->isfloating) {
-		wlr_scene_node_reparent(&c->scene->node, layers[LyrFSorOverTop]);
-	} else {
-		wlr_scene_node_reparent(&c->scene->node,
-								layers[c->isfloating ? LyrFloat : LyrTile]);
-	}
-
 	target_box = c->geom;
 
 	if (floating == 1 && c != grabc) {
@@ -3959,6 +3950,15 @@ setfloating(Client *c, int floating) {
 												 ISFULLSCREEN(fc)) {
 			clear_fullscreen_flag(fc);
 		}
+	}
+
+	if (c->isoverlay) {
+		wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
+	} else if (client_should_overtop(c) && c->isfloating) {
+		wlr_scene_node_reparent(&c->scene->node, layers[LyrFSorOverTop]);
+	} else {
+		wlr_scene_node_reparent(&c->scene->node,
+								layers[c->isfloating ? LyrFloat : LyrTile]);
 	}
 
 	arrange(c->mon, false);
