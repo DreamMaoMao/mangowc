@@ -1015,6 +1015,8 @@ void togglemaxmizescreen(const Arg *arg) {
 		setmaxmizescreen(sel, 0);
 	else
 		setmaxmizescreen(sel, 1);
+
+	setborder_color(sel);
 }
 void toggleoverlay(const Arg *arg) {
 	if (!selmon->sel || !selmon->sel->mon || selmon->sel->isfullscreen) {
