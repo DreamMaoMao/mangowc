@@ -3336,20 +3336,13 @@ minimizenotify(struct wl_listener *listener, void *data) {
 	// togglemaxmizescreen(&(Arg){0});
 
 	Client *c = wl_container_of(listener, c, minimize);
-	struct wlr_xwayland_minimize_event *event = data;
 
 	if (!c || !c->mon || c->iskilling || c->isminied)
 		return;
 
-	if (!client_is_x11(c)) {
-		if (!c->surface.xdg->toplevel->requested.minimized)
-			return;
-	} else {
-		if (!event->minimize)
-			return;
+	if (client_request_minimize(c, data)) {
+		set_minized(c);
 	}
-
-	set_minized(c);
 }
 
 void motionabsolute(struct wl_listener *listener, void *data) {
