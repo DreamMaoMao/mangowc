@@ -458,3 +458,15 @@ static inline int client_wants_fullscreen(Client *c) {
 #endif
 	return c->surface.xdg->toplevel->requested.fullscreen;
 }
+
+static inline bool client_request_minimize(Client *c, void *data) {
+
+#ifdef XWAYLAND
+	if (client_is_x11(c)) {
+		struct wlr_xwayland_minimize_event *event = data;
+		return event->minimize;
+	}
+#endif
+
+	return c->surface.xdg->toplevel->requested.minimized;
+}
