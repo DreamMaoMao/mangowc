@@ -3169,6 +3169,8 @@ void init_client_properties(Client *c) {
 	c->no_force_center = 0;
 	c->scratchpad_width = 0;
 	c->scratchpad_height = 0;
+	c->isnoborder = 0;
+	c->isnosizehint = 0;
 }
 
 void // old fix to 0.5
