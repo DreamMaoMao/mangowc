@@ -1086,6 +1086,7 @@ int applyrulesgeom(Client *c) {
 
 		c->geom.width = r->width > 0 ? r->width : c->geom.width;
 		c->geom.height = r->height > 0 ? r->height : c->geom.height;
+		client_set_size_bound(c);
 
 		// 重新计算居中的坐标
 		if (r->offsetx != 0 || r->offsety != 0 || r->width > 0 || r->height > 0)
@@ -1143,6 +1144,8 @@ void applyrules(Client *c) {
 				c->geom.width = r->width;
 			if (r->height > 0)
 				c->geom.height = r->height;
+
+			client_set_size_bound(c);
 
 			if (r->offsetx || r->offsety || r->width > 0 || r->height > 0) {
 				hit_rule_pos = true;
