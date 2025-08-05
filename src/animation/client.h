@@ -795,6 +795,10 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 			bbox); // 去掉这个推荐的窗口大小,因为有时推荐的窗口特别大导致平铺异常
 	}
 
+	if (!c->ismaxmizescreen && !c->isfullscreen && c->isfloating) {
+		client_set_size_bound(c);
+	}
+
 	if (!c->is_pending_open_animation) {
 		c->animation.begin_fade_in = false;
 	}
@@ -839,6 +843,7 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 	if (c == grabc) {
 		c->animation.running = false;
 		c->need_output_flush = false;
+
 		c->animainit_geom = c->current = c->pending = c->animation.current =
 			c->geom;
 		wlr_scene_node_set_position(&c->scene->node, c->geom.x, c->geom.y);

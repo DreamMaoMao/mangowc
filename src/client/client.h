@@ -213,6 +213,10 @@ static inline int client_is_float_type(Client *c) {
 	if (client_is_x11(c)) {
 		struct wlr_xwayland_surface *surface = c->surface.xwayland;
 		xcb_size_hints_t *size_hints = surface->size_hints;
+
+		if (!size_hints)
+			return 0;
+
 		if (surface->modal)
 			return 1;
 
@@ -469,4 +473,52 @@ static inline bool client_request_minimize(Client *c, void *data) {
 #endif
 
 	return c->surface.xdg->toplevel->requested.minimized;
+}
+
+static inline void client_set_size_bound(Client *c) {
+	struct wlr_xdg_toplevel *toplevel;
+	struct wlr_xdg_toplevel_state state;
+
+#ifdef XWAYLAND
+	if (client_is_x11(c)) {
+		struct wlr_xwayland_surface *surface = c->surface.xwayland;
+		xcb_size_hints_t *size_hints = surface->size_hints;
+
+		if (!size_hints)
+			return;
+
+		if ((unsigned int)c->geom.width - 2 * c->bw < size_hints->min_width &&
+			size_hints->min_width > 0)
+			c->geom.width = size_hints->min_width + 2 * c->bw;
+		if ((unsigned int)c->geom.height - 2 * c->bw < size_hints->min_height &&
+			size_hints->min_height > 0)
+			c->geom.height = size_hints->min_height + 2 * c->bw;
+		if ((unsigned int)c->geom.width - 2 * c->bw > size_hints->max_width &&
+			size_hints->max_width > 0)
+			c->geom.width = size_hints->max_width + 2 * c->bw;
+		if ((unsigned int)c->geom.height - 2 * c->bw > size_hints->max_height &&
+			size_hints->max_height > 0)
+			c->geom.height = size_hints->max_height + 2 * c->bw;
+		return;
+	}
+#endif
+
+	toplevel = c->surface.xdg->toplevel;
+	state = toplevel->current;
+	if ((unsigned int)c->geom.width - 2 * c->bw < state.min_width &&
+		state.min_width > 0) {
+		c->geom.width = state.min_width + 2 * c->bw;
+	}
+	if ((unsigned int)c->geom.height - 2 * c->bw < state.min_height &&
+		state.min_height > 0) {
+		c->geom.height = state.min_height + 2 * c->bw;
+	}
+	if ((unsigned int)c->geom.width - 2 * c->bw > state.max_width &&
+		state.max_width > 0) {
+		c->geom.width = state.max_width + 2 * c->bw;
+	}
+	if ((unsigned int)c->geom.height - 2 * c->bw > state.max_height &&
+		state.max_height > 0) {
+		c->geom.height = state.max_height + 2 * c->bw;
+	}
 }
