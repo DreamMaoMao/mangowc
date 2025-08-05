@@ -265,7 +265,7 @@ struct Client {
 	unsigned int configure_serial;
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	int isfloating, isurgent, isfullscreen, isfakefullscreen,
-		need_float_size_reduce, isminied, isoverlay;
+		need_float_size_reduce, isminied, isoverlay, isnosizehint;
 	int ismaxmizescreen;
 	int overview_backup_bw;
 	int fullscreen_backup_x, fullscreen_backup_y, fullscreen_backup_w,
@@ -1052,6 +1052,7 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isnamedscratchpad);
 	APPLY_INT_PROP(c, r, isglobal);
 	APPLY_INT_PROP(c, r, isoverlay);
+	APPLY_INT_PROP(c, r, isnosizehint);
 	APPLY_INT_PROP(c, r, isunglobal);
 	APPLY_INT_PROP(c, r, scratchpad_width);
 	APPLY_INT_PROP(c, r, scratchpad_height);
@@ -1086,7 +1087,9 @@ int applyrulesgeom(Client *c) {
 
 		c->geom.width = r->width > 0 ? r->width : c->geom.width;
 		c->geom.height = r->height > 0 ? r->height : c->geom.height;
-		client_set_size_bound(c);
+
+		if (!c->isnosizehint)
+			client_set_size_bound(c);
 
 		// 重新计算居中的坐标
 		if (r->offsetx != 0 || r->offsety != 0 || r->width > 0 || r->height > 0)
@@ -1145,7 +1148,8 @@ void applyrules(Client *c) {
 			if (r->height > 0)
 				c->geom.height = r->height;
 
-			client_set_size_bound(c);
+			if (!c->isnosizehint)
+				client_set_size_bound(c);
 
 			if (r->offsetx || r->offsety || r->width > 0 || r->height > 0) {
 				hit_rule_pos = true;

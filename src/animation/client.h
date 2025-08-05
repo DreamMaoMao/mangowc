@@ -795,7 +795,8 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 			bbox); // 去掉这个推荐的窗口大小,因为有时推荐的窗口特别大导致平铺异常
 	}
 
-	if (!c->ismaxmizescreen && !c->isfullscreen && c->isfloating) {
+	if (!c->isnosizehint && !c->ismaxmizescreen && !c->isfullscreen &&
+		c->isfloating) {
 		client_set_size_bound(c);
 	}
 
