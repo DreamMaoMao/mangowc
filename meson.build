@@ -1,5 +1,5 @@
-project('maomao', ['c', 'cpp'],
-  version : '0.7.3'  # 这个版本号将被 Git tag 覆盖
+project('mango', ['c', 'cpp'],
+  version : '0.8.1',
 )
 
 subdir('protocols')
@@ -59,12 +59,27 @@ c_args = [
   '-Wno-unused-function',
   '-DWLR_USE_UNSTABLE',
   '-D_POSIX_C_SOURCE=200809L',
-  '-DVERSION="@0@"'.format(version_with_hash),  # 版本信息包含 Commit Hash 和最新的 tag
-  '-DSYSCONFDIR="@0@"'.format('/etc'),     # 添加 sysconfdir
+  '-DVERSION="@0@"'.format(version_with_hash),
+  '-DSYSCONFDIR="@0@"'.format('/etc'),
 ]
+
+# 仅在 debug 选项启用时添加调试参数
+if get_option('asan')
+  c_args += [
+    '-fsanitize=address',
+    '-fno-omit-frame-pointer',
+    '-fno-optimize-sibling-calls'
+  ]
+endif
 
 if xcb.found() and xlibs.found()
   c_args += '-DXWAYLAND'
+endif
+
+# 链接参数（根据 debug 状态添加 ASAN）
+link_args = []
+if get_option('asan')
+  link_args += '-fsanitize=address'
 endif
 
 executable('mango',
@@ -83,7 +98,8 @@ executable('mango',
     pcre2_dep,
   ],
   install : true,
-  c_args : c_args
+  c_args : c_args,
+  link_args : link_args,
 )
 
 desktop_install_dir = join_paths(prefix, 'share/wayland-sessions')
