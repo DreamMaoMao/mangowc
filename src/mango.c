@@ -3208,12 +3208,11 @@ mapnotify(struct wl_listener *listener, void *data) {
 	c->geom.width += 2 * c->bw;
 	c->geom.height += 2 * c->bw;
 
-	c->image_capture_scene = wlr_scene_create();
-
 	struct wlr_ext_foreign_toplevel_handle_v1_state foreign_toplevel_state = {
 		.app_id = client_get_appid(c),
 		.title = client_get_title(c),
 	};
+
 	c->image_capture_scene = wlr_scene_create();
 	c->ext_foreign_toplevel = wlr_ext_foreign_toplevel_handle_v1_create(
 		foreign_toplevel_list, &foreign_toplevel_state);
