@@ -1957,6 +1957,7 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 	wlr_scene_output_destroy(m->scene_output);
 
 	closemon(m);
+	free(m->pertag);
 	free(m);
 }
 
@@ -4454,7 +4455,6 @@ void setup(void) {
 	input_method_manager = wlr_input_method_manager_v2_create(dpy);
 	text_input_manager = wlr_text_input_manager_v3_create(dpy);
 
-	dwl_input_method_relay = calloc(1, sizeof(*dwl_input_method_relay));
 	dwl_input_method_relay = dwl_im_relay_create();
 
 	wl_global_create(dpy, &zdwl_ipc_manager_v2_interface, 2, NULL,
