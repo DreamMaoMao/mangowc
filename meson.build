@@ -62,6 +62,9 @@ c_args = [
   '-D_POSIX_C_SOURCE=200809L',
   '-DVERSION="@0@"'.format(version_with_hash),  # 版本信息包含 Commit Hash 和最新的 tag
   '-DSYSCONFDIR="@0@"'.format('/etc'),     # 添加 sysconfdir
+  '-fsanitize=address',          # 启用 AddressSanitizer
+  '-fno-omit-frame-pointer',     # 保留栈帧指针，便于调试
+  '-fno-optimize-sibling-calls', # 禁用尾调用优化，确保完整调用栈
 ]
 
 if xcb.found() and xlibs.found()
@@ -85,7 +88,8 @@ executable('mango',
     pcre2_dep,
   ],
   install : true,
-  c_args : c_args
+  c_args : c_args,
+  link_args : ['-fsanitize=address'],  # 链接时也启用 ASAN
 )
 
 desktop_install_dir = join_paths(prefix, 'share/wayland-sessions')
