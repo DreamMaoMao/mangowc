@@ -445,14 +445,6 @@ xkb_keysym_t normalize_keysym(xkb_keysym_t sym) {
 	case XKB_KEY_parenright:
 		return XKB_KEY_0; // )
 
-	// 其他布局可能需要的变体（如欧洲键盘）
-	case XKB_KEY_quotedbl:
-		return XKB_KEY_2; // "
-	case XKB_KEY_section:
-		return XKB_KEY_6; // §
-	case XKB_KEY_degree:
-		return XKB_KEY_0; // °
-
 	default:
 		return sym;
 	}
