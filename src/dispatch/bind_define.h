@@ -872,7 +872,12 @@ void tagmon(const Arg *arg) {
 
 void tagsilent(const Arg *arg) {
 	Client *fc;
-	Client *target_client = selmon->sel;
+	Client *target_client;
+
+	if (!selmon || !selmon->sel)
+		return;
+
+	target_client = selmon->sel;
 	target_client->tags = arg->ui & TAGMASK;
 	wl_list_for_each(fc, &clients, link) {
 		if (fc && fc != target_client && target_client->tags & fc->tags &&
