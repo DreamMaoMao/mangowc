@@ -50,6 +50,7 @@ typedef struct {
 	int isunglobal;
 	int isglobal;
 	int isoverlay;
+	int ignore_maximize;
 	int isnosizehint;
 	const char *monitor;
 	int offsetx;
@@ -1345,6 +1346,7 @@ void parse_config_line(Config *config, const char *line) {
 		rule->isunglobal = -1;
 		rule->isglobal = -1;
 		rule->isoverlay = -1;
+		rule->ignore_maximize = -1;
 		rule->isnosizehint = -1;
 		rule->isterm = -1;
 		rule->noswallow = -1;
@@ -1427,6 +1429,8 @@ void parse_config_line(Config *config, const char *line) {
 					rule->focused_opacity = atof(val);
 				} else if (strcmp(key, "isoverlay") == 0) {
 					rule->isoverlay = atoi(val);
+				} else if (strcmp(key, "ignore_maximize") == 0) {
+					rule->ignore_maximize = atoi(val);
 				} else if (strcmp(key, "isnosizehint") == 0) {
 					rule->isnosizehint = atoi(val);
 				} else if (strcmp(key, "isterm") == 0) {
