@@ -84,12 +84,12 @@ eselect repository enable guru
 emerge --sync guru
 ```
 
-Then, add `gui-libs/scenefx` and `gui-wm/mango` to the `package.accept_keywords`.
+Then, add `gui-libs/scenefx` and `gui-wm/mangowc` to the `package.accept_keywords`.
 
 Finally, install the package:
 
 ```bash
-emerge --ask --verbose gui-wm/mango
+emerge --ask --verbose gui-wm/mangowc
 ```
 
 Patching wlroots is done by getting the patch with git from [the repository](https://github.com/DreamMaoMao/wlroots.git)
@@ -232,6 +232,7 @@ To package mango for other distributions, you can check the reference setup for:
 
 - [nix](https://github.com/DreamMaoMao/mango/blob/main/nix/default.nix)
 - [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mango-git).
+- [gentoo](https://data.gpo.zugaina.org/guru/gui-wm/mangowc)
 
 Currently building mango requires a patched version of `wlroots-0.19`. If possible, the patch can be extracted from the [latest commit](https://github.com/DreamMaoMao/wlroots.git)
 and applied on `prepare` step. If it is not possible, you will need to create a separate `wlroots` package and make it a build dependency.
