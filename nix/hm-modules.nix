@@ -72,7 +72,7 @@ in {
       };
       settings = mkOption {
         description = "mango config content";
-        type = types.str;
+        type = types.lines;
         default = "";
         example = ''
           # menu and terminal
@@ -82,7 +82,7 @@ in {
       };
       autostart_sh = mkOption {
         description = "WARRNING: This is a shell script, but no need to add shebang";
-        type = types.str;
+        type = types.lines;
         default = "";
         example = ''
           waybar &
