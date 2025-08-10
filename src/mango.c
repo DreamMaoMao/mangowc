@@ -258,7 +258,8 @@ struct Client {
 	unsigned int configure_serial;
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	int isfloating, isurgent, isfullscreen, isfakefullscreen,
-		need_float_size_reduce, isminied, isoverlay, isnosizehint;
+		need_float_size_reduce, isminied, isoverlay, isnosizehint,
+		ignore_maximize;
 	int ismaxmizescreen;
 	int overview_backup_bw;
 	int fullscreen_backup_x, fullscreen_backup_y, fullscreen_backup_w,
@@ -1039,6 +1040,7 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isnamedscratchpad);
 	APPLY_INT_PROP(c, r, isglobal);
 	APPLY_INT_PROP(c, r, isoverlay);
+	APPLY_INT_PROP(c, r, ignore_maximize);
 	APPLY_INT_PROP(c, r, isnosizehint);
 	APPLY_INT_PROP(c, r, isunglobal);
 	APPLY_INT_PROP(c, r, scratchpad_width);
@@ -2127,8 +2129,8 @@ void commitnotify(struct wl_listener *listener, void *data) {
 		setmon(c, NULL, 0,
 			   true); /* Make sure to reapply rules in mapnotify() */
 
-		// client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
-		// 						WLR_EDGE_RIGHT);
+		client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
+								WLR_EDGE_RIGHT);
 
 		uint32_t serial = wlr_xdg_surface_schedule_configure(c->surface.xdg);
 		if (serial > 0) {
@@ -3158,6 +3160,7 @@ void init_client_properties(Client *c) {
 	c->scratchpad_height = 0;
 	c->isnoborder = 0;
 	c->isnosizehint = 0;
+	c->ignore_maximize = 0;
 }
 
 void // old fix to 0.5
@@ -3219,10 +3222,6 @@ mapnotify(struct wl_listener *listener, void *data) {
 		c->border[i]->node.data = c;
 	}
 
-	/* Initialize client geometry with room for border */
-	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
-							WLR_EDGE_RIGHT);
-
 	if (new_is_master && selmon && !is_scroller_layout(selmon))
 		// tile at the top
 		wl_list_insert(&clients, &c->link); // 新窗口是master,头部入栈
@@ -3246,6 +3245,9 @@ mapnotify(struct wl_listener *listener, void *data) {
 	} else {
 		applyrules(c);
 	}
+
+	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
+							WLR_EDGE_RIGHT);
 
 	// set border color
 	setborder_color(c);
