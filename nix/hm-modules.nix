@@ -4,7 +4,6 @@ self: {
   pkgs,
   ...
 }: let
-  inherit (self.packages.${pkgs.system}) mango;
   cfg = config.wayland.windowManager.mango;
   variables = lib.concatStringsSep " " cfg.systemd.variables;
   extraCommands = lib.concatStringsSep " && " cfg.systemd.extraCommands;
@@ -19,6 +18,11 @@ in {
       enable = mkOption {
         type = types.bool;
         default = false;
+      };
+      package = lib.mkOption {
+        type = lib.types.package;
+        default = self.packages.${pkgs.system}.mango;
+        description = "The mango package to use";
       };
       systemd = {
         enable = mkOption {
@@ -92,7 +96,7 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [mango];
+    home.packages = [ cfg.package ];
     home.activation =
       lib.optionalAttrs (cfg.autostart_sh != "") {
         createMangoScript = lib.hm.dag.entryAfter ["clearMangoConfig"] ''
