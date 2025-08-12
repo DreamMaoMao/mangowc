@@ -3164,9 +3164,7 @@ void keypressmod(struct wl_listener *listener, void *data) {
 	 * pressed. We simply communicate this to the client. */
 	KeyboardGroup *group = wl_container_of(listener, group, modifiers);
 
-	wlr_log(WLR_ERROR, "0");
 	if (!dwl_im_keyboard_grab_forward_modifiers(group)) {
-		wlr_log(WLR_ERROR, "1");
 
 		wlr_seat_set_keyboard(seat, &group->wlr_group->keyboard);
 		/* Send modifiers to the client. */
