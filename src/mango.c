@@ -1554,7 +1554,7 @@ axisnotify(struct wl_listener *listener, void *data) {
 	// IDLE_NOTIFY_ACTIVITY;
 	handlecursoractivity();
 	wlr_idle_notifier_v1_notify_activity(idle_notifier, seat);
-	keyboard = wlr_seat_get_keyboard(seat);
+	keyboard = &kb_group->wlr_group->keyboard;
 
 	// 获取当前按键的mask,比如alt+super或者alt+ctrl
 	mods = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
@@ -1619,7 +1619,7 @@ int ongesture(struct wlr_pointer_swipe_end_event *event) {
 		motion = swipe_dy < 0 ? SWIPE_UP : SWIPE_DOWN;
 	}
 
-	keyboard = wlr_seat_get_keyboard(seat);
+	keyboard = &kb_group->wlr_group->keyboard;
 	mods = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
 
 	for (ji = 0; ji < config.gesture_bindings_count; ji++) {
@@ -1782,7 +1782,7 @@ buttonpress(struct wl_listener *listener, void *data) {
 			}
 		}
 
-		keyboard = wlr_seat_get_keyboard(seat);
+		keyboard = &kb_group->wlr_group->keyboard;
 		mods = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
 		for (ji = 0; ji < config.mouse_bindings_count; ji++) {
 			if (config.mouse_bindings_count < 1)
@@ -3109,6 +3109,7 @@ void keypressmod(struct wl_listener *listener, void *data) {
 	KeyboardGroup *group = wl_container_of(listener, group, modifiers);
 
 	if (!dwl_im_keyboard_grab_forward_modifiers(group)) {
+
 		wlr_seat_set_keyboard(seat, &group->wlr_group->keyboard);
 		/* Send modifiers to the client. */
 		wlr_seat_keyboard_notify_modifiers(

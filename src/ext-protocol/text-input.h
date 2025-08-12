@@ -111,6 +111,8 @@ get_keyboard_grab(KeyboardGroup *keyboard) {
 		return NULL;
 	}
 
+	// 如果键盘不是物理键盘组的键盘，则返回NULL
+	// kb_group是一个物理键盘组，它的键盘是物理键盘
 	if (keyboard != kb_group)
 		return NULL;
 
@@ -347,7 +349,9 @@ static void handle_input_method_grab_keyboard(struct wl_listener *listener,
 		wl_container_of(listener, relay, input_method_grab_keyboard);
 	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = data;
 
-	struct wlr_keyboard *active_keyboard = wlr_seat_get_keyboard(seat);
+	// 活动键盘应该是从物理键盘组中获取的，
+	// wlr_seat_get_keyboard可能获取到的是虚拟键盘，所以会造成设置错误
+	struct wlr_keyboard *active_keyboard = &kb_group->wlr_group->keyboard;
 
 	if (!is_keyboard_emulated_by_input_method(active_keyboard,
 											  relay->input_method)) {
