@@ -32,12 +32,10 @@
         pkgs,
         ...
       }: let
-        inherit
-          (pkgs)
-          callPackage
-          ;
+        inherit (pkgs) callPackage ;
+        inherit (inputs.mmsg.packages.${pkgs.system}) mmsg;
         mango = callPackage ./nix {
-          inherit (inputs.mmsg.packages.${pkgs.system}) mmsg;
+          inherit mmsg;
           inherit (inputs.scenefx.packages.${pkgs.system}) scenefx;
         };
         shellOverride = old: {
@@ -51,6 +49,7 @@
         };
         packages = {
           inherit mango;
+          inherit mmsg;
         };
         devShells.default = mango.overrideAttrs shellOverride;
         formatter = pkgs.alejandra;
