@@ -66,26 +66,35 @@ void focusdir(const Arg *arg) {
 }
 void focuslast(const Arg *arg) {
 
-	Client *c, *prev = NULL;
+	Client *c = NULL;
+	bool begin = false;
+	unsigned int target = 0;
+
 	wl_list_for_each(c, &fstack, flink) {
-		if (c->iskilling || c->isminied || c->isunglobal)
+		if (c->iskilling || c->isminied || c->isunglobal ||
+			client_is_unmanaged(c) || client_should_ignore_focus(c))
 			continue;
-		if (c)
+
+		if (selmon && !selmon->sel) {
+			break;
+		}
+
+		if (selmon && c == selmon->sel && !begin) {
+			begin = true;
+			continue;
+		}
+
+		if (begin)
 			break;
 	}
 
-	struct wl_list *prev_node = c->flink.next;
-	prev = wl_container_of(prev_node, prev, flink);
+	if (!c)
+		return;
 
-	unsigned int target;
-	if (prev) {
-		if (prev->mon != selmon) {
-			selmon = prev->mon;
-			warp_cursor_to_selmon(selmon);
-		}
-		target = get_tags_first_tag(prev->tags);
+	if ((int)c->tags > 0) {
+		focusclient(c, 1);
+		target = get_tags_first_tag(c->tags);
 		view(&(Arg){.ui = target}, true);
-		focusclient(prev, 1);
 	}
 }
 
