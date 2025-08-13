@@ -72,7 +72,8 @@ void focuslast(const Arg *arg) {
 
 	wl_list_for_each(c, &fstack, flink) {
 		if (c->iskilling || c->isminied || c->isunglobal ||
-			client_is_unmanaged(c) || client_should_ignore_focus(c))
+			!client_surface(c)->mapped || client_is_unmanaged(c) ||
+			client_should_ignore_focus(c))
 			continue;
 
 		if (selmon && !selmon->sel) {
@@ -88,7 +89,7 @@ void focuslast(const Arg *arg) {
 			break;
 	}
 
-	if (!c)
+	if (!c || !client_surface(c)->mapped)
 		return;
 
 	if ((int)c->tags > 0) {
