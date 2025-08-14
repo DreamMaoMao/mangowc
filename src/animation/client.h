@@ -786,9 +786,6 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 		c->geom.width = MAX(1 + 2 * (int)c->bw, c->geom.width);
 		c->geom.height = MAX(1 + 2 * (int)c->bw, c->geom.height);
 	} else { // 这里会限制不允许窗口划出屏幕
-		client_set_bounds(
-			c, geo.width,
-			geo.height); // 去掉这个推荐的窗口大小,因为有时推荐的窗口特别大导致平铺异常
 		c->geom = geo;
 		applybounds(
 			c,
