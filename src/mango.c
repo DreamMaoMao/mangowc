@@ -291,7 +291,6 @@ struct Client {
 	int isopensilent;
 	int iskilling;
 	int isnamedscratchpad;
-	struct wlr_box bounds;
 	bool is_pending_open_animation;
 	bool is_restoring_from_ov;
 	float scroller_proportion;
