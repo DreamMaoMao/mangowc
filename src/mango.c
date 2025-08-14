@@ -2156,6 +2156,12 @@ void commitnotify(struct wl_listener *listener, void *data) {
 						   WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE;
 		wlr_xdg_toplevel_set_wm_capabilities(c->surface.xdg->toplevel, wm_caps);
 
+		if (c->mon) {
+			wlr_xdg_toplevel_set_bounds(c->surface.xdg->toplevel,
+										c->mon->w.width - 2 * c->bw,
+										c->mon->w.height - 2 * c->bw);
+		}
+
 		if (c->decoration)
 			requestdecorationmode(&c->set_decoration_mode, c->decoration);
 		return;
