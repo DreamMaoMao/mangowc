@@ -44,11 +44,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1750505787,
-        "narHash": "sha256-D57Vl2x9RJP+8pjYGYUf1L/q+G6bsmoVaqJX3m5PtlQ=",
+        "lastModified": 1753859411,
+        "narHash": "sha256-xiQGpk987dCmeF29mClveaGJNIvljmJJ9FRHVPp92HU=",
         "owner": "DreamMaoMao",
         "repo": "mmsg",
-        "rev": "4dc703aa06ae40d2cf5d3c0122b4d7f7d78fe8bf",
+        "rev": "6066d37d810bb16575c0b60e25852d1f6d50de60",
         "type": "github"
       },
       "original": {
