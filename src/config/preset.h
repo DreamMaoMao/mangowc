@@ -69,7 +69,7 @@ int drag_tile_to_tile = 0;
 unsigned int cursor_size = 24;
 unsigned int cursor_hide_timeout = 0;
 
-unsigned int swipe_min_threshold = 20;
+unsigned int swipe_min_threshold = 1;
 
 int inhibit_regardless_of_visibility =
 	0; /* 1 means idle inhibitors will disable idle tracking even if it's
