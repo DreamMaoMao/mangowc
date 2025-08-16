@@ -76,3 +76,7 @@ int regex_match(const char *pattern, const char *str) {
 	pcre2_code_free(re);
 	return ret >= 0;
 }
+
+void wl_list_append(struct wl_list *list, struct wl_list *object) {
+	wl_list_insert(list->prev, object);
+}
