@@ -419,6 +419,7 @@ struct Monitor {
 	unsigned int visible_clients;
 	unsigned int visible_tiling_clients;
 	char last_surface_ws_name[256];
+	struct wlr_ext_workspace_group_handle_v1 *ext_group;
 };
 
 typedef struct {
@@ -651,6 +652,7 @@ static bool check_hit_no_border(Client *c);
 static void reset_keyboard_layout(void);
 static void client_update_oldmonname_record(Client *c, Monitor *m);
 static void pending_kill_client(Client *c);
+static unsigned int get_tags_first_tag_num(unsigned int source_tags);
 static void set_layer_open_animaiton(LayerSurface *l, struct wlr_box geo);
 static void init_fadeout_layers(LayerSurface *l);
 static void layer_actual_size(LayerSurface *l, unsigned int *width,
@@ -1994,6 +1996,11 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 			wlr_layer_surface_v1_destroy(l->layer_surface);
 	}
 
+	// clean ext-workspaces grouplab
+	wlr_ext_workspace_group_handle_v1_output_leave(m->ext_group, m->wlr_output);
+	wlr_ext_workspace_group_handle_v1_destroy(m->ext_group);
+	cleanup_workspaces_by_monitor(m);
+
 	wl_list_remove(&m->destroy.link);
 	wl_list_remove(&m->frame.link);
 	wl_list_remove(&m->link);
@@ -2534,8 +2541,6 @@ void createmon(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	printstatus();
-
 	/* The xdg-protocol specifies:
 	 *
 	 * If the fullscreened surface is not opaque, the compositor must make
@@ -2556,6 +2561,16 @@ void createmon(struct wl_listener *listener, void *data) {
 		wlr_output_layout_add_auto(output_layout, wlr_output);
 	else
 		wlr_output_layout_add(output_layout, wlr_output, m->m.x, m->m.y);
+
+	m->ext_group = wlr_ext_workspace_group_handle_v1_create(
+		ext_manager, WLR_EXT_WORKSPACE_HANDLE_V1_CAP_ACTIVATE);
+	wlr_ext_workspace_group_handle_v1_output_enter(m->ext_group, m->wlr_output);
+
+	for (i = 1; i <= LENGTH(tags); i++) {
+		add_workspace_by_tag(i, m);
+	}
+
+	printstatus();
 }
 
 void // fix for 0.5
@@ -3709,7 +3724,11 @@ printstatus(void) {
 		if (!m->wlr_output->enabled) {
 			continue;
 		}
-		dwl_ipc_output_printstatus(m); // 更新waybar上tag的状态 这里很关键
+		// Update workspace active states
+		dwl_ext_workspace_printstatus(m);
+
+		// Update IPC output status
+		dwl_ipc_output_printstatus(m);
 	}
 }
 
@@ -4602,6 +4621,9 @@ void setup(void) {
 		wlr_xdg_foreign_registry_create(dpy);
 	wlr_xdg_foreign_v1_create(dpy, foreign_registry);
 	wlr_xdg_foreign_v2_create(dpy, foreign_registry);
+
+	// ext-workspace协议
+	workspaces_init();
 #ifdef XWAYLAND
 	/*
 	 * Initialise the XWayland X server.
@@ -4748,7 +4770,6 @@ int hidecursor(void *data) {
 
 // 显示所有tag 或 跳转到聚焦窗口的tag
 void toggleoverview(const Arg *arg) {
-
 	Client *c;
 
 	if (selmon->isoverview && ov_tab_mode && arg->i != -1 && selmon->sel) {
@@ -4779,6 +4800,7 @@ void toggleoverview(const Arg *arg) {
 	} else if (!selmon->isoverview && !selmon->sel) {
 		target = (1 << (selmon->pertag->prevtag - 1));
 		view(&(Arg){.ui = target}, false);
+		refresh_monitors_workspaces_status(selmon);
 		return;
 	}
 
@@ -4804,6 +4826,8 @@ void toggleoverview(const Arg *arg) {
 	if (ov_tab_mode && selmon->isoverview && selmon->sel) {
 		focusstack(&(Arg){.i = 1});
 	}
+
+	refresh_monitors_workspaces_status(selmon);
 }
 
 void unlocksession(struct wl_listener *listener, void *data) {
