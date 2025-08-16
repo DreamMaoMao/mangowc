@@ -102,24 +102,26 @@ void focuslast(const Arg *arg) {
 void focusmon(const Arg *arg) {
 	Client *c;
 	Monitor *m = NULL;
-	int i = 0, nmons = wl_list_length(&mons);
-	if (nmons && arg->i != UNDIR) {
-		do /* don't switch to disabled mons */
-			selmon = dirtomon(arg->i);
-		while (!selmon->wlr_output->enabled && i++ < nmons);
+
+	if (arg->i != UNDIR) {
+		m = dirtomon(arg->i);
 	} else if (arg->v) {
 		wl_list_for_each(m, &mons, link) {
 			if (!m->wlr_output->enabled) {
 				continue;
 			}
 			if (regex_match(arg->v, m->wlr_output->name)) {
-				selmon = m;
 				break;
 			}
 		}
 	} else {
 		return;
 	}
+
+	if (!m || !m->wlr_output->enabled)
+		return;
+
+	selmon = m;
 	warp_cursor_to_selmon(selmon);
 	c = focustop(selmon);
 	if (!c) {
@@ -836,13 +838,26 @@ void tag(const Arg *arg) {
 }
 
 void tagmon(const Arg *arg) {
-	Monitor *m;
+	Monitor *m = NULL;
 	Client *c = focustop(selmon);
 
 	if (!c)
 		return;
 
-	m = dirtomon(arg->i);
+	if (arg->i != UNDIR) {
+		m = dirtomon(arg->i);
+	} else if (arg->v) {
+		wl_list_for_each(m, &mons, link) {
+			if (!m->wlr_output->enabled) {
+				continue;
+			}
+			if (regex_match(arg->v, m->wlr_output->name)) {
+				break;
+			}
+		}
+	} else {
+		return;
+	}
 
 	if (!m || !m->wlr_output->enabled || m == c->mon)
 		return;
