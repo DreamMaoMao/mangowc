@@ -1545,18 +1545,22 @@ axisnotify(struct wl_listener *listener, void *data) {
 	/* This event is forwarded by the cursor when a pointer emits an axis event,
 	 * for example when you move the scroll wheel. */
 	struct wlr_pointer_axis_event *event = data;
-	struct wlr_keyboard *keyboard;
-	unsigned int mods;
+	struct wlr_keyboard *keyboard, *hard_keyboard;
+	unsigned int mods, hard_mods;
 	AxisBinding *a;
 	int ji;
 	unsigned int adir;
 	// IDLE_NOTIFY_ACTIVITY;
 	handlecursoractivity();
 	wlr_idle_notifier_v1_notify_activity(idle_notifier, seat);
-	keyboard = &kb_group->wlr_group->keyboard;
 
-	// 获取当前按键的mask,比如alt+super或者alt+ctrl
+	hard_keyboard = &kb_group->wlr_group->keyboard;
+	hard_mods = hard_keyboard ? wlr_keyboard_get_modifiers(hard_keyboard) : 0;
+
+	keyboard = wlr_seat_get_keyboard(seat);
 	mods = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
+
+	mods = mods | hard_mods;
 
 	if (event->orientation == WL_POINTER_AXIS_VERTICAL_SCROLL)
 		adir = event->delta > 0 ? AxisDown : AxisUp;
@@ -1594,8 +1598,8 @@ axisnotify(struct wl_listener *listener, void *data) {
 }
 
 int ongesture(struct wlr_pointer_swipe_end_event *event) {
-	struct wlr_keyboard *keyboard;
-	unsigned int mods;
+	struct wlr_keyboard *keyboard, *hard_keyboard;
+	unsigned int mods, hard_mods;
 	const GestureBinding *g;
 	unsigned int motion;
 	unsigned int adx = (int)round(fabs(swipe_dx));
@@ -1618,8 +1622,13 @@ int ongesture(struct wlr_pointer_swipe_end_event *event) {
 		motion = swipe_dy < 0 ? SWIPE_UP : SWIPE_DOWN;
 	}
 
-	keyboard = &kb_group->wlr_group->keyboard;
+	hard_keyboard = &kb_group->wlr_group->keyboard;
+	hard_mods = hard_keyboard ? wlr_keyboard_get_modifiers(hard_keyboard) : 0;
+
+	keyboard = wlr_seat_get_keyboard(seat);
 	mods = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
+
+	mods = mods | hard_mods;
 
 	for (ji = 0; ji < config.gesture_bindings_count; ji++) {
 		if (config.gesture_bindings_count < 1)
@@ -1740,8 +1749,8 @@ void place_drag_tile_client(Client *c) {
 void // 鼠标按键事件
 buttonpress(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_button_event *event = data;
-	struct wlr_keyboard *keyboard;
-	unsigned int mods;
+	struct wlr_keyboard *hard_keyboard, *keyboard;
+	unsigned int hard_mods, mods;
 	Client *c;
 	LayerSurface *l;
 	struct wlr_surface *surface;
@@ -1781,8 +1790,17 @@ buttonpress(struct wl_listener *listener, void *data) {
 			}
 		}
 
-		keyboard = &kb_group->wlr_group->keyboard;
-		mods = keyboard ? wlr_keyboard_get_modifiers(keyboard) : 0;
+		// 当鼠标焦点在layer上的时候，不检测虚拟键盘的mod状态，
+		// 避免layer虚拟键盘锁死mod按键状态
+		hard_keyboard = &kb_group->wlr_group->keyboard;
+		hard_mods =
+			hard_keyboard ? wlr_keyboard_get_modifiers(hard_keyboard) : 0;
+
+		keyboard = wlr_seat_get_keyboard(seat);
+		mods = keyboard && !l ? wlr_keyboard_get_modifiers(keyboard) : 0;
+
+		mods = mods | hard_mods;
+
 		for (ji = 0; ji < config.mouse_bindings_count; ji++) {
 			if (config.mouse_bindings_count < 1)
 				break;
