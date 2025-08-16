@@ -264,6 +264,13 @@ void dwl_ipc_output_dispatch(struct wl_client *client,
 	if (func) {
 		func(&arg);
 	}
+
+	if (arg.v)
+		free(arg.v);
+	if (arg.v2)
+		free(arg.v2);
+	if (arg.v3)
+		free(arg.v3);
 }
 
 void dwl_ipc_output_release(struct wl_client *client,
