@@ -723,6 +723,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "tagmon") == 0) {
 		func = tagmon;
 		(*arg).i = parse_direction(arg_value);
+		(*arg).ui = atoi(arg_value2);
 		if ((*arg).i == UNDIR) {
 			(*arg).v = strdup(arg_value);
 		};
