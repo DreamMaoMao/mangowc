@@ -140,6 +140,7 @@ sudo ninja -C build install
 ## Some Common Default Keybindings
 
 - alt+return: open foot terminal
+- alt+space: open rofi launcher
 - alt+q: kill client
 - alt+left/right/up/down: focus direction
 - super+m: quit mango
@@ -149,7 +150,7 @@ sudo ninja -C build install
 - Dependencies
 
 ```bash
-yay -S rofi-wayland foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer lavalauncher-mao-git wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
+yay -S rofi-wayland foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
 ```
 
 - use my config
