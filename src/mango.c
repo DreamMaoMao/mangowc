@@ -2538,8 +2538,6 @@ void createmon(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	printstatus();
-
 	/* The xdg-protocol specifies:
 	 *
 	 * If the fullscreened surface is not opaque, the compositor must make
@@ -2568,6 +2566,10 @@ void createmon(struct wl_listener *listener, void *data) {
 		wlr_scene_optimized_blur_set_size(m->blur, m->m.width, m->m.height);
 		// wlr_scene_node_set_enabled(&m->blur->node, 1);
 	}
+
+	updatemons(NULL, NULL);
+
+	printstatus();
 }
 
 void // fix for 0.5
