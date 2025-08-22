@@ -227,6 +227,13 @@ I would probably just submit raphi's patchset but I don't think that would be po
       <arg name="last_layer" type="string" summary="last map layer."/>
     </event>
 
+    <event name="kb_layout" since="2">
+      <description summary="current keyboard layout.">
+        current keyboard layout.
+      </description>
+      <arg name="kb_layout" type="string" summary="current keyboard layout."/>
+    </event>
+
   </interface>
 
 </protocol>

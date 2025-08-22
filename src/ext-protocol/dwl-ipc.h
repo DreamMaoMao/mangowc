@@ -110,8 +110,9 @@ void dwl_ipc_output_printstatus(Monitor *monitor) {
 void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	Monitor *monitor = ipc_output->mon;
 	Client *c, *focused;
+	struct wlr_keyboard *keyboard;
 	int tagmask, state, numclients, focused_client, tag;
-	const char *title, *appid, *symbol;
+	const char *title, *appid, *symbol, *kb_layout;
 	focused = focustop(monitor);
 	zdwl_ipc_output_v2_send_active(ipc_output->resource, monitor == selmon);
 
@@ -138,6 +139,10 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	title = focused ? client_get_title(focused) : "";
 	appid = focused ? client_get_appid(focused) : "";
 	symbol = monitor->pertag->ltidxs[monitor->pertag->curtag]->symbol;
+
+	keyboard = &kb_group->wlr_group->keyboard;
+	kb_layout =
+		get_layout_abbr(xkb_keymap_layout_get_name(keyboard->keymap, 0));
 
 	zdwl_ipc_output_v2_send_layout(
 		ipc_output->resource,
@@ -180,6 +185,12 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 		zdwl_ipc_output_v2_send_last_layer(ipc_output->resource,
 										   monitor->last_surface_ws_name);
 	}
+
+	if (wl_resource_get_version(ipc_output->resource) >=
+		ZDWL_IPC_OUTPUT_V2_KB_LAYOUT_SINCE_VERSION) {
+		zdwl_ipc_output_v2_send_kb_layout(ipc_output->resource, kb_layout);
+	}
+
 	zdwl_ipc_output_v2_send_frame(ipc_output->resource);
 }
 
