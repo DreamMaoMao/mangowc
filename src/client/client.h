@@ -93,6 +93,8 @@ static inline void client_activate_surface(struct wlr_surface *s,
 #ifdef XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 	if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(s))) {
+		if (activated && xsurface->minimized)
+			wlr_xwayland_surface_set_minimized(xsurface, false);
 		wlr_xwayland_surface_activate(xsurface, activated);
 		return;
 	}
