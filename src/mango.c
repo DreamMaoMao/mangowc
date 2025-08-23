@@ -3339,7 +3339,7 @@ maximizenotify(struct wl_listener *listener, void *data) {
 	// togglemaxmizescreen(&(Arg){0});
 	Client *c = wl_container_of(listener, c, maximize);
 
-	if (!c || !c->mon || c->iskilling)
+	if (!c || !c->mon || c->iskilling || c->ignore_maximize)
 		return;
 
 	if (c->ismaxmizescreen || c->isfullscreen)
