@@ -2150,6 +2150,7 @@ void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
 
 void commitnotify(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, commit);
+	struct wlr_box *new_geo;
 
 	if (c->surface.xdg->initial_commit) {
 		// xdg client will first enter this before mapnotify
@@ -2193,12 +2194,19 @@ void commitnotify(struct wl_listener *listener, void *data) {
 		c->configure_serial <= c->surface.xdg->current.configure_serial)
 		c->configure_serial = 0;
 
+	if (!c->dirty) {
+		new_geo = &c->surface.xdg->geometry;
+		c->dirty = new_geo->width != c->geom.width - 2 * c->bw ||
+				   new_geo->height != c->geom.height - 2 * c->bw ||
+				   new_geo->x != 0 || new_geo->y != 0;
+	}
+
 	if (c == grabc || !c->dirty)
 		return;
 
 	resize(c, c->geom, 0);
 
-	struct wlr_box *new_geo = &c->surface.xdg->geometry;
+	new_geo = &c->surface.xdg->geometry;
 	c->dirty = new_geo->width != c->geom.width - 2 * c->bw ||
 			   new_geo->height != c->geom.height - 2 * c->bw ||
 			   new_geo->x != 0 || new_geo->y != 0;
