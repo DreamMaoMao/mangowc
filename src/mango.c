@@ -2189,6 +2189,10 @@ void commitnotify(struct wl_listener *listener, void *data) {
 		c->animation.tagining)
 		return;
 
+	if (c->configure_serial &&
+		c->configure_serial <= c->surface.xdg->current.configure_serial)
+		c->configure_serial = 0;
+
 	if (c == grabc || !c->dirty)
 		return;
 
@@ -3711,11 +3715,6 @@ void rendermon(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	// Draw frames for all clients
-	wl_list_for_each(c, &clients, link) {
-		need_more_frames = client_draw_frame(c) || need_more_frames;
-	}
-
 	wl_list_for_each_safe(c, tmp, &fadeout_clients, fadeout_link) {
 		need_more_frames = client_draw_fadeout_frame(c) || need_more_frames;
 	}
@@ -3724,7 +3723,17 @@ void rendermon(struct wl_listener *listener, void *data) {
 		need_more_frames = layer_draw_fadeout_frame(l) || need_more_frames;
 	}
 
+	// Draw frames for all clients
+	wl_list_for_each(c, &clients, link) {
+		need_more_frames = client_draw_frame(c) || need_more_frames;
+		if (!animations && c->configure_serial && !c->isfloating &&
+			client_is_rendered_on_mon(c, m) && !client_is_stopped(c))
+			goto skip;
+	}
+
 	wlr_scene_output_commit(m->scene_output, NULL);
+
+skip:
 
 	// Send frame done notification
 	clock_gettime(CLOCK_MONOTONIC, &now);
