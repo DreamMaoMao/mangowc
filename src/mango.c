@@ -266,7 +266,7 @@ struct Client {
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	int isfloating, isurgent, isfullscreen, isfakefullscreen,
 		need_float_size_reduce, isminied, isoverlay, isnosizehint,
-		ignore_maximize;
+		ignore_maximize, ignore_minimize;
 	int ismaxmizescreen;
 	int overview_backup_bw;
 	int fullscreen_backup_x, fullscreen_backup_y, fullscreen_backup_w,
@@ -1053,6 +1053,7 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isglobal);
 	APPLY_INT_PROP(c, r, isoverlay);
 	APPLY_INT_PROP(c, r, ignore_maximize);
+	APPLY_INT_PROP(c, r, ignore_minimize);
 	APPLY_INT_PROP(c, r, isnosizehint);
 	APPLY_INT_PROP(c, r, isunglobal);
 	APPLY_INT_PROP(c, r, scratchpad_width);
@@ -3211,6 +3212,7 @@ void init_client_properties(Client *c) {
 	c->isnoborder = 0;
 	c->isnosizehint = 0;
 	c->ignore_maximize = 0;
+	c->ignore_minimize = 0;
 }
 
 void // old fix to 0.5
@@ -3388,7 +3390,7 @@ minimizenotify(struct wl_listener *listener, void *data) {
 	if (!c || !c->mon || c->iskilling || c->isminied)
 		return;
 
-	if (client_request_minimize(c, data)) {
+	if (!c->ignore_minimize && client_request_minimize(c, data)) {
 		set_minized(c);
 	}
 }
