@@ -1197,7 +1197,7 @@ void applyrules(Client *c) {
 		c->isfloating = 1;
 	}
 
-	int fullscreen_state_backup = c->isfullscreen;
+	int fullscreen_state_backup = c->isfullscreen || client_wants_fullscreen(c);
 	setmon(c, mon, newtags, !c->isopensilent);
 
 	if (!c->isopensilent && c->mon &&
