@@ -3366,7 +3366,6 @@ void set_minized(Client *c) {
 	wlr_foreign_toplevel_handle_v1_set_minimized(c->foreign_toplevel, true);
 	wl_list_remove(&c->link);				// 从原来位置移除
 	wl_list_insert(clients.prev, &c->link); // 插入尾部
-	client_set_minimized(c, true);
 }
 
 void // 0.5 custom
@@ -3390,8 +3389,12 @@ minimizenotify(struct wl_listener *listener, void *data) {
 	if (!c || !c->mon || c->iskilling || c->isminied)
 		return;
 
-	if (!c->ignore_minimize && client_request_minimize(c, data)) {
-		set_minized(c);
+	if (client_request_minimize(c, data)) {
+		if (!c->ignore_minimize)
+			set_minized(c);
+		client_set_minimized(c, true);
+	} else {
+		client_set_minimized(c, false);
 	}
 }
 
@@ -4276,7 +4279,6 @@ void show_hide_client(Client *c) {
 	tag_client(&(Arg){.ui = target}, c);
 	// c->tags = c->oldtags;
 	c->isminied = 0;
-	client_set_minimized(c, false);
 	wlr_foreign_toplevel_handle_v1_set_minimized(c->foreign_toplevel, false);
 	focusclient(c, 1);
 	wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel, true);
