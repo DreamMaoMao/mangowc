@@ -330,6 +330,17 @@ static inline uint32_t client_set_size(Client *c, uint32_t width,
 									 (int32_t)height);
 }
 
+static inline void client_set_minimized(Client *c, bool minimized) {
+#ifdef XWAYLAND
+	if (client_is_x11(c)) {
+		wlr_xwayland_surface_set_minimized(c->surface.xwayland, minimized);
+		return;
+	}
+#endif
+
+	return;
+}
+
 static inline void client_set_tiled(Client *c, uint32_t edges) {
 	struct wlr_xdg_toplevel *toplevel;
 #ifdef XWAYLAND
