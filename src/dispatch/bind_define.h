@@ -1,4 +1,11 @@
-void bind_to_view(const Arg *arg) { view(arg, true); }
+void bind_to_view(const Arg *arg) {
+	if ((int)arg->ui == INT_MIN) {
+		view(&(Arg){.ui = ~0}, false);
+	} else {
+		view(arg, true);
+	}
+}
+
 void chvt(const Arg *arg) { wlr_session_change_vt(session, arg->ui); }
 /**
  * This command is intended for developer use only.
@@ -1073,7 +1080,15 @@ void toggletag(const Arg *arg) {
 	Client *sel = focustop(selmon);
 	if (!sel)
 		return;
-	newtags = sel->tags ^ (arg->ui & TAGMASK);
+
+	if ((int)arg->ui == INT_MIN && sel->tags != (~0 & TAGMASK)) {
+		newtags = ~0 & TAGMASK;
+	} else if ((int)arg->ui == INT_MIN && sel->tags == (~0 & TAGMASK)) {
+		newtags = 1 << (sel->mon->pertag->curtag - 1);
+	} else {
+		newtags = sel->tags ^ (arg->ui & TAGMASK);
+	}
+
 	if (newtags) {
 		sel->tags = newtags;
 		focusclient(focustop(selmon), 1);
@@ -1083,8 +1098,13 @@ void toggletag(const Arg *arg) {
 }
 
 void toggleview(const Arg *arg) {
-	unsigned int newtagset =
-		selmon ? selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK) : 0;
+	unsigned int newtagset;
+	unsigned int target;
+
+	target = arg->ui == 0 ? ~0 & TAGMASK : arg->ui;
+
+	newtagset =
+		selmon ? selmon->tagset[selmon->seltags] ^ (target & TAGMASK) : 0;
 
 	if (newtagset) {
 		selmon->tagset[selmon->seltags] = newtagset;
