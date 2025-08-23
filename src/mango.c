@@ -3212,7 +3212,7 @@ void init_client_properties(Client *c) {
 	c->isnoborder = 0;
 	c->isnosizehint = 0;
 	c->ignore_maximize = 0;
-	c->ignore_minimize = 0;
+	c->ignore_minimize = 1;
 }
 
 void // old fix to 0.5
