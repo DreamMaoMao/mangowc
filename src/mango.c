@@ -622,6 +622,10 @@ static struct wlr_box setclient_coordinate_center(Client *c,
 												  int offsetx, int offsety);
 static unsigned int get_tags_first_tag(unsigned int tags);
 
+static struct wlr_output_mode *get_output_mode(struct wlr_output *output,
+											   int width, int height,
+											   float refresh);
+
 static void client_commit(Client *c);
 static void layer_commit(LayerSurface *l);
 static void apply_border(Client *c);
@@ -2391,6 +2395,19 @@ void createlocksurface(struct wl_listener *listener, void *data) {
 		client_notify_enter(lock_surface->surface, wlr_seat_get_keyboard(seat));
 }
 
+struct wlr_output_mode *get_output_mode(struct wlr_output *output, int width,
+										int height, float refresh) {
+	struct wlr_output_mode *mode;
+	wl_list_for_each(mode, &output->modes, link) {
+		if (mode->width == width && mode->height == height &&
+			(int)(mode->refresh / 1000) == (int)refresh) {
+			return mode;
+		}
+	}
+
+	return NULL;
+}
+
 void createmon(struct wl_listener *listener, void *data) {
 	/* This event is raised by the backend when a new output (aka a display or
 	 * monitor) becomes available. */
@@ -2400,6 +2417,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	int ji, jk;
 	struct wlr_output_state state;
 	Monitor *m;
+	struct wlr_output_mode *internal_mode = NULL;
 	bool custom_monitor_mode = false;
 
 	if (!wlr_output_init_render(wlr_output, alloc, drw))
@@ -2453,8 +2471,11 @@ void createmon(struct wl_listener *listener, void *data) {
 
 			if (r->width > 0 && r->height > 0 && r->refresh > 0) {
 				custom_monitor_mode = true;
-				wlr_output_state_set_custom_mode(&state, r->width, r->height,
-												 r->refresh * 1000);
+				internal_mode = get_output_mode(m->wlr_output, r->width,
+												r->height, r->refresh);
+				if (internal_mode) {
+					wlr_output_state_set_mode(&state, internal_mode);
+				}
 			}
 			wlr_output_state_set_scale(&state, r->scale);
 			wlr_output_state_set_transform(&state, r->rr);
