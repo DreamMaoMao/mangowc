@@ -1363,7 +1363,10 @@ arrange(Monitor *m, bool want_animation) {
 	if (m->isoverview) {
 		overviewlayout.arrange(m);
 	} else if (m && m->pertag->ltidxs[m->pertag->curtag]->arrange) {
-		m->pertag->ltidxs[m->pertag->curtag]->arrange(m);
+		if (m->pertag->curtag)
+			m->pertag->ltidxs[m->pertag->curtag]->arrange(m);
+		else
+			m->pertag->ltidxs[m->pertag->prevtag]->arrange(m);
 	}
 
 	motionnotify(0, NULL, 0, 0, 0, 0);
