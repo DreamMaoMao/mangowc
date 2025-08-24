@@ -2452,6 +2452,7 @@ void reapply_monitor_rules(void) {
 	Monitor *m;
 	int ji, jk;
 	struct wlr_output_state state;
+	struct wlr_output_mode *internal_mode = NULL;
 	wlr_output_state_init(&state);
 
 	wl_list_for_each(m, &mons, link) {
@@ -2480,9 +2481,11 @@ void reapply_monitor_rules(void) {
 				}
 
 				if (mr->width > 0 && mr->height > 0 && mr->refresh > 0) {
-					wlr_output_state_set_custom_mode(
-						&state, mr->width, mr->height,
-						(int)roundf(mr->refresh * 1000));
+					internal_mode = get_output_mode(m->wlr_output, mr->width,
+													mr->height, mr->refresh);
+					if (internal_mode) {
+						wlr_output_state_set_mode(&state, internal_mode);
+					}
 				}
 
 				wlr_output_state_set_scale(&state, mr->scale);
