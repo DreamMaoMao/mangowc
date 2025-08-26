@@ -1205,7 +1205,9 @@ void applyrules(Client *c) {
 	}
 
 	int fullscreen_state_backup = c->isfullscreen || client_wants_fullscreen(c);
-	setmon(c, mon, newtags, !c->isopensilent);
+	setmon(c, mon, newtags,
+		   !c->isopensilent && (!c->istagsilent || !newtags ||
+								newtags & mon->tagset[mon->seltags]));
 
 	if (!c->isopensilent &&
 		(!c->istagsilent || c->tags & c->mon->tagset[c->mon->seltags]) &&
@@ -4269,7 +4271,7 @@ void setmon(Client *c, Monitor *m, unsigned int newtags, bool focus) {
 		setfloating(c, c->isfloating);
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
 	}
-	if (m && focus && (!c->istagsilent || c->tags & m->tagset[m->seltags]))
+	if (m && focus)
 		focusclient(focustop(m), 1);
 
 	if (!c->foreign_toplevel && m) {
