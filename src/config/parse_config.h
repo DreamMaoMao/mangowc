@@ -46,6 +46,7 @@ typedef struct {
 	const char *layer_animation_type_close;
 	int isnoborder;
 	int isopensilent;
+	int istagsilent;
 	int isnamedscratchpad;
 	int isunglobal;
 	int isglobal;
@@ -1346,6 +1347,7 @@ void parse_config_line(Config *config, const char *line) {
 		rule->isfullscreen = -1;
 		rule->isnoborder = -1;
 		rule->isopensilent = -1;
+		rule->istagsilent = -1;
 		rule->isnamedscratchpad = -1;
 		rule->isunglobal = -1;
 		rule->isglobal = -1;
@@ -1422,6 +1424,8 @@ void parse_config_line(Config *config, const char *line) {
 					rule->isnoborder = atoi(val);
 				} else if (strcmp(key, "isopensilent") == 0) {
 					rule->isopensilent = atoi(val);
+				} else if (strcmp(key, "istagsilent") == 0) {
+					rule->istagsilent = atoi(val);
 				} else if (strcmp(key, "isnamedscratchpad") == 0) {
 					rule->isnamedscratchpad = atoi(val);
 				} else if (strcmp(key, "isunglobal") == 0) {

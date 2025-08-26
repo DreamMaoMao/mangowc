@@ -289,6 +289,7 @@ struct Client {
 	int isglobal;
 	int isnoborder;
 	int isopensilent;
+	int istagsilent;
 	int iskilling;
 	int isnamedscratchpad;
 	bool is_pending_open_animation;
@@ -1053,6 +1054,7 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isfullscreen);
 	APPLY_INT_PROP(c, r, isnoborder);
 	APPLY_INT_PROP(c, r, isopensilent);
+	APPLY_INT_PROP(c, r, istagsilent);
 	APPLY_INT_PROP(c, r, isnamedscratchpad);
 	APPLY_INT_PROP(c, r, isglobal);
 	APPLY_INT_PROP(c, r, isoverlay);
@@ -1205,7 +1207,9 @@ void applyrules(Client *c) {
 	int fullscreen_state_backup = c->isfullscreen || client_wants_fullscreen(c);
 	setmon(c, mon, newtags, !c->isopensilent);
 
-	if (!c->isopensilent && c->mon &&
+	if (!c->isopensilent &&
+		(!c->istagsilent || c->tags & c->mon->tagset[c->mon->seltags]) &&
+		c->mon &&
 		((c->mon && c->mon != selmon) ||
 		 !(c->tags & (1 << (c->mon->pertag->curtag - 1))))) {
 		c->animation.tag_from_rule = true;
@@ -4265,14 +4269,14 @@ void setmon(Client *c, Monitor *m, unsigned int newtags, bool focus) {
 		setfloating(c, c->isfloating);
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
 	}
-	if (focus)
-		focusclient(focustop(selmon), 1);
+	if (m && focus && (!c->istagsilent || c->tags & m->tagset[m->seltags]))
+		focusclient(focustop(m), 1);
 
-	if (!c->foreign_toplevel && c->mon) {
+	if (!c->foreign_toplevel && m) {
 		add_foreign_toplevel(c);
-		if (selmon->sel && selmon->sel->foreign_toplevel)
+		if (m->sel && m->sel->foreign_toplevel)
 			wlr_foreign_toplevel_handle_v1_set_activated(
-				selmon->sel->foreign_toplevel, false);
+				m->sel->foreign_toplevel, false);
 		if (c->foreign_toplevel)
 			wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel,
 														 true);
