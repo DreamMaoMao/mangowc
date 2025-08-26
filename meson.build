@@ -85,6 +85,7 @@ endif
 executable('mango',
   'src/mango.c',
   'src/common/util.c',
+  'src/ext-protocol/wlr_ext_workspace_v1.c',
   wayland_sources,
   dependencies : [
     libm,
