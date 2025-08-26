@@ -1,3 +1,7 @@
+// bash on: https://gitlab.freedesktop.org/tokyo4j/wlroots/-/tree/ext-workspace
+// TODO: remove this file
+// refer: https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/5115 
+
 /*
  * This an unstable interface of wlroots. No guarantees are made regarding the
  * future consistency of this API.
