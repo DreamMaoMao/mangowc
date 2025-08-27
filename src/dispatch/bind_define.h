@@ -671,7 +671,7 @@ void switch_keyboard_layout(const Arg *arg) {
 	}
 
 	// 3. 分配并获取布局缩写
-	char **layout_ids = calloc(num_layouts, sizeof(char *));
+	const char **layout_ids = calloc(num_layouts, sizeof(char *));
 	if (!layout_ids) {
 		wlr_log(WLR_ERROR, "Failed to allocate layout IDs");
 		goto cleanup_context;
@@ -743,9 +743,6 @@ void switch_keyboard_layout(const Arg *arg) {
 	xkb_keymap_unref(new_keymap);
 
 cleanup_layouts:
-	for (int i = 0; i < num_layouts; i++) {
-		free(layout_ids[i]);
-	}
 	free(layout_ids);
 
 cleanup_context:

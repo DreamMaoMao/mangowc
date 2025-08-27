@@ -671,7 +671,7 @@ wlr_scene_tree_snapshot(struct wlr_scene_node *node,
 						struct wlr_scene_tree *parent);
 static bool is_scroller_layout(Monitor *m);
 void create_output(struct wlr_backend *backend, void *data);
-char *get_layout_abbr(const char *full_name);
+static const char *get_layout_abbr(const char *full_name);
 void apply_named_scratchpad(Client *target_client);
 Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title);
 bool switch_scratchpad_client_state(Client *c);
@@ -4206,7 +4206,7 @@ void reset_keyboard_layout(void) {
 	}
 
 	// Get layout abbreviations
-	char **layout_ids = calloc(num_layouts, sizeof(char *));
+	const char **layout_ids = calloc(num_layouts, sizeof(char *));
 	if (!layout_ids) {
 		wlr_log(WLR_ERROR, "Failed to allocate layout IDs");
 		goto cleanup_context;
@@ -4251,9 +4251,6 @@ void reset_keyboard_layout(void) {
 	xkb_keymap_unref(new_keymap);
 
 cleanup_layouts:
-	for (int i = 0; i < num_layouts; i++) {
-		free(layout_ids[i]);
-	}
 	free(layout_ids);
 
 cleanup_context:
