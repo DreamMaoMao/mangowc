@@ -18,7 +18,7 @@ void bind_to_view(const Arg *arg) {
 	}
 
 	if (target == 0 || (int)target == INT_MIN) {
-		view(&(Arg){.ui = ~0}, false);
+		view(&(Arg){.ui = ~0 & TAGMASK}, false);
 	} else {
 		view(&(Arg){.ui = target}, true);
 	}

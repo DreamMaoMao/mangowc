@@ -4844,7 +4844,7 @@ void toggleoverview(const Arg *arg) {
 			visible_client_number++;
 		}
 		if (visible_client_number > 0) {
-			target = ~0;
+			target = ~0 & TAGMASK;
 		} else {
 			selmon->isoverview ^= 1;
 			return;
@@ -5165,23 +5165,25 @@ urgent(struct wl_listener *listener, void *data) {
 void view_in_mon(const Arg *arg, bool want_animation, Monitor *m) {
 	unsigned int i, tmptag;
 
-	if (!m || (arg->ui != ~0 && m->isoverview)) {
+	if (!m || (arg->ui != (~0 & TAGMASK) && m->isoverview)) {
 		return;
 	}
 
-	if (arg->ui == 0)
-		return;
+	m->seltags ^= 1; /* toggle sel tagset */
+
+	if (arg->ui == UINT32_MAX) {
+		goto toggleseltags;
+	}
 
 	if ((m->tagset[m->seltags] & arg->ui & TAGMASK) != 0) {
 		want_animation = false;
 	}
 
-	m->seltags ^= 1; /* toggle sel tagset */
 	if (arg->ui & TAGMASK) {
 		m->tagset[m->seltags] = arg->ui & TAGMASK;
 		tmptag = m->pertag->curtag;
 
-		if (arg->ui == ~0)
+		if (arg->ui == (~0 & TAGMASK))
 			m->pertag->curtag = 0;
 		else {
 			for (i = 0; !(arg->ui & 1 << i) && i < LENGTH(tags) && arg->ui != 0;
@@ -5197,6 +5199,8 @@ void view_in_mon(const Arg *arg, bool want_animation, Monitor *m) {
 		m->pertag->prevtag = m->pertag->curtag;
 		m->pertag->curtag = tmptag;
 	}
+
+toggleseltags:
 
 	focusclient(focustop(m), 1);
 	arrange(m, want_animation);
