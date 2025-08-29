@@ -1,8 +1,26 @@
 void bind_to_view(const Arg *arg) {
-	if ((int)arg->ui == INT_MIN) {
+
+	unsigned int target = arg->ui;
+
+	if (selmon->pertag->curtag &&
+		target == (1 << (selmon->pertag->curtag - 1))) {
+		if (selmon->pertag->prevtag)
+			target = 1 << (selmon->pertag->prevtag - 1);
+		else
+			target = 0;
+	}
+
+	if ((int)target == INT_MIN && selmon->pertag->curtag == 0) {
+		if (selmon->pertag->prevtag)
+			target = 1 << (selmon->pertag->prevtag - 1);
+		else
+			target = 0;
+	}
+
+	if (target == 0 || (int)target == INT_MIN) {
 		view(&(Arg){.ui = ~0}, false);
 	} else {
-		view(arg, true);
+		view(&(Arg){.ui = target}, true);
 	}
 }
 
