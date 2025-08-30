@@ -38,6 +38,7 @@ void chvt(const Arg *arg);
 void reload_config(const Arg *arg);
 void smartmovewin(const Arg *arg);
 void smartresizewin(const Arg *arg);
+void centerwin(const Arg *arg);
 void bind_to_view(const Arg *arg);
 void toggletag(const Arg *arg);
 void toggleview(const Arg *arg);

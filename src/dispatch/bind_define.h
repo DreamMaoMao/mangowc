@@ -601,6 +601,20 @@ void smartresizewin(const Arg *arg) {
 	resize(c, c->oldgeom, 1);
 }
 
+void centerwin(const Arg *arg) {
+	Client *c;
+	c = selmon->sel;
+
+	if (!c || c->isfullscreen)
+		return;
+	if (!c->isfloating)
+		setfloating(c, true);
+
+	c->oldgeom = setclient_coordinate_center(c, c->geom, 0, 0);
+
+	resize(c, c->oldgeom, 1);
+}
+
 void spawn(const Arg *arg) {
 
 	if (!arg->v)
