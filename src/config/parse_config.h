@@ -742,6 +742,9 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "spawn") == 0) {
 		func = spawn;
 		(*arg).v = strdup(arg_value);
+	} else if (strcmp(func_name, "spawn_shell") == 0) {
+		func = spawn_shell;
+		(*arg).v = strdup(arg_value);
 	} else if (strcmp(func_name, "spawn_on_empty") == 0) {
 		func = spawn_on_empty;
 		(*arg).v = strdup(arg_value); // 注意：之后需要释放这个内存

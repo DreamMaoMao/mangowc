@@ -20,6 +20,7 @@ void togglemaxmizescreen(const Arg *arg);
 void togglegaps(const Arg *arg);
 void tagmon(const Arg *arg);
 void spawn(const Arg *arg);
+void spawn_shell(const Arg *arg);
 void spawn_on_empty(const Arg *arg);
 void setlayout(const Arg *arg);
 void switch_layout(const Arg *arg);

@@ -615,6 +615,32 @@ void centerwin(const Arg *arg) {
 	resize(c, c->oldgeom, 1);
 }
 
+void spawn_shell(const Arg *arg) {
+	if (!arg->v)
+		return;
+
+	if (fork() == 0) {
+		// 1. 忽略可能导致 coredump 的信号
+		signal(SIGSEGV, SIG_IGN);
+		signal(SIGABRT, SIG_IGN);
+		signal(SIGILL, SIG_IGN);
+
+		dup2(STDERR_FILENO, STDOUT_FILENO);
+		setsid();
+
+		execlp("sh", "sh", "-c", arg->v, (char *)NULL);
+
+		// fallback to bash
+		execlp("bash", "bash", "-c", arg->v, (char *)NULL);
+
+		// if execlp fails, we should not reach here
+		wlr_log(WLR_ERROR,
+				"mango: failed to execute command '%s' with shell: %s\n",
+				arg->v, strerror(errno));
+		_exit(EXIT_FAILURE);
+	}
+}
+
 void spawn(const Arg *arg) {
 
 	if (!arg->v)
@@ -648,7 +674,7 @@ void spawn(const Arg *arg) {
 		execvp(argv[0], argv);
 
 		// 4. execvp 失败时：打印错误并直接退出（避免 coredump）
-		wlr_log(WLR_ERROR, "dwl: execvp '%s' failed: %s\n", argv[0],
+		wlr_log(WLR_ERROR, "mango: execvp '%s' failed: %s\n", argv[0],
 				strerror(errno));
 		_exit(EXIT_FAILURE); // 使用 _exit 避免缓冲区刷新等操作
 	}
