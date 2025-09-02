@@ -86,11 +86,11 @@ static void add_workspace_by_tag(int tag, Monitor *m) {
 				  &workspace->activate);
 }
 
-unsigned int get_tag_status(unsigned int tag) {
+unsigned int get_tag_status(unsigned int tag, Monitor *m) {
 	Client *c;
 	unsigned int status = 0;
 	wl_list_for_each(c, &clients, link) {
-		if (c->tags & 1 << (tag - 1) & TAGMASK) {
+		if (c->mon == m && c->tags & 1 << (tag - 1) & TAGMASK) {
 			if (c->isurgent) {
 				status = 2;
 				break;
@@ -123,21 +123,14 @@ unsigned int get_tags_first_tag_num(unsigned int source_tags) {
 }
 
 void dwl_ext_workspace_printstatus(Monitor *m) {
-	unsigned int current_tag;
 	struct workspace *w;
 	unsigned int tag_status = 0;
-	bool is_active = false;
-
-	current_tag = get_tags_first_tag_num(m->tagset[m->seltags]);
 
 	wl_list_for_each(w, &workspaces, link) {
 		if (w && w->m == m) {
-			is_active = (w->tag == current_tag) || m->isoverview;
-			tag_status = get_tag_status(w->tag);
-			if (is_active) {
-				wlr_ext_workspace_handle_v1_set_urgent(w->ext_workspace, false);
-				wlr_ext_workspace_handle_v1_set_hidden(w->ext_workspace, false);
-			} else if (tag_status == 2) {
+
+			tag_status = get_tag_status(w->tag, m);
+			if (tag_status == 2) {
 				wlr_ext_workspace_handle_v1_set_hidden(w->ext_workspace, false);
 				wlr_ext_workspace_handle_v1_set_urgent(w->ext_workspace, true);
 			} else if (tag_status == 1) {
@@ -148,7 +141,8 @@ void dwl_ext_workspace_printstatus(Monitor *m) {
 				wlr_ext_workspace_handle_v1_set_hidden(w->ext_workspace, true);
 			}
 
-			if (m->tagset[m->seltags] & (1 << (w->tag - 1)) & TAGMASK) {
+			if ((m->tagset[m->seltags] & (1 << (w->tag - 1)) & TAGMASK) ||
+				m->isoverview) {
 				wlr_ext_workspace_handle_v1_set_hidden(w->ext_workspace, false);
 				wlr_ext_workspace_handle_v1_set_active(w->ext_workspace, true);
 			} else {
