@@ -2490,6 +2490,10 @@ void createmon(struct wl_listener *listener, void *data) {
 												r->height, r->refresh);
 				if (internal_mode) {
 					wlr_output_state_set_mode(&state, internal_mode);
+				} else {
+					wlr_output_state_set_custom_mode(
+						&state, r->width, r->height,
+						(int)roundf(r->refresh * 1000));
 				}
 			}
 			wlr_output_state_set_scale(&state, r->scale);
