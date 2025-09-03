@@ -820,7 +820,7 @@ void run_exec() {
 
 	for (int i = 0; i < config.exec_count; i++) {
 		arg.v = config.exec[i];
-		spawn(&arg);
+		spawn_shell(&arg);
 	}
 }
 
@@ -829,7 +829,7 @@ void run_exec_once() {
 
 	for (int i = 0; i < config.exec_once_count; i++) {
 		arg.v = config.exec_once[i];
-		spawn(&arg);
+		spawn_shell(&arg);
 	}
 }
 
