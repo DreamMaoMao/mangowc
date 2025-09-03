@@ -695,6 +695,8 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = centerwin;
 	} else if (strcmp(func_name, "focuslast") == 0) {
 		func = focuslast;
+	} else if (strcmp(func_name, "toggle_trackpad_enable") == 0) {
+		func = toggle_trackpad_enable;
 	} else if (strcmp(func_name, "setlayout") == 0) {
 		func = setlayout;
 		(*arg).v = strdup(arg_value);

@@ -124,6 +124,10 @@ void focuslast(const Arg *arg) {
 	}
 }
 
+void toggle_trackpad_enable(const Arg *arg) {
+	disable_trackpad = !disable_trackpad;
+}
+
 void focusmon(const Arg *arg) {
 	Client *c;
 	Monitor *m = NULL;

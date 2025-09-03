@@ -675,6 +675,7 @@ static const char *get_layout_abbr(const char *full_name);
 void apply_named_scratchpad(Client *target_client);
 Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title);
 bool switch_scratchpad_client_state(Client *c);
+bool check_trackpad_disabled(struct wlr_pointer *pointer);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -1569,6 +1570,10 @@ axisnotify(struct wl_listener *listener, void *data) {
 	handlecursoractivity();
 	wlr_idle_notifier_v1_notify_activity(idle_notifier, seat);
 
+	if (check_trackpad_disabled(event->pointer)) {
+		return;
+	}
+
 	hard_keyboard = &kb_group->wlr_group->keyboard;
 	hard_mods = hard_keyboard ? wlr_keyboard_get_modifiers(hard_keyboard) : 0;
 
@@ -1761,6 +1766,24 @@ void place_drag_tile_client(Client *c) {
 	setfloating(c, 0);
 }
 
+bool check_trackpad_disabled(struct wlr_pointer *pointer) {
+	struct libinput_device *device;
+
+	if (!disable_trackpad)
+		return false;
+
+	if (wlr_input_device_is_libinput(&pointer->base) &&
+		(device = wlr_libinput_get_device_handle(&pointer->base))) {
+
+		// 如果是触摸板且被禁用，忽略事件
+		if (libinput_device_config_tap_get_finger_count(device) > 0) {
+			return true; // 不处理事件
+		}
+	}
+
+	return false;
+}
+
 void // 鼠标按键事件
 buttonpress(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_button_event *event = data;
@@ -1777,6 +1800,10 @@ buttonpress(struct wl_listener *listener, void *data) {
 
 	handlecursoractivity();
 	wlr_idle_notifier_v1_notify_activity(idle_notifier, seat);
+
+	if (check_trackpad_disabled(event->pointer)) {
+		return;
+	}
 
 	switch (event->state) {
 	case WL_POINTER_BUTTON_STATE_PRESSED:
@@ -2596,11 +2623,6 @@ void createpointer(struct wlr_pointer *pointer) {
 	struct libinput_device *device;
 	if (wlr_input_device_is_libinput(&pointer->base) &&
 		(device = wlr_libinput_get_device_handle(&pointer->base))) {
-
-		if (libinput_device_config_tap_get_finger_count(device) &&
-			disable_trackpad) {
-			return;
-		}
 
 		if (libinput_device_config_tap_get_finger_count(device)) {
 			libinput_device_config_tap_set_enabled(device, tap_to_click);
@@ -3447,6 +3469,10 @@ void motionabsolute(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_motion_absolute_event *event = data;
 	double lx, ly, dx, dy;
 
+	if (check_trackpad_disabled(event->pointer)) {
+		return;
+	}
+
 	if (!event->time_msec) /* this is 0 with virtual pointers */
 		wlr_cursor_warp_absolute(cursor, &event->pointer->base, event->x,
 								 event->y);
@@ -3586,6 +3612,11 @@ void motionrelative(struct wl_listener *listener, void *data) {
 	 * special configuration applied for the specific input device which
 	 * generated the event. You can pass NULL for the device if you want to move
 	 * the cursor around without any input. */
+
+	if (check_trackpad_disabled(event->pointer)) {
+		return;
+	}
+
 	motionnotify(event->time_msec, &event->pointer->base, event->delta_x,
 				 event->delta_y, event->unaccel_dx, event->unaccel_dy);
 	toggle_hotarea(cursor->x, cursor->y);
