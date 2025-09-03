@@ -190,6 +190,13 @@ typedef struct {
 	const Arg arg;
 } Axis;
 
+struct input_device {
+	struct wl_list link;
+	struct wlr_input_device *wlr_device;
+	struct libinput_device *libinput_device;
+	struct wl_listener destroy_listener; // 用于监听设备销毁事件
+};
+
 struct dwl_animation {
 	bool should_animate;
 	bool running;
@@ -506,6 +513,8 @@ static void createlocksurface(struct wl_listener *listener, void *data);
 static void createmon(struct wl_listener *listener, void *data);
 static void createnotify(struct wl_listener *listener, void *data);
 static void createpointer(struct wlr_pointer *pointer);
+static void configure_pointer(struct libinput_device *device);
+static void destroypointer(struct wl_listener *listener, void *data);
 static void createpointerconstraint(struct wl_listener *listener, void *data);
 static void cursorconstrain(struct wlr_pointer_constraint_v1 *constraint);
 static void commitpopup(struct wl_listener *listener, void *data);
@@ -732,6 +741,7 @@ static struct wlr_pointer_constraint_v1 *active_constraint;
 static struct wlr_seat *seat;
 static KeyboardGroup *kb_group;
 static struct wl_list keyboards;
+static struct wl_list pointers;
 static unsigned int cursor_mode;
 static Client *grabc;
 static int grabcx, grabcy; /* client-relative */
@@ -2619,54 +2629,76 @@ createnotify(struct wl_listener *listener, void *data) {
 	LISTEN(&toplevel->events.set_title, &c->set_title, updatetitle);
 }
 
+void destroypointer(struct wl_listener *listener, void *data) {
+	struct input_device *input_dev =
+		wl_container_of(listener, input_dev, destroy_listener);
+
+	// 从设备列表中移除
+	wl_list_remove(&input_dev->link);
+	// 移除监听器
+	wl_list_remove(&input_dev->destroy_listener.link);
+	// 释放内存
+	free(input_dev);
+}
+
+void configure_pointer(struct libinput_device *device) {
+	if (libinput_device_config_tap_get_finger_count(device)) {
+		libinput_device_config_tap_set_enabled(device, tap_to_click);
+		libinput_device_config_tap_set_drag_enabled(device, tap_and_drag);
+		libinput_device_config_tap_set_drag_lock_enabled(device, drag_lock);
+		libinput_device_config_tap_set_button_map(device, button_map);
+		libinput_device_config_scroll_set_natural_scroll_enabled(
+			device, trackpad_natural_scrolling);
+	} else {
+		libinput_device_config_scroll_set_natural_scroll_enabled(
+			device, mouse_natural_scrolling);
+	}
+
+	if (libinput_device_config_dwt_is_available(device))
+		libinput_device_config_dwt_set_enabled(device, disable_while_typing);
+
+	if (libinput_device_config_left_handed_is_available(device))
+		libinput_device_config_left_handed_set(device, left_handed);
+
+	if (libinput_device_config_middle_emulation_is_available(device))
+		libinput_device_config_middle_emulation_set_enabled(
+			device, middle_button_emulation);
+
+	if (libinput_device_config_scroll_get_methods(device) !=
+		LIBINPUT_CONFIG_SCROLL_NO_SCROLL)
+		libinput_device_config_scroll_set_method(device, scroll_method);
+	if (libinput_device_config_scroll_get_methods(device) ==
+		LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN)
+		libinput_device_config_scroll_set_button(device, scroll_button);
+
+	if (libinput_device_config_click_get_methods(device) !=
+		LIBINPUT_CONFIG_CLICK_METHOD_NONE)
+		libinput_device_config_click_set_method(device, click_method);
+
+	if (libinput_device_config_send_events_get_modes(device))
+		libinput_device_config_send_events_set_mode(device, send_events_mode);
+
+	if (libinput_device_config_accel_is_available(device)) {
+		libinput_device_config_accel_set_profile(device, accel_profile);
+		libinput_device_config_accel_set_speed(device, accel_speed);
+	}
+}
+
 void createpointer(struct wlr_pointer *pointer) {
 	struct libinput_device *device;
 	if (wlr_input_device_is_libinput(&pointer->base) &&
 		(device = wlr_libinput_get_device_handle(&pointer->base))) {
-
-		if (libinput_device_config_tap_get_finger_count(device)) {
-			libinput_device_config_tap_set_enabled(device, tap_to_click);
-			libinput_device_config_tap_set_drag_enabled(device, tap_and_drag);
-			libinput_device_config_tap_set_drag_lock_enabled(device, drag_lock);
-			libinput_device_config_tap_set_button_map(device, button_map);
-			libinput_device_config_scroll_set_natural_scroll_enabled(
-				device, trackpad_natural_scrolling);
-		} else {
-			libinput_device_config_scroll_set_natural_scroll_enabled(
-				device, mouse_natural_scrolling);
-		}
-
-		if (libinput_device_config_dwt_is_available(device))
-			libinput_device_config_dwt_set_enabled(device,
-												   disable_while_typing);
-
-		if (libinput_device_config_left_handed_is_available(device))
-			libinput_device_config_left_handed_set(device, left_handed);
-
-		if (libinput_device_config_middle_emulation_is_available(device))
-			libinput_device_config_middle_emulation_set_enabled(
-				device, middle_button_emulation);
-
-		if (libinput_device_config_scroll_get_methods(device) !=
-			LIBINPUT_CONFIG_SCROLL_NO_SCROLL)
-			libinput_device_config_scroll_set_method(device, scroll_method);
-		if (libinput_device_config_scroll_get_methods(device) ==
-			LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN)
-			libinput_device_config_scroll_set_button(device, scroll_button);
-
-		if (libinput_device_config_click_get_methods(device) !=
-			LIBINPUT_CONFIG_CLICK_METHOD_NONE)
-			libinput_device_config_click_set_method(device, click_method);
-
-		if (libinput_device_config_send_events_get_modes(device))
-			libinput_device_config_send_events_set_mode(device,
-														send_events_mode);
-
-		if (libinput_device_config_accel_is_available(device)) {
-			libinput_device_config_accel_set_profile(device, accel_profile);
-			libinput_device_config_accel_set_speed(device, accel_speed);
-		}
+		configure_pointer(device);
 	}
+
+	struct input_device *input_dev = calloc(1, sizeof(struct input_device));
+	input_dev->wlr_device = &pointer->base;
+	input_dev->libinput_device = device;
+
+	input_dev->destroy_listener.notify = destroypointer;
+	wl_signal_add(&pointer->base.events.destroy, &input_dev->destroy_listener);
+
+	wl_list_insert(&pointers, &input_dev->link);
 
 	wlr_cursor_attach_input_device(cursor, &pointer->base);
 }
@@ -4594,6 +4626,7 @@ void setup(void) {
 	 * let us know when new input devices are available on the backend.
 	 */
 	wl_list_init(&keyboards);
+	wl_list_init(&pointers);
 	wl_signal_add(&backend->events.new_input, &new_input_device);
 	virtual_keyboard_mgr = wlr_virtual_keyboard_manager_v1_create(dpy);
 	wl_signal_add(&virtual_keyboard_mgr->events.new_virtual_keyboard,
