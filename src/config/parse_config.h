@@ -165,6 +165,7 @@ typedef struct {
 	float scroller_default_proportion_single;
 	int scroller_focus_center;
 	int scroller_prefer_center;
+	int edge_scroller_pointer_focus;
 	int focus_cross_monitor;
 	int focus_cross_tag;
 	int no_border_when_single;
@@ -921,6 +922,8 @@ void parse_config_line(Config *config, const char *line) {
 		config->scroller_focus_center = atoi(value);
 	} else if (strcmp(key, "scroller_prefer_center") == 0) {
 		config->scroller_prefer_center = atoi(value);
+	} else if (strcmp(key, "edge_scroller_pointer_focus") == 0) {
+		config->edge_scroller_pointer_focus = atoi(value);
 	} else if (strcmp(key, "focus_cross_monitor") == 0) {
 		config->focus_cross_monitor = atoi(value);
 	} else if (strcmp(key, "focus_cross_tag") == 0) {
@@ -2146,6 +2149,8 @@ void override_config(void) {
 		CLAMP_FLOAT(config.scroller_default_proportion_single, 0.1f, 1.0f);
 	scroller_focus_center = CLAMP_INT(config.scroller_focus_center, 0, 1);
 	scroller_prefer_center = CLAMP_INT(config.scroller_prefer_center, 0, 1);
+	edge_scroller_pointer_focus =
+		CLAMP_INT(config.edge_scroller_pointer_focus, 0, 1);
 	scroller_structs = CLAMP_INT(config.scroller_structs, 0, 1000);
 
 	// 主从布局设置
@@ -2299,6 +2304,7 @@ void set_value_default() {
 		scroller_default_proportion_single;
 	config.scroller_focus_center = scroller_focus_center;
 	config.scroller_prefer_center = scroller_prefer_center;
+	config.edge_scroller_pointer_focus = edge_scroller_pointer_focus;
 	config.focus_cross_monitor = focus_cross_monitor;
 	config.focus_cross_tag = focus_cross_tag;
 	config.single_scratchpad = single_scratchpad;

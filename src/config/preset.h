@@ -132,6 +132,7 @@ int disable_while_typing = 1;
 int left_handed = 0;
 int middle_button_emulation = 0;
 int single_scratchpad = 1;
+int edge_scroller_pointer_focus = 1;
 
 /* You can choose between:
 LIBINPUT_CONFIG_SCROLL_NO_SCROLL
