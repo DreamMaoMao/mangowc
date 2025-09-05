@@ -753,6 +753,8 @@ void client_set_pending_state(Client *c) {
 		 (!c->animation_type_open &&
 		  strcmp(animation_type_open, "none") == 0)) &&
 		c->animation.action == OPEN) {
+		c->animation.action = MOVE;
+		c->is_pending_open_animation = false;
 		c->animation.should_animate = false;
 	}
 
