@@ -406,7 +406,8 @@ void restore_minimized(const Arg *arg) {
 			c->is_in_scratchpad = 0;
 			c->isnamedscratchpad = 0;
 			setborder_color(c);
-			break;
+			arrange(c->mon, false);
+			return;
 		}
 	}
 }
