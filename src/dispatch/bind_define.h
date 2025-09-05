@@ -1011,8 +1011,6 @@ void toggle_named_scratchpad(const Arg *arg) {
 	}
 
 	target_client->isnamedscratchpad = 1;
-	target_client->scratchpad_width = arg->ui;
-	target_client->scratchpad_height = arg->ui2;
 
 	apply_named_scratchpad(target_client);
 }

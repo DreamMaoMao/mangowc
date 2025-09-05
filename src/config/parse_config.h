@@ -835,9 +835,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = toggle_named_scratchpad;
 		(*arg).v = strdup(arg_value);
 		(*arg).v2 = strdup(arg_value2);
-		(*arg).v3 = strdup(arg_value5);
-		(*arg).ui = arg_value3 ? atoi(arg_value3) : 0;
-		(*arg).ui2 = arg_value4 ? atoi(arg_value4) : 0;
+		(*arg).v3 = strdup(arg_value3);
 	} else {
 		return NULL;
 	}
