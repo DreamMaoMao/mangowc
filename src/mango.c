@@ -1815,7 +1815,7 @@ buttonpress(struct wl_listener *listener, void *data) {
 	struct wlr_surface *surface;
 	Client *tmpc;
 	int ji;
-	const MouseBinding *b;
+	const MouseBinding *m;
 	struct wlr_surface *old_pointer_focus_surface =
 		seat->pointer_state.focused_surface;
 
@@ -1867,16 +1867,16 @@ buttonpress(struct wl_listener *listener, void *data) {
 		for (ji = 0; ji < config.mouse_bindings_count; ji++) {
 			if (config.mouse_bindings_count < 1)
 				break;
-			b = &config.mouse_bindings[ji];
-			if (CLEANMASK(mods) == CLEANMASK(b->mod) &&
-				event->button == b->button && b->func &&
-				(selmon->isoverview == 1 || b->button == BTN_MIDDLE) && c) {
-				b->func(&b->arg);
+			m = &config.mouse_bindings[ji];
+			if (CLEANMASK(mods) == CLEANMASK(m->mod) &&
+				event->button == m->button && m->func &&
+				(selmon->isoverview == 1 || m->button == BTN_MIDDLE) && c) {
+				m->func(&m->arg);
 				return;
-			} else if (CLEANMASK(mods) == CLEANMASK(b->mod) &&
-					   event->button == b->button && b->func &&
-					   CLEANMASK(b->mod) != 0) {
-				b->func(&b->arg);
+			} else if (CLEANMASK(mods) == CLEANMASK(m->mod) &&
+					   event->button == m->button && m->func &&
+					   CLEANMASK(m->mod) != 0) {
+				m->func(&m->arg);
 				return;
 			}
 		}
@@ -2722,15 +2722,15 @@ void switch_toggle(struct wl_listener *listener, void *data) {
 
 	// 处理切换事件
 	struct wlr_switch_toggle_event *event = data;
-	SwitchBinding *a;
+	SwitchBinding *s;
 	int ji;
 
 	for (ji = 0; ji < config.switch_bindings_count; ji++) {
 		if (config.switch_bindings_count < 1)
 			break;
-		a = &config.switch_bindings[ji];
-		if (event->switch_state == a->fold && a->func) {
-			a->func(&a->arg);
+		s = &config.switch_bindings[ji];
+		if (event->switch_state == s->fold && s->func) {
+			s->func(&s->arg);
 			return;
 		}
 	}
