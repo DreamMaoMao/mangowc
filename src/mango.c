@@ -910,11 +910,13 @@ void show_scratchpad(Client *c) {
 	/* return if fullscreen */
 	if (!c->isfloating) {
 		setfloating(c, 1);
-		c->geom.width = c->scratchpad_width
-							? c->scratchpad_width
+		c->geom.width = c->scratchpad_width ? c->scratchpad_width
+						: c->oldgeom.width
+							? c->oldgeom.width
 							: c->mon->w.width * scratchpad_width_ratio;
-		c->geom.height = c->scratchpad_height
-							 ? c->scratchpad_height
+		c->geom.height = c->scratchpad_height ? c->scratchpad_height
+						 : c->oldgeom.height
+							 ? c->oldgeom.height
 							 : c->mon->w.height * scratchpad_height_ratio;
 		// 重新计算居中的坐标
 		c->oldgeom = c->geom = c->animainit_geom = c->animation.current =
@@ -1173,6 +1175,10 @@ void applyrules(Client *c) {
 			}
 		}
 
+		if (c->isnamedscratchpad) {
+			c->isfloating = 1;
+		}
+
 		// set geometry of floating client
 		if (c->isfloating) {
 			if (r->width > 0)
@@ -1220,12 +1226,6 @@ void applyrules(Client *c) {
 			mon = p->mon;
 			newtags = p->tags;
 		}
-	}
-
-	// set mon and floating, fullscreen and scratchpad state
-
-	if (c->isnamedscratchpad) {
-		c->isfloating = 1;
 	}
 
 	int fullscreen_state_backup = c->isfullscreen || client_wants_fullscreen(c);
