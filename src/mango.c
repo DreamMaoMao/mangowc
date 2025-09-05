@@ -64,6 +64,7 @@
 #include <wlr/types/wlr_session_lock_v1.h>
 #include <wlr/types/wlr_single_pixel_buffer_v1.h>
 #include <wlr/types/wlr_subcompositor.h>
+#include <wlr/types/wlr_switch.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
@@ -155,7 +156,7 @@ enum {
 #endif
 enum { UP, DOWN, LEFT, RIGHT, UNDIR }; /* smartmovewin */
 enum { NONE, OPEN, MOVE, CLOSE, TAG };
-
+enum { UNFOLD, FOLD, INVALIDFOLD };
 struct dvec2 {
 	double x, y;
 };
@@ -196,6 +197,12 @@ struct input_device {
 	struct libinput_device *libinput_device;
 	struct wl_listener destroy_listener; // 用于监听设备销毁事件
 };
+
+typedef struct {
+	struct wl_list link;
+	struct wlr_switch *wlr_switch;
+	struct wl_listener toggle;
+} Switch;
 
 struct dwl_animation {
 	bool should_animate;
@@ -515,6 +522,9 @@ static void createnotify(struct wl_listener *listener, void *data);
 static void createpointer(struct wlr_pointer *pointer);
 static void configure_pointer(struct libinput_device *device);
 static void destroypointer(struct wl_listener *listener, void *data);
+static void createswitch(struct wlr_switch *switch_device);
+static void switch_toggle(struct wl_listener *listener, void *data);
+static void cleanupswitches();
 static void createpointerconstraint(struct wl_listener *listener, void *data);
 static void cursorconstrain(struct wlr_pointer_constraint_v1 *constraint);
 static void commitpopup(struct wl_listener *listener, void *data);
@@ -742,6 +752,7 @@ static struct wlr_seat *seat;
 static KeyboardGroup *kb_group;
 static struct wl_list keyboards;
 static struct wl_list pointers;
+static struct wl_list switches;
 static unsigned int cursor_mode;
 static Client *grabc;
 static int grabcx, grabcy; /* client-relative */
@@ -1998,6 +2009,8 @@ void cleanup(void) {
 
 	dwl_im_relay_finish(dwl_input_method_relay);
 
+	cleanupswitches();
+
 	/* If it's not destroyed manually it will cause a use-after-free of
 	 * wlr_seat. Destroy it until it's fixed in the wlroots side */
 	wlr_backend_destroy(backend);
@@ -2703,6 +2716,50 @@ void createpointer(struct wlr_pointer *pointer) {
 	wlr_cursor_attach_input_device(cursor, &pointer->base);
 }
 
+void switch_toggle(struct wl_listener *listener, void *data) {
+	// 获取包含监听器的结构体
+	Switch *sw = wl_container_of(listener, sw, toggle);
+
+	// 处理切换事件
+	struct wlr_switch_toggle_event *event = data;
+	SwitchBinding *a;
+	int ji;
+
+	for (ji = 0; ji < config.switch_bindings_count; ji++) {
+		if (config.switch_bindings_count < 1)
+			break;
+		a = &config.switch_bindings[ji];
+		if (event->switch_state == a->fold && a->func) {
+			a->func(&a->arg);
+			return;
+		}
+	}
+}
+
+void createswitch(struct wlr_switch *switch_device) {
+	Switch *sw = calloc(1, sizeof(Switch));
+	sw->wlr_switch = switch_device;
+	sw->toggle.notify = switch_toggle;
+	wl_signal_add(&switch_device->events.toggle, &sw->toggle);
+
+	// 添加到全局列表（可选，用于统一管理）
+	wl_list_insert(&switches, &sw->link);
+}
+
+void cleanupswitches() {
+	Switch *sw, *tmp;
+	wl_list_for_each_safe(sw, tmp, &switches, link) {
+		// 移除事件监听
+		wl_list_remove(&sw->toggle.link);
+
+		// 从列表中移除
+		wl_list_remove(&sw->link);
+
+		// 释放内存
+		free(sw);
+	}
+}
+
 void createpointerconstraint(struct wl_listener *listener, void *data) {
 	PointerConstraint *pointer_constraint =
 		ecalloc(1, sizeof(*pointer_constraint));
@@ -2732,8 +2789,9 @@ void cursorconstrain(struct wlr_pointer_constraint_v1 *constraint) {
 void cursorframe(struct wl_listener *listener, void *data) {
 	/* This event is forwarded by the cursor when a pointer emits an frame
 	 * event. Frame events are sent after regular pointer events to group
-	 * multiple events together. For instance, two axis events may happen at the
-	 * same time, in which case a frame event won't be sent in between. */
+	 * multiple events together. For instance, two axis events may happen at
+	 * the same time, in which case a frame event won't be sent in between.
+	 */
 	/* Notify the client with pointer focus of the frame event. */
 	wlr_seat_pointer_notify_frame(seat);
 }
@@ -2761,7 +2819,8 @@ void destroydragicon(struct wl_listener *listener, void *data) {
 
 void destroyidleinhibitor(struct wl_listener *listener, void *data) {
 	/* `data` is the wlr_surface of the idle inhibitor being destroyed,
-	 * at this point the idle inhibitor is still in the list of the manager */
+	 * at this point the idle inhibitor is still in the list of the manager
+	 */
 	checkidleinhibitor(wlr_surface_get_root_surface(data));
 	wl_list_remove(&listener->link);
 	free(listener);
@@ -2947,10 +3006,10 @@ void focusclient(Client *c, int lift) {
 	/* Deactivate old client if focus is changing */
 	if (old_keyboard_focus_surface &&
 		(!c || client_surface(c) != old_keyboard_focus_surface)) {
-		/* If an exclusive_focus layer is focused, don't focus or activate the
-		 * client, but only update its position in fstack to render its border
-		 * with focuscolor and focus it after the exclusive_focus layer is
-		 * closed. */
+		/* If an exclusive_focus layer is focused, don't focus or activate
+		 * the client, but only update its position in fstack to render its
+		 * border with focuscolor and focus it after the exclusive_focus
+		 * layer is closed. */
 		Client *w = NULL;
 		LayerSurface *l = NULL;
 		int type =
@@ -2961,9 +3020,9 @@ void focusclient(Client *c, int lift) {
 			return;
 		} else if (w && w == exclusive_focus && client_wants_focus(w)) {
 			return;
-			/* Don't deactivate old_keyboard_focus_surface client if the new one
-			 * wants focus, as this causes issues with winecfg and probably
-			 * other clients */
+			/* Don't deactivate old_keyboard_focus_surface client if the new
+			 * one wants focus, as this causes issues with winecfg and
+			 * probably other clients */
 		} else if (w && !client_is_unmanaged(w) &&
 				   (!c || !client_wants_focus(c))) {
 			setborder_color(w);
@@ -3026,6 +3085,9 @@ void inputdevice(struct wl_listener *listener, void *data) {
 	case WLR_INPUT_DEVICE_POINTER:
 		createpointer(wlr_pointer_from_input_device(device));
 		break;
+	case WLR_INPUT_DEVICE_SWITCH:
+		createswitch(wlr_switch_from_input_device(device));
+		break;
 	default:
 		/* TODO handle other input device types */
 		break;
@@ -3033,7 +3095,8 @@ void inputdevice(struct wl_listener *listener, void *data) {
 
 	/* We need to let the wlr_seat know what our capabilities are, which is
 	 * communiciated to the client. In dwl we always have a cursor, even if
-	 * there are no pointer devices, so we always include that capability. */
+	 * there are no pointer devices, so we always include that capability.
+	 */
 	/* TODO do we actually require a cursor? */
 	caps = WL_SEAT_CAPABILITY_POINTER;
 	if (!wl_list_empty(&kb_group->wlr_group->devices))
@@ -3061,8 +3124,8 @@ int // 17
 keybinding(unsigned int mods, xkb_keysym_t sym, unsigned int keycode) {
 	/*
 	 * Here we handle compositor keybindings. This is when the compositor is
-	 * processing keys, rather than passing them on to the client for its own
-	 * processing.
+	 * processing keys, rather than passing them on to the client for its
+	 * own processing.
 	 */
 	int handled = 0;
 	const KeyBinding *k;
@@ -3208,8 +3271,8 @@ void keypress(struct wl_listener *listener, void *data) {
 		return;
 
 	/* don't pass when popup is focused
-	 * this is better than having popups (like fuzzel or wmenu) closing while
-	 * typing in a passed keybind */
+	 * this is better than having popups (like fuzzel or wmenu) closing
+	 * while typing in a passed keybind */
 	pass = (xdg_surface && xdg_surface->role != WLR_XDG_SURFACE_ROLE_POPUP) ||
 		   !last_surface
 #ifdef XWAYLAND
@@ -3355,7 +3418,9 @@ mapnotify(struct wl_listener *listener, void *data) {
 	c->image_capture_scene_surface = wlr_scene_surface_create(
 		&c->image_capture_scene->tree, client_surface(c));
 
-	/* Handle unmanaged clients first so we can return prior create borders */
+	/* Handle unmanaged clients first so we can return prior create borders
+	 */
+
 	if (client_is_unmanaged(c)) {
 		/* Unmanaged clients always are floating */
 		wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
@@ -3424,7 +3489,8 @@ maximizenotify(struct wl_listener *listener, void *data) {
 	 * Since xdg-shell protocol v5 we should ignore request of unsupported
 	 * capabilities, just schedule a empty configure when the client uses <5
 	 * protocol version
-	 * wlr_xdg_surface_schedule_configure() is used to send an empty reply. */
+	 * wlr_xdg_surface_schedule_configure() is used to send an empty reply.
+	 */
 	// Client *c = wl_container_of(listener, c, maximize);
 	// if (wl_resource_get_version(c->surface.xdg->toplevel->resource)
 	// 		< XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION)
@@ -3470,7 +3536,8 @@ minimizenotify(struct wl_listener *listener, void *data) {
 	 * Since xdg-shell protocol v5 we should ignore request of unsupported
 	 * capabilities, just schedule a empty configure when the client uses <5
 	 * protocol version
-	 * wlr_xdg_surface_schedule_configure() is used to send an empty reply. */
+	 * wlr_xdg_surface_schedule_configure() is used to send an empty reply.
+	 */
 	// Client *c = wl_container_of(listener, c, maximize);
 	// if (wl_resource_get_version(c->surface.xdg->toplevel->resource)
 	// 		< XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION)
@@ -3492,12 +3559,12 @@ minimizenotify(struct wl_listener *listener, void *data) {
 }
 
 void motionabsolute(struct wl_listener *listener, void *data) {
-	/* This event is forwarded by the cursor when a pointer emits an _absolute_
-	 * motion event, from 0..1 on each axis. This happens, for example, when
-	 * wlroots is running under a Wayland window rather than KMS+DRM, and you
-	 * move the mouse over the window. You could enter the window from any edge,
-	 * so we have to warp the mouse there. There is also some hardware which
-	 * emits these events. */
+	/* This event is forwarded by the cursor when a pointer emits an
+	 * _absolute_ motion event, from 0..1 on each axis. This happens, for
+	 * example, when wlroots is running under a Wayland window rather than
+	 * KMS+DRM, and you move the mouse over the window. You could enter the
+	 * window from any edge, so we have to warp the mouse there. There is
+	 * also some hardware which emits these events. */
 	struct wlr_pointer_motion_absolute_event *event = data;
 	double lx, ly, dx, dy;
 
@@ -3598,9 +3665,9 @@ void motionnotify(unsigned int time, struct wlr_input_device *device, double dx,
 		return;
 	}
 
-	/* If there's no client surface under the cursor, set the cursor image to a
-	 * default. This is what makes the cursor image appear when you move it
-	 * off of a client or over its border. */
+	/* If there's no client surface under the cursor, set the cursor image
+	 * to a default. This is what makes the cursor image appear when you
+	 * move it off of a client or over its border. */
 	if (!surface && !seat->drag && !cursor_hidden)
 		wlr_cursor_set_xcursor(cursor, cursor_mgr, "default");
 
@@ -3642,14 +3709,14 @@ void motionnotify(unsigned int time, struct wlr_input_device *device, double dx,
 }
 
 void motionrelative(struct wl_listener *listener, void *data) {
-	/* This event is forwarded by the cursor when a pointer emits a _relative_
-	 * pointer motion event (i.e. a delta) */
+	/* This event is forwarded by the cursor when a pointer emits a
+	 * _relative_ pointer motion event (i.e. a delta) */
 	struct wlr_pointer_motion_event *event = data;
-	/* The cursor doesn't move unless we tell it to. The cursor automatically
-	 * handles constraining the motion to the output layout, as well as any
-	 * special configuration applied for the specific input device which
-	 * generated the event. You can pass NULL for the device if you want to move
-	 * the cursor around without any input. */
+	/* The cursor doesn't move unless we tell it to. The cursor
+	 * automatically handles constraining the motion to the output layout,
+	 * as well as any special configuration applied for the specific input
+	 * device which generated the event. You can pass NULL for the device if
+	 * you want to move the cursor around without any input. */
 
 	if (check_trackpad_disabled(event->pointer)) {
 		return;
@@ -3701,8 +3768,8 @@ outputmgrapplyortest(struct wlr_output_configuration_v1 *config, int test) {
 		Monitor *m = wlr_output->data;
 		struct wlr_output_state state;
 
-		/* Ensure displays previously disabled by wlr-output-power-management-v1
-		 * are properly handled*/
+		/* Ensure displays previously disabled by
+		 * wlr-output-power-management-v1 are properly handled*/
 		m->asleep = 0;
 
 		wlr_output_state_init(&state);
@@ -3967,13 +4034,13 @@ run(char *startup_cmd) {
 		die("startup: display_add_socket_auto");
 	setenv("WAYLAND_DISPLAY", socket, 1);
 
-	/* Start the backend. This will enumerate outputs and inputs, become the DRM
-	 * master, etc */
+	/* Start the backend. This will enumerate outputs and inputs, become the
+	 * DRM master, etc */
 	if (!wlr_backend_start(backend))
 		die("startup: backend_start");
 
-	/* Now that the socket exists and the backend is started, run the startup
-	 * command */
+	/* Now that the socket exists and the backend is started, run the
+	 * startup command */
 	if (!startup_cmd)
 		startup_cmd = get_autostart_path(autostart_temp_path,
 										 sizeof(autostart_temp_path));
@@ -4003,8 +4070,8 @@ run(char *startup_cmd) {
 
 	printstatus();
 
-	/* At this point the outputs are initialized, choose initial selmon based on
-	 * cursor position, and set default cursor image */
+	/* At this point the outputs are initialized, choose initial selmon
+	 * based on cursor position, and set default cursor image */
 	selmon = xytomon(cursor->x, cursor->y);
 
 	/* TODO hack to get cursor to display in its initial location (100, 100)
@@ -4027,11 +4094,13 @@ run(char *startup_cmd) {
 }
 
 void setcursor(struct wl_listener *listener, void *data) {
-	/* This event is raised by the seat when a client provides a cursor image */
+	/* This event is raised by the seat when a client provides a cursor
+	 * image */
 	struct wlr_seat_pointer_request_set_cursor_event *event = data;
 	/* If we're "grabbing" the cursor, don't use the client's image, we will
-	 * restore it after "grabbing" sending a leave event, followed by a enter
-	 * event, which will result in the client requesting set the cursor surface
+	 * restore it after "grabbing" sending a leave event, followed by a
+	 * enter event, which will result in the client requesting set the
+	 * cursor surface
 	 */
 	if (cursor_mode != CurNormal && cursor_mode != CurPressed)
 		return;
@@ -4436,14 +4505,14 @@ void setup(void) {
 	dpy = wl_display_create();
 	event_loop = wl_display_get_event_loop(dpy);
 	pointer_manager = wlr_relative_pointer_manager_v1_create(dpy);
-	/* The backend is a wlroots feature which abstracts the underlying input and
-	 * output hardware. The autocreate option will choose the most suitable
-	 * backend based on the current environment, such as opening an X11 window
-	 * if an X11 server is running. The NULL argument here optionally allows you
-	 * to pass in a custom renderer if wlr_renderer doesn't meet your needs. The
-	 * backend uses the renderer, for example, to fall back to software cursors
-	 * if the backend does not support hardware cursors (some older GPUs
-	 * don't). */
+	/* The backend is a wlroots feature which abstracts the underlying input
+	 * and output hardware. The autocreate option will choose the most
+	 * suitable backend based on the current environment, such as opening an
+	 * X11 window if an X11 server is running. The NULL argument here
+	 * optionally allows you to pass in a custom renderer if wlr_renderer
+	 * doesn't meet your needs. The backend uses the renderer, for example,
+	 * to fall back to software cursors if the backend does not support
+	 * hardware cursors (some older GPUs don't). */
 	if (!(backend = wlr_backend_autocreate(event_loop, &session)))
 		die("couldn't create backend");
 
@@ -4471,8 +4540,8 @@ void setup(void) {
 	/* Create shm, drm and linux_dmabuf interfaces by ourselves.
 	 * The simplest way is call:
 	 *      wlr_renderer_init_wl_display(drw);
-	 * but we need to create manually the linux_dmabuf interface to integrate it
-	 * with wlr_scene. */
+	 * but we need to create manually the linux_dmabuf interface to
+	 * integrate it with wlr_scene. */
 	wlr_renderer_init_wl_shm(drw, dpy);
 
 	if (wlr_renderer_get_texture_formats(drw, WLR_BUFFER_CAP_DMABUF)) {
@@ -4490,11 +4559,11 @@ void setup(void) {
 		die("couldn't create allocator");
 
 	/* This creates some hands-off wlroots interfaces. The compositor is
-	 * necessary for clients to allocate surfaces and the data device manager
-	 * handles the clipboard. Each of these wlroots interfaces has room for you
-	 * to dig your fingers in and play with their behavior if you want. Note
-	 * that the clients cannot set the selection directly without compositor
-	 * approval, see the setsel() function. */
+	 * necessary for clients to allocate surfaces and the data device
+	 * manager handles the clipboard. Each of these wlroots interfaces has
+	 * room for you to dig your fingers in and play with their behavior if
+	 * you want. Note that the clients cannot set the selection directly
+	 * without compositor approval, see the setsel() function. */
 	compositor = wlr_compositor_create(dpy, 6, drw);
 	wlr_export_dmabuf_manager_v1_create(dpy);
 	wlr_screencopy_manager_v1_create(dpy);
@@ -4536,8 +4605,8 @@ void setup(void) {
 	wl_signal_add(&output_layout->events.change, &layout_change);
 	wlr_xdg_output_manager_v1_create(dpy, output_layout);
 
-	/* Configure a listener to be notified when new outputs are available on the
-	 * backend. */
+	/* Configure a listener to be notified when new outputs are available on
+	 * the backend. */
 	wl_list_init(&mons);
 	wl_signal_add(&backend->events.new_output, &new_output);
 
@@ -4594,23 +4663,25 @@ void setup(void) {
 	wlr_cursor_attach_output_layout(cursor, output_layout);
 
 	/* Creates an xcursor manager, another wlroots utility which loads up
-	 * Xcursor themes to source cursor images from and makes sure that cursor
-	 * images are available at all scale factors on the screen (necessary for
-	 * HiDPI support). Scaled cursors will be loaded with each output. */
+	 * Xcursor themes to source cursor images from and makes sure that
+	 * cursor images are available at all scale factors on the screen
+	 * (necessary for HiDPI support). Scaled cursors will be loaded with
+	 * each output. */
 	// cursor_mgr = wlr_xcursor_manager_create(cursor_theme, 24);
 	cursor_mgr = wlr_xcursor_manager_create(config.cursor_theme, cursor_size);
 
 	/*
-	 * wlr_cursor *only* displays an image on screen. It does not move around
-	 * when the pointer moves. However, we can attach input devices to it, and
-	 * it will generate aggregate events for all of them. In these events, we
-	 * can choose how we want to process them, forwarding them to clients and
-	 * moving the cursor around. More detail on this process is described in my
-	 * input handling blog post:
+	 * wlr_cursor *only* displays an image on screen. It does not move
+	 * around when the pointer moves. However, we can attach input devices
+	 * to it, and it will generate aggregate events for all of them. In
+	 * these events, we can choose how we want to process them, forwarding
+	 * them to clients and moving the cursor around. More detail on this
+	 * process is described in my input handling blog post:
 	 *
 	 * https://drewdevault.com/2018/07/17/Input-handling-in-wlroots.html
 	 *
-	 * And more comments are sprinkled throughout the notify functions above.
+	 * And more comments are sprinkled throughout the notify functions
+	 * above.
 	 */
 	wl_signal_add(&cursor->events.motion, &cursor_motion);
 	wl_signal_add(&cursor->events.motion_absolute, &cursor_motion_absolute);
@@ -4628,11 +4699,12 @@ void setup(void) {
 	/*
 	 * Configures a seat, which is a single "seat" at which a user sits and
 	 * operates the computer. This conceptually includes up to one keyboard,
-	 * pointer, touch, and drawing tablet device. We also rig up a listener to
-	 * let us know when new input devices are available on the backend.
+	 * pointer, touch, and drawing tablet device. We also rig up a listener
+	 * to let us know when new input devices are available on the backend.
 	 */
 	wl_list_init(&keyboards);
 	wl_list_init(&pointers);
+	wl_list_init(&switches);
 	wl_signal_add(&backend->events.new_input, &new_input_device);
 	virtual_keyboard_mgr = wlr_virtual_keyboard_manager_v1_create(dpy);
 	wl_signal_add(&virtual_keyboard_mgr->events.new_virtual_keyboard,
@@ -4913,7 +4985,8 @@ void unmaplayersurfacenotify(struct wl_listener *listener, void *data) {
 }
 
 void unmapnotify(struct wl_listener *listener, void *data) {
-	/* Called when the surface is unmapped, and should no longer be shown. */
+	/* Called when the surface is unmapped, and should no longer be shown.
+	 */
 	Client *c = wl_container_of(listener, c, unmap);
 	Monitor *m;
 	c->iskilling = 1;
@@ -5026,7 +5099,8 @@ void updatemons(struct wl_listener *listener, void *data) {
 		config_head =
 			wlr_output_configuration_head_v1_create(config, m->wlr_output);
 		config_head->state.enabled = 0;
-		/* Remove this output from the layout to avoid cursor enter inside it */
+		/* Remove this output from the layout to avoid cursor enter inside
+		 * it */
 		wlr_output_layout_remove(output_layout, m->wlr_output);
 		closemon(m);
 		m->m = m->w = (struct wlr_box){0};
@@ -5101,7 +5175,8 @@ void updatemons(struct wl_listener *listener, void *data) {
 			resize(c, m->m, 0);
 
 		/* Try to re-set the gamma LUT when updating monitors,
-		 * it's only really needed when enabling a disabled output, but meh. */
+		 * it's only really needed when enabling a disabled output, but meh.
+		 */
 		m->gamma_lut_changed = 1;
 
 		config_head->state.x = m->m.x;
@@ -5128,8 +5203,8 @@ void updatemons(struct wl_listener *listener, void *data) {
 	/* FIXME: figure out why the cursor image is at 0,0 after turning all
 	 * the monitors on.
 	 * Move the cursor image where it used to be. It does not generate a
-	 * wl_pointer.motion event for the clients, it's only the image what it's
-	 * at the wrong position after all. */
+	 * wl_pointer.motion event for the clients, it's only the image what
+	 * it's at the wrong position after all. */
 	wlr_cursor_move(cursor, NULL, 0, 0);
 
 	wlr_output_manager_v1_set_configuration(output_mgr, config);
@@ -5423,7 +5498,8 @@ int main(int argc, char *argv[]) {
 	if (optind < argc)
 		goto usage;
 
-	/* Wayland requires XDG_RUNTIME_DIR for creating its communications socket
+	/* Wayland requires XDG_RUNTIME_DIR for creating its communications
+	 * socket
 	 */
 	if (!getenv("XDG_RUNTIME_DIR"))
 		die("XDG_RUNTIME_DIR must be set");

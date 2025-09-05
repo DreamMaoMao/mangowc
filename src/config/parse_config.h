@@ -115,6 +115,12 @@ typedef struct {
 } AxisBinding;
 
 typedef struct {
+	unsigned int fold;
+	void (*func)(const Arg *);
+	Arg arg;
+} SwitchBinding;
+
+typedef struct {
 	unsigned int mod;
 	unsigned int motion;
 	unsigned int fingers_count;
@@ -262,6 +268,9 @@ typedef struct {
 	AxisBinding *axis_bindings;
 	int axis_bindings_count;
 
+	SwitchBinding *switch_bindings;
+	int switch_bindings_count;
+
 	GestureBinding *gesture_bindings;
 	int gesture_bindings_count;
 
@@ -390,6 +399,25 @@ int parse_direction(const char *str) {
 	}
 }
 
+int parse_fold_state(const char *str) {
+	// 将输入字符串转换为小写
+	char lowerStr[10];
+	int i = 0;
+	while (str[i] && i < 9) {
+		lowerStr[i] = tolower(str[i]);
+		i++;
+	}
+	lowerStr[i] = '\0';
+
+	// 根据转换后的小写字符串返回对应的枚举值
+	if (strcmp(lowerStr, "fold") == 0) {
+		return FOLD;
+	} else if (strcmp(lowerStr, "unfold") == 0) {
+		return UNFOLD;
+	} else {
+		return INVALIDFOLD;
+	}
+}
 long int parse_color(const char *hex_str) {
 	char *endptr;
 	long int hex_num = strtol(hex_str, &endptr, 16);
@@ -1768,6 +1796,62 @@ void parse_config_line(Config *config, const char *line) {
 			config->axis_bindings_count++;
 		}
 
+	} else if (strncmp(key, "switchbind", 10) == 0) {
+		config->switch_bindings = realloc(config->switch_bindings,
+										  (config->switch_bindings_count + 1) *
+											  sizeof(SwitchBinding));
+		if (!config->switch_bindings) {
+			fprintf(stderr,
+					"Error: Failed to allocate memory for switch bindings\n");
+			return;
+		}
+
+		SwitchBinding *binding =
+			&config->switch_bindings[config->switch_bindings_count];
+		memset(binding, 0, sizeof(SwitchBinding));
+
+		char fold_str[256], func_name[256],
+			arg_value[256] = "none", arg_value2[256] = "none",
+			arg_value3[256] = "none", arg_value4[256] = "none",
+			arg_value5[256] = "none";
+		if (sscanf(value, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
+				   fold_str, func_name, arg_value, arg_value2, arg_value3,
+				   arg_value4, arg_value5) < 3) {
+			fprintf(stderr, "Error: Invalid switchbind format: %s\n", value);
+			return;
+		}
+		trim_whitespace(fold_str);
+		trim_whitespace(func_name);
+		trim_whitespace(arg_value);
+		trim_whitespace(arg_value2);
+		trim_whitespace(arg_value3);
+		trim_whitespace(arg_value4);
+		trim_whitespace(arg_value5);
+
+		binding->fold = parse_fold_state(fold_str);
+		binding->func =
+			parse_func_name(func_name, &binding->arg, arg_value, arg_value2,
+							arg_value3, arg_value4, arg_value5);
+
+		if (!binding->func) {
+			if (binding->arg.v) {
+				free(binding->arg.v);
+				binding->arg.v = NULL;
+			}
+			if (binding->arg.v2) {
+				free(binding->arg.v2);
+				binding->arg.v2 = NULL;
+			}
+			if (binding->arg.v3) {
+				free(binding->arg.v3);
+				binding->arg.v3 = NULL;
+			}
+			fprintf(stderr, "Error: Unknown function in switchbind: %s\n",
+					func_name);
+		} else {
+			config->switch_bindings_count++;
+		}
+
 	} else if (strncmp(key, "gesturebind", 11) == 0) {
 		config->gesture_bindings = realloc(
 			config->gesture_bindings,
@@ -2018,6 +2102,27 @@ void free_config(void) {
 		free(config.axis_bindings);
 		config.axis_bindings = NULL;
 		config.axis_bindings_count = 0;
+	}
+
+	// 释放 switch_bindings
+	if (config.switch_bindings) {
+		for (i = 0; i < config.switch_bindings_count; i++) {
+			if (config.switch_bindings[i].arg.v) {
+				free((void *)config.switch_bindings[i].arg.v);
+				config.switch_bindings[i].arg.v = NULL;
+			}
+			if (config.switch_bindings[i].arg.v2) {
+				free((void *)config.switch_bindings[i].arg.v2);
+				config.switch_bindings[i].arg.v2 = NULL;
+			}
+			if (config.switch_bindings[i].arg.v3) {
+				free((void *)config.switch_bindings[i].arg.v3);
+				config.switch_bindings[i].arg.v3 = NULL;
+			}
+		}
+		free(config.switch_bindings);
+		config.switch_bindings = NULL;
+		config.switch_bindings_count = 0;
 	}
 
 	// 释放 gesture_bindings
@@ -2318,8 +2423,8 @@ void set_value_default() {
 
 	config.inhibit_regardless_of_visibility =
 		inhibit_regardless_of_visibility; /* 1 means idle inhibitors will
-									  disable idle tracking even if it's surface
-									  isn't visible
+									  disable idle tracking even if it's
+									  surface isn't visible
 									*/
 
 	config.borderpx = borderpx;
@@ -2418,6 +2523,8 @@ void parse_config(void) {
 	config.mouse_bindings_count = 0;
 	config.axis_bindings = NULL;
 	config.axis_bindings_count = 0;
+	config.switch_bindings = NULL;
+	config.switch_bindings_count = 0;
 	config.gesture_bindings = NULL;
 	config.gesture_bindings_count = 0;
 	config.exec = NULL;
