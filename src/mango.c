@@ -622,7 +622,7 @@ unsigned int want_restore_fullscreen(Client *target_client);
 static void overview_restore(Client *c, const Arg *arg);
 static void overview_backup(Client *c);
 static int applyrulesgeom(Client *c);
-static void set_minized(Client *c);
+static void set_minimized(Client *c);
 
 static void show_scratchpad(Client *c);
 static void show_hide_client(Client *c);
@@ -882,9 +882,9 @@ void clear_fullscreen_flag(Client *c) {
 	}
 }
 
-void minized(const Arg *arg) {
+void minimized(const Arg *arg) {
 	if (selmon->sel && !selmon->sel->isminied) {
-		set_minized(selmon->sel);
+		set_minimized(selmon->sel);
 	}
 }
 
@@ -967,7 +967,7 @@ bool switch_scratchpad_client_state(Client *c) {
 		return true;
 	} else if (c->is_in_scratchpad && c->is_scratchpad_show &&
 			   (selmon->tagset[selmon->seltags] & c->tags) != 0) {
-		set_minized(c);
+		set_minimized(c);
 		return true;
 	} else if (c && c->is_in_scratchpad && !c->is_scratchpad_show) {
 		show_scratchpad(c);
@@ -985,12 +985,12 @@ void apply_named_scratchpad(Client *target_client) {
 		}
 		if (single_scratchpad && c->is_in_scratchpad && c->is_scratchpad_show &&
 			c != target_client) {
-			set_minized(c);
+			set_minimized(c);
 		}
 	}
 
 	if (!target_client->is_in_scratchpad) {
-		set_minized(target_client);
+		set_minimized(target_client);
 		switch_scratchpad_client_state(target_client);
 	} else
 		switch_scratchpad_client_state(target_client);
@@ -3441,7 +3441,7 @@ maximizenotify(struct wl_listener *listener, void *data) {
 		setmaxmizescreen(c, 1);
 }
 
-void set_minized(Client *c) {
+void set_minimized(Client *c) {
 
 	if (!c || !c->mon)
 		return;
@@ -3484,7 +3484,7 @@ minimizenotify(struct wl_listener *listener, void *data) {
 
 	if (client_request_minimize(c, data)) {
 		if (!c->ignore_minimize)
-			set_minized(c);
+			set_minimized(c);
 		client_set_minimized(c, true);
 	} else {
 		client_set_minimized(c, false);

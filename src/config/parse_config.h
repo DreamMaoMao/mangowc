@@ -713,10 +713,10 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = togglefakefullscreen;
 	} else if (strcmp(func_name, "toggleoverlay") == 0) {
 		func = toggleoverlay;
-	} else if (strcmp(func_name, "minized") == 0) {
-		func = minized;
-	} else if (strcmp(func_name, "restore_minized") == 0) {
-		func = restore_minized;
+	} else if (strcmp(func_name, "minimized") == 0) {
+		func = minimized;
+	} else if (strcmp(func_name, "restore_minimized") == 0) {
+		func = restore_minimized;
 	} else if (strcmp(func_name, "toggle_scratchpad") == 0) {
 		func = toggle_scratchpad;
 	} else if (strcmp(func_name, "toggle_render_border") == 0) {

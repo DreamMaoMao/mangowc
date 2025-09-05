@@ -1,5 +1,5 @@
-void minized(const Arg *arg);
-void restore_minized(const Arg *arg);
+void minimized(const Arg *arg);
+void restore_minimized(const Arg *arg);
 void toggle_scratchpad(const Arg *arg);
 void focusdir(const Arg *arg);
 void toggleoverview(const Arg *arg);
