@@ -2456,7 +2456,7 @@ struct wlr_output_mode *get_output_mode(struct wlr_output *output, int width,
 	struct wlr_output_mode *mode;
 	wl_list_for_each(mode, &output->modes, link) {
 		if (mode->width == width && mode->height == height &&
-			(int)(mode->refresh / 1000) == (int)refresh) {
+			(int)round(mode->refresh / 1000) == (int)round(refresh)) {
 			return mode;
 		}
 	}
