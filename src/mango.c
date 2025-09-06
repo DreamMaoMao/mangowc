@@ -191,17 +191,19 @@ typedef struct {
 	const Arg arg;
 } Axis;
 
-struct input_device {
+typedef struct {
 	struct wl_list link;
 	struct wlr_input_device *wlr_device;
 	struct libinput_device *libinput_device;
 	struct wl_listener destroy_listener; // 用于监听设备销毁事件
-};
+	void *device_data;					 // 新增：指向设备特定数据（如 Switch）
+} InputDevice;
 
 typedef struct {
 	struct wl_list link;
 	struct wlr_switch *wlr_switch;
 	struct wl_listener toggle;
+	InputDevice *input_dev;
 } Switch;
 
 struct dwl_animation {
@@ -521,10 +523,9 @@ static void createmon(struct wl_listener *listener, void *data);
 static void createnotify(struct wl_listener *listener, void *data);
 static void createpointer(struct wlr_pointer *pointer);
 static void configure_pointer(struct libinput_device *device);
-static void destroypointer(struct wl_listener *listener, void *data);
+static void destroyinputdevice(struct wl_listener *listener, void *data);
 static void createswitch(struct wlr_switch *switch_device);
 static void switch_toggle(struct wl_listener *listener, void *data);
-static void cleanupswitches();
 static void createpointerconstraint(struct wl_listener *listener, void *data);
 static void cursorconstrain(struct wlr_pointer_constraint_v1 *constraint);
 static void commitpopup(struct wl_listener *listener, void *data);
@@ -751,8 +752,7 @@ static struct wlr_pointer_constraint_v1 *active_constraint;
 static struct wlr_seat *seat;
 static KeyboardGroup *kb_group;
 static struct wl_list keyboards;
-static struct wl_list pointers;
-static struct wl_list switches;
+static struct wl_list inputdevices;
 static unsigned int cursor_mode;
 static Client *grabc;
 static int grabcx, grabcy; /* client-relative */
@@ -2009,8 +2009,6 @@ void cleanup(void) {
 
 	dwl_im_relay_finish(dwl_input_method_relay);
 
-	cleanupswitches();
-
 	/* If it's not destroyed manually it will cause a use-after-free of
 	 * wlr_seat. Destroy it until it's fixed in the wlroots side */
 	wlr_backend_destroy(backend);
@@ -2642,13 +2640,32 @@ createnotify(struct wl_listener *listener, void *data) {
 	LISTEN(&toplevel->events.set_title, &c->set_title, updatetitle);
 }
 
-void destroypointer(struct wl_listener *listener, void *data) {
-	struct input_device *input_dev =
+void destroyinputdevice(struct wl_listener *listener, void *data) {
+	InputDevice *input_dev =
 		wl_container_of(listener, input_dev, destroy_listener);
+
+	// 清理设备特定数据
+	if (input_dev->device_data) {
+		// 根据设备类型进行特定清理
+		switch (input_dev->wlr_device->type) {
+		case WLR_INPUT_DEVICE_SWITCH: {
+			Switch *sw = (Switch *)input_dev->device_data;
+			// 移除 toggle 监听器
+			wl_list_remove(&sw->toggle.link);
+			// 释放 Switch 内存
+			free(sw);
+			break;
+		}
+		// 可以添加其他设备类型的清理代码
+		default:
+			break;
+		}
+		input_dev->device_data = NULL;
+	}
 
 	// 从设备列表中移除
 	wl_list_remove(&input_dev->link);
-	// 移除监听器
+	// 移除 destroy 监听器
 	wl_list_remove(&input_dev->destroy_listener.link);
 	// 释放内存
 	free(input_dev);
@@ -2704,14 +2721,14 @@ void createpointer(struct wlr_pointer *pointer) {
 		configure_pointer(device);
 	}
 
-	struct input_device *input_dev = calloc(1, sizeof(struct input_device));
+	InputDevice *input_dev = calloc(1, sizeof(InputDevice));
 	input_dev->wlr_device = &pointer->base;
 	input_dev->libinput_device = device;
 
-	input_dev->destroy_listener.notify = destroypointer;
+	input_dev->destroy_listener.notify = destroyinputdevice;
 	wl_signal_add(&pointer->base.events.destroy, &input_dev->destroy_listener);
 
-	wl_list_insert(&pointers, &input_dev->link);
+	wl_list_insert(&inputdevices, &input_dev->link);
 
 	wlr_cursor_attach_input_device(cursor, &pointer->base);
 }
@@ -2737,27 +2754,32 @@ void switch_toggle(struct wl_listener *listener, void *data) {
 }
 
 void createswitch(struct wlr_switch *switch_device) {
+	struct libinput_device *device =
+		wlr_libinput_get_device_handle(&switch_device->base);
+
+	InputDevice *input_dev = calloc(1, sizeof(InputDevice));
+	input_dev->wlr_device = &switch_device->base;
+	input_dev->libinput_device = device;
+	input_dev->device_data = NULL; // 初始化为 NULL
+
+	input_dev->destroy_listener.notify = destroyinputdevice;
+	wl_signal_add(&switch_device->base.events.destroy,
+				  &input_dev->destroy_listener);
+
+	// 创建 Switch 特定数据
 	Switch *sw = calloc(1, sizeof(Switch));
 	sw->wlr_switch = switch_device;
 	sw->toggle.notify = switch_toggle;
+	sw->input_dev = input_dev;
+
+	// 将 Switch 指针保存到 input_device 中
+	input_dev->device_data = sw;
+
+	// 添加 toggle 监听器
 	wl_signal_add(&switch_device->events.toggle, &sw->toggle);
 
-	// 添加到全局列表（可选，用于统一管理）
-	wl_list_insert(&switches, &sw->link);
-}
-
-void cleanupswitches() {
-	Switch *sw, *tmp;
-	wl_list_for_each_safe(sw, tmp, &switches, link) {
-		// 移除事件监听
-		wl_list_remove(&sw->toggle.link);
-
-		// 从列表中移除
-		wl_list_remove(&sw->link);
-
-		// 释放内存
-		free(sw);
-	}
+	// 添加到全局列表
+	wl_list_insert(&inputdevices, &input_dev->link);
 }
 
 void createpointerconstraint(struct wl_listener *listener, void *data) {
@@ -3572,7 +3594,7 @@ void motionabsolute(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	if (!event->time_msec) /* this is 0 with virtual pointers */
+	if (!event->time_msec) /* this is 0 with virtual pointer */
 		wlr_cursor_warp_absolute(cursor, &event->pointer->base, event->x,
 								 event->y);
 
@@ -4703,8 +4725,7 @@ void setup(void) {
 	 * to let us know when new input devices are available on the backend.
 	 */
 	wl_list_init(&keyboards);
-	wl_list_init(&pointers);
-	wl_list_init(&switches);
+	wl_list_init(&inputdevices);
 	wl_signal_add(&backend->events.new_input, &new_input_device);
 	virtual_keyboard_mgr = wlr_virtual_keyboard_manager_v1_create(dpy);
 	wl_signal_add(&virtual_keyboard_mgr->events.new_virtual_keyboard,
