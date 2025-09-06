@@ -20,7 +20,7 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Rich window states (swallow, minimize, maximize, unglobal, global, fakefullscreen, overlay, etc.)
      - Simple yet powerful external configuration
      - Sway-like scratchpad and named scratchpad
-     - Minimize window to scratchpad
+     - Ipc support(get/send message from/to compositor by external program)
      - Hycov-like overview
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
 
