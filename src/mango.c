@@ -301,6 +301,7 @@ struct Client {
 	const char *animation_type_open;
 	const char *animation_type_close;
 	int is_in_scratchpad;
+	int iscustomsize;
 	int is_scratchpad_show;
 	int isglobal;
 	int isnoborder;
@@ -326,8 +327,8 @@ struct Client {
 	float focused_opacity;
 	float unfocused_opacity;
 	char oldmonname[128];
-	int scratchpad_width, scratchpad_height;
 	struct wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_toplevel;
+
 };
 
 typedef struct {
@@ -910,17 +911,16 @@ void show_scratchpad(Client *c) {
 	/* return if fullscreen */
 	if (!c->isfloating) {
 		setfloating(c, 1);
-		c->geom.width = c->scratchpad_width ? c->scratchpad_width
-						: c->oldgeom.width
+		c->geom.width = c->iscustomsize
 							? c->oldgeom.width
 							: c->mon->w.width * scratchpad_width_ratio;
-		c->geom.height = c->scratchpad_height ? c->scratchpad_height
-						 : c->oldgeom.height
+		c->geom.height = c->iscustomsize
 							 ? c->oldgeom.height
 							 : c->mon->w.height * scratchpad_height_ratio;
 		// 重新计算居中的坐标
 		c->oldgeom = c->geom = c->animainit_geom = c->animation.current =
 			setclient_coordinate_center(c, c->geom, 0, 0);
+		c->iscustomsize = 1;
 		resize(c, c->geom, 0);
 	}
 
@@ -1088,8 +1088,6 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, ignore_minimize);
 	APPLY_INT_PROP(c, r, isnosizehint);
 	APPLY_INT_PROP(c, r, isunglobal);
-	APPLY_INT_PROP(c, r, scratchpad_width);
-	APPLY_INT_PROP(c, r, scratchpad_height);
 
 	APPLY_FLOAT_PROP(c, r, scroller_proportion);
 	APPLY_FLOAT_PROP(c, r, focused_opacity);
@@ -1180,20 +1178,22 @@ void applyrules(Client *c) {
 		}
 
 		// set geometry of floating client
-		if (c->isfloating) {
-			if (r->width > 0)
-				c->geom.width = r->width;
-			if (r->height > 0)
-				c->geom.height = r->height;
 
+		if (r->width > 0)
+			c->oldgeom.width = r->width;
+		if (r->height > 0)
+			c->oldgeom.height = r->height;
+
+		if (r->offsetx || r->offsety || r->width > 0 || r->height > 0) {
+			hit_rule_pos = true;
+			c->iscustomsize = 1;
+			c->oldgeom = setclient_coordinate_center(c, c->oldgeom, r->offsetx,
+													 r->offsety);
+		}
+		if (c->isfloating) {
+			c->geom = c->oldgeom.width> 0 && c->oldgeom.height > 0 ? c->oldgeom : c->geom;
 			if (!c->isnosizehint)
 				client_set_size_bound(c);
-
-			if (r->offsetx || r->offsety || r->width > 0 || r->height > 0) {
-				hit_rule_pos = true;
-				c->oldgeom = c->geom = setclient_coordinate_center(
-					c, c->geom, r->offsetx, r->offsety);
-			}
 		}
 	}
 
@@ -3385,12 +3385,11 @@ void init_client_properties(Client *c) {
 	c->nofadein = 0;
 	c->nofadeout = 0;
 	c->no_force_center = 0;
-	c->scratchpad_width = 0;
-	c->scratchpad_height = 0;
 	c->isnoborder = 0;
 	c->isnosizehint = 0;
 	c->ignore_maximize = 0;
 	c->ignore_minimize = 1;
+	c->iscustomsize = 0;
 }
 
 void // old fix to 0.5
@@ -3671,6 +3670,7 @@ void motionnotify(unsigned int time, struct wlr_input_device *device, double dx,
 	/* If we are currently grabbing the mouse, handle and return */
 	if (cursor_mode == CurMove) {
 		/* Move the grabbed client to the new position. */
+		grabc->iscustomsize = 1;
 		grabc->oldgeom = (struct wlr_box){.x = (int)round(cursor->x) - grabcx,
 										  .y = (int)round(cursor->y) - grabcy,
 										  .width = grabc->geom.width,
@@ -3678,6 +3678,7 @@ void motionnotify(unsigned int time, struct wlr_input_device *device, double dx,
 		resize(grabc, grabc->oldgeom, 1);
 		return;
 	} else if (cursor_mode == CurResize) {
+		grabc->iscustomsize = 1;
 		grabc->oldgeom =
 			(struct wlr_box){.x = grabc->geom.x,
 							 .y = grabc->geom.y,

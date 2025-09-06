@@ -343,6 +343,7 @@ void movewin(const Arg *arg) {
 		break;
 	}
 
+	c->iscustomsize = 1;
 	c->oldgeom = c->geom;
 	resize(c, c->geom, 0);
 }
@@ -384,6 +385,7 @@ void resizewin(const Arg *arg) {
 		break;
 	}
 
+	c->iscustomsize = 1;
 	c->oldgeom = c->geom;
 	resize(c, c->geom, 0);
 }
@@ -533,7 +535,7 @@ void smartmovewin(const Arg *arg) {
 
 	c->oldgeom = (struct wlr_box){
 		.x = nx, .y = ny, .width = c->geom.width, .height = c->geom.height};
-
+	c->iscustomsize = 1;
 	resize(c, c->oldgeom, 1);
 }
 
@@ -602,7 +604,7 @@ void smartresizewin(const Arg *arg) {
 
 	c->oldgeom = (struct wlr_box){
 		.x = c->geom.x, .y = c->geom.y, .width = nw, .height = nh};
-
+	c->iscustomsize = 1;
 	resize(c, c->oldgeom, 1);
 }
 
@@ -616,7 +618,7 @@ void centerwin(const Arg *arg) {
 		setfloating(c, true);
 
 	c->oldgeom = setclient_coordinate_center(c, c->geom, 0, 0);
-
+	c->iscustomsize = 1;
 	resize(c, c->oldgeom, 1);
 }
 

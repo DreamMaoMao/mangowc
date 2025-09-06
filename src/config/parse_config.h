@@ -64,8 +64,6 @@ typedef struct {
 	int no_force_center;
 	int isterm;
 	int noswallow;
-	int scratchpad_width;
-	int scratchpad_height;
 	float focused_opacity;
 	float unfocused_opacity;
 	uint32_t passmod;
@@ -1399,8 +1397,6 @@ void parse_config_line(Config *config, const char *line) {
 		rule->nofadein = -1;
 		rule->nofadeout = -1;
 		rule->no_force_center = -1;
-		rule->scratchpad_width = 0;
-		rule->scratchpad_height = 0;
 		rule->focused_opacity = 0;
 		rule->unfocused_opacity = 0;
 		rule->width = 0;
@@ -1448,10 +1444,6 @@ void parse_config_line(Config *config, const char *line) {
 					rule->nofadeout = atoi(val);
 				} else if (strcmp(key, "no_force_center") == 0) {
 					rule->no_force_center = atoi(val);
-				} else if (strcmp(key, "scratchpad_width") == 0) {
-					rule->scratchpad_width = atoi(val);
-				} else if (strcmp(key, "scratchpad_height") == 0) {
-					rule->scratchpad_height = atoi(val);
 				} else if (strcmp(key, "width") == 0) {
 					rule->width = atoi(val);
 				} else if (strcmp(key, "height") == 0) {
