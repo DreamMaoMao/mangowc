@@ -92,6 +92,10 @@
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define GEZERO(A) ((A) >= 0 ? (A) : 0)
 #define CLEANMASK(mask) (mask & ~WLR_MODIFIER_CAPS)
+#define INSIDEMON(A)                                                           \
+	(A->geom.x > A->mon->m.x && A->geom.y > A->mon->m.y &&                     \
+	 A->geom.x + A->geom.width < A->mon->m.x + A->mon->m.width &&              \
+	 A->geom.y + A->geom.height < A->mon->m.y + A->mon->m.height)
 #define ISTILED(A)                                                             \
 	(!(A)->isfloating && !(A)->isminied && !(A)->iskilling &&                  \
 	 !client_should_ignore_focus(A) && !(A)->isunglobal &&                     \
@@ -3001,17 +3005,15 @@ void focusclient(Client *c, int lift) {
 	if (c && !c->iskilling && !client_is_unmanaged(c) && c->mon) {
 
 		selmon = c->mon;
-		selmon->prevsel = selmon->sel;
+		selmon->prevsel =
+			selmon->sel && ISTILED(selmon->sel) ? selmon->sel : NULL;
 		selmon->sel = c;
 
 		// decide whether need to re-arrange
-		if (c && selmon->prevsel && !selmon->prevsel->isfloating &&
-			(selmon->prevsel->tags & selmon->tagset[selmon->seltags]) &&
-			(c->tags & selmon->tagset[selmon->seltags]) && !c->isfloating &&
-			!c->isfullscreen && is_scroller_layout(selmon)) {
+
+		if (c && ISTILED(c) && VISIBLEON(c, selmon) && !INSIDEMON(c) &&
+			is_scroller_layout(selmon)) {
 			arrange(selmon, false);
-		} else if (selmon->prevsel) {
-			selmon->prevsel = NULL;
 		}
 
 		// change focus link position
