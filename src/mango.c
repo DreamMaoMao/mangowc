@@ -332,7 +332,6 @@ struct Client {
 	float unfocused_opacity;
 	char oldmonname[128];
 	struct wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_toplevel;
-
 };
 
 typedef struct {

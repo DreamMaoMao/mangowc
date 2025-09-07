@@ -1377,6 +1377,7 @@ void parse_config_line(Config *config, const char *line) {
 		ConfigWinRule *rule = &config->window_rules[config->window_rules_count];
 		memset(rule, 0, sizeof(ConfigWinRule));
 
+		// int rule value, relay to a client property
 		rule->isfloating = -1;
 		rule->isfullscreen = -1;
 		rule->isnoborder = -1;
@@ -1391,22 +1392,29 @@ void parse_config_line(Config *config, const char *line) {
 		rule->isnosizehint = -1;
 		rule->isterm = -1;
 		rule->noswallow = -1;
-		rule->monitor = NULL;
-		rule->offsetx = 0;
-		rule->offsety = 0;
 		rule->nofadein = -1;
 		rule->nofadeout = -1;
 		rule->no_force_center = -1;
-		rule->focused_opacity = 0;
-		rule->unfocused_opacity = 0;
-		rule->width = 0;
-		rule->height = 0;
+
+		// string rule value, relay to a client property
 		rule->animation_type_open = NULL;
 		rule->animation_type_close = NULL;
+
+		// float rule value, relay to a client property
+		rule->focused_opacity = 0;
+		rule->unfocused_opacity = 0;
 		rule->scroller_proportion = 0;
+
+		// special rule value,not directly set to client property
+		rule->tags = 0;
+		rule->offsetx = 0;
+		rule->offsety = 0;
+		rule->width = 0;
+		rule->height = 0;
+		rule->monitor = NULL;
 		rule->id = NULL;
 		rule->title = NULL;
-		rule->tags = 0;
+
 		rule->globalkeybinding = (KeyBinding){0};
 
 		char *token = strtok(value, ",");
