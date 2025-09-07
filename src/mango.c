@@ -2720,9 +2720,10 @@ void configure_pointer(struct libinput_device *device) {
 }
 
 void createpointer(struct wlr_pointer *pointer) {
-	struct libinput_device *device;
-	if (wlr_input_device_is_libinput(&pointer->base) &&
-		(device = wlr_libinput_get_device_handle(&pointer->base))) {
+	struct libinput_device *device =
+		wlr_libinput_get_device_handle(&pointer->base);
+
+	if (device && wlr_input_device_is_libinput(&pointer->base)) {
 		configure_pointer(device);
 	}
 
