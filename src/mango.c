@@ -1191,7 +1191,8 @@ void applyrules(Client *c) {
 													 r->offsety);
 		}
 		if (c->isfloating) {
-			c->geom = c->oldgeom.width> 0 && c->oldgeom.height > 0 ? c->oldgeom : c->geom;
+			c->geom = c->oldgeom.width > 0 && c->oldgeom.height > 0 ? c->oldgeom
+																	: c->geom;
 			if (!c->isnosizehint)
 				client_set_size_bound(c);
 		}
@@ -3396,6 +3397,7 @@ void // old fix to 0.5
 mapnotify(struct wl_listener *listener, void *data) {
 	/* Called when the surface is mapped, or ready to display on-screen. */
 	Client *p = NULL;
+	Client *at_client;
 	Client *c = wl_container_of(listener, c, map);
 	int i;
 	/* Create scene tree for this client and its border */
@@ -3468,8 +3470,16 @@ mapnotify(struct wl_listener *listener, void *data) {
 	if (new_is_master && selmon && !is_scroller_layout(selmon))
 		// tile at the top
 		wl_list_insert(&clients, &c->link); // 新窗口是master,头部入栈
-	else if (selmon && is_scroller_layout(selmon) && center_select(selmon)) {
-		Client *at_client = center_select(selmon);
+	else if (selmon && is_scroller_layout(selmon) &&
+			 selmon->visible_tiling_clients > 0) {
+
+		if (selmon->sel && ISTILED(selmon->sel) &&
+			VISIBLEON(selmon->sel, selmon)) {
+			at_client = selmon->sel;
+		} else {
+			at_client = center_select(selmon);
+		}
+
 		at_client->link.next->prev = &c->link;
 		c->link.prev = &at_client->link;
 		c->link.next = at_client->link.next;
