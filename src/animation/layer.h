@@ -396,7 +396,7 @@ void init_fadeout_layers(LayerSurface *l) {
 	// 计算动画帧数
 	fadeout_layer->animation.passed_frames = 0;
 	fadeout_layer->animation.total_frames =
-		fadeout_layer->animation.duration / output_frame_duration_ms();
+		fadeout_layer->animation.duration / all_output_frame_duration_ms();
 
 	// 将节点插入到关闭动画链表中，屏幕刷新哪里会检查链表中是否有节点可以应用于动画
 	wlr_scene_node_set_enabled(&fadeout_layer->scene->node, true);
@@ -482,7 +482,7 @@ void layer_commit(LayerSurface *l) {
 		// 设置动画速度
 		l->animation.passed_frames = 0;
 		l->animation.total_frames =
-			l->animation.duration / output_frame_duration_ms();
+			l->animation.duration / output_frame_duration_ms(l->mon);
 
 		// 标记动画开始
 		l->animation.running = true;

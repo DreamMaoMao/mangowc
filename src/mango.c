@@ -689,7 +689,7 @@ static double find_animation_curve_at(double t, int type);
 
 static void apply_opacity_to_rect_nodes(Client *c, struct wlr_scene_node *node,
 										double animation_passed);
-static double output_frame_duration_ms();
+static double all_output_frame_duration_ms();
 static struct wlr_scene_tree *
 wlr_scene_tree_snapshot(struct wlr_scene_node *node,
 						struct wlr_scene_tree *parent);

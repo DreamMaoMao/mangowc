@@ -694,7 +694,7 @@ void init_fadeout_client(Client *c) {
 
 	fadeout_cient->animation.passed_frames = 0;
 	fadeout_cient->animation.total_frames =
-		fadeout_cient->animation.duration / output_frame_duration_ms();
+		fadeout_cient->animation.duration / all_output_frame_duration_ms();
 	wlr_scene_node_set_enabled(&fadeout_cient->scene->node, true);
 	wl_list_insert(&fadeout_clients, &fadeout_cient->fadeout_link);
 
@@ -714,7 +714,7 @@ void client_commit(Client *c) {
 		// 设置动画速度
 		c->animation.passed_frames = 0;
 		c->animation.total_frames =
-			c->animation.duration / output_frame_duration_ms();
+			c->animation.duration / all_output_frame_duration_ms();
 
 		// 标记动画开始
 		c->animation.running = true;
