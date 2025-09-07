@@ -389,6 +389,7 @@ void resizewin(const Arg *arg) {
 	c->oldgeom = c->geom;
 	resize(c, c->geom, 0);
 }
+
 void restore_minimized(const Arg *arg) {
 	Client *c;
 	if (selmon && selmon->sel && selmon->sel->is_in_scratchpad &&

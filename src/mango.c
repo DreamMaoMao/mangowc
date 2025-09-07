@@ -3539,6 +3539,27 @@ maximizenotify(struct wl_listener *listener, void *data) {
 		setmaxmizescreen(c, 1);
 }
 
+void unminimize(Client *c) {
+	if (c && c->is_in_scratchpad && c->is_scratchpad_show) {
+		c->isminied = 0;
+		c->is_scratchpad_show = 0;
+		c->is_in_scratchpad = 0;
+		c->isnamedscratchpad = 0;
+		setborder_color(c);
+		return;
+	}
+
+	if (c && c->isminied) {
+		show_hide_client(c);
+		c->is_scratchpad_show = 0;
+		c->is_in_scratchpad = 0;
+		c->isnamedscratchpad = 0;
+		setborder_color(c);
+		arrange(c->mon, false);
+		return;
+	}
+}
+
 void set_minimized(Client *c) {
 
 	if (!c || !c->mon)
@@ -3582,9 +3603,12 @@ minimizenotify(struct wl_listener *listener, void *data) {
 		return;
 
 	if (client_request_minimize(c, data) && !c->ignore_minimize) {
-		set_minimized(c);
+		if (!c->isminied)
+			set_minimized(c);
 		client_set_minimized(c, true);
 	} else {
+		if (c->isminied)
+			unminimize(c);
 		client_set_minimized(c, false);
 	}
 }
@@ -5401,7 +5425,7 @@ void activatex11(struct wl_listener *listener, void *data) {
 			view(&(Arg){.ui = c->tags}, true);
 		wlr_xwayland_surface_activate(c->surface.xwayland, 1);
 		focusclient(c, 1);
-		need_arrange = false;
+		need_arrange = true;
 	} else if (c != focustop(selmon)) {
 		c->isurgent = 1;
 		if (client_surface(c)->mapped)
