@@ -108,8 +108,7 @@ and then copying it to `/etc/portage/patches/gui-libs/wlroots/`.
 ## Other
 
 ```bash
-# wlroots 0.19.0 release with a fix-patch to avoid crash
-git clone https://github.com/DreamMaoMao/wlroots.git
+git clone -b 0.19.0 https://gitlab.freedesktop.org/wlroots/wlroots.git
 cd wlroots
 meson build -Dprefix=/usr
 sudo ninja -C build install
@@ -127,7 +126,7 @@ sudo ninja -C build install
 
 ## Suggested Tools
 
-- Application launcher (wofi, bemenu, wmenu, fuzzel)
+- Application launcher (rofi, bemenu, wmenu, fuzzel)
 - Terminal emulator (foot, wezterm, alacritty, kitty, ghostty)
 - Status bar (waybar, eww, quickshell, ags), waybar is preferred
 - Wallpaper setup (swww, swaybg)
@@ -150,7 +149,7 @@ sudo ninja -C build install
 - Dependencies
 
 ```bash
-yay -S rofi-wayland foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
+yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
 ```
 
 - use my config
