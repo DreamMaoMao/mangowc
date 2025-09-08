@@ -186,7 +186,9 @@ void fadeout_layer_animation_next_tick(LayerSurface *l) {
 		return;
 
 	double animation_passed =
-		(double)l->animation.passed_frames / l->animation.total_frames;
+		l->animation.total_frames
+			? (double)l->animation.passed_frames / l->animation.total_frames
+			: 1.0;
 	int type = l->animation.action = l->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
 	unsigned int width =
@@ -245,7 +247,9 @@ void layer_animation_next_tick(LayerSurface *l) {
 		return;
 
 	double animation_passed =
-		(double)l->animation.passed_frames / l->animation.total_frames;
+		l->animation.total_frames
+			? (double)l->animation.passed_frames / l->animation.total_frames
+			: 1.0;
 
 	int type = l->animation.action == NONE ? MOVE : l->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);

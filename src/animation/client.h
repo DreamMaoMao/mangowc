@@ -492,7 +492,9 @@ void fadeout_client_animation_next_tick(Client *c) {
 	BufferData buffer_data;
 
 	double animation_passed =
-		(double)c->animation.passed_frames / c->animation.total_frames;
+		c->animation.total_frames
+			? (double)c->animation.passed_frames / c->animation.total_frames
+			: 1.0;
 	int type = c->animation.action = c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
 	unsigned int width =
@@ -548,7 +550,9 @@ void fadeout_client_animation_next_tick(Client *c) {
 
 void client_animation_next_tick(Client *c) {
 	double animation_passed =
-		(double)c->animation.passed_frames / c->animation.total_frames;
+		c->animation.total_frames
+			? (double)c->animation.passed_frames / c->animation.total_frames
+			: 1.0;
 
 	int type = c->animation.action == NONE ? MOVE : c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
