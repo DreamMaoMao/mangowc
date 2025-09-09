@@ -3,7 +3,7 @@ void bind_to_view(const Arg *arg) {
 	unsigned int target = arg->ui;
 
 	if (selmon->pertag->curtag &&
-		target == (1 << (selmon->pertag->curtag - 1))) {
+		(target & TAGMASK) == (selmon->tagset[selmon->seltags])) {
 		if (selmon->pertag->prevtag)
 			target = 1 << (selmon->pertag->prevtag - 1);
 		else
