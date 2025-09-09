@@ -11,8 +11,7 @@ void fibonacci(Monitor *mon, int s) {
 	cur_gappoh = smartgaps && mon->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 	cur_gappov = smartgaps && mon->visible_tiling_clients == 1 ? 0 : cur_gappov;
 	// Count visible clients
-	wl_list_for_each(c, &clients, link) if (VISIBLEON(c, mon) && ISTILED(c))
-		n++;
+	n = mon->visible_tiling_clients;
 
 	if (n == 0)
 		return;
@@ -133,13 +132,7 @@ void grid(Monitor *m) {
 	Client *c;
 	n = 0;
 
-	// 第一次遍历，计算 n 的值
-	wl_list_for_each(c, &clients, link) {
-		if (VISIBLEON(c, m) && !c->isunglobal &&
-			((m->isoverview && !client_should_ignore_focus(c)) || ISTILED(c))) {
-			n++;
-		}
-	}
+	n = m->isoverview ? m->visible_clients : m->visible_tiling_clients;
 
 	if (n == 0) {
 		return; // 没有需要处理的客户端，直接返回
@@ -252,7 +245,8 @@ void deck(Monitor *m) {
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
 
-	wl_list_for_each(c, &clients, link) if (VISIBLEON(c, m) && ISTILED(c)) n++;
+	n = m->visible_tiling_clients;
+
 	if (n == 0)
 		return;
 
@@ -298,11 +292,10 @@ void deck(Monitor *m) {
 
 // 滚动布局
 void scroller(Monitor *m) {
-	unsigned int i, n;
+	unsigned int i, n, j;
 
 	Client *c, *root_client = NULL;
 	Client **tempClients = NULL; // 初始化为 NULL
-	n = 0;
 	struct wlr_box target_geom;
 	int focus_client_index = 0;
 	bool need_scroller = false;
@@ -317,12 +310,7 @@ void scroller(Monitor *m) {
 	unsigned int max_client_width =
 		m->w.width - 2 * scroller_structs - cur_gappih;
 
-	// 第一次遍历，计算 n 的值
-	wl_list_for_each(c, &clients, link) {
-		if (VISIBLEON(c, m) && ISTILED(c)) {
-			n++;
-		}
-	}
+	n = m->visible_tiling_clients;
 
 	if (n == 0) {
 		return; // 没有需要处理的客户端，直接返回
@@ -336,11 +324,11 @@ void scroller(Monitor *m) {
 	}
 
 	// 第二次遍历，填充 tempClients
-	n = 0;
+	j = 0;
 	wl_list_for_each(c, &clients, link) {
 		if (VISIBLEON(c, m) && ISTILED(c)) {
-			tempClients[n] = c;
-			n++;
+			tempClients[j] = c;
+			j++;
 		}
 	}
 
@@ -436,7 +424,8 @@ void tile(Monitor *m) {
 	unsigned int i, n = 0, h, r, ie = enablegaps, mw, my, ty;
 	Client *c;
 
-	wl_list_for_each(c, &clients, link) if (VISIBLEON(c, m) && ISTILED(c)) n++;
+	n = m->visible_tiling_clients;
+
 	if (n == 0)
 		return;
 
