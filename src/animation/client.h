@@ -8,23 +8,35 @@ void set_rect_size(struct wlr_scene_rect *rect, int width, int height) {
 	wlr_scene_rect_set_size(rect, GEZERO(width), GEZERO(height));
 }
 
-int is_special_animaiton_rule(Client *c) {
-	int visible_client_number = 0;
-	Client *count_c;
-	wl_list_for_each(count_c, &clients, link) {
-		if (count_c && VISIBLEON(count_c, selmon) && !count_c->isminied &&
-			!count_c->iskilling && !count_c->isfloating) {
-			visible_client_number++;
-		}
-	}
+bool is_horizontal_stack_layout(Monitor *m) {
+	if (!m->pertag->curtag &&
+		(strcmp(m->pertag->ltidxs[m->pertag->prevtag]->name, "tile") == 0 ||
+		 strcmp(m->pertag->ltidxs[m->pertag->prevtag]->name, "spiral") == 0 ||
+		 strcmp(m->pertag->ltidxs[m->pertag->prevtag]->name, "dwindle") == 0 ||
+		 strcmp(m->pertag->ltidxs[m->pertag->prevtag]->name, "deck") == 0))
+		return true;
 
-	if (is_scroller_layout(selmon) && !c->isfloating) {
+	if (m->pertag->curtag &&
+		(strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "tile") == 0 ||
+		 strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "spiral") == 0 ||
+		 strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "dwindle") == 0 ||
+		 strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "deck") == 0))
+		return true;
+
+	return false;
+}
+
+int is_special_animaiton_rule(Client *c) {
+
+	if (is_scroller_layout(c->mon) && !c->isfloating) {
 		return DOWN;
-	} else if (visible_client_number < 2 && !c->isfloating) {
+	} else if (c->mon->visible_tiling_clients == 1 && !c->isfloating) {
 		return DOWN;
-	} else if (visible_client_number == 2 && !c->isfloating && !new_is_master) {
+	} else if (c->mon->visible_tiling_clients == 2 && !c->isfloating &&
+			   !new_is_master && is_horizontal_stack_layout(c->mon)) {
 		return RIGHT;
-	} else if (!c->isfloating && new_is_master) {
+	} else if (!c->isfloating && new_is_master &&
+			   is_horizontal_stack_layout(c->mon)) {
 		return LEFT;
 	} else {
 		return UNDIR;
