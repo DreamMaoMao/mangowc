@@ -574,7 +574,7 @@ struct dwl_input_method_relay *dwl_im_relay_create() {
 				  &relay->new_text_input);
 
 	relay->new_input_method.notify = handle_new_input_method;
-	wl_signal_add(&input_method_manager->events.input_method,
+	wl_signal_add(&input_method_manager->events.new_input_method,
 				  &relay->new_input_method);
 
 	relay->focused_surface_destroy.notify = handle_focused_surface_destroy;
