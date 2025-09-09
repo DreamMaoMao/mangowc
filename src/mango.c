@@ -953,6 +953,7 @@ void swallow(Client *c, Client *w) {
 	c->is_scratchpad_show = w->is_scratchpad_show;
 	c->tags = w->tags;
 	c->geom = w->geom;
+	c->oldgeom = w->oldgeom;
 	c->scroller_proportion = w->scroller_proportion;
 	wl_list_insert(&w->link, &c->link);
 	wl_list_insert(&w->flink, &c->flink);
