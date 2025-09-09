@@ -344,7 +344,7 @@ void movewin(const Arg *arg) {
 	}
 
 	c->iscustomsize = 1;
-	c->oldgeom = c->geom;
+	c->float_geom = c->geom;
 	resize(c, c->geom, 0);
 }
 
@@ -386,7 +386,7 @@ void resizewin(const Arg *arg) {
 	}
 
 	c->iscustomsize = 1;
-	c->oldgeom = c->geom;
+	c->float_geom = c->geom;
 	resize(c, c->geom, 0);
 }
 
@@ -534,10 +534,10 @@ void smartmovewin(const Arg *arg) {
 		break;
 	}
 
-	c->oldgeom = (struct wlr_box){
+	c->float_geom = (struct wlr_box){
 		.x = nx, .y = ny, .width = c->geom.width, .height = c->geom.height};
 	c->iscustomsize = 1;
-	resize(c, c->oldgeom, 1);
+	resize(c, c->float_geom, 1);
 }
 
 void smartresizewin(const Arg *arg) {
@@ -603,10 +603,10 @@ void smartresizewin(const Arg *arg) {
 		break;
 	}
 
-	c->oldgeom = (struct wlr_box){
+	c->float_geom = (struct wlr_box){
 		.x = c->geom.x, .y = c->geom.y, .width = nw, .height = nh};
 	c->iscustomsize = 1;
-	resize(c, c->oldgeom, 1);
+	resize(c, c->float_geom, 1);
 }
 
 void centerwin(const Arg *arg) {
@@ -618,9 +618,9 @@ void centerwin(const Arg *arg) {
 	if (!c->isfloating)
 		setfloating(c, true);
 
-	c->oldgeom = setclient_coordinate_center(c, c->geom, 0, 0);
+	c->float_geom = setclient_coordinate_center(c, c->geom, 0, 0);
 	c->iscustomsize = 1;
-	resize(c, c->oldgeom, 1);
+	resize(c, c->float_geom, 1);
 }
 
 void spawn_shell(const Arg *arg) {
@@ -953,7 +953,7 @@ void tagmon(const Arg *arg) {
 		target = get_tags_first_tag(c->tags);
 		view(&(Arg){.ui = target}, true);
 		focusclient(c, 1);
-		c->oldgeom = c->geom;
+		c->float_geom = c->geom;
 		resize(c, c->geom, 1);
 	} else {
 		selmon = c->mon;

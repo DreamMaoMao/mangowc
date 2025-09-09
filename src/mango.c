@@ -244,8 +244,8 @@ typedef struct Client Client;
 struct Client {
 	/* Must keep these three elements in this order */
 	unsigned int type; /* XDGShell or X11* */
-	struct wlr_box geom, pending, oldgeom, animainit_geom, overview_backup_geom,
-		current; /* layout-relative, includes border */
+	struct wlr_box geom, pending, float_geom, animainit_geom,
+		overview_backup_geom, current; /* layout-relative, includes border */
 	Monitor *mon;
 	struct wlr_scene_tree *scene;
 	struct wlr_scene_rect *border[4]; /* top, bottom, left, right */
@@ -867,7 +867,7 @@ void client_change_mon(Client *c, Monitor *m) {
 	setmon(c, m, c->tags, true);
 	reset_foreign_tolevel(c);
 	if (c->isfloating) {
-		c->oldgeom = c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
+		c->float_geom = c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
 	}
 }
 
@@ -915,13 +915,13 @@ void show_scratchpad(Client *c) {
 	if (!c->isfloating) {
 		setfloating(c, 1);
 		c->geom.width = c->iscustomsize
-							? c->oldgeom.width
+							? c->float_geom.width
 							: c->mon->w.width * scratchpad_width_ratio;
 		c->geom.height = c->iscustomsize
-							 ? c->oldgeom.height
+							 ? c->float_geom.height
 							 : c->mon->w.height * scratchpad_height_ratio;
 		// 重新计算居中的坐标
-		c->oldgeom = c->geom = c->animainit_geom = c->animation.current =
+		c->float_geom = c->geom = c->animainit_geom = c->animation.current =
 			setclient_coordinate_center(c, c->geom, 0, 0);
 		c->iscustomsize = 1;
 		resize(c, c->geom, 0);
@@ -953,7 +953,7 @@ void swallow(Client *c, Client *w) {
 	c->is_scratchpad_show = w->is_scratchpad_show;
 	c->tags = w->tags;
 	c->geom = w->geom;
-	c->oldgeom = w->oldgeom;
+	c->float_geom = w->float_geom;
 	c->scroller_proportion = w->scroller_proportion;
 	wl_list_insert(&w->link, &c->link);
 	wl_list_insert(&w->flink, &c->flink);
@@ -1184,19 +1184,20 @@ void applyrules(Client *c) {
 		// set geometry of floating client
 
 		if (r->width > 0)
-			c->oldgeom.width = r->width;
+			c->float_geom.width = r->width;
 		if (r->height > 0)
-			c->oldgeom.height = r->height;
+			c->float_geom.height = r->height;
 
 		if (r->offsetx || r->offsety || r->width > 0 || r->height > 0) {
 			hit_rule_pos = true;
 			c->iscustomsize = 1;
-			c->oldgeom = setclient_coordinate_center(c, c->oldgeom, r->offsetx,
-													 r->offsety);
+			c->float_geom = setclient_coordinate_center(c, c->float_geom,
+														r->offsetx, r->offsety);
 		}
 		if (c->isfloating) {
-			c->geom = c->oldgeom.width > 0 && c->oldgeom.height > 0 ? c->oldgeom
-																	: c->geom;
+			c->geom = c->float_geom.width > 0 && c->float_geom.height > 0
+						  ? c->float_geom
+						  : c->geom;
 			if (!c->isnosizehint)
 				client_set_size_bound(c);
 		}
@@ -1206,7 +1207,7 @@ void applyrules(Client *c) {
 	// the hit size
 	if (!hit_rule_pos &&
 		(!client_is_x11(c) || !client_should_ignore_focus(c))) {
-		c->oldgeom = c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
+		c->float_geom = c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
 	}
 
 	/*-----------------------apply rule action-------------------------*/
@@ -1525,7 +1526,7 @@ void apply_window_snap(Client *c) {
 		c->geom.y = c->geom.y + snap_down;
 	}
 
-	c->oldgeom = c->geom;
+	c->float_geom = c->geom;
 	resize(c, c->geom, 0);
 }
 
@@ -3706,20 +3707,21 @@ void motionnotify(unsigned int time, struct wlr_input_device *device, double dx,
 	if (cursor_mode == CurMove) {
 		/* Move the grabbed client to the new position. */
 		grabc->iscustomsize = 1;
-		grabc->oldgeom = (struct wlr_box){.x = (int)round(cursor->x) - grabcx,
-										  .y = (int)round(cursor->y) - grabcy,
-										  .width = grabc->geom.width,
-										  .height = grabc->geom.height};
-		resize(grabc, grabc->oldgeom, 1);
+		grabc->float_geom =
+			(struct wlr_box){.x = (int)round(cursor->x) - grabcx,
+							 .y = (int)round(cursor->y) - grabcy,
+							 .width = grabc->geom.width,
+							 .height = grabc->geom.height};
+		resize(grabc, grabc->float_geom, 1);
 		return;
 	} else if (cursor_mode == CurResize) {
 		grabc->iscustomsize = 1;
-		grabc->oldgeom =
+		grabc->float_geom =
 			(struct wlr_box){.x = grabc->geom.x,
 							 .y = grabc->geom.y,
 							 .width = (int)round(cursor->x) - grabc->geom.x,
 							 .height = (int)round(cursor->y) - grabc->geom.y};
-		resize(grabc, grabc->oldgeom, 1);
+		resize(grabc, grabc->float_geom, 1);
 		return;
 	}
 
@@ -4209,19 +4211,20 @@ setfloating(Client *c, int floating) {
 		c->geom = backup_box;
 
 		// restore to the memeroy geom
-		if (c->oldgeom.width > 0 && c->oldgeom.height > 0) {
-			if (c->mon && c->oldgeom.width >= c->mon->w.width - gappoh) {
-				c->oldgeom.width = c->mon->w.width * 0.9;
+		if (c->float_geom.width > 0 && c->float_geom.height > 0) {
+			if (c->mon && c->float_geom.width >= c->mon->w.width - gappoh) {
+				c->float_geom.width = c->mon->w.width * 0.9;
 				window_size_outofrange = true;
 			}
-			if (c->mon && c->oldgeom.height >= c->mon->w.height - gappov) {
-				c->oldgeom.height = c->mon->w.height * 0.9;
+			if (c->mon && c->float_geom.height >= c->mon->w.height - gappov) {
+				c->float_geom.height = c->mon->w.height * 0.9;
 				window_size_outofrange = true;
 			}
 			if (window_size_outofrange) {
-				c->oldgeom = setclient_coordinate_center(c, c->oldgeom, 0, 0);
+				c->float_geom =
+					setclient_coordinate_center(c, c->float_geom, 0, 0);
 			}
-			resize(c, c->oldgeom, 0);
+			resize(c, c->float_geom, 0);
 		} else {
 			resize(c, target_box, 0);
 		}
@@ -4277,7 +4280,7 @@ void setmaxmizescreen(Client *c, int maxmizescreen) {
 			setfullscreen(c, 0);
 
 		if (c->isfloating)
-			c->oldgeom = c->geom;
+			c->float_geom = c->geom;
 		if (selmon->isoverview) {
 			Arg arg = {0};
 			toggleoverview(&arg);
@@ -4327,7 +4330,7 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 			setmaxmizescreen(c, 0);
 
 		if (c->isfloating)
-			c->oldgeom = c->geom;
+			c->float_geom = c->geom;
 		if (selmon->isoverview) {
 			Arg arg = {0};
 			toggleoverview(&arg);
@@ -5199,7 +5202,7 @@ void updatemons(struct wl_listener *listener, void *data) {
 			if (c->isfloating && c->mon == m) {
 				c->geom.x += mon_pos_offsetx;
 				c->geom.y += mon_pos_offsety;
-				c->oldgeom = c->geom;
+				c->float_geom = c->geom;
 				resize(c, c->geom, 1);
 			}
 

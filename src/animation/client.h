@@ -782,7 +782,7 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 	c->need_output_flush = true;
 	c->dirty = true;
 
-	// oldgeom = c->geom;
+	// float_geom = c->geom;
 	bbox = (interact || c->isfloating || c->isfullscreen) ? &sgeom : &c->mon->w;
 
 	if (is_scroller_layout(c->mon) && (!c->isfloating || c == grabc)) {
