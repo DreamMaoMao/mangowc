@@ -942,18 +942,20 @@ void tagmon(const Arg *arg) {
 	client_update_oldmonname_record(c, m);
 
 	reset_foreign_tolevel(c);
+
+	c->float_geom.width =
+		(int)(c->float_geom.width * c->mon->w.width / selmon->w.width);
+	c->float_geom.height =
+		(int)(c->float_geom.height * c->mon->w.height / selmon->w.height);
+	selmon = c->mon;
+	c->float_geom = setclient_coordinate_center(c, c->float_geom, 0, 0);
+
 	// 重新计算居中的坐标
 	if (c->isfloating) {
-		c->geom.width =
-			(int)(c->geom.width * c->mon->w.width / selmon->w.width);
-		c->geom.height =
-			(int)(c->geom.height * c->mon->w.height / selmon->w.height);
-		selmon = c->mon;
-		c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
+		c->geom = c->float_geom;
 		target = get_tags_first_tag(c->tags);
 		view(&(Arg){.ui = target}, true);
 		focusclient(c, 1);
-		c->float_geom = c->geom;
 		resize(c, c->geom, 1);
 	} else {
 		selmon = c->mon;
