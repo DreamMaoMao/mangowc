@@ -2991,9 +2991,6 @@ void focusclient(Client *c, int lift) {
 	if (c && !client_surface(c)->mapped)
 		return;
 
-	if (c && c->animation.tagouting && !c->animation.tagouting)
-		return;
-
 	if (c && client_should_ignore_focus(c)) {
 		return;
 	}
