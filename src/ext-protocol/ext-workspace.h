@@ -86,42 +86,6 @@ static void add_workspace_by_tag(int tag, Monitor *m) {
 				  &workspace->activate);
 }
 
-unsigned int get_tag_status(unsigned int tag, Monitor *m) {
-	Client *c;
-	unsigned int status = 0;
-	wl_list_for_each(c, &clients, link) {
-		if (c->mon == m && c->tags & 1 << (tag - 1) & TAGMASK) {
-			if (c->isurgent) {
-				status = 2;
-				break;
-			}
-			status = 1;
-		}
-	}
-	return status;
-}
-
-unsigned int get_tags_first_tag_num(unsigned int source_tags) {
-	unsigned int i, tag;
-	tag = 0;
-
-	if (!source_tags) {
-		return selmon->pertag->curtag;
-	}
-
-	for (i = 0; !(tag & 1) && source_tags != 0 && i < LENGTH(tags); i++) {
-		tag = source_tags >> i;
-	}
-
-	if (i == 1) {
-		return 1;
-	} else if (i > 9) {
-		return 9;
-	} else {
-		return i;
-	}
-}
-
 void dwl_ext_workspace_printstatus(Monitor *m) {
 	struct workspace *w;
 	unsigned int tag_status = 0;
