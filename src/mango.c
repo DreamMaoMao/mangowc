@@ -1347,9 +1347,9 @@ arrange(Monitor *m, bool want_animation) {
 				resize(c, c->geom, 0);
 
 			} else {
-				if ((c->tags & (1 << (m->pertag->prevtag - 1))) &&
-					m->pertag->prevtag != 0 && m->pertag->curtag != 0 &&
-					animations) {
+				if (animations && want_animation &&
+					(c->tags & (1 << (m->pertag->prevtag - 1))) &&
+					m->pertag->prevtag != 0 && m->pertag->curtag != 0) {
 					c->animation.tagouting = true;
 					c->animation.tagining = false;
 					if (m->pertag->curtag > m->pertag->prevtag) {
@@ -1373,6 +1373,9 @@ arrange(Monitor *m, bool want_animation) {
 						resize(c, c->geom, 0);
 					}
 				} else {
+					c->animation.tagouting = false;
+					c->animation.tagining = false;
+					c->animation.tagouted = false;
 					wlr_scene_node_set_enabled(&c->scene->node, false);
 					client_set_suspended(c, true);
 				}
