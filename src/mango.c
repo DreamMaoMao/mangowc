@@ -217,7 +217,6 @@ struct dwl_animation {
 	bool should_animate;
 	bool running;
 	bool tagining;
-	bool tagouted;
 	bool tagouting;
 	bool begin_fade_in;
 	bool tag_from_rule;
@@ -1265,14 +1264,6 @@ void applyrules(Client *c) {
 void set_tagin_animation(Monitor *m, Client *c) {
 	c->animation.tagining = true;
 
-	if (c->animation.running) {
-		// if animaiton is running,
-		// use running animation position as init position
-		c->animainit_geom.x = c->animation.current.x;
-		c->animainit_geom.y = c->animation.current.y;
-		return;
-	}
-
 	if (m->pertag->curtag > m->pertag->prevtag) {
 		// goto next tag animation
 
@@ -1323,7 +1314,6 @@ void set_arrange_visible(Monitor *m, Client *c, bool want_animation) {
 
 	c->animation.tag_from_rule = false;
 	c->animation.tagouting = false;
-	c->animation.tagouted = false;
 	resize(c, c->geom, 0);
 }
 
@@ -1361,10 +1351,7 @@ void set_arrange_unvisible(Monitor *m, Client *c, bool want_animation) {
 		// should apply tag animation
 		set_tagout_animation(m, c);
 	} else {
-		// should not apply tag animation
-		c->animation.tagouting = false;
-		c->animation.tagining = false;
-		c->animation.tagouted = false;
+
 		wlr_scene_node_set_enabled(&c->scene->node, false);
 		client_set_suspended(c, true);
 	}
@@ -1400,8 +1387,8 @@ arrange(Monitor *m, bool want_animation) {
 			}
 		}
 
-		if (c->mon == m && c->ismaxmizescreen && !c->animation.tagouted &&
-			!c->animation.tagouting && VISIBLEON(c, m)) {
+		if (c->mon == m && c->ismaxmizescreen && !c->animation.tagouting &&
+			VISIBLEON(c, m)) {
 			reset_maxmizescreen_size(c);
 		}
 	}
@@ -2320,8 +2307,7 @@ void commitnotify(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	if (!c || c->iskilling || c->animation.tagouting || c->animation.tagouted ||
-		c->animation.tagining)
+	if (!c || c->iskilling || c->animation.tagouting || c->animation.tagining)
 		return;
 
 	if (c->configure_serial &&
@@ -4964,7 +4950,6 @@ void overview_backup(Client *c) {
 	c->overview_ismaxmizescreenbak = c->ismaxmizescreen;
 	c->overview_isfullscreenbak = c->isfullscreen;
 	c->animation.tagining = false;
-	c->animation.tagouted = false;
 	c->animation.tagouting = false;
 	c->overview_backup_geom = c->geom;
 	c->overview_backup_bw = c->bw;

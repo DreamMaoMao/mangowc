@@ -232,8 +232,7 @@ void buffer_set_effect(Client *c, BufferData data) {
 	if (!c || c->iskilling)
 		return;
 
-	if (c->animation.tagouting || c->animation.tagouted ||
-		c->animation.tagining) {
+	if (c->animation.tagouting || c->animation.tagining) {
 		data.should_scale = false;
 	}
 
@@ -442,8 +441,7 @@ struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
 	int offsetx = 0, offsety = 0, offsetw = 0, offseth = 0;
 	struct ivec2 offset = {0, 0, 0, 0};
 
-	if (!ISTILED(c) && !c->animation.tagining && !c->animation.tagouted &&
-		!c->animation.tagouting)
+	if (!ISTILED(c) && !c->animation.tagining && !c->animation.tagouting)
 		return offset;
 
 	int bottom_out_offset =
@@ -463,8 +461,7 @@ struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
 	  需要主要border超出屏幕的时候不计算如偏差之内而是
 	  要等窗口表面超出才开始计算偏差
 	*/
-	if (ISTILED(c) || c->animation.tagining || c->animation.tagouted ||
-		c->animation.tagouting) {
+	if (ISTILED(c) || c->animation.tagining || c->animation.tagouting) {
 		if (left_out_offset > 0) {
 			offsetx = GEZERO(left_out_offset - bw);
 			clip_box->x = clip_box->x + offsetx;
@@ -736,7 +733,6 @@ void client_animation_next_tick(Client *c) {
 			c->animation.tagouting = false;
 			wlr_scene_node_set_enabled(&c->scene->node, false);
 			client_set_suspended(c, true);
-			c->animation.tagouted = true;
 			c->animation.current = c->geom;
 		}
 
