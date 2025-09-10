@@ -699,6 +699,7 @@ void apply_named_scratchpad(Client *target_client);
 Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title);
 bool switch_scratchpad_client_state(Client *c);
 bool check_trackpad_disabled(struct wlr_pointer *pointer);
+unsigned int get_tag_status(unsigned int tag, Monitor *m);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
