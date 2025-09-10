@@ -1271,6 +1271,101 @@ void applyrules(Client *c) {
 	}
 }
 
+void set_tagin_animation(Monitor *m, Client *c) {
+	c->animation.tagining = true;
+	if (m->pertag->curtag > m->pertag->prevtag) {
+		if (c->animation.running) {
+			c->animainit_geom.x = c->animation.current.x;
+			c->animainit_geom.y = c->animation.current.y;
+		} else {
+			c->animainit_geom.x = tag_animation_direction == VERTICAL
+									  ? c->animation.current.x
+									  : c->mon->m.x + c->mon->m.width;
+			c->animainit_geom.y = tag_animation_direction == VERTICAL
+									  ? c->mon->m.y + c->mon->m.height
+									  : c->animation.current.y;
+		}
+
+	} else {
+		if (c->animation.running) {
+			c->animainit_geom.x = c->animation.current.x;
+			c->animainit_geom.y = c->animation.current.y;
+		} else {
+			c->animainit_geom.x = tag_animation_direction == VERTICAL
+									  ? c->animation.current.x
+									  : m->m.x - c->geom.width;
+			c->animainit_geom.y = tag_animation_direction == VERTICAL
+									  ? m->m.y - c->geom.height
+									  : c->animation.current.y;
+		}
+	}
+}
+
+void set_arrange_visible(Monitor *m, Client *c, bool want_animation) {
+	if (!client_is_unmanaged(c) && !client_should_ignore_focus(c)) {
+		m->visible_clients++;
+	}
+
+	if (ISTILED(c)) {
+		m->visible_tiling_clients++;
+	}
+
+	if (!c->is_clip_to_hide || !ISTILED(c) || !is_scroller_layout(c->mon)) {
+		c->is_clip_to_hide = false;
+		wlr_scene_node_set_enabled(&c->scene->node, true);
+		wlr_scene_node_set_enabled(&c->scene_surface->node, true);
+	}
+	client_set_suspended(c, false);
+
+	if (!c->animation.tag_from_rule && want_animation &&
+		m->pertag->prevtag != 0 && m->pertag->curtag != 0 && animations) {
+		set_tagin_animation(m, c);
+	} else {
+		c->animainit_geom.x = c->animation.current.x;
+		c->animainit_geom.y = c->animation.current.y;
+	}
+
+	c->animation.tag_from_rule = false;
+	c->animation.tagouting = false;
+	c->animation.tagouted = false;
+	resize(c, c->geom, 0);
+}
+
+void set_tagout_animation(Monitor *m, Client *c) {
+	c->animation.tagouting = true;
+	c->animation.tagining = false;
+	if (m->pertag->curtag > m->pertag->prevtag) {
+		c->pending = c->geom;
+		c->pending.x = tag_animation_direction == VERTICAL
+						   ? c->animation.current.x
+						   : c->mon->m.x - c->geom.width;
+		c->pending.y = tag_animation_direction == VERTICAL
+						   ? c->mon->m.y - c->geom.height
+						   : c->animation.current.y;
+
+		resize(c, c->geom, 0);
+	} else {
+		c->pending = c->geom;
+		c->pending.x = tag_animation_direction == VERTICAL
+						   ? c->animation.current.x
+						   : c->mon->m.x + c->mon->m.width;
+		c->pending.y = tag_animation_direction == VERTICAL
+						   ? c->mon->m.y + c->mon->m.height
+						   : c->animation.current.y;
+		resize(c, c->geom, 0);
+	}
+}
+
+void set_arrange_hidden(Monitor *m, Client *c, bool want_animation) {
+	if ((c->tags & (1 << (m->pertag->prevtag - 1))) &&
+		m->pertag->prevtag != 0 && m->pertag->curtag != 0 && animations) {
+		set_tagout_animation(m, c);
+	} else {
+		wlr_scene_node_set_enabled(&c->scene->node, false);
+		client_set_suspended(c, true);
+	}
+}
+
 void // 17
 arrange(Monitor *m, bool want_animation) {
 	Client *c;
@@ -1295,96 +1390,9 @@ arrange(Monitor *m, bool want_animation) {
 
 		if (c->mon == m) {
 			if (VISIBLEON(c, m)) {
-
-				if (!client_is_unmanaged(c) && !client_should_ignore_focus(c)) {
-					m->visible_clients++;
-				}
-
-				if (ISTILED(c)) {
-					m->visible_tiling_clients++;
-				}
-
-				if (!c->is_clip_to_hide || !ISTILED(c) ||
-					!is_scroller_layout(c->mon)) {
-					c->is_clip_to_hide = false;
-					wlr_scene_node_set_enabled(&c->scene->node, true);
-					wlr_scene_node_set_enabled(&c->scene_surface->node, true);
-				}
-				client_set_suspended(c, false);
-				if (!c->animation.tag_from_rule && want_animation &&
-					m->pertag->prevtag != 0 && m->pertag->curtag != 0 &&
-					animations) {
-					c->animation.tagining = true;
-					if (m->pertag->curtag > m->pertag->prevtag) {
-						if (c->animation.running) {
-							c->animainit_geom.x = c->animation.current.x;
-							c->animainit_geom.y = c->animation.current.y;
-						} else {
-							c->animainit_geom.x =
-								tag_animation_direction == VERTICAL
-									? c->animation.current.x
-									: c->mon->m.x + c->mon->m.width;
-							c->animainit_geom.y =
-								tag_animation_direction == VERTICAL
-									? c->mon->m.y + c->mon->m.height
-									: c->animation.current.y;
-						}
-
-					} else {
-						if (c->animation.running) {
-							c->animainit_geom.x = c->animation.current.x;
-							c->animainit_geom.y = c->animation.current.y;
-						} else {
-							c->animainit_geom.x =
-								tag_animation_direction == VERTICAL
-									? c->animation.current.x
-									: m->m.x - c->geom.width;
-							c->animainit_geom.y =
-								tag_animation_direction == VERTICAL
-									? m->m.y - c->geom.height
-									: c->animation.current.y;
-						}
-					}
-				} else {
-					c->animainit_geom.x = c->animation.current.x;
-					c->animainit_geom.y = c->animation.current.y;
-				}
-
-				c->animation.tag_from_rule = false;
-				c->animation.tagouting = false;
-				c->animation.tagouted = false;
-				resize(c, c->geom, 0);
-
+				set_arrange_visible(m, c, want_animation);
 			} else {
-				if ((c->tags & (1 << (m->pertag->prevtag - 1))) &&
-					m->pertag->prevtag != 0 && m->pertag->curtag != 0 &&
-					animations) {
-					c->animation.tagouting = true;
-					c->animation.tagining = false;
-					if (m->pertag->curtag > m->pertag->prevtag) {
-						c->pending = c->geom;
-						c->pending.x = tag_animation_direction == VERTICAL
-										   ? c->animation.current.x
-										   : c->mon->m.x - c->geom.width;
-						c->pending.y = tag_animation_direction == VERTICAL
-										   ? c->mon->m.y - c->geom.height
-										   : c->animation.current.y;
-
-						resize(c, c->geom, 0);
-					} else {
-						c->pending = c->geom;
-						c->pending.x = tag_animation_direction == VERTICAL
-										   ? c->animation.current.x
-										   : c->mon->m.x + c->mon->m.width;
-						c->pending.y = tag_animation_direction == VERTICAL
-										   ? c->mon->m.y + c->mon->m.height
-										   : c->animation.current.y;
-						resize(c, c->geom, 0);
-					}
-				} else {
-					wlr_scene_node_set_enabled(&c->scene->node, false);
-					client_set_suspended(c, true);
-				}
+				set_arrange_hidden(m, c, want_animation);
 			}
 		}
 
