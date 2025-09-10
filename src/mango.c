@@ -5368,7 +5368,7 @@ urgent(struct wl_listener *listener, void *data) {
 }
 
 void view_in_mon(const Arg *arg, bool want_animation, Monitor *m) {
-	unsigned int i, tmptag;
+	unsigned int tmptag;
 
 	if (!m || (arg->ui != (~0 & TAGMASK) && m->isoverview)) {
 		return;
@@ -5398,10 +5398,7 @@ void view_in_mon(const Arg *arg, bool want_animation, Monitor *m) {
 		if (arg->ui == (~0 & TAGMASK))
 			m->pertag->curtag = 0;
 		else {
-			for (i = 0; !(arg->ui & 1 << i) && i < LENGTH(tags) && arg->ui != 0;
-				 i++)
-				;
-			m->pertag->curtag = i >= LENGTH(tags) ? LENGTH(tags) : i + 1;
+			m->pertag->curtag = get_tags_first_tag_num(arg->ui);
 		}
 
 		m->pertag->prevtag =
