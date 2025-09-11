@@ -93,9 +93,9 @@
 #define GEZERO(A) ((A) >= 0 ? (A) : 0)
 #define CLEANMASK(mask) (mask & ~WLR_MODIFIER_CAPS)
 #define INSIDEMON(A)                                                           \
-	(A->geom.x > A->mon->m.x && A->geom.y > A->mon->m.y &&                     \
-	 A->geom.x + A->geom.width < A->mon->m.x + A->mon->m.width &&              \
-	 A->geom.y + A->geom.height < A->mon->m.y + A->mon->m.height)
+	(A->geom.x >= A->mon->m.x && A->geom.y >= A->mon->m.y &&                   \
+	 A->geom.x + A->geom.width <= A->mon->m.x + A->mon->m.width &&             \
+	 A->geom.y + A->geom.height <= A->mon->m.y + A->mon->m.height)
 #define ISTILED(A)                                                             \
 	(A && !(A)->isfloating && !(A)->isminied && !(A)->iskilling &&             \
 	 !(A)->ismaxmizescreen && !(A)->isfullscreen)
