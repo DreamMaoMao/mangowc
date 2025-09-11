@@ -1302,9 +1302,8 @@ void set_tagin_animation(Monitor *m, Client *c) {
 }
 
 void set_arrange_visible(Monitor *m, Client *c, bool want_animation) {
-	if (!client_is_unmanaged(c) && !client_should_ignore_focus(c)) {
-		m->visible_clients++;
-	}
+
+	m->visible_clients++;
 
 	if (ISTILED(c)) {
 		m->visible_tiling_clients++;
