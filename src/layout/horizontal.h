@@ -347,8 +347,8 @@ void scroller(Monitor *m) {
 	if (m->sel && !client_is_unmanaged(m->sel) && !m->sel->isfloating &&
 		!m->sel->ismaxmizescreen && !m->sel->isfullscreen) {
 		root_client = m->sel;
-	} else if (m->prevtilesel && !client_is_unmanaged(m->prevtilesel)) {
-		root_client = m->prevtilesel;
+	} else if (m->prevsel && !client_is_unmanaged(m->prevsel)) {
+		root_client = m->prevsel;
 	} else {
 		root_client = center_select(m);
 	}
@@ -380,8 +380,8 @@ void scroller(Monitor *m) {
 
 	if (need_scroller) {
 		if (scroller_focus_center ||
-			((!m->prevtilesel ||
-			  (m->prevtilesel->scroller_proportion * max_client_width) +
+			((!m->prevsel ||
+			  (m->prevsel->scroller_proportion * max_client_width) +
 					  (root_client->scroller_proportion * max_client_width) >
 				  m->w.width - 2 * scroller_structs - cur_gappih) &&
 			 scroller_prefer_center)) {
