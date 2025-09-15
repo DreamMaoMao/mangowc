@@ -418,9 +418,12 @@ void restore_minimized(const Arg *arg) {
 void // 17
 setlayout(const Arg *arg) {
 	int jk;
+	unsigned int target_tag = selmon->pertag->curtag ? selmon->pertag->curtag
+													 : selmon->pertag->prevtag;
+
 	for (jk = 0; jk < LENGTH(layouts); jk++) {
 		if (strcmp(layouts[jk].name, arg->v) == 0) {
-			selmon->pertag->ltidxs[selmon->pertag->curtag] = &layouts[jk];
+			selmon->pertag->ltidxs[target_tag] = &layouts[jk];
 
 			arrange(selmon, false);
 			printstatus();
@@ -820,17 +823,17 @@ void switch_layout(const Arg *arg) {
 	int jk, ji;
 	char *target_layout_name = NULL;
 	unsigned int len;
+	unsigned int target_tag = selmon->pertag->curtag ? selmon->pertag->curtag
+													 : selmon->pertag->prevtag;
 
 	if (config.circle_layout_count != 0) {
 		for (jk = 0; jk < config.circle_layout_count; jk++) {
 
-			len = MAX(
-				strlen(config.circle_layout[jk]),
-				strlen(selmon->pertag->ltidxs[selmon->pertag->curtag]->name));
+			len = MAX(strlen(config.circle_layout[jk]),
+					  strlen(selmon->pertag->ltidxs[target_tag]->name));
 
 			if (strncmp(config.circle_layout[jk],
-						selmon->pertag->ltidxs[selmon->pertag->curtag]->name,
-						len) == 0) {
+						selmon->pertag->ltidxs[target_tag]->name, len) == 0) {
 				target_layout_name = jk == config.circle_layout_count - 1
 										 ? config.circle_layout[0]
 										 : config.circle_layout[jk + 1];
@@ -845,7 +848,8 @@ void switch_layout(const Arg *arg) {
 		for (ji = 0; ji < LENGTH(layouts); ji++) {
 			len = MAX(strlen(layouts[ji].name), strlen(target_layout_name));
 			if (strncmp(layouts[ji].name, target_layout_name, len) == 0) {
-				selmon->pertag->ltidxs[selmon->pertag->curtag] = &layouts[ji];
+				selmon->pertag->ltidxs[target_tag] = &layouts[ji];
+
 				break;
 			}
 		}
@@ -857,8 +861,8 @@ void switch_layout(const Arg *arg) {
 
 	for (jk = 0; jk < LENGTH(layouts); jk++) {
 		if (strcmp(layouts[jk].name,
-				   selmon->pertag->ltidxs[selmon->pertag->curtag]->name) == 0) {
-			selmon->pertag->ltidxs[selmon->pertag->curtag] =
+				   selmon->pertag->ltidxs[target_tag]->name) == 0) {
+			selmon->pertag->ltidxs[target_tag] =
 				jk == LENGTH(layouts) - 1 ? &layouts[0] : &layouts[jk + 1];
 			arrange(selmon, false);
 			printstatus();
