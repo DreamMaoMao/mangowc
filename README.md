@@ -25,7 +25,7 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
 
 3. **Some disadvantages**
-   - Since it uses the fully automatic layout like dwm style, it does not allow you to manually adjust the window size when the window is in tiled state. It only allows you to change the layout parameters to adjust the window ratio.
+   - Since it uses the fully automatic layout like dwm style, it does not allow you to manually adjust the window size when the window is in tiled state. It only allows you to use dispatch like `setmfact` or `increase_proportion` bind to adjust the tiled window ratio.
 
 
 Master-Stack Layout
