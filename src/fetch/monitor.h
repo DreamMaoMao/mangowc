@@ -26,7 +26,8 @@ bool is_scroller_layout(Monitor *m) {
 			   "vertical_scroller") == 0)
 		return true;
 
-	if (strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "scroller") == 0)
+	if (m->pertag->curtag &&
+		strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "scroller") == 0)
 		return true;
 	if (strcmp(m->pertag->ltidxs[m->pertag->curtag]->name,
 			   "vertical_scroller") == 0)
