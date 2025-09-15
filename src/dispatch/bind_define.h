@@ -11,7 +11,7 @@ void bind_to_view(const Arg *arg) {
 	}
 
 	if ((int)target == INT_MIN && selmon->pertag->curtag == 0) {
-		if (selmon->pertag->prevtag)
+		if (view_current_to_back && selmon->pertag->prevtag)
 			target = 1 << (selmon->pertag->prevtag - 1);
 		else
 			target = 0;
