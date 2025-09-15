@@ -2725,22 +2725,24 @@ void configure_pointer(struct libinput_device *device) {
 }
 
 void createpointer(struct wlr_pointer *pointer) {
-	struct libinput_device *device =
-		wlr_libinput_get_device_handle(&pointer->base);
 
-	if (device && wlr_input_device_is_libinput(&pointer->base)) {
+	struct libinput_device *device = NULL;
+
+	if (wlr_input_device_is_libinput(&pointer->base) &&
+		(device = wlr_libinput_get_device_handle(&pointer->base))) {
+
 		configure_pointer(device);
+
+		InputDevice *input_dev = calloc(1, sizeof(InputDevice));
+		input_dev->wlr_device = &pointer->base;
+		input_dev->libinput_device = device;
+
+		input_dev->destroy_listener.notify = destroyinputdevice;
+		wl_signal_add(&pointer->base.events.destroy,
+					  &input_dev->destroy_listener);
+
+		wl_list_insert(&inputdevices, &input_dev->link);
 	}
-
-	InputDevice *input_dev = calloc(1, sizeof(InputDevice));
-	input_dev->wlr_device = &pointer->base;
-	input_dev->libinput_device = device;
-
-	input_dev->destroy_listener.notify = destroyinputdevice;
-	wl_signal_add(&pointer->base.events.destroy, &input_dev->destroy_listener);
-
-	wl_list_insert(&inputdevices, &input_dev->link);
-
 	wlr_cursor_attach_input_device(cursor, &pointer->base);
 }
 
@@ -2765,32 +2767,36 @@ void switch_toggle(struct wl_listener *listener, void *data) {
 }
 
 void createswitch(struct wlr_switch *switch_device) {
-	struct libinput_device *device =
-		wlr_libinput_get_device_handle(&switch_device->base);
 
-	InputDevice *input_dev = calloc(1, sizeof(InputDevice));
-	input_dev->wlr_device = &switch_device->base;
-	input_dev->libinput_device = device;
-	input_dev->device_data = NULL; // 初始化为 NULL
+	struct libinput_device *device = NULL;
 
-	input_dev->destroy_listener.notify = destroyinputdevice;
-	wl_signal_add(&switch_device->base.events.destroy,
-				  &input_dev->destroy_listener);
+	if (wlr_input_device_is_libinput(&switch_device->base) &&
+		(device = wlr_libinput_get_device_handle(&switch_device->base))) {
 
-	// 创建 Switch 特定数据
-	Switch *sw = calloc(1, sizeof(Switch));
-	sw->wlr_switch = switch_device;
-	sw->toggle.notify = switch_toggle;
-	sw->input_dev = input_dev;
+		InputDevice *input_dev = calloc(1, sizeof(InputDevice));
+		input_dev->wlr_device = &switch_device->base;
+		input_dev->libinput_device = device;
+		input_dev->device_data = NULL; // 初始化为 NULL
 
-	// 将 Switch 指针保存到 input_device 中
-	input_dev->device_data = sw;
+		input_dev->destroy_listener.notify = destroyinputdevice;
+		wl_signal_add(&switch_device->base.events.destroy,
+					  &input_dev->destroy_listener);
 
-	// 添加 toggle 监听器
-	wl_signal_add(&switch_device->events.toggle, &sw->toggle);
+		// 创建 Switch 特定数据
+		Switch *sw = calloc(1, sizeof(Switch));
+		sw->wlr_switch = switch_device;
+		sw->toggle.notify = switch_toggle;
+		sw->input_dev = input_dev;
 
-	// 添加到全局列表
-	wl_list_insert(&inputdevices, &input_dev->link);
+		// 将 Switch 指针保存到 input_device 中
+		input_dev->device_data = sw;
+
+		// 添加 toggle 监听器
+		wl_signal_add(&switch_device->events.toggle, &sw->toggle);
+
+		// 添加到全局列表
+		wl_list_insert(&inputdevices, &input_dev->link);
+	}
 }
 
 void createpointerconstraint(struct wl_listener *listener, void *data) {
