@@ -61,6 +61,7 @@ int scroller_focus_center = 0;
 int scroller_prefer_center = 0;
 int focus_cross_monitor = 0;
 int focus_cross_tag = 0;
+int view_current_to_back = 1;
 int no_border_when_single = 0;
 int no_radius_when_single = 0;
 int snap_distance = 30;

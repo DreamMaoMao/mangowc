@@ -172,6 +172,7 @@ typedef struct {
 	int edge_scroller_pointer_focus;
 	int focus_cross_monitor;
 	int focus_cross_tag;
+	int view_current_to_back;
 	int no_border_when_single;
 	int snap_distance;
 	int enable_floating_snap;
@@ -952,8 +953,8 @@ void parse_config_line(Config *config, const char *line) {
 		config->focus_cross_monitor = atoi(value);
 	} else if (strcmp(key, "focus_cross_tag") == 0) {
 		config->focus_cross_tag = atoi(value);
-	} else if (strcmp(key, "focus_cross_tag") == 0) {
-		config->focus_cross_tag = atoi(value);
+	} else if (strcmp(key, "view_current_to_back") == 0) {
+		config->view_current_to_back = atoi(value);
 	} else if (strcmp(key, "single_scratchpad") == 0) {
 		config->single_scratchpad = atoi(value);
 	} else if (strcmp(key, "xwayland_persistence") == 0) {
@@ -2281,6 +2282,7 @@ void override_config(void) {
 	warpcursor = CLAMP_INT(config.warpcursor, 0, 1);
 	focus_cross_monitor = CLAMP_INT(config.focus_cross_monitor, 0, 1);
 	focus_cross_tag = CLAMP_INT(config.focus_cross_tag, 0, 1);
+	view_current_to_back = CLAMP_INT(config.view_current_to_back, 0, 1);
 	enable_floating_snap = CLAMP_INT(config.enable_floating_snap, 0, 1);
 	snap_distance = CLAMP_INT(config.snap_distance, 0, 99999);
 	cursor_size = CLAMP_INT(config.cursor_size, 4, 512);
@@ -2410,6 +2412,7 @@ void set_value_default() {
 	config.edge_scroller_pointer_focus = edge_scroller_pointer_focus;
 	config.focus_cross_monitor = focus_cross_monitor;
 	config.focus_cross_tag = focus_cross_tag;
+	config.view_current_to_back = view_current_to_back;
 	config.single_scratchpad = single_scratchpad;
 	config.xwayland_persistence = xwayland_persistence;
 	config.syncobj_enable = syncobj_enable;
