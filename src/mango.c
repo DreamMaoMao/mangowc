@@ -1254,7 +1254,8 @@ void applyrules(Client *c) {
 	*/
 	wl_list_for_each(fc, &clients,
 					 link) if (fc && fc != c && c->tags & fc->tags &&
-							   ISFULLSCREEN(fc) && !c->isfloating) {
+							   VISIBLEON(fc, c->mon) && ISFULLSCREEN(fc) &&
+							   !c->isfloating) {
 		clear_fullscreen_flag(fc);
 		arrange(c->mon, false);
 	}
@@ -4248,9 +4249,9 @@ setfloating(Client *c, int floating) {
 		c->is_in_scratchpad = 0;
 		c->isnamedscratchpad = 0;
 		// 让当前tag中的全屏窗口退出全屏参与平铺
-		wl_list_for_each(fc, &clients, link) if (fc && fc != c &&
-												 c->tags & fc->tags &&
-												 ISFULLSCREEN(fc)) {
+		wl_list_for_each(fc, &clients,
+						 link) if (fc && fc != c && VISIBLEON(fc, c->mon) &&
+								   c->tags & fc->tags && ISFULLSCREEN(fc)) {
 			clear_fullscreen_flag(fc);
 		}
 	}
@@ -5010,15 +5011,15 @@ void toggleoverview(const Arg *arg) {
 	// overview到正常视图,还原之前退出的浮动和全屏窗口状态
 	if (selmon->isoverview) {
 		wl_list_for_each(c, &clients, link) {
-			if (c && !client_is_unmanaged(c) &&
+			if (c && c->mon == selmon && !client_is_unmanaged(c) &&
 				!client_should_ignore_focus(c) && !c->isunglobal)
 				overview_backup(c);
 		}
 	} else {
 		wl_list_for_each(c, &clients, link) {
-			if (c && !c->iskilling && !client_is_unmanaged(c) &&
-				!c->isunglobal && !client_should_ignore_focus(c) &&
-				client_surface(c)->mapped)
+			if (c && c->mon == selmon && !c->iskilling &&
+				!client_is_unmanaged(c) && !c->isunglobal &&
+				!client_should_ignore_focus(c) && client_surface(c)->mapped)
 				overview_restore(c, &(Arg){.ui = target});
 		}
 	}

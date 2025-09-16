@@ -140,6 +140,10 @@ void grid(Monitor *m) {
 
 	if (n == 1) {
 		wl_list_for_each(c, &clients, link) {
+
+			if (c->mon != m)
+				continue;
+
 			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
 							smartgaps
 						? 0
@@ -164,6 +168,9 @@ void grid(Monitor *m) {
 		ch = (m->w.height - 2 * overviewgappo) * 0.65;
 		i = 0;
 		wl_list_for_each(c, &clients, link) {
+			if (c->mon != m)
+				continue;
+
 			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
 							smartgaps
 						? 0
@@ -212,6 +219,9 @@ void grid(Monitor *m) {
 	// 调整每个客户端的位置和大小
 	i = 0;
 	wl_list_for_each(c, &clients, link) {
+
+		if (c->mon != m)
+			continue;
 		c->bw =
 			m->visible_tiling_clients == 1 && no_border_when_single && smartgaps
 				? 0
