@@ -2606,8 +2606,8 @@ void reapply_monitor_rules(void) {
 				}
 
 				if (mr->width > 0 && mr->height > 0 && mr->refresh > 0) {
-					internal_mode = get_output_mode(m->wlr_output, mr->width,
-													mr->height, mr->refresh);
+					internal_mode = get_nearest_output_mode(
+						m->wlr_output, mr->width, mr->height, mr->refresh);
 					if (internal_mode) {
 						wlr_output_state_set_mode(&state, internal_mode);
 					} else if (wlr_output_is_headless(m->wlr_output)) {
