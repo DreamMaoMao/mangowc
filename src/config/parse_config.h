@@ -2610,7 +2610,7 @@ void reapply_monitor_rules(void) {
 													mr->height, mr->refresh);
 					if (internal_mode) {
 						wlr_output_state_set_mode(&state, internal_mode);
-					} else {
+					} else if (wlr_output_is_headless(m->wlr_output)) {
 						wlr_output_state_set_custom_mode(
 							&state, mr->width, mr->height,
 							(int)roundf(mr->refresh * 1000));

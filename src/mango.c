@@ -2535,12 +2535,13 @@ void createmon(struct wl_listener *listener, void *data) {
 			rr = r->rr;
 
 			if (r->width > 0 && r->height > 0 && r->refresh > 0) {
-				custom_monitor_mode = true;
 				internal_mode = get_output_mode(m->wlr_output, r->width,
 												r->height, r->refresh);
 				if (internal_mode) {
+					custom_monitor_mode = true;
 					wlr_output_state_set_mode(&state, internal_mode);
-				} else {
+				} else if (wlr_output_is_headless(m->wlr_output)) {
+					custom_monitor_mode = true;
 					wlr_output_state_set_custom_mode(
 						&state, r->width, r->height,
 						(int)roundf(r->refresh * 1000));
