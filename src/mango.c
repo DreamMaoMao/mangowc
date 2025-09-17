@@ -2462,15 +2462,22 @@ void createlocksurface(struct wl_listener *listener, void *data) {
 
 struct wlr_output_mode *get_output_mode(struct wlr_output *output, int width,
 										int height, float refresh) {
-	struct wlr_output_mode *mode;
+	struct wlr_output_mode *mode, *nearest_mode = NULL;
+	float min_diff = 99999.0f;
+
 	wl_list_for_each(mode, &output->modes, link) {
-		if (mode->width == width && mode->height == height &&
-			(int)round(mode->refresh / 1000) == (int)round(refresh)) {
-			return mode;
+		if (mode->width == width && mode->height == height) {
+			float mode_refresh = mode->refresh / 1000.0f;
+			float diff = fabsf(mode_refresh - refresh);
+
+			if (diff < min_diff) {
+				min_diff = diff;
+				nearest_mode = mode;
+			}
 		}
 	}
 
-	return NULL;
+	return nearest_mode;
 }
 
 void createmon(struct wl_listener *listener, void *data) {
