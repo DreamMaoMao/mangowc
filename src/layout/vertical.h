@@ -344,7 +344,8 @@ void vertical_scroller(Monitor *m) {
 	if (m->sel && !client_is_unmanaged(m->sel) && !m->sel->isfloating &&
 		!m->sel->ismaxmizescreen && !m->sel->isfullscreen) {
 		root_client = m->sel;
-	} else if (m->prevsel && !client_is_unmanaged(m->prevsel)) {
+	} else if (m->prevsel && ISTILED(m->prevsel) &&
+			   !client_is_unmanaged(m->prevsel)) {
 		root_client = m->prevsel;
 	} else {
 		root_client = center_select(m);
@@ -381,7 +382,7 @@ void vertical_scroller(Monitor *m) {
 			  (m->prevsel->scroller_proportion * max_client_height) +
 					  (root_client->scroller_proportion * max_client_height) >
 				  m->w.height - 2 * scroller_structs - cur_gappiv) &&
-			 scroller_prefer_center)) {
+			 ISTILED(m->prevsel) && scroller_prefer_center)) {
 			target_geom.y = m->w.y + (m->w.height - target_geom.height) / 2;
 		} else {
 			target_geom.y = root_client->geom.y > m->w.y + (m->w.height) / 2
