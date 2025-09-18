@@ -285,6 +285,7 @@ typedef struct {
 	int single_scratchpad;
 	int xwayland_persistence;
 	int syncobj_enable;
+	int adaptive_sync;
 
 	struct xkb_rule_names xkb_rules;
 } Config;
@@ -961,6 +962,8 @@ void parse_config_line(Config *config, const char *line) {
 		config->xwayland_persistence = atoi(value);
 	} else if (strcmp(key, "syncobj_enable") == 0) {
 		config->syncobj_enable = atoi(value);
+	} else if (strcmp(key, "adaptive_sync") == 0) {
+		config->adaptive_sync = atoi(value);
 	} else if (strcmp(key, "no_border_when_single") == 0) {
 		config->no_border_when_single = atoi(value);
 	} else if (strcmp(key, "snap_distance") == 0) {
@@ -2273,6 +2276,7 @@ void override_config(void) {
 	// 杂项设置
 	xwayland_persistence = CLAMP_INT(config.xwayland_persistence, 0, 1);
 	syncobj_enable = CLAMP_INT(config.syncobj_enable, 0, 1);
+	adaptive_sync = CLAMP_INT(config.adaptive_sync, 0, 1);
 	axis_bind_apply_timeout =
 		CLAMP_INT(config.axis_bind_apply_timeout, 0, 1000);
 	focus_on_activate = CLAMP_INT(config.focus_on_activate, 0, 1);
@@ -2416,6 +2420,7 @@ void set_value_default() {
 	config.single_scratchpad = single_scratchpad;
 	config.xwayland_persistence = xwayland_persistence;
 	config.syncobj_enable = syncobj_enable;
+	config.adaptive_sync = adaptive_sync;
 	config.no_border_when_single = no_border_when_single;
 	config.snap_distance = snap_distance;
 	config.drag_tile_to_tile = drag_tile_to_tile;
@@ -2622,6 +2627,10 @@ void reapply_monitor_rules(void) {
 				wlr_output_layout_add(output_layout, m->wlr_output, mr->x,
 									  mr->y);
 			}
+		}
+
+		if (adaptive_sync) {
+			enable_adaptive_sync(m, &state);
 		}
 
 		wlr_output_commit_state(m->wlr_output, &state);

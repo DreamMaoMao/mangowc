@@ -693,13 +693,15 @@ static struct wlr_scene_tree *
 wlr_scene_tree_snapshot(struct wlr_scene_node *node,
 						struct wlr_scene_tree *parent);
 static bool is_scroller_layout(Monitor *m);
-void create_output(struct wlr_backend *backend, void *data);
+static void create_output(struct wlr_backend *backend, void *data);
 static const char *get_layout_abbr(const char *full_name);
-void apply_named_scratchpad(Client *target_client);
-Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title);
-bool switch_scratchpad_client_state(Client *c);
-bool check_trackpad_disabled(struct wlr_pointer *pointer);
-unsigned int get_tag_status(unsigned int tag, Monitor *m);
+static void apply_named_scratchpad(Client *target_client);
+static Client *get_client_by_id_or_title(const char *arg_id,
+										 const char *arg_title);
+static bool switch_scratchpad_client_state(Client *c);
+static bool check_trackpad_disabled(struct wlr_pointer *pointer);
+static unsigned int get_tag_status(unsigned int tag, Monitor *m);
+static void enable_adaptive_sync(Monitor *m, struct wlr_output_state *state);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -2481,6 +2483,18 @@ struct wlr_output_mode *get_nearest_output_mode(struct wlr_output *output,
 	return nearest_mode;
 }
 
+void enable_adaptive_sync(Monitor *m, struct wlr_output_state *state) {
+	wlr_output_state_set_adaptive_sync_enabled(state, true);
+	if (!wlr_output_test_state(m->wlr_output, state)) {
+		wlr_output_state_set_adaptive_sync_enabled(state, false);
+		wlr_log(WLR_DEBUG, "failed to enable adaptive sync for output %s",
+				m->wlr_output->name);
+	} else {
+		wlr_log(WLR_INFO, "adaptive sync enabled for output %s",
+				m->wlr_output->name);
+	}
+}
+
 void createmon(struct wl_listener *listener, void *data) {
 	/* This event is raised by the backend when a new output (aka a display or
 	 * monitor) becomes available. */
@@ -2559,6 +2573,10 @@ void createmon(struct wl_listener *listener, void *data) {
 			wlr_output_state_set_transform(&state, r->rr);
 			break;
 		}
+	}
+
+	if (adaptive_sync) {
+		enable_adaptive_sync(m, &state);
 	}
 
 	/* The mode is a tuple of (width, height, refresh rate), and each
