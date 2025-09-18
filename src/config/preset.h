@@ -96,6 +96,7 @@ float fullscreen_bg[] = {0.1, 0.1, 0.1, 1.0};
 int warpcursor = 1;			  /* Warp cursor to focused client */
 int xwayland_persistence = 1; /* xwayland persistence */
 int syncobj_enable = 0;
+int adaptive_syn = 0;
 
 /* keyboard */
 
