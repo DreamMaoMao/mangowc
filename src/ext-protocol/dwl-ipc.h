@@ -264,7 +264,7 @@ void dwl_ipc_output_set_tags(struct wl_client *client,
 		return;
 	monitor = ipc_output->mon;
 
-	view_in_mon(&(Arg){.ui = newtags}, true, monitor);
+	view_in_mon(&(Arg){.ui = newtags}, true, monitor, true);
 }
 
 void dwl_ipc_output_quit(struct wl_client *client,
