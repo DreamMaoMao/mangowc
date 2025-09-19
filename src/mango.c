@@ -654,7 +654,8 @@ static void scene_buffer_apply_opacity(struct wlr_scene_buffer *buffer, int sx,
 									   int sy, void *data);
 
 static Client *direction_select(const Arg *arg);
-static void view_in_mon(const Arg *arg, bool want_animation, Monitor *m);
+static void view_in_mon(const Arg *arg, bool want_animation, Monitor *m,
+						bool changefocus);
 
 static void buffer_set_effect(Client *c, BufferData buffer_data);
 static void snap_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer,
@@ -1236,7 +1237,7 @@ void applyrules(Client *c) {
 		!(c->mon == selmon && c->tags & c->mon->tagset[c->mon->seltags]) &&
 		!c->isopensilent && !c->istagsilent) {
 		c->animation.tag_from_rule = true;
-		view_in_mon(&(Arg){.ui = c->tags}, true, c->mon);
+		view_in_mon(&(Arg){.ui = c->tags}, true, c->mon, true);
 	}
 
 	setfullscreen(c, fullscreen_state_backup);
@@ -4945,7 +4946,7 @@ void tag_client(const Arg *arg, Client *target_client) {
 				clear_fullscreen_flag(fc);
 			}
 		}
-		view(&(Arg){.ui = arg->ui}, false);
+		view(&(Arg){.ui = arg->ui, .i = arg->i}, false);
 
 	} else {
 		view(arg, false);
@@ -5395,7 +5396,8 @@ urgent(struct wl_listener *listener, void *data) {
 	}
 }
 
-void view_in_mon(const Arg *arg, bool want_animation, Monitor *m) {
+void view_in_mon(const Arg *arg, bool want_animation, Monitor *m,
+				 bool changefocus) {
 	unsigned int i, tmptag;
 
 	if (!m || (arg->ui != (~0 & TAGMASK) && m->isoverview)) {
@@ -5442,13 +5444,25 @@ void view_in_mon(const Arg *arg, bool want_animation, Monitor *m) {
 
 toggleseltags:
 
-	focusclient(focustop(m), 1);
+	if (changefocus)
+		focusclient(focustop(m), 1);
 	arrange(m, want_animation);
 	printstatus();
 }
 
 void view(const Arg *arg, bool want_animation) {
-	view_in_mon(arg, want_animation, selmon);
+	Monitor *m, *record_mon;
+	if (arg->i) {
+		record_mon = selmon;
+		view_in_mon(arg, want_animation, record_mon, true);
+		wl_list_for_each(m, &mons, link) {
+			if (!m->wlr_output->enabled || m == record_mon)
+				continue;
+			view_in_mon(arg, want_animation, m, false);
+		}
+	} else {
+		view_in_mon(arg, want_animation, selmon, true);
+	}
 }
 
 void virtualkeyboard(struct wl_listener *listener, void *data) {

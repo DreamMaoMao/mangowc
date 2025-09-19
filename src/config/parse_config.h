@@ -726,15 +726,19 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = switch_proportion_preset;
 	} else if (strcmp(func_name, "viewtoleft") == 0) {
 		func = viewtoleft;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "viewtoright") == 0) {
 		func = viewtoright;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "tagsilent") == 0) {
 		func = tagsilent;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);
 	} else if (strcmp(func_name, "tagtoleft") == 0) {
 		func = tagtoleft;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "tagtoright") == 0) {
 		func = tagtoright;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "killclient") == 0) {
 		func = killclient;
 	} else if (strcmp(func_name, "centerwin") == 0) {
@@ -810,16 +814,20 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = togglemaxmizescreen;
 	} else if (strcmp(func_name, "viewtoleft_have_client") == 0) {
 		func = viewtoleft_have_client;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "viewtoright_have_client") == 0) {
 		func = viewtoright_have_client;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "reload_config") == 0) {
 		func = reload_config;
 	} else if (strcmp(func_name, "tag") == 0) {
 		func = tag;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);
+		(*arg).i = atoi(arg_value2);
 	} else if (strcmp(func_name, "view") == 0) {
 		func = bind_to_view;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);
+		(*arg).i = atoi(arg_value2);
 	} else if (strcmp(func_name, "toggletag") == 0) {
 		func = toggletag;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);
@@ -1699,9 +1707,9 @@ void parse_config_line(Config *config, const char *line) {
 		memset(binding, 0, sizeof(KeyBinding));
 
 		char mod_str[256], keysym_str[256], func_name[256],
-			arg_value[256] = "none", arg_value2[256] = "none",
-			arg_value3[256] = "none", arg_value4[256] = "none",
-			arg_value5[256] = "none";
+			arg_value[256] = "0\0", arg_value2[256] = "0\0",
+			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
+			arg_value5[256] = "0\0";
 		if (sscanf(value, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
 				   mod_str, keysym_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
@@ -1758,9 +1766,9 @@ void parse_config_line(Config *config, const char *line) {
 		memset(binding, 0, sizeof(MouseBinding));
 
 		char mod_str[256], button_str[256], func_name[256],
-			arg_value[256] = "none", arg_value2[256] = "none",
-			arg_value3[256] = "none", arg_value4[256] = "none",
-			arg_value5[256] = "none";
+			arg_value[256] = "0\0", arg_value2[256] = "0\0",
+			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
+			arg_value5[256] = "0\0";
 		if (sscanf(value, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
 				   mod_str, button_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
@@ -1817,9 +1825,9 @@ void parse_config_line(Config *config, const char *line) {
 		memset(binding, 0, sizeof(AxisBinding));
 
 		char mod_str[256], dir_str[256], func_name[256],
-			arg_value[256] = "none", arg_value2[256] = "none",
-			arg_value3[256] = "none", arg_value4[256] = "none",
-			arg_value5[256] = "none";
+			arg_value[256] = "0\0", arg_value2[256] = "0\0",
+			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
+			arg_value5[256] = "0\0";
 		if (sscanf(value, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
 				   mod_str, dir_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
@@ -1879,9 +1887,9 @@ void parse_config_line(Config *config, const char *line) {
 		memset(binding, 0, sizeof(SwitchBinding));
 
 		char fold_str[256], func_name[256],
-			arg_value[256] = "none", arg_value2[256] = "none",
-			arg_value3[256] = "none", arg_value4[256] = "none",
-			arg_value5[256] = "none";
+			arg_value[256] = "0\0", arg_value2[256] = "0\0",
+			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
+			arg_value5[256] = "0\0";
 		if (sscanf(value, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
 				   fold_str, func_name, arg_value, arg_value2, arg_value3,
 				   arg_value4, arg_value5) < 3) {
@@ -1935,9 +1943,9 @@ void parse_config_line(Config *config, const char *line) {
 		memset(binding, 0, sizeof(GestureBinding));
 
 		char mod_str[256], motion_str[256], fingers_count_str[256],
-			func_name[256], arg_value[256] = "none", arg_value2[256] = "none",
-							arg_value3[256] = "none", arg_value4[256] = "none",
-							arg_value5[256] = "none";
+			func_name[256], arg_value[256] = "0\0", arg_value2[256] = "0\0",
+							arg_value3[256] = "0\0", arg_value4[256] = "0\0",
+							arg_value5[256] = "0\0";
 		if (sscanf(value,
 				   "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
 				   mod_str, motion_str, fingers_count_str, func_name, arg_value,
