@@ -438,10 +438,10 @@ void vertical_tile(Monitor *m) {
 	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 
-	if (n > selmon->pertag->nmasters[selmon->pertag->curtag])
-		mh = selmon->pertag->nmasters[selmon->pertag->curtag]
+	if (n > m->pertag->nmasters[m->pertag->curtag])
+		mh = m->pertag->nmasters[m->pertag->curtag]
 				 ? (m->w.height + cur_gappiv * ie) *
-					   selmon->pertag->mfacts[selmon->pertag->curtag]
+					   m->pertag->mfacts[m->pertag->curtag]
 				 : 0;
 	else
 		mh = m->w.height - 2 * cur_gappoh + cur_gappiv * ie;
@@ -450,8 +450,8 @@ void vertical_tile(Monitor *m) {
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
-		if (i < selmon->pertag->nmasters[selmon->pertag->curtag]) {
-			r = MIN(n, selmon->pertag->nmasters[selmon->pertag->curtag]) - i;
+		if (i < m->pertag->nmasters[m->pertag->curtag]) {
+			r = MIN(n, m->pertag->nmasters[m->pertag->curtag]) - i;
 			w = (m->w.width - mx - cur_gappov - cur_gappiv * ie * (r - 1)) / r;
 			resize(c,
 				   (struct wlr_box){.x = m->w.x + mx,
