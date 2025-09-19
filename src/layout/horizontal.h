@@ -392,10 +392,11 @@ void scroller(Monitor *m) {
 	if (need_scroller) {
 		if (scroller_focus_center ||
 			((!m->prevsel ||
-			  (m->prevsel->scroller_proportion * max_client_width) +
-					  (root_client->scroller_proportion * max_client_width) >
-				  m->w.width - 2 * scroller_structs - cur_gappih) &&
-			 ISTILED(m->prevsel) && scroller_prefer_center)) {
+			  (ISTILED(m->prevsel) &&
+			   (m->prevsel->scroller_proportion * max_client_width) +
+					   (root_client->scroller_proportion * max_client_width) >
+				   m->w.width - 2 * scroller_structs - cur_gappih)) &&
+			 scroller_prefer_center)) {
 			target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
 		} else {
 			target_geom.x = root_client->geom.x > m->w.x + (m->w.width) / 2
