@@ -5407,13 +5407,13 @@ toggleseltags:
 }
 
 void view(const Arg *arg, bool want_animation) {
-	Monitor *m, *record_mon;
+	Monitor *m;
 	if (arg->i) {
-		record_mon = selmon;
-		view_in_mon(arg, want_animation, record_mon, true);
+		view_in_mon(arg, want_animation, selmon, true);
 		wl_list_for_each(m, &mons, link) {
-			if (!m->wlr_output->enabled || m == record_mon)
+			if (!m->wlr_output->enabled || m == selmon)
 				continue;
+			// only arrange, not change monitor focus
 			view_in_mon(arg, want_animation, m, false);
 		}
 	} else {
