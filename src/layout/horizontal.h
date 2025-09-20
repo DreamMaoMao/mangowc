@@ -357,11 +357,11 @@ void scroller(Monitor *m) {
 	if (m->sel && !client_is_unmanaged(m->sel) && !m->sel->isfloating &&
 		!m->sel->ismaxmizescreen && !m->sel->isfullscreen) {
 		root_client = m->sel;
-	} else if (m->prevsel && ISTILED(m->prevsel) &&
+	} else if (m->prevsel && ISTILED(m->prevsel) && VISIBLEON(m->prevsel, m) &&
 			   !client_is_unmanaged(m->prevsel)) {
 		root_client = m->prevsel;
 	} else {
-		root_client = center_select(m);
+		root_client = center_tiled_select(m);
 	}
 
 	if (!root_client) {

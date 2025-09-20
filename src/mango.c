@@ -669,7 +669,7 @@ static void snap_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer,
 static void client_set_pending_state(Client *c);
 static void layer_set_pending_state(LayerSurface *l);
 static void set_rect_size(struct wlr_scene_rect *rect, int width, int height);
-static Client *center_select(Monitor *m);
+static Client *center_tiled_select(Monitor *m);
 static void handlecursoractivity(void);
 static int hidecursor(void *data);
 static bool check_hit_no_border(Client *c);
@@ -3519,7 +3519,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 			VISIBLEON(selmon->sel, selmon)) {
 			at_client = selmon->sel;
 		} else {
-			at_client = center_select(selmon);
+			at_client = center_tiled_select(selmon);
 		}
 
 		at_client->link.next->prev = &c->link;

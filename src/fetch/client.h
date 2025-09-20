@@ -121,14 +121,14 @@ static bool is_window_rule_matches(const ConfigWinRule *r, const char *appid,
 			regex_match(r->title, title));
 }
 
-Client *center_select(Monitor *m) {
+Client *center_tiled_select(Monitor *m) {
 	Client *c = NULL;
 	Client *target_c = NULL;
 	long int mini_distance = -1;
 	int dirx, diry;
 	long int distance;
 	wl_list_for_each(c, &clients, link) {
-		if (c && VISIBLEON(c, m) && client_surface(c)->mapped &&
+		if (c && VISIBLEON(c, m) && ISTILED(c) && client_surface(c)->mapped &&
 			!c->isfloating && !client_is_unmanaged(c)) {
 			dirx = c->geom.x + c->geom.width / 2 - (m->w.x + m->w.width / 2);
 			diry = c->geom.y + c->geom.height / 2 - (m->w.y + m->w.height / 2);
