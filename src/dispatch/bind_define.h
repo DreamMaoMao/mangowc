@@ -86,6 +86,8 @@ void focusdir(const Arg *arg) {
 				viewtoleft_have_client(NULL);
 			if (arg->i == RIGHT || arg->i == DOWN)
 				viewtoright_have_client(NULL);
+		} else if (config.focus_cross_monitor) {
+			focusmon(arg);
 		}
 	}
 }
