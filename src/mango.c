@@ -4079,7 +4079,12 @@ void setborder_color(Client *c) {
 }
 
 void exchange_two_client(Client *c1, Client *c2) {
-	if (c1 == NULL || c2 == NULL || c1->mon != c2->mon) {
+
+	Monitor *tmp_mon;
+	unsigned int tmp_tags;
+
+	if (c1 == NULL || c2 == NULL ||
+		(!exchange_cross_monitor && c1->mon != c2->mon)) {
 		return;
 	}
 
@@ -4120,8 +4125,18 @@ void exchange_two_client(Client *c1, Client *c2) {
 		tmp2_next->prev = &c1->link;
 	}
 
-	arrange(c1->mon, false);
-	focusclient(c1, 0);
+	if (exchange_cross_monitor) {
+		tmp_mon = c2->mon;
+		tmp_tags = c2->tags;
+		setmon(c2, c1->mon, c1->tags, false);
+		setmon(c1, tmp_mon, tmp_tags, false);
+		arrange(c1->mon, false);
+		arrange(c2->mon, false);
+		focusclient(c1, 0);
+	} else {
+		arrange(c1->mon, false);
+		focusclient(c1, 0);
+	}
 }
 
 void // 17
@@ -4521,7 +4536,12 @@ void setmon(Client *c, Monitor *m, unsigned int newtags, bool focus) {
 	if (m && focus)
 		focusclient(focustop(m), 1);
 
-	if (!c->foreign_toplevel && m) {
+	if (m) {
+
+		if (c->foreign_toplevel) {
+			remove_foreign_topleve(c);
+		}
+
 		add_foreign_toplevel(c);
 		if (m->sel && m->sel->foreign_toplevel)
 			wlr_foreign_toplevel_handle_v1_set_activated(

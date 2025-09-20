@@ -171,6 +171,7 @@ typedef struct {
 	int scroller_prefer_center;
 	int edge_scroller_pointer_focus;
 	int focus_cross_monitor;
+	int exchange_cross_monitor;
 	int focus_cross_tag;
 	int view_current_to_back;
 	int no_border_when_single;
@@ -960,6 +961,8 @@ void parse_config_line(Config *config, const char *line) {
 		config->edge_scroller_pointer_focus = atoi(value);
 	} else if (strcmp(key, "focus_cross_monitor") == 0) {
 		config->focus_cross_monitor = atoi(value);
+	} else if (strcmp(key, "exchange_cross_monitor") == 0) {
+		config->exchange_cross_monitor = atoi(value);
 	} else if (strcmp(key, "focus_cross_tag") == 0) {
 		config->focus_cross_tag = atoi(value);
 	} else if (strcmp(key, "view_current_to_back") == 0) {
@@ -2293,6 +2296,7 @@ void override_config(void) {
 	sloppyfocus = CLAMP_INT(config.sloppyfocus, 0, 1);
 	warpcursor = CLAMP_INT(config.warpcursor, 0, 1);
 	focus_cross_monitor = CLAMP_INT(config.focus_cross_monitor, 0, 1);
+	exchange_cross_monitor = CLAMP_INT(config.exchange_cross_monitor, 0, 1);
 	focus_cross_tag = CLAMP_INT(config.focus_cross_tag, 0, 1);
 	view_current_to_back = CLAMP_INT(config.view_current_to_back, 0, 1);
 	enable_floating_snap = CLAMP_INT(config.enable_floating_snap, 0, 1);
@@ -2423,6 +2427,7 @@ void set_value_default() {
 	config.scroller_prefer_center = scroller_prefer_center;
 	config.edge_scroller_pointer_focus = edge_scroller_pointer_focus;
 	config.focus_cross_monitor = focus_cross_monitor;
+	config.exchange_cross_monitor = exchange_cross_monitor;
 	config.focus_cross_tag = focus_cross_tag;
 	config.view_current_to_back = view_current_to_back;
 	config.single_scratchpad = single_scratchpad;
