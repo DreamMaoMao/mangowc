@@ -11,8 +11,7 @@ void fibonacci(Monitor *mon, int s) {
 	cur_gappoh = smartgaps && mon->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 	cur_gappov = smartgaps && mon->visible_tiling_clients == 1 ? 0 : cur_gappov;
 	// Count visible clients
-	wl_list_for_each(c, &clients, link) if (VISIBLEON(c, mon) && ISTILED(c))
-		n++;
+	n = mon->visible_tiling_clients;
 
 	if (n == 0)
 		return;
@@ -133,13 +132,7 @@ void grid(Monitor *m) {
 	Client *c;
 	n = 0;
 
-	// 第一次遍历，计算 n 的值
-	wl_list_for_each(c, &clients, link) {
-		if (VISIBLEON(c, m) && !c->isunglobal &&
-			((m->isoverview && !client_should_ignore_focus(c)) || ISTILED(c))) {
-			n++;
-		}
-	}
+	n = m->isoverview ? m->visible_clients : m->visible_tiling_clients;
 
 	if (n == 0) {
 		return; // 没有需要处理的客户端，直接返回
@@ -147,6 +140,10 @@ void grid(Monitor *m) {
 
 	if (n == 1) {
 		wl_list_for_each(c, &clients, link) {
+
+			if (c->mon != m)
+				continue;
+
 			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
 							smartgaps
 						? 0
@@ -171,6 +168,9 @@ void grid(Monitor *m) {
 		ch = (m->w.height - 2 * overviewgappo) * 0.65;
 		i = 0;
 		wl_list_for_each(c, &clients, link) {
+			if (c->mon != m)
+				continue;
+
 			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
 							smartgaps
 						? 0
@@ -219,6 +219,9 @@ void grid(Monitor *m) {
 	// 调整每个客户端的位置和大小
 	i = 0;
 	wl_list_for_each(c, &clients, link) {
+
+		if (c->mon != m)
+			continue;
 		c->bw =
 			m->visible_tiling_clients == 1 && no_border_when_single && smartgaps
 				? 0
@@ -252,7 +255,8 @@ void deck(Monitor *m) {
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
 
-	wl_list_for_each(c, &clients, link) if (VISIBLEON(c, m) && ISTILED(c)) n++;
+	n = m->visible_tiling_clients;
+
 	if (n == 0)
 		return;
 
@@ -298,11 +302,10 @@ void deck(Monitor *m) {
 
 // 滚动布局
 void scroller(Monitor *m) {
-	unsigned int i, n;
+	unsigned int i, n, j;
 
 	Client *c, *root_client = NULL;
 	Client **tempClients = NULL; // 初始化为 NULL
-	n = 0;
 	struct wlr_box target_geom;
 	int focus_client_index = 0;
 	bool need_scroller = false;
@@ -317,12 +320,7 @@ void scroller(Monitor *m) {
 	unsigned int max_client_width =
 		m->w.width - 2 * scroller_structs - cur_gappih;
 
-	// 第一次遍历，计算 n 的值
-	wl_list_for_each(c, &clients, link) {
-		if (VISIBLEON(c, m) && ISTILED(c)) {
-			n++;
-		}
-	}
+	n = m->visible_tiling_clients;
 
 	if (n == 0) {
 		return; // 没有需要处理的客户端，直接返回
@@ -336,11 +334,11 @@ void scroller(Monitor *m) {
 	}
 
 	// 第二次遍历，填充 tempClients
-	n = 0;
+	j = 0;
 	wl_list_for_each(c, &clients, link) {
 		if (VISIBLEON(c, m) && ISTILED(c)) {
-			tempClients[n] = c;
-			n++;
+			tempClients[j] = c;
+			j++;
 		}
 	}
 
@@ -359,12 +357,11 @@ void scroller(Monitor *m) {
 	if (m->sel && !client_is_unmanaged(m->sel) && !m->sel->isfloating &&
 		!m->sel->ismaxmizescreen && !m->sel->isfullscreen) {
 		root_client = m->sel;
-	} else if (m->prevsel && !client_is_unmanaged(m->prevsel) &&
-			   !m->prevsel->isfloating && !m->prevsel->ismaxmizescreen &&
-			   !m->prevsel->isfullscreen) {
+	} else if (m->prevsel && ISTILED(m->prevsel) && VISIBLEON(m->prevsel, m) &&
+			   !client_is_unmanaged(m->prevsel)) {
 		root_client = m->prevsel;
 	} else {
-		root_client = center_select(m);
+		root_client = center_tiled_select(m);
 	}
 
 	if (!root_client) {
@@ -395,9 +392,10 @@ void scroller(Monitor *m) {
 	if (need_scroller) {
 		if (scroller_focus_center ||
 			((!m->prevsel ||
-			  (m->prevsel->scroller_proportion * max_client_width) +
-					  (root_client->scroller_proportion * max_client_width) >
-				  m->w.width - 2 * scroller_structs - cur_gappih) &&
+			  (ISTILED(m->prevsel) &&
+			   (m->prevsel->scroller_proportion * max_client_width) +
+					   (root_client->scroller_proportion * max_client_width) >
+				   m->w.width - 2 * scroller_structs - cur_gappih)) &&
 			 scroller_prefer_center)) {
 			target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
 		} else {
@@ -438,7 +436,8 @@ void tile(Monitor *m) {
 	unsigned int i, n = 0, h, r, ie = enablegaps, mw, my, ty;
 	Client *c;
 
-	wl_list_for_each(c, &clients, link) if (VISIBLEON(c, m) && ISTILED(c)) n++;
+	n = m->visible_tiling_clients;
+
 	if (n == 0)
 		return;
 
@@ -452,10 +451,10 @@ void tile(Monitor *m) {
 	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 
-	if (n > selmon->pertag->nmasters[selmon->pertag->curtag])
-		mw = selmon->pertag->nmasters[selmon->pertag->curtag]
+	if (n > m->pertag->nmasters[m->pertag->curtag])
+		mw = m->pertag->nmasters[m->pertag->curtag]
 				 ? (m->w.width + cur_gappih * ie) *
-					   selmon->pertag->mfacts[selmon->pertag->curtag]
+					   m->pertag->mfacts[m->pertag->curtag]
 				 : 0;
 	else
 		mw = m->w.width - 2 * cur_gappoh + cur_gappih * ie;
@@ -464,8 +463,8 @@ void tile(Monitor *m) {
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
-		if (i < selmon->pertag->nmasters[selmon->pertag->curtag]) {
-			r = MIN(n, selmon->pertag->nmasters[selmon->pertag->curtag]) - i;
+		if (i < m->pertag->nmasters[m->pertag->curtag]) {
+			r = MIN(n, m->pertag->nmasters[m->pertag->curtag]) - i;
 			h = (m->w.height - my - cur_gappov - cur_gappiv * ie * (r - 1)) / r;
 			resize(c,
 				   (struct wlr_box){.x = m->w.x + cur_gappoh,

@@ -93,30 +93,14 @@ static inline void client_activate_surface(struct wlr_surface *s,
 #ifdef XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 	if ((xsurface = wlr_xwayland_surface_try_from_wlr_surface(s))) {
+		if (activated && xsurface->minimized)
+			wlr_xwayland_surface_set_minimized(xsurface, false);
 		wlr_xwayland_surface_activate(xsurface, activated);
 		return;
 	}
 #endif
 	if ((toplevel = wlr_xdg_toplevel_try_from_wlr_surface(s)))
 		wlr_xdg_toplevel_set_activated(toplevel, activated);
-}
-
-static inline uint32_t client_set_bounds(Client *c, int32_t width,
-										 int32_t height) {
-#ifdef XWAYLAND
-	if (client_is_x11(c))
-		return 0;
-#endif
-	if (wl_resource_get_version(c->surface.xdg->toplevel->resource) >=
-			XDG_TOPLEVEL_CONFIGURE_BOUNDS_SINCE_VERSION &&
-		width >= 0 && height >= 0 &&
-		(c->bounds.width != width || c->bounds.height != height)) {
-		c->bounds.width = width;
-		c->bounds.height = height;
-		return wlr_xdg_toplevel_set_bounds(c->surface.xdg->toplevel, width,
-										   height);
-	}
-	return 0;
 }
 
 static inline const char *client_get_appid(Client *c) {
@@ -213,6 +197,10 @@ static inline int client_is_float_type(Client *c) {
 	if (client_is_x11(c)) {
 		struct wlr_xwayland_surface *surface = c->surface.xwayland;
 		xcb_size_hints_t *size_hints = surface->size_hints;
+
+		if (!size_hints)
+			return 0;
+
 		if (surface->modal)
 			return 1;
 
@@ -342,7 +330,19 @@ static inline uint32_t client_set_size(Client *c, uint32_t width,
 									 (int32_t)height);
 }
 
+static inline void client_set_minimized(Client *c, bool minimized) {
+#ifdef XWAYLAND
+	if (client_is_x11(c)) {
+		wlr_xwayland_surface_set_minimized(c->surface.xwayland, minimized);
+		return;
+	}
+#endif
+
+	return;
+}
+
 static inline void client_set_tiled(Client *c, uint32_t edges) {
+	struct wlr_xdg_toplevel *toplevel;
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
 		wlr_xwayland_surface_set_maximized(c->surface.xwayland,
@@ -351,12 +351,16 @@ static inline void client_set_tiled(Client *c, uint32_t edges) {
 		return;
 	}
 #endif
+
+	toplevel = c->surface.xdg->toplevel;
+
 	if (wl_resource_get_version(c->surface.xdg->toplevel->resource) >=
 		XDG_TOPLEVEL_STATE_TILED_RIGHT_SINCE_VERSION) {
 		wlr_xdg_toplevel_set_tiled(c->surface.xdg->toplevel, edges);
-	} else {
-		wlr_xdg_toplevel_set_maximized(c->surface.xdg->toplevel,
-									   edges != WLR_EDGE_NONE);
+	}
+
+	if (!c->ignore_maximize) {
+		wlr_xdg_toplevel_set_maximized(toplevel, edges != WLR_EDGE_NONE);
 	}
 }
 
@@ -440,4 +444,64 @@ static inline int client_wants_fullscreen(Client *c) {
 		return c->surface.xwayland->fullscreen;
 #endif
 	return c->surface.xdg->toplevel->requested.fullscreen;
+}
+
+static inline bool client_request_minimize(Client *c, void *data) {
+
+#ifdef XWAYLAND
+	if (client_is_x11(c)) {
+		struct wlr_xwayland_minimize_event *event = data;
+		return event->minimize;
+	}
+#endif
+
+	return c->surface.xdg->toplevel->requested.minimized;
+}
+
+static inline void client_set_size_bound(Client *c) {
+	struct wlr_xdg_toplevel *toplevel;
+	struct wlr_xdg_toplevel_state state;
+
+#ifdef XWAYLAND
+	if (client_is_x11(c)) {
+		struct wlr_xwayland_surface *surface = c->surface.xwayland;
+		xcb_size_hints_t *size_hints = surface->size_hints;
+
+		if (!size_hints)
+			return;
+
+		if ((unsigned int)c->geom.width - 2 * c->bw < size_hints->min_width &&
+			size_hints->min_width > 0)
+			c->geom.width = size_hints->min_width + 2 * c->bw;
+		if ((unsigned int)c->geom.height - 2 * c->bw < size_hints->min_height &&
+			size_hints->min_height > 0)
+			c->geom.height = size_hints->min_height + 2 * c->bw;
+		if ((unsigned int)c->geom.width - 2 * c->bw > size_hints->max_width &&
+			size_hints->max_width > 0)
+			c->geom.width = size_hints->max_width + 2 * c->bw;
+		if ((unsigned int)c->geom.height - 2 * c->bw > size_hints->max_height &&
+			size_hints->max_height > 0)
+			c->geom.height = size_hints->max_height + 2 * c->bw;
+		return;
+	}
+#endif
+
+	toplevel = c->surface.xdg->toplevel;
+	state = toplevel->current;
+	if ((unsigned int)c->geom.width - 2 * c->bw < state.min_width &&
+		state.min_width > 0) {
+		c->geom.width = state.min_width + 2 * c->bw;
+	}
+	if ((unsigned int)c->geom.height - 2 * c->bw < state.min_height &&
+		state.min_height > 0) {
+		c->geom.height = state.min_height + 2 * c->bw;
+	}
+	if ((unsigned int)c->geom.width - 2 * c->bw > state.max_width &&
+		state.max_width > 0) {
+		c->geom.width = state.max_width + 2 * c->bw;
+	}
+	if ((unsigned int)c->geom.height - 2 * c->bw > state.max_height &&
+		state.max_height > 0) {
+		c->geom.height = state.max_height + 2 * c->bw;
+	}
 }

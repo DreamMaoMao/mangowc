@@ -28,23 +28,29 @@ enum corner_location set_client_corner_location(Client *c) {
 	return current_corner_location;
 }
 
-int is_special_animaiton_rule(Client *c) {
-	int visible_client_number = 0;
-	Client *count_c;
-	wl_list_for_each(count_c, &clients, link) {
-		if (count_c && VISIBLEON(count_c, selmon) && !count_c->isminied &&
-			!count_c->iskilling && !count_c->isfloating) {
-			visible_client_number++;
-		}
-	}
+bool is_horizontal_stack_layout(Monitor *m) {
 
-	if (is_scroller_layout(selmon) && !c->isfloating) {
+	if (m->pertag->curtag &&
+		(strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "tile") == 0 ||
+		 strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "spiral") == 0 ||
+		 strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "dwindle") == 0 ||
+		 strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "deck") == 0))
+		return true;
+
+	return false;
+}
+
+int is_special_animaiton_rule(Client *c) {
+
+	if (is_scroller_layout(c->mon) && !c->isfloating) {
 		return DOWN;
-	} else if (visible_client_number < 2 && !c->isfloating) {
+	} else if (c->mon->visible_tiling_clients == 1 && !c->isfloating) {
 		return DOWN;
-	} else if (visible_client_number == 2 && !c->isfloating && !new_is_master) {
+	} else if (c->mon->visible_tiling_clients == 2 && !c->isfloating &&
+			   !new_is_master && is_horizontal_stack_layout(c->mon)) {
 		return RIGHT;
-	} else if (!c->isfloating && new_is_master) {
+	} else if (!c->isfloating && new_is_master &&
+			   is_horizontal_stack_layout(c->mon)) {
 		return LEFT;
 	} else {
 		return UNDIR;
@@ -618,7 +624,9 @@ void fadeout_client_animation_next_tick(Client *c) {
 	BufferData buffer_data;
 
 	double animation_passed =
-		(double)c->animation.passed_frames / c->animation.total_frames;
+		c->animation.total_frames
+			? (double)c->animation.passed_frames / c->animation.total_frames
+			: 1.0;
 	int type = c->animation.action = c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
 	unsigned int width =
@@ -674,7 +682,9 @@ void fadeout_client_animation_next_tick(Client *c) {
 
 void client_animation_next_tick(Client *c) {
 	double animation_passed =
-		(double)c->animation.passed_frames / c->animation.total_frames;
+		c->animation.total_frames
+			? (double)c->animation.passed_frames / c->animation.total_frames
+			: 1.0;
 
 	int type = c->animation.action == NONE ? MOVE : c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
@@ -820,7 +830,7 @@ void init_fadeout_client(Client *c) {
 
 	fadeout_cient->animation.passed_frames = 0;
 	fadeout_cient->animation.total_frames =
-		fadeout_cient->animation.duration / output_frame_duration_ms();
+		fadeout_cient->animation.duration / all_output_frame_duration_ms();
 	wlr_scene_node_set_enabled(&fadeout_cient->scene->node, true);
 	wl_list_insert(&fadeout_clients, &fadeout_cient->fadeout_link);
 
@@ -840,7 +850,7 @@ void client_commit(Client *c) {
 		// 设置动画速度
 		c->animation.passed_frames = 0;
 		c->animation.total_frames =
-			c->animation.duration / output_frame_duration_ms();
+			c->animation.duration / all_output_frame_duration_ms();
 
 		// 标记动画开始
 		c->animation.running = true;
@@ -879,7 +889,7 @@ void client_set_pending_state(Client *c) {
 		 (!c->animation_type_open &&
 		  strcmp(animation_type_open, "none") == 0)) &&
 		c->animation.action == OPEN) {
-		c->animation.should_animate = false;
+		c->animation.duration = 0;
 	}
 
 	// 开始动画
@@ -902,8 +912,9 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 		return;
 
 	c->need_output_flush = true;
+	c->dirty = true;
 
-	// oldgeom = c->geom;
+	// float_geom = c->geom;
 	bbox = (interact || c->isfloating || c->isfullscreen) ? &sgeom : &c->mon->w;
 
 	if (is_scroller_layout(c->mon) && (!c->isfloating || c == grabc)) {
@@ -911,13 +922,15 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 		c->geom.width = MAX(1 + 2 * (int)c->bw, c->geom.width);
 		c->geom.height = MAX(1 + 2 * (int)c->bw, c->geom.height);
 	} else { // 这里会限制不允许窗口划出屏幕
-		client_set_bounds(
-			c, geo.width,
-			geo.height); // 去掉这个推荐的窗口大小,因为有时推荐的窗口特别大导致平铺异常
 		c->geom = geo;
 		applybounds(
 			c,
 			bbox); // 去掉这个推荐的窗口大小,因为有时推荐的窗口特别大导致平铺异常
+	}
+
+	if (!c->isnosizehint && !c->ismaxmizescreen && !c->isfullscreen &&
+		c->isfloating) {
+		client_set_size_bound(c);
 	}
 
 	if (!c->is_pending_open_animation) {
@@ -964,6 +977,7 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 	if (c == grabc) {
 		c->animation.running = false;
 		c->need_output_flush = false;
+
 		c->animainit_geom = c->current = c->pending = c->animation.current =
 			c->geom;
 		wlr_scene_node_set_position(&c->scene->node, c->geom.x, c->geom.y);

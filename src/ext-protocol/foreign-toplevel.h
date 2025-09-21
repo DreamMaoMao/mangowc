@@ -10,7 +10,7 @@ void handle_foreign_activate_request(struct wl_listener *listener, void *data) {
 		return;
 
 	if (c && !c->isminied && c == selmon->sel) {
-		set_minized(c);
+		set_minimized(c);
 		return;
 	}
 

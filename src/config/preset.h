@@ -61,6 +61,8 @@ int scroller_focus_center = 0;
 int scroller_prefer_center = 0;
 int focus_cross_monitor = 0;
 int focus_cross_tag = 0;
+int exchange_cross_monitor = 0;
+int view_current_to_back = 1;
 int no_border_when_single = 0;
 int no_radius_when_single = 0;
 int snap_distance = 30;
@@ -69,7 +71,7 @@ int drag_tile_to_tile = 0;
 unsigned int cursor_size = 24;
 unsigned int cursor_hide_timeout = 0;
 
-unsigned int swipe_min_threshold = 20;
+unsigned int swipe_min_threshold = 1;
 
 int inhibit_regardless_of_visibility =
 	0; /* 1 means idle inhibitors will disable idle tracking even if it's
@@ -95,6 +97,7 @@ float fullscreen_bg[] = {0.1, 0.1, 0.1, 1.0};
 int warpcursor = 1;			  /* Warp cursor to focused client */
 int xwayland_persistence = 1; /* xwayland persistence */
 int syncobj_enable = 0;
+int adaptive_sync = 0;
 
 /* keyboard */
 
@@ -132,6 +135,7 @@ int disable_while_typing = 1;
 int left_handed = 0;
 int middle_button_emulation = 0;
 int single_scratchpad = 1;
+int edge_scroller_pointer_focus = 1;
 
 /* You can choose between:
 LIBINPUT_CONFIG_SCROLL_NO_SCROLL

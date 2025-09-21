@@ -110,8 +110,10 @@ void dwl_ipc_output_printstatus(Monitor *monitor) {
 void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	Monitor *monitor = ipc_output->mon;
 	Client *c, *focused;
+	struct wlr_keyboard *keyboard;
+	xkb_layout_index_t current;
 	int tagmask, state, numclients, focused_client, tag;
-	const char *title, *appid, *symbol;
+	const char *title, *appid, *symbol, *kb_layout;
 	focused = focustop(monitor);
 	zdwl_ipc_output_v2_send_active(ipc_output->resource, monitor == selmon);
 
@@ -137,7 +139,18 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 
 	title = focused ? client_get_title(focused) : "";
 	appid = focused ? client_get_appid(focused) : "";
-	symbol = monitor->pertag->ltidxs[monitor->pertag->curtag]->symbol;
+
+	if (monitor->isoverview) {
+		symbol = overviewlayout.symbol;
+	} else {
+		symbol = monitor->pertag->ltidxs[monitor->pertag->curtag]->symbol;
+	}
+
+	keyboard = &kb_group->wlr_group->keyboard;
+	current = xkb_state_serialize_layout(keyboard->xkb_state,
+										 XKB_STATE_LAYOUT_EFFECTIVE);
+	kb_layout =
+		get_layout_abbr(xkb_keymap_layout_get_name(keyboard->keymap, current));
 
 	zdwl_ipc_output_v2_send_layout(
 		ipc_output->resource,
@@ -180,6 +193,12 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 		zdwl_ipc_output_v2_send_last_layer(ipc_output->resource,
 										   monitor->last_surface_ws_name);
 	}
+
+	if (wl_resource_get_version(ipc_output->resource) >=
+		ZDWL_IPC_OUTPUT_V2_KB_LAYOUT_SINCE_VERSION) {
+		zdwl_ipc_output_v2_send_kb_layout(ipc_output->resource, kb_layout);
+	}
+
 	zdwl_ipc_output_v2_send_frame(ipc_output->resource);
 }
 
@@ -243,7 +262,7 @@ void dwl_ipc_output_set_tags(struct wl_client *client,
 		return;
 	monitor = ipc_output->mon;
 
-	view_in_mon(&(Arg){.ui = newtags}, true, monitor);
+	view_in_mon(&(Arg){.ui = newtags}, true, monitor, true);
 }
 
 void dwl_ipc_output_quit(struct wl_client *client,
@@ -264,6 +283,13 @@ void dwl_ipc_output_dispatch(struct wl_client *client,
 	if (func) {
 		func(&arg);
 	}
+
+	if (arg.v)
+		free(arg.v);
+	if (arg.v2)
+		free(arg.v2);
+	if (arg.v3)
+		free(arg.v3);
 }
 
 void dwl_ipc_output_release(struct wl_client *client,

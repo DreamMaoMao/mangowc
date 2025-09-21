@@ -111,6 +111,7 @@ get_keyboard_grab(KeyboardGroup *keyboard) {
 		return NULL;
 	}
 
+	// kb_group是一个物理键盘组，它不应该被过滤掉
 	if (keyboard != kb_group)
 		return NULL;
 

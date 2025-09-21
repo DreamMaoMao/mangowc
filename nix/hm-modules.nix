@@ -4,7 +4,6 @@ self: {
   pkgs,
   ...
 }: let
-  inherit (self.packages.${pkgs.system}) mango;
   cfg = config.wayland.windowManager.mango;
   variables = lib.concatStringsSep " " cfg.systemd.variables;
   extraCommands = lib.concatStringsSep " && " cfg.systemd.extraCommands;
@@ -19,6 +18,11 @@ in {
       enable = mkOption {
         type = types.bool;
         default = false;
+      };
+      package = lib.mkOption {
+        type = lib.types.package;
+        default = self.packages.${pkgs.system}.mango;
+        description = "The mango package to use";
       };
       systemd = {
         enable = mkOption {
@@ -72,7 +76,7 @@ in {
       };
       settings = mkOption {
         description = "mango config content";
-        type = types.str;
+        type = types.lines;
         default = "";
         example = ''
           # menu and terminal
@@ -82,7 +86,7 @@ in {
       };
       autostart_sh = mkOption {
         description = "WARRNING: This is a shell script, but no need to add shebang";
-        type = types.str;
+        type = types.lines;
         default = "";
         example = ''
           waybar &
@@ -92,7 +96,7 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [mango];
+    home.packages = [ cfg.package ];
     home.activation =
       lib.optionalAttrs (cfg.autostart_sh != "") {
         createMangoScript = lib.hm.dag.entryAfter ["clearMangoConfig"] ''

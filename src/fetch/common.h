@@ -44,11 +44,11 @@ char *get_autostart_path(char *autostart_path, unsigned int buf_size) {
 	return autostart_path;
 }
 
-char *get_layout_abbr(const char *full_name) {
+const char *get_layout_abbr(const char *full_name) {
 	// 1. 尝试在映射表中查找
 	for (int i = 0; layout_mappings[i].full_name != NULL; i++) {
 		if (strcmp(full_name, layout_mappings[i].full_name) == 0) {
-			return strdup(layout_mappings[i].abbr);
+			return layout_mappings[i].abbr;
 		}
 	}
 

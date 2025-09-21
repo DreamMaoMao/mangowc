@@ -20,12 +20,12 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Rich window states (swallow, minimize, maximize, unglobal, global, fakefullscreen, overlay, etc.)
      - Simple yet powerful external configuration
      - Sway-like scratchpad and named scratchpad
-     - Minimize window to scratchpad
+     - Ipc support(get/send message from/to compositor by external program)
      - Hycov-like overview
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
 
 3. **Some disadvantages**
-   - Since it uses the fully automatic layout like dwm style, it does not allow you to manually adjust the window size when the window is in tiled state. It only allows you to change the layout parameters to adjust the window ratio.
+   - Since it uses the fully automatic layout like dwm style, it does not allow you to manually adjust the window size when the window is in tiled state. It only allows you to use dispatch like `setmfact` or `increase_proportion` bind to adjust the tiled window ratio.
 
 
 Master-Stack Layout
@@ -43,13 +43,23 @@ https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
 
 # Supported layouts
 
-- Tile
-- Scroller
-- Monocle
-- Grid
-- Dwindle
-- Spiral
-- Deck
+## Horizontal Layouts
+- tile
+- scroller
+- monocle
+- grid
+- dwindle
+- spiral
+- deck
+
+## Vertical Layouts
+- vertical_tile
+- vertical_scroller
+- vertical_monocle
+- vertical_grid
+- vertical_dwindle
+- vertical_spiral
+- vertical_deck
 
 # Installation
 
@@ -89,12 +99,12 @@ eselect repository enable guru
 emerge --sync guru
 ```
 
-Then, add `gui-libs/scenefx` and `gui-wm/mango` to the `package.accept_keywords`.
+Then, add `gui-libs/scenefx` and `gui-wm/mangowc` to the `package.accept_keywords`.
 
 Finally, install the package:
 
 ```bash
-emerge --ask --verbose gui-wm/mango
+emerge --ask --verbose gui-wm/mangowc
 ```
 
 Patching wlroots is done by getting the patch with git from [the repository](https://github.com/DreamMaoMao/wlroots.git)
@@ -103,8 +113,7 @@ and then copying it to `/etc/portage/patches/gui-libs/wlroots/`.
 ## Other
 
 ```bash
-# wlroots 0.19.0 release with a fix-patch to avoid crash
-git clone https://github.com/DreamMaoMao/wlroots.git
+git clone -b 0.19.0 https://gitlab.freedesktop.org/wlroots/wlroots.git
 cd wlroots
 meson build -Dprefix=/usr
 sudo ninja -C build install
@@ -122,7 +131,7 @@ sudo ninja -C build install
 
 ## Suggested Tools
 
-- Application launcher (rofi-wayland, bemenu, wmenu, fuzzel)
+- Application launcher (rofi, bemenu, wmenu, fuzzel)
 - Terminal emulator (foot, wezterm, alacritty, kitty, ghostty)
 - Status bar (waybar, eww, quickshell, ags), waybar is preferred
 - Wallpaper setup (swww, swaybg)
@@ -135,6 +144,7 @@ sudo ninja -C build install
 ## Some Common Default Keybindings
 
 - alt+return: open foot terminal
+- alt+space: open rofi launcher
 - alt+q: kill client
 - alt+left/right/up/down: focus direction
 - super+m: quit mango
@@ -144,7 +154,7 @@ sudo ninja -C build install
 - Dependencies
 
 ```bash
-yay -S rofi-wayland foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer lavalauncher-mao-git wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout
+yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
 ```
 
 - use my config
@@ -237,6 +247,7 @@ To package mango for other distributions, you can check the reference setup for:
 
 - [nix](https://github.com/DreamMaoMao/mango/blob/main/nix/default.nix)
 - [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mango-git).
+- [gentoo](https://data.gpo.zugaina.org/guru/gui-wm/mangowc)
 
 Currently building mango requires a patched version of `wlroots-0.19`. If possible, the patch can be extracted from the [latest commit](https://github.com/DreamMaoMao/wlroots.git)
 and applied on `prepare` step. If it is not possible, you will need to create a separate `wlroots` package and make it a build dependency.
