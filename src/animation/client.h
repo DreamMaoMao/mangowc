@@ -772,6 +772,11 @@ void client_set_pending_state(Client *c) {
 		c->animation.duration = 0;
 	}
 
+	if (c->istagswitching) {
+		c->animation.duration = 0;
+		c->istagswitching = 0;
+	}
+
 	// 开始动画
 	client_commit(c);
 	c->dirty = true;

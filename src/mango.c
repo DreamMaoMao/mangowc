@@ -311,6 +311,7 @@ struct Client {
 	int isopensilent;
 	int istagsilent;
 	int iskilling;
+	int istagswitching;
 	int isnamedscratchpad;
 	bool is_pending_open_animation;
 	bool is_restoring_from_ov;
@@ -3407,6 +3408,7 @@ void init_client_properties(Client *c) {
 	c->isfullscreen = 0;
 	c->need_float_size_reduce = 0;
 	c->iskilling = 0;
+	c->istagswitching = 0;
 	c->isglobal = 0;
 	c->isminied = 0;
 	c->isoverlay = 0;
@@ -4905,17 +4907,20 @@ void startdrag(struct wl_listener *listener, void *data) {
 void tag_client(const Arg *arg, Client *target_client) {
 	Client *fc;
 	if (target_client && arg->ui & TAGMASK) {
+
 		target_client->tags = arg->ui & TAGMASK;
+		target_client->istagswitching = 1;
+
 		wl_list_for_each(fc, &clients, link) {
 			if (fc && fc != target_client && target_client->tags & fc->tags &&
 				ISFULLSCREEN(fc) && !target_client->isfloating) {
 				clear_fullscreen_flag(fc);
 			}
 		}
-		view(&(Arg){.ui = arg->ui, .i = arg->i}, false);
+		view(&(Arg){.ui = arg->ui, .i = arg->i}, true);
 
 	} else {
-		view(arg, false);
+		view(arg, true);
 	}
 
 	focusclient(target_client, 1);
