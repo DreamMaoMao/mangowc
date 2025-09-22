@@ -1295,7 +1295,7 @@ arrange(Monitor *m, bool want_animation) {
 
 		if (c->mon == m && (c->isglobal || c->isunglobal)) {
 			c->tags = m->tagset[m->seltags];
-			if (selmon->sel == NULL)
+			if (c->mon->sel == NULL)
 				focusclient(c, 0);
 		}
 
