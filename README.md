@@ -18,7 +18,7 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Excellent input method support (text input v2/v3)
      - Flexible window layouts with easy switching (scroller, master, monocle, spiral, etc.)
      - Rich window states (swallow, minimize, maximize, unglobal, global, fakefullscreen, overlay, etc.)
-     - Simple yet powerful external configuration
+     - Simple yet powerful external configuration(support shortcuts hot-reload)
      - Sway-like scratchpad and named scratchpad
      - Ipc support(get/send message from/to compositor by external program)
      - Hycov-like overview
