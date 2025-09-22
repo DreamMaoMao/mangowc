@@ -903,6 +903,10 @@ void clear_fullscreen_flag(Client *c) {
 }
 
 void minimized(const Arg *arg) {
+
+	if (selmon && selmon->isoverview)
+		return;
+
 	if (selmon->sel && !selmon->sel->isminied) {
 		set_minimized(selmon->sel);
 	}

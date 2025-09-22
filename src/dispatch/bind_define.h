@@ -399,6 +399,10 @@ void resizewin(const Arg *arg) {
 
 void restore_minimized(const Arg *arg) {
 	Client *c;
+
+	if (selmon && selmon->isoverview)
+		return;
+
 	if (selmon && selmon->sel && selmon->sel->is_in_scratchpad &&
 		selmon->sel->is_scratchpad_show) {
 		selmon->sel->isminied = 0;
@@ -1038,6 +1042,10 @@ void toggle_scratchpad(const Arg *arg) {
 	Client *c;
 	bool hit = false;
 	Client *tmp = NULL;
+
+	if (selmon && selmon->isoverview)
+		return;
+
 	wl_list_for_each_safe(c, tmp, &clients, link) {
 		if (c->mon != selmon) {
 			continue;
@@ -1065,6 +1073,9 @@ void togglefakefullscreen(const Arg *arg) {
 }
 void togglefloating(const Arg *arg) {
 	Client *sel = focustop(selmon);
+
+	if (selmon && selmon->isoverview)
+		return;
 
 	if (!sel)
 		return;
