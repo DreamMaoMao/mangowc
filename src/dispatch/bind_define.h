@@ -131,7 +131,7 @@ void toggle_trackpad_enable(const Arg *arg) {
 }
 
 void focusmon(const Arg *arg) {
-	Client *c;
+	Client *c, *old_selmon_sel;
 	Monitor *m = NULL;
 
 	if (arg->i != UNDIR) {
@@ -152,6 +152,7 @@ void focusmon(const Arg *arg) {
 	if (!m || !m->wlr_output->enabled)
 		return;
 
+	old_selmon_sel = selmon->sel;
 	selmon = m;
 	warp_cursor_to_selmon(selmon);
 	c = focustop(selmon);
@@ -161,6 +162,10 @@ void focusmon(const Arg *arg) {
 		wlr_seat_keyboard_notify_clear_focus(seat);
 	} else
 		focusclient(c, 1);
+
+	if (old_selmon_sel) {
+		setborder_color(old_selmon_sel);
+	}
 }
 
 void // 17
