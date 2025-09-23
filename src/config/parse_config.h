@@ -2573,7 +2573,7 @@ void set_value_default() {
 	config.unfocused_opacity = unfocused_opacity;
 
 	/* Tablet */
-	config.tablet_output_name = strdup("");
+	config.tablet_output_name = NULL;
 
 	memcpy(config.shadowscolor, shadowscolor, sizeof(shadowscolor));
 

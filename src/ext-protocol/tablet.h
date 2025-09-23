@@ -50,7 +50,7 @@ void createtablet(struct wlr_input_device *device) {
 														send_events_mode);
 			wlr_cursor_attach_input_device(cursor, device);
 			// Map tablet to specific monitor if configured
-			if (config.tablet_output_name[0] != '\0') {
+			if (config.tablet_output_name) {
 				Monitor *target_monitor = find_monitor_by_name(config.tablet_output_name);
 				if (target_monitor) {
 					wlr_log(WLR_INFO, "Mapping input to output for device: %s", config.tablet_output_name);
