@@ -2572,9 +2572,9 @@ void set_value_default() {
 	config.focused_opacity = focused_opacity;
 	config.unfocused_opacity = unfocused_opacity;
 
-	/* tablet */
+	/* Tablet */
 	config.tablet_output_name = strdup("");
-	//
+
 	memcpy(config.shadowscolor, shadowscolor, sizeof(shadowscolor));
 
 	memcpy(config.animation_curve_move, animation_curve_move,
