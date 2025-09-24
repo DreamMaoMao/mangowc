@@ -3420,8 +3420,8 @@ static void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
 
 	struct wlr_surface *surface = scene_surface->surface;
 	/* we dont blur subsurfaces */
-	if (wlr_subsurface_try_from_wlr_surface(surface) != NULL)
-		return;
+	// if (wlr_subsurface_try_from_wlr_surface(surface) != NULL)
+	// 	return;
 
 	if (blur && c && !c->noblur) {
 		wlr_scene_buffer_set_backdrop_blur(buffer, true);
