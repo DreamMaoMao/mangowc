@@ -421,6 +421,8 @@ void restore_minimized(const Arg *arg) {
 			c->isnamedscratchpad = 0;
 			setborder_color(c);
 			arrange(c->mon, false);
+			focusclient(c, 0);
+			warp_cursor(c);
 			return;
 		}
 	}
@@ -1047,7 +1049,7 @@ void toggle_scratchpad(const Arg *arg) {
 		return;
 
 	wl_list_for_each_safe(c, tmp, &clients, link) {
-		if (c->mon != selmon) {
+		if (!scratchpad_cross_monitor && c->mon != selmon) {
 			continue;
 		}
 

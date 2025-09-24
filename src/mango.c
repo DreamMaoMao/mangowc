@@ -936,7 +936,7 @@ void show_scratchpad(Client *c) {
 		resize(c, c->geom, 0);
 	}
 
-	c->oldtags = selmon->tagset[selmon->seltags];
+	c->oldtags = c->mon->tagset[c->mon->seltags];
 	wl_list_remove(&c->link);					  // 从原来位置移除
 	wl_list_insert(clients.prev->next, &c->link); // 插入开头
 	show_hide_client(c);
@@ -985,6 +985,36 @@ void swallow(Client *c, Client *w) {
 }
 
 bool switch_scratchpad_client_state(Client *c) {
+
+	if (scratchpad_cross_monitor && selmon && c->mon != selmon &&
+		c->is_in_scratchpad) {
+		// 保存原始monitor用于尺寸计算
+		Monitor *oldmon = c->mon;
+
+		c->mon = selmon;
+		reset_foreign_tolevel(c);
+		client_update_oldmonname_record(c, selmon);
+
+		// 根据新monitor调整窗口尺寸
+		c->float_geom.width =
+			(int)(c->float_geom.width * c->mon->w.width / oldmon->w.width);
+		c->float_geom.height =
+			(int)(c->float_geom.height * c->mon->w.height / oldmon->w.height);
+
+		c->float_geom = setclient_coordinate_center(c, c->float_geom, 0, 0);
+
+		// 只有显示状态的scratchpad才需要聚焦和返回true
+		if (c->is_scratchpad_show) {
+			c->tags = get_tags_first_tag(selmon->tagset[selmon->seltags]);
+			resize(c, c->float_geom, 0);
+			arrange(selmon, false);
+			focusclient(c, true);
+			return true;
+		} else {
+			resize(c, c->float_geom, 0);
+		}
+	}
+
 	if (c->is_in_scratchpad && c->is_scratchpad_show &&
 		(selmon->tagset[selmon->seltags] & c->tags) == 0) {
 		unsigned int target =
@@ -1006,9 +1036,11 @@ bool switch_scratchpad_client_state(Client *c) {
 void apply_named_scratchpad(Client *target_client) {
 	Client *c = NULL;
 	wl_list_for_each(c, &clients, link) {
-		if (c->mon != selmon) {
+
+		if (!scratchpad_cross_monitor && c->mon != selmon) {
 			continue;
 		}
+
 		if (single_scratchpad && c->is_in_scratchpad && c->is_scratchpad_show &&
 			c != target_client) {
 			set_minimized(c);
@@ -3443,10 +3475,14 @@ mapnotify(struct wl_listener *listener, void *data) {
 			at_client = center_tiled_select(selmon);
 		}
 
-		at_client->link.next->prev = &c->link;
-		c->link.prev = &at_client->link;
-		c->link.next = at_client->link.next;
-		at_client->link.next = &c->link;
+		if (at_client) {
+			at_client->link.next->prev = &c->link;
+			c->link.prev = &at_client->link;
+			c->link.next = at_client->link.next;
+			at_client->link.next = &c->link;
+		} else {
+			wl_list_insert(clients.prev, &c->link); // 尾部入栈
+		}
 	} else
 		wl_list_insert(clients.prev, &c->link); // 尾部入栈
 	wl_list_insert(&fstack, &c->flink);
@@ -4494,6 +4530,7 @@ void setsel(struct wl_listener *listener, void *data) {
 }
 
 void show_hide_client(Client *c) {
+
 	unsigned int target = get_tags_first_tag(c->oldtags);
 	tag_client(&(Arg){.ui = target}, c);
 	// c->tags = c->oldtags;

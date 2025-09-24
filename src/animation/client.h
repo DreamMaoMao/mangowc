@@ -891,6 +891,10 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 		c->animainit_geom = c->geom;
 	}
 
+	if (c->isminied) {
+		c->animainit_geom = c->geom;
+	}
+
 	// 开始应用动画设置
 	client_set_pending_state(c);
 
