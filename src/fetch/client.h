@@ -37,7 +37,7 @@ Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title) {
 	const char *appid, *title;
 	Client *c = NULL;
 	wl_list_for_each(c, &clients, link) {
-		if (c->mon != selmon) {
+		if (!scratchpad_cross_monitor && c->mon != selmon) {
 			continue;
 		}
 

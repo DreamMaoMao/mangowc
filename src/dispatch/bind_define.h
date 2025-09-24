@@ -1045,7 +1045,7 @@ void toggle_scratchpad(const Arg *arg) {
 		return;
 
 	wl_list_for_each_safe(c, tmp, &clients, link) {
-		if (c->mon != selmon) {
+		if (!scratchpad_cross_monitor && c->mon != selmon) {
 			continue;
 		}
 
