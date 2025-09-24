@@ -323,6 +323,7 @@ struct Client {
 	Client *swallowing, *swallowedby;
 	bool is_clip_to_hide;
 	bool drag_to_tile;
+	bool scratchpad_switching_mon;
 	bool fake_no_border;
 	int nofadein;
 	int nofadeout;
@@ -990,7 +991,7 @@ bool switch_scratchpad_client_state(Client *c) {
 		c->is_in_scratchpad) {
 		// 保存原始monitor用于尺寸计算
 		Monitor *oldmon = c->mon;
-
+		c->scratchpad_switching_mon = true;
 		c->mon = selmon;
 		reset_foreign_tolevel(c);
 		client_update_oldmonname_record(c, selmon);
@@ -1009,9 +1010,11 @@ bool switch_scratchpad_client_state(Client *c) {
 			resize(c, c->float_geom, 0);
 			arrange(selmon, false);
 			focusclient(c, true);
+			c->scratchpad_switching_mon = false;
 			return true;
 		} else {
 			resize(c, c->float_geom, 0);
+			c->scratchpad_switching_mon = false;
 		}
 	}
 
@@ -3375,6 +3378,7 @@ void init_client_properties(Client *c) {
 	c->scroller_proportion = scroller_default_proportion;
 	c->is_pending_open_animation = true;
 	c->drag_to_tile = false;
+	c->scratchpad_switching_mon = false;
 	c->fake_no_border = false;
 	c->focused_opacity = focused_opacity;
 	c->unfocused_opacity = unfocused_opacity;
