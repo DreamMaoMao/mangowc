@@ -102,7 +102,9 @@ void dwl_ext_workspace_printstatus(Monitor *m) {
 				wlr_ext_workspace_handle_v1_set_hidden(w->ext_workspace, false);
 			} else {
 				wlr_ext_workspace_handle_v1_set_urgent(w->ext_workspace, false);
-				wlr_ext_workspace_handle_v1_set_hidden(w->ext_workspace, true);
+				if (!w->m->pertag->no_hide[w->tag])
+					wlr_ext_workspace_handle_v1_set_hidden(w->ext_workspace,
+														   true);
 			}
 
 			if ((m->tagset[m->seltags] & (1 << (w->tag - 1)) & TAGMASK) ||

@@ -811,6 +811,7 @@ struct Pertag {
 	int nmasters[LENGTH(tags) + 1];	 /* number of windows in master area */
 	float mfacts[LENGTH(tags) + 1];	 /* mfacts per tag */
 	float smfacts[LENGTH(tags) + 1]; /* smfacts per tag */
+	bool no_hide[LENGTH(tags) + 1];	 /* no_hide per tag */
 	const Layout
 		*ltidxs[LENGTH(tags) + 1]; /* matrix of tags and layouts indexes  */
 };
@@ -2574,6 +2575,8 @@ void createmon(struct wl_listener *listener, void *data) {
 				strcmp(layouts[jk].name, config.tag_rules[i - 1].layout_name) ==
 					0) {
 				m->pertag->ltidxs[config.tag_rules[i - 1].id] = &layouts[jk];
+				m->pertag->no_hide[config.tag_rules[i - 1].id] =
+					config.tag_rules[i - 1].no_hide;
 			}
 		}
 	}
