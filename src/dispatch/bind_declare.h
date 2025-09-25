@@ -44,6 +44,7 @@ void bind_to_view(const Arg *arg);
 void toggletag(const Arg *arg);
 void toggleview(const Arg *arg);
 void tag(const Arg *arg);
+void comboview(const Arg *arg);
 void incgaps(const Arg *arg);
 void incigaps(const Arg *arg);
 void incihgaps(const Arg *arg);
