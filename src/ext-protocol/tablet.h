@@ -56,6 +56,8 @@ void createtablet(struct wlr_input_device *device) {
 					wlr_log(WLR_INFO, "Mapping input to output for device: %s", config.tablet_output_name);
 					wlr_cursor_map_input_to_output(cursor, device, 
 																				 target_monitor->wlr_output);
+				} else {
+					wlr_log(WLR_WARN, "No monitor found with name: %s", config.tablet_output_name);
 				}
 			}
 		}

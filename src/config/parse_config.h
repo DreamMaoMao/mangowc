@@ -1985,7 +1985,7 @@ void parse_config_line(Config *config, const char *line) {
 
 	} else if (strncmp(key, "source", 6) == 0) {
 		parse_config_file(config, value);
-	} else if (strcmp(key, "tablet_output") == 0) {
+	} else if (strcmp(key, "tablet_output_name") == 0) {
 		if (config->tablet_output_name) {
 			free(config->tablet_output_name);
 		}
