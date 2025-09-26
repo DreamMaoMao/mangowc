@@ -475,15 +475,3 @@ void vertical_tile(Monitor *m) {
 		i++;
 	}
 }
-
-void vertical_monocle(Monitor *m) {
-	Client *c;
-
-	wl_list_for_each(c, &clients, link) {
-		if (!VISIBLEON(c, m) || !ISTILED(c))
-			continue;
-		resize(c, m->w, 0);
-	}
-	if ((c = focustop(m)))
-		wlr_scene_node_raise_to_top(&c->scene->node);
-}

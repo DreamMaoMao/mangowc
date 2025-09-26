@@ -432,6 +432,123 @@ void scroller(Monitor *m) {
 	free(tempClients); // 最后释放内存
 }
 
+void center_tile(Monitor *m) {
+	unsigned int i, n = 0, h, mw, mx, my, oty, ety, tw;
+	Client *c;
+
+	n = m->visible_tiling_clients;
+	if (n == 0)
+		return;
+
+	// 间隙参数处理
+	unsigned int gappiv = enablegaps ? m->gappiv : 0; // 内部垂直间隙
+	unsigned int gappih = enablegaps ? m->gappih : 0; // 内部水平间隙
+	unsigned int gappov = enablegaps ? m->gappov : 0; // 外部垂直间隙
+	unsigned int gappoh = enablegaps ? m->gappoh : 0; // 外部水平间隙
+
+	// 智能间隙处理
+	if (smartgaps && n == 1) {
+		gappiv = gappih = gappov = gappoh = 0;
+	}
+
+	unsigned int nmasters = m->pertag->nmasters[m->pertag->curtag];
+	float mfact = m->pertag->mfacts[m->pertag->curtag];
+
+	// 初始化区域
+	mw = m->w.width;
+	mx = gappoh;
+	my = gappov;
+	tw = mw;
+
+	if (n > nmasters) {
+		// 计算主区域宽度
+		mw = nmasters ? (m->w.width - 2 * gappoh - gappih) * mfact : 0;
+
+		if (n - nmasters > 1) {
+			// 多个堆叠窗口：主区域居中，左右两侧各有一个堆叠区域
+			tw = (m->w.width - mw - 2 * gappoh - gappih) / 2;
+			mx = gappoh + tw + gappih;
+		} else {
+			// 单个堆叠窗口：主区域居中，堆叠窗口在左，右边空着
+			tw = (m->w.width - mw - 2 * gappoh - gappih) / 2;
+			mx = gappoh + tw + gappih;
+		}
+	} else {
+		// 所有窗口都在主区域
+		mw = m->w.width - 2 * gappoh;
+		mx = gappoh;
+	}
+
+	oty = gappov;
+	ety = gappov;
+
+	i = 0;
+	wl_list_for_each(c, &clients, link) {
+		if (!VISIBLEON(c, m) || !ISTILED(c))
+			continue;
+
+		if (i < nmasters) {
+			// 主区域窗口
+			unsigned int r = MIN(n, nmasters) - i;
+			h = (m->w.height - my - gappov - gappiv * (r - 1)) / r;
+
+			resize(c,
+				   (struct wlr_box){.x = m->w.x + mx,
+									.y = m->w.y + my,
+									.width = mw,
+									.height = h},
+				   0);
+			my += c->geom.height + gappiv;
+		} else {
+			// 堆叠区域窗口
+			unsigned int stack_index = i - nmasters;
+
+			if (n - nmasters == 1) {
+				// 单个堆叠窗口：放在左侧
+				unsigned int r = n - i;
+				h = (m->w.height - ety - gappov - gappiv * (r - 1)) / r;
+
+				int stack_x = m->w.x + gappoh; // 左侧位置
+				resize(c,
+					   (struct wlr_box){.x = stack_x,
+										.y = m->w.y + ety,
+										.width = tw,
+										.height = h},
+					   0);
+				ety += c->geom.height + gappiv;
+			} else {
+				// 多个堆叠窗口：交替放在左右两侧
+				unsigned int r = (n - i + 1) / 2;
+
+				if (stack_index % 2) {
+					// 右侧堆叠窗口
+					h = (m->w.height - ety - gappov - gappiv * (r - 1)) / r;
+					int stack_x = m->w.x + mx + mw + gappih;
+					resize(c,
+						   (struct wlr_box){.x = stack_x,
+											.y = m->w.y + ety,
+											.width = tw,
+											.height = h},
+						   0);
+					ety += c->geom.height + gappiv;
+				} else {
+					// 左侧堆叠窗口
+					h = (m->w.height - oty - gappov - gappiv * (r - 1)) / r;
+					int stack_x = m->w.x + gappoh;
+					resize(c,
+						   (struct wlr_box){.x = stack_x,
+											.y = m->w.y + oty,
+											.width = tw,
+											.height = h},
+						   0);
+					oty += c->geom.height + gappiv;
+				}
+			}
+		}
+		i++;
+	}
+}
+
 void tile(Monitor *m) {
 	unsigned int i, n = 0, h, r, ie = enablegaps, mw, my, ty;
 	Client *c;
