@@ -237,8 +237,8 @@ Here's an example of using the modules in a flake:
 
 To package mango for other distributions, you can check the reference setup for:
 
-- [nix](https://github.com/DreamMaoMao/mango/blob/main/nix/default.nix)
-- [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mango-git).
+- [nix](https://github.com/DreamMaoMao/mangowc/blob/main/nix/default.nix)
+- [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mangowc-git).
 - [gentoo](https://data.gpo.zugaina.org/guru/gui-wm/mangowc)
 
 You might need to package `scenefx` for your distribution, check availability [here](https://github.com/wlrfx/scenefx.git).
