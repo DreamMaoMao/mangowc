@@ -1284,19 +1284,19 @@ void viewtoright_have_client(const Arg *arg) {
 
 void comboview(const Arg *arg) {
 	unsigned int newtags = arg->ui & TAGMASK;
-	unsigned int target_tag = selmon->tagset[selmon->seltags];
 
 	if (!newtags || !selmon)
 		return;
 
-	if (tag_combo)
-		target_tag |= newtags;
-	else {
+	if (tag_combo) {
+		selmon->tagset[selmon->seltags] |= newtags;
+		focusclient(focustop(selmon), 1);
+		arrange(selmon, false);
+	} else {
 		tag_combo = true;
-		target_tag = newtags;
+		view(&(Arg){.ui = newtags}, false);
 	}
 
-	view(&(Arg){.ui = target_tag}, false);
 	printstatus();
 }
 
