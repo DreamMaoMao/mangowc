@@ -102,13 +102,10 @@ Finally, install the package:
 emerge --ask --verbose gui-wm/mangowc
 ```
 
-Patching wlroots is done by getting the patch with git from [the repository](https://github.com/DreamMaoMao/wlroots.git)
-and then copying it to `/etc/portage/patches/gui-libs/wlroots/`.
-
 ## Other
 
 ```bash
-git clone -b 0.19.0 https://gitlab.freedesktop.org/wlroots/wlroots.git
+git clone -b 0.19.1 https://gitlab.freedesktop.org/wlroots/wlroots.git
 cd wlroots
 meson build -Dprefix=/usr
 sudo ninja -C build install
@@ -244,9 +241,7 @@ To package mango for other distributions, you can check the reference setup for:
 - [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mango-git).
 - [gentoo](https://data.gpo.zugaina.org/guru/gui-wm/mangowc)
 
-Currently building mango requires a patched version of `wlroots-0.19`. If possible, the patch can be extracted from the [latest commit](https://github.com/DreamMaoMao/wlroots.git)
-and applied on `prepare` step. If it is not possible, you will need to create a separate `wlroots` package and make it a build dependency.
-You might also need to package `scenefx` for your distribution, check availability [here](https://github.com/wlrfx/scenefx.git).
+You might need to package `scenefx` for your distribution, check availability [here](https://github.com/wlrfx/scenefx.git).
 
 If you encounter build errors when packaging `mango`, feel free to create an issue and ask a question, but
 Read The Friendly Manual on packaging software in your distribution first.
