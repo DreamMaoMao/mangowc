@@ -528,7 +528,8 @@ void center_tile(Monitor *m) {
 				// 多个堆叠窗口：交替放在左右两侧
 				unsigned int r = (n - i + 1) / 2;
 
-				if (stack_index % 2) {
+				// 当n为奇数时翻转判断逻辑
+				if ((stack_index % 2) ^ (n % 2 != 0)) {
 					// 右侧堆叠窗口
 					h = (m->w.height - ety - gappov - gappiv * (r - 1)) / r;
 					int stack_x = m->w.x + mx + mw + gappih;
