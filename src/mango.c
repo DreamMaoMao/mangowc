@@ -1022,13 +1022,13 @@ bool switch_scratchpad_client_state(Client *c) {
 	}
 
 	if (c->is_in_scratchpad && c->is_scratchpad_show &&
-		(selmon->tagset[selmon->seltags] & c->tags) == 0) {
-		unsigned int target =
-			get_tags_first_tag(selmon->tagset[selmon->seltags]);
-		tag_client(&(Arg){.ui = target}, c);
+		(c->mon->tagset[c->mon->seltags] & c->tags) == 0) {
+		c->tags = c->mon->tagset[c->mon->seltags];
+		arrange(c->mon, false);
+		focusclient(c, true);
 		return true;
 	} else if (c->is_in_scratchpad && c->is_scratchpad_show &&
-			   (selmon->tagset[selmon->seltags] & c->tags) != 0) {
+			   (c->mon->tagset[c->mon->seltags] & c->tags) != 0) {
 		set_minimized(c);
 		return true;
 	} else if (c && c->is_in_scratchpad && !c->is_scratchpad_show) {
