@@ -4543,8 +4543,12 @@ void setsel(struct wl_listener *listener, void *data) {
 void show_hide_client(Client *c) {
 
 	unsigned int target = get_tags_first_tag(c->oldtags);
-	tag_client(&(Arg){.ui = target}, c);
-	// c->tags = c->oldtags;
+	if (!c->is_in_scratchpad) {
+		tag_client(&(Arg){.ui = target}, c);
+	} else {
+		c->tags = c->oldtags;
+		arrange(c->mon, false);
+	}
 	c->isminied = 0;
 	wlr_foreign_toplevel_handle_v1_set_minimized(c->foreign_toplevel, false);
 	focusclient(c, 1);

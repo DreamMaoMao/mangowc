@@ -415,10 +415,10 @@ void restore_minimized(const Arg *arg) {
 
 	wl_list_for_each(c, &clients, link) {
 		if (c->isminied) {
-			show_hide_client(c);
 			c->is_scratchpad_show = 0;
 			c->is_in_scratchpad = 0;
 			c->isnamedscratchpad = 0;
+			show_hide_client(c);
 			setborder_color(c);
 			arrange(c->mon, false);
 			focusclient(c, 0);
