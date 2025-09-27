@@ -474,11 +474,11 @@ void center_tile(Monitor *m) {
 		} else if (n - nmasters == 1) {
 			// 单个堆叠窗口的处理
 			if (center_when_single_slave) {
-				// 启用选项：主区域居中，堆叠窗口在左，右边空着
+				// 修改：slave在右边，master居中，左边空着
 				tw = (m->w.width - mw - 2 * gappoh - gappih) / 2;
-				mx = gappoh + tw + gappih;
+				mx = gappoh + tw + gappih; // master居中
 			} else {
-				// 修改：slave在右边，master在左边
+				// slave在右边，master在左边
 				tw = m->w.width - mw - 2 * gappoh - gappih;
 				mx = gappoh; // master在左边
 			}
@@ -525,10 +525,10 @@ void center_tile(Monitor *m) {
 
 				int stack_x;
 				if (center_when_single_slave) {
-					// 启用选项：放在左侧
-					stack_x = m->w.x + gappoh;
+					// 修改：放在右侧（master居中时，slave在右边）
+					stack_x = m->w.x + mx + mw + gappih;
 				} else {
-					// 修改：放在右侧
+					// 放在右侧（master在左边时，slave在右边）
 					stack_x = m->w.x + mx + mw + gappih;
 				}
 
