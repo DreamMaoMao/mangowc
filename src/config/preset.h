@@ -37,6 +37,7 @@ unsigned int new_is_master = 1;				// 新窗口是否插在头部
 double default_mfact = 0.55f;				// master 窗口比例
 double default_smfact = 0.5f;				// 第一个stack窗口比例
 unsigned int default_nmaster = 1;			// 默认master数量
+int center_master_overspread = 1;			// 中心master时是否铺满
 /* logging */
 int log_level = WLR_ERROR;
 unsigned int numlockon = 1; // 是否打开右边小键盘

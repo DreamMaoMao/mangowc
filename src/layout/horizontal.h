@@ -460,23 +460,31 @@ void center_tile(Monitor *m) {
 	my = gappov;
 	tw = mw;
 
-	if (n > nmasters) {
-		// 计算主区域宽度
+	// 判断是否需要主区域铺满
+	int should_overspread = center_master_overspread && (n <= nmasters);
+
+	if (n > nmasters || !should_overspread) {
+		// 计算主区域宽度（居中模式）
 		mw = nmasters ? (m->w.width - 2 * gappoh - gappih) * mfact : 0;
 
 		if (n - nmasters > 1) {
 			// 多个堆叠窗口：主区域居中，左右两侧各有一个堆叠区域
 			tw = (m->w.width - mw - 2 * gappoh - gappih) / 2;
 			mx = gappoh + tw + gappih;
-		} else {
+		} else if (n - nmasters == 1) {
 			// 单个堆叠窗口：主区域居中，堆叠窗口在左，右边空着
+			tw = (m->w.width - mw - 2 * gappoh - gappih) / 2;
+			mx = gappoh + tw + gappih;
+		} else {
+			// 只有主区域窗口：居中显示
 			tw = (m->w.width - mw - 2 * gappoh - gappih) / 2;
 			mx = gappoh + tw + gappih;
 		}
 	} else {
-		// 所有窗口都在主区域
+		// 主区域铺满模式（只有主区域窗口时）
 		mw = m->w.width - 2 * gappoh;
 		mx = gappoh;
+		tw = 0; // 堆叠区域宽度为0
 	}
 
 	oty = gappov;
