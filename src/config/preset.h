@@ -38,6 +38,7 @@ double default_mfact = 0.55f;				// master 窗口比例
 double default_smfact = 0.5f;				// 第一个stack窗口比例
 unsigned int default_nmaster = 1;			// 默认master数量
 int center_master_overspread = 0;			// 中心master时是否铺满
+int center_when_single_slave = 1;			// 单个slave时是否居中
 /* logging */
 int log_level = WLR_ERROR;
 unsigned int numlockon = 1; // 是否打开右边小键盘

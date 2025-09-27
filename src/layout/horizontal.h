@@ -472,9 +472,16 @@ void center_tile(Monitor *m) {
 			tw = (m->w.width - mw - 2 * gappoh - gappih) / 2;
 			mx = gappoh + tw + gappih;
 		} else if (n - nmasters == 1) {
-			// 单个堆叠窗口：主区域居中，堆叠窗口在左，右边空着
-			tw = (m->w.width - mw - 2 * gappoh - gappih) / 2;
-			mx = gappoh + tw + gappih;
+			// 单个堆叠窗口的处理
+			if (center_when_single_slave) {
+				// 启用选项：主区域居中，堆叠窗口在左，右边空着
+				tw = (m->w.width - mw - 2 * gappoh - gappih) / 2;
+				mx = gappoh + tw + gappih;
+			} else {
+				// 修改：slave在右边，master在左边
+				tw = m->w.width - mw - 2 * gappoh - gappih;
+				mx = gappoh; // master在左边
+			}
 		} else {
 			// 只有主区域窗口：居中显示
 			tw = (m->w.width - mw - 2 * gappoh - gappih) / 2;
@@ -512,11 +519,19 @@ void center_tile(Monitor *m) {
 			unsigned int stack_index = i - nmasters;
 
 			if (n - nmasters == 1) {
-				// 单个堆叠窗口：放在左侧
+				// 单个堆叠窗口
 				unsigned int r = n - i;
 				h = (m->w.height - ety - gappov - gappiv * (r - 1)) / r;
 
-				int stack_x = m->w.x + gappoh; // 左侧位置
+				int stack_x;
+				if (center_when_single_slave) {
+					// 启用选项：放在左侧
+					stack_x = m->w.x + gappoh;
+				} else {
+					// 修改：放在右侧
+					stack_x = m->w.x + mx + mw + gappih;
+				}
+
 				resize(c,
 					   (struct wlr_box){.x = stack_x,
 										.y = m->w.y + ety,
@@ -528,8 +543,8 @@ void center_tile(Monitor *m) {
 				// 多个堆叠窗口：交替放在左右两侧
 				unsigned int r = (n - i + 1) / 2;
 
-				// 当n为奇数时翻转判断逻辑
-				if ((stack_index % 2) ^ (n % 2 != 0)) {
+				// 当n为偶数时翻转判断逻辑
+				if ((stack_index % 2) ^ (n % 2 == 0)) {
 					// 右侧堆叠窗口
 					h = (m->w.height - ety - gappov - gappiv * (r - 1)) / r;
 					int stack_x = m->w.x + mx + mw + gappih;
