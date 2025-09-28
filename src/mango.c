@@ -160,6 +160,11 @@ enum {
 enum { UP, DOWN, LEFT, RIGHT, UNDIR }; /* smartmovewin */
 enum { NONE, OPEN, MOVE, CLOSE, TAG };
 enum { UNFOLD, FOLD, INVALIDFOLD };
+
+typedef struct Pertag Pertag;
+typedef struct Monitor Monitor;
+typedef struct Client Client;
+
 struct dvec2 {
 	double x, y;
 };
@@ -225,10 +230,6 @@ struct dwl_animation {
 	int action;
 };
 
-typedef struct Pertag Pertag;
-typedef struct Monitor Monitor;
-struct wlr_foreign_toplevel_handle_v1;
-
 typedef struct {
 	float width_scale;
 	float height_scale;
@@ -239,7 +240,6 @@ typedef struct {
 	bool should_scale;
 } BufferData;
 
-typedef struct Client Client;
 struct Client {
 	/* Must keep these three elements in this order */
 	unsigned int type; /* XDGShell or X11* */
