@@ -78,7 +78,7 @@ void exchange_stack_client(const Arg *arg) {
 	Client *tc;
 	if (!c || c->isfloating || c->isfullscreen || c->ismaxmizescreen)
 		return;
-	if (arg->i > 0) {
+	if (arg->i == NEXT) {
 		tc = get_next_stack_client(c, false);
 	} else {
 		tc = get_next_stack_client(c, true);
@@ -194,7 +194,7 @@ focusstack(const Arg *arg) {
 
 	if (!sel || sel->isfullscreen)
 		return;
-	if (arg->i > 0) {
+	if (arg->i == NEXT) {
 		tc = get_next_stack_client(sel, false);
 	} else {
 		tc = get_next_stack_client(sel, true);

@@ -374,9 +374,9 @@ int parse_circle_direction(const char *str) {
 
 	// 根据转换后的小写字符串返回对应的枚举值
 	if (strcmp(lowerStr, "next") == 0) {
-		return 1;
+		return NEXT;
 	} else {
-		return -1;
+		return PREV;
 	}
 }
 

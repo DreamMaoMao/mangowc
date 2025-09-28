@@ -160,6 +160,7 @@ enum {
 enum { UP, DOWN, LEFT, RIGHT, UNDIR }; /* smartmovewin */
 enum { NONE, OPEN, MOVE, CLOSE, TAG };
 enum { UNFOLD, FOLD, INVALIDFOLD };
+enum { PREV, NEXT };
 
 typedef struct Pertag Pertag;
 typedef struct Monitor Monitor;
