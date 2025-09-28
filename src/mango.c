@@ -705,6 +705,7 @@ static bool switch_scratchpad_client_state(Client *c);
 static bool check_trackpad_disabled(struct wlr_pointer *pointer);
 static unsigned int get_tag_status(unsigned int tag, Monitor *m);
 static void enable_adaptive_sync(Monitor *m, struct wlr_output_state *state);
+static Client *get_next_stack_client(Client *c, bool reverse);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"

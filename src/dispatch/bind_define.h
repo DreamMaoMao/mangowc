@@ -175,29 +175,15 @@ void focusmon(const Arg *arg) {
 void // 17
 focusstack(const Arg *arg) {
 	/* Focus the next or previous client (in tiling order) on selmon */
-	Client *c, *sel = focustop(selmon);
+	Client *sel = focustop(selmon);
 	Client *tc = NULL;
 
 	if (!sel || sel->isfullscreen)
 		return;
 	if (arg->i > 0) {
-		wl_list_for_each(c, &sel->link, link) {
-			if (&c->link == &clients || c->isunglobal)
-				continue; /* wrap past the sentinel node */
-			if (VISIBLEON(c, selmon)) {
-				tc = c;
-				break; /* found it */
-			}
-		}
+		tc = get_next_stack_client(sel, false);
 	} else {
-		wl_list_for_each_reverse(c, &sel->link, link) {
-			if (&c->link == &clients)
-				continue; /* wrap past the sentinel node */
-			if (VISIBLEON(c, selmon) || c->isunglobal) {
-				tc = c;
-				break; /* found it */
-			}
-		}
+		tc = get_next_stack_client(sel, true);
 	}
 	/* If only one client is visible on selmon, then c == sel */
 
