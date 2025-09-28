@@ -73,6 +73,20 @@ void exchange_client(const Arg *arg) {
 	exchange_two_client(c, direction_select(arg));
 }
 
+void exchange_stack_client(const Arg *arg) {
+	Client *c = selmon->sel;
+	Client *tc;
+	if (!c || c->isfloating || c->isfullscreen || c->ismaxmizescreen)
+		return;
+	if (arg->i > 0) {
+		tc = get_next_stack_client(c, false);
+	} else {
+		tc = get_next_stack_client(c, true);
+	}
+	if (tc)
+		exchange_two_client(c, tc);
+}
+
 void focusdir(const Arg *arg) {
 	Client *c;
 	c = direction_select(arg);

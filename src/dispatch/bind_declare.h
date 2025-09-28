@@ -30,6 +30,7 @@ void setsmfact(const Arg *arg);
 void quit(const Arg *arg);
 void moveresize(const Arg *arg);
 void exchange_client(const Arg *arg);
+void exchange_stack_client(const Arg *arg);
 void killclient(const Arg *arg);
 void toggleglobal(const Arg *arg);
 void incnmaster(const Arg *arg);
