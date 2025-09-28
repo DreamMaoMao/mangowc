@@ -94,6 +94,7 @@ void focusdir(const Arg *arg) {
 void focuslast(const Arg *arg) {
 
 	Client *c = NULL;
+	Client *tc = NULL;
 	bool begin = false;
 	unsigned int target = 0;
 
@@ -104,6 +105,7 @@ void focuslast(const Arg *arg) {
 			continue;
 
 		if (selmon && !selmon->sel) {
+			tc = c;
 			break;
 		}
 
@@ -112,16 +114,18 @@ void focuslast(const Arg *arg) {
 			continue;
 		}
 
-		if (begin)
+		if (begin) {
+			tc = c;
 			break;
+		}
 	}
 
-	if (!c || !client_surface(c)->mapped)
+	if (!tc || !client_surface(tc)->mapped)
 		return;
 
-	if ((int)c->tags > 0) {
-		focusclient(c, 1);
-		target = get_tags_first_tag(c->tags);
+	if ((int)tc->tags > 0) {
+		focusclient(tc, 1);
+		target = get_tags_first_tag(tc->tags);
 		view(&(Arg){.ui = target}, true);
 	}
 }
