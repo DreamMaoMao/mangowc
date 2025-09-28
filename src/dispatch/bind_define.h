@@ -176,27 +176,37 @@ void // 17
 focusstack(const Arg *arg) {
 	/* Focus the next or previous client (in tiling order) on selmon */
 	Client *c, *sel = focustop(selmon);
+	Client *tc = NULL;
+
 	if (!sel || sel->isfullscreen)
 		return;
 	if (arg->i > 0) {
 		wl_list_for_each(c, &sel->link, link) {
 			if (&c->link == &clients || c->isunglobal)
 				continue; /* wrap past the sentinel node */
-			if (VISIBLEON(c, selmon))
+			if (VISIBLEON(c, selmon)) {
+				tc = c;
 				break; /* found it */
+			}
 		}
 	} else {
 		wl_list_for_each_reverse(c, &sel->link, link) {
 			if (&c->link == &clients)
 				continue; /* wrap past the sentinel node */
-			if (VISIBLEON(c, selmon) || c->isunglobal)
+			if (VISIBLEON(c, selmon) || c->isunglobal) {
+				tc = c;
 				break; /* found it */
+			}
 		}
 	}
 	/* If only one client is visible on selmon, then c == sel */
-	focusclient(c, 1);
+
+	if (!tc)
+		return;
+
+	focusclient(tc, 1);
 	if (warpcursor)
-		warp_cursor(c);
+		warp_cursor(tc);
 }
 
 void incnmaster(const Arg *arg) {
