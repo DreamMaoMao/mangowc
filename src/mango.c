@@ -4586,9 +4586,6 @@ void setup(void) {
 	setenv("XCURSOR_SIZE", "24", 1);
 	setenv("XDG_CURRENT_DESKTOP", "mango", 1);
 
-	parse_config();
-	init_baked_points();
-
 	int drm_fd, i, sig[] = {SIGCHLD, SIGINT, SIGTERM, SIGPIPE};
 	struct sigaction sa = {.sa_flags = SA_RESTART, .sa_handler = handlesig};
 	sigemptyset(&sa.sa_mask);
@@ -4869,6 +4866,8 @@ void setup(void) {
 				"failed to setup XWayland X server, continuing without it\n");
 	}
 #endif
+	parse_config();
+	init_baked_points();
 }
 
 void startdrag(struct wl_listener *listener, void *data) {
