@@ -488,6 +488,7 @@ static void handle_text_input_enable(struct wl_listener *listener, void *data) {
 		update_popups_position(relay);
 		send_state_to_input_method(relay);
 	}
+	wlr_text_input_v3_send_done(text_input->input);
 }
 
 static void handle_text_input_disable(struct wl_listener *listener,
