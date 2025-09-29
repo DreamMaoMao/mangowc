@@ -632,11 +632,16 @@ void tile(Monitor *m) {
 void // 17
 monocle(Monitor *m) {
 	Client *c;
+	struct wlr_box geom;
 
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
-		resize(c, m->w, 0);
+		geom.x = m->w.x + gappoh;
+		geom.y = m->w.y + gappov;
+		geom.width = m->w.width - 2 * gappoh;
+		geom.height = m->w.height - 2 * gappov;
+		resize(c, geom, 0);
 	}
 	if ((c = focustop(m)))
 		wlr_scene_node_raise_to_top(&c->scene->node);
