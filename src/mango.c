@@ -2605,7 +2605,7 @@ void createmon(struct wl_listener *listener, void *data) {
 		wlr_output_layout_add(output_layout, wlr_output, m->m.x, m->m.y);
 
 	m->ext_group = wlr_ext_workspace_group_handle_v1_create(
-		ext_manager, WLR_EXT_WORKSPACE_HANDLE_V1_CAP_ACTIVATE);
+		ext_manager, EXT_WORKSPACE_ENABLE_CAPS);
 	wlr_ext_workspace_group_handle_v1_output_enter(m->ext_group, m->wlr_output);
 
 	for (i = 1; i <= LENGTH(tags); i++) {

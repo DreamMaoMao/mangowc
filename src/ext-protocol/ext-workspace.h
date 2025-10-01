@@ -1,5 +1,9 @@
 #include "wlr_ext_workspace_v1.h"
 
+#define EXT_WORKSPACE_ENABLE_CAPS                                              \
+	WLR_EXT_WORKSPACE_HANDLE_V1_CAP_ACTIVATE |                                 \
+		WLR_EXT_WORKSPACE_HANDLE_V1_CAP_DEACTIVATE
+
 typedef struct Monitor Monitor;
 
 struct workspace {
@@ -28,12 +32,31 @@ void goto_workspace(struct workspace *target) {
 	}
 }
 
+void toggle_workspace(struct workspace *target) {
+	unsigned int tag;
+	tag = 1 << (target->tag - 1);
+	if (target->tag == 0) {
+		toggleview(&(Arg){.i = -1});
+		return;
+	} else {
+		toggleview(&(Arg){.ui = tag});
+	}
+}
+
 static void handle_ext_workspace_activate(struct wl_listener *listener,
 										  void *data) {
 	struct workspace *workspace =
 		wl_container_of(listener, workspace, activate);
 	goto_workspace(workspace);
 	wlr_log(WLR_INFO, "ext activating workspace %d", workspace->tag);
+}
+
+static void handle_ext_workspace_deactivate(struct wl_listener *listener,
+											void *data) {
+	struct workspace *workspace =
+		wl_container_of(listener, workspace, deactivate);
+	toggle_workspace(workspace);
+	wlr_log(WLR_INFO, "ext deactivating workspace %d", workspace->tag);
 }
 
 static const char *get_name_from_tag(unsigned int tag) {
@@ -44,6 +67,7 @@ static const char *get_name_from_tag(unsigned int tag) {
 
 void destroy_workspace(struct workspace *workspace) {
 	wl_list_remove(&workspace->activate.link);
+	wl_list_remove(&workspace->deactivate.link);
 	wlr_ext_workspace_handle_v1_destroy(workspace->ext_workspace);
 	wl_list_remove(&workspace->link);
 	free(workspace);
@@ -77,13 +101,18 @@ static void add_workspace_by_tag(int tag, Monitor *m) {
 	workspace->tag = tag;
 	workspace->m = m;
 	workspace->ext_workspace = wlr_ext_workspace_handle_v1_create(
-		ext_manager, name, WLR_EXT_WORKSPACE_HANDLE_V1_CAP_ACTIVATE);
+		ext_manager, name, EXT_WORKSPACE_ENABLE_CAPS);
 	wlr_ext_workspace_handle_v1_set_group(workspace->ext_workspace,
 										  m->ext_group);
 	wlr_ext_workspace_handle_v1_set_name(workspace->ext_workspace, name);
+
 	workspace->activate.notify = handle_ext_workspace_activate;
 	wl_signal_add(&workspace->ext_workspace->events.activate,
 				  &workspace->activate);
+
+	workspace->deactivate.notify = handle_ext_workspace_deactivate;
+	wl_signal_add(&workspace->ext_workspace->events.deactivate,
+				  &workspace->deactivate);
 }
 
 void dwl_ext_workspace_printstatus(Monitor *m) {
