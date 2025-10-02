@@ -110,10 +110,6 @@ void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
 
 	for (layer = NUM_LAYERS - 1; !surface && layer >= 0; layer--) {
 
-		// ignore text-input layer
-		if (layer == LyrIMPopup)
-			continue;
-
 		if (layer == LyrFadeOut)
 			continue;
 
@@ -124,12 +120,20 @@ void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
 			surface = wlr_scene_surface_try_from_buffer(
 						  wlr_scene_buffer_from_node(node))
 						  ->surface;
-		/* Walk the tree to find a node that knows the client */
-		for (pnode = node; pnode && !c; pnode = &pnode->parent->node)
-			c = pnode->data;
-		if (c && c->type == LayerShell) {
+
+		/*  start from the topmost layer,
+			find a sureface that can be focused by pointer,
+			impopup neither a client nor a layer surface.*/
+		if (layer == LyrIMPopup) {
 			c = NULL;
-			l = pnode->data;
+			l = NULL;
+		} else {
+			for (pnode = node; pnode && !c; pnode = &pnode->parent->node)
+				c = pnode->data;
+			if (c && c->type == LayerShell) {
+				c = NULL;
+				l = pnode->data;
+			}
 		}
 	}
 
