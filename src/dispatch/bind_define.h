@@ -97,9 +97,9 @@ void focusdir(const Arg *arg) {
 	} else {
 		if (config.focus_cross_tag) {
 			if (arg->i == LEFT || arg->i == UP)
-				viewtoleft_have_client(NULL);
+				viewtoleft_have_client(&(Arg){0});
 			if (arg->i == RIGHT || arg->i == DOWN)
-				viewtoright_have_client(NULL);
+				viewtoright_have_client(&(Arg){0});
 		} else if (config.focus_cross_monitor) {
 			focusmon(arg);
 		}
