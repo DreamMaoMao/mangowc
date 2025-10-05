@@ -4510,8 +4510,10 @@ void setmon(Client *c, Monitor *m, unsigned int newtags, bool focus) {
 		setfloating(c, c->isfloating);
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
 	}
-	if (m && focus)
-		focusclient(focustop(m), 1);
+
+	if (focus) {
+		focusclient(focustop(selmon), 1);
+	}
 
 	if (m) {
 
