@@ -1167,12 +1167,11 @@ void toggleoverlay(const Arg *arg) {
 		wlr_scene_node_reparent(&selmon->sel->scene->node, layers[LyrOverlay]);
 		wlr_scene_node_raise_to_top(&selmon->sel->scene->node);
 	} else if (client_should_overtop(selmon->sel) && selmon->sel->isfloating) {
-		wlr_scene_node_reparent(&selmon->sel->scene->node,
-								layers[LyrFSorOverTop]);
+		wlr_scene_node_reparent(&selmon->sel->scene->node, layers[LyrTop]);
 	} else {
 		wlr_scene_node_reparent(
 			&selmon->sel->scene->node,
-			layers[selmon->sel->isfloating ? LyrFloat : LyrTile]);
+			layers[selmon->sel->isfloating ? LyrTop : LyrTile]);
 	}
 	setborder_color(selmon->sel);
 }
