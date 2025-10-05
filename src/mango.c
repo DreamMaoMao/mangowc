@@ -5162,8 +5162,8 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	}
 
 	if (c->swallowedby) {
-		setfullscreen(c->swallowedby, c->isfullscreen);
 		setmaxmizescreen(c->swallowedby, c->ismaxmizescreen);
+		setfullscreen(c->swallowedby, c->isfullscreen);
 		c->swallowedby->swallowing = NULL;
 		c->swallowedby = NULL;
 	}
