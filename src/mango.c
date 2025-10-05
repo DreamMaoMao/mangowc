@@ -700,6 +700,7 @@ static bool check_trackpad_disabled(struct wlr_pointer *pointer);
 static unsigned int get_tag_status(unsigned int tag, Monitor *m);
 static void enable_adaptive_sync(Monitor *m, struct wlr_output_state *state);
 static Client *get_next_stack_client(Client *c, bool reverse);
+static void set_float_malposition(Client *tc);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -1179,6 +1180,24 @@ int applyrulesgeom(Client *c) {
 	return hit;
 }
 
+void set_float_malposition(Client *tc) {
+	Client *c = NULL;
+	int x, y;
+	x = tc->geom.x;
+	y = tc->geom.y;
+
+	wl_list_for_each(c, &clients, link) {
+		if (c->isfloating && c != tc && VISIBLEON(c, tc->mon) &&
+			x - c->geom.x < 50 && y - c->geom.y < 50) {
+			x = c->geom.x + 50;
+			y = c->geom.y + 50;
+		}
+	}
+
+	tc->float_geom.x = tc->geom.x = x;
+	tc->float_geom.y = tc->geom.y = y;
+}
+
 void applyrules(Client *c) {
 	/* rule matching */
 	const char *appid, *title;
@@ -1296,6 +1315,10 @@ void applyrules(Client *c) {
 							   !c->isfloating) {
 		clear_fullscreen_flag(fc);
 		arrange(c->mon, false);
+	}
+
+	if (c->isfloating && !hit_rule_pos) {
+		set_float_malposition(c);
 	}
 
 	// apply named scratchpad rule
