@@ -1,6 +1,6 @@
 void fibonacci(Monitor *mon, int s) {
 	unsigned int i = 0, n = 0, nx, ny, nw, nh;
-	Client *c;
+	Client *c = NULL;
 	unsigned int cur_gappih = enablegaps ? mon->gappih : 0;
 	unsigned int cur_gappiv = enablegaps ? mon->gappiv : 0;
 	unsigned int cur_gappoh = enablegaps ? mon->gappoh : 0;
@@ -88,7 +88,7 @@ void fibonacci(Monitor *mon, int s) {
 
 		unsigned int right_gap = 0;
 		unsigned int bottom_gap = 0;
-		Client *nc;
+		Client *nc = NULL;
 
 		wl_list_for_each(nc, &clients, link) {
 			if (!VISIBLEON(nc, mon) || !ISTILED(nc))
@@ -129,7 +129,7 @@ void grid(Monitor *m) {
 	unsigned int cx, cy, cw, ch;
 	unsigned int dx;
 	unsigned int cols, rows, overcols;
-	Client *c;
+	Client *c = NULL;
 	n = 0;
 
 	n = m->isoverview ? m->visible_clients : m->visible_tiling_clients;
@@ -246,7 +246,7 @@ void grid(Monitor *m) {
 void deck(Monitor *m) {
 	unsigned int mw, my;
 	int i, n = 0;
-	Client *c;
+	Client *c = NULL;
 	unsigned int cur_gappih = enablegaps ? m->gappih : 0;
 	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
 	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
@@ -304,7 +304,7 @@ void deck(Monitor *m) {
 void scroller(Monitor *m) {
 	unsigned int i, n, j;
 
-	Client *c, *root_client = NULL;
+	Client *c = NULL, *root_client = NULL;
 	Client **tempClients = NULL; // 初始化为 NULL
 	struct wlr_box target_geom;
 	int focus_client_index = 0;
@@ -434,7 +434,7 @@ void scroller(Monitor *m) {
 
 void center_tile(Monitor *m) {
 	unsigned int i, n = 0, h, mw, mx, my, oty, ety, tw;
-	Client *c;
+	Client *c = NULL;
 
 	n = m->visible_tiling_clients;
 	if (n == 0)
@@ -575,7 +575,7 @@ void center_tile(Monitor *m) {
 
 void tile(Monitor *m) {
 	unsigned int i, n = 0, h, r, ie = enablegaps, mw, my, ty;
-	Client *c;
+	Client *c = NULL;
 
 	n = m->visible_tiling_clients;
 
@@ -631,7 +631,7 @@ void tile(Monitor *m) {
 
 void // 17
 monocle(Monitor *m) {
-	Client *c;
+	Client *c = NULL;
 	struct wlr_box geom;
 
 	wl_list_for_each(c, &clients, link) {

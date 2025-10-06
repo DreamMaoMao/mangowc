@@ -75,7 +75,7 @@ void exchange_client(const Arg *arg) {
 
 void exchange_stack_client(const Arg *arg) {
 	Client *c = selmon->sel;
-	Client *tc;
+	Client *tc = NULL;
 	if (!c || c->isfloating || c->isfullscreen || c->ismaxmizescreen)
 		return;
 	if (arg->i == NEXT) {
@@ -88,7 +88,7 @@ void exchange_stack_client(const Arg *arg) {
 }
 
 void focusdir(const Arg *arg) {
-	Client *c;
+	Client *c = NULL;
 	c = direction_select(arg);
 	if (c) {
 		focusclient(c, 1);
@@ -149,7 +149,7 @@ void toggle_trackpad_enable(const Arg *arg) {
 }
 
 void focusmon(const Arg *arg) {
-	Client *c, *old_selmon_sel;
+	Client *c = NULL, *old_selmon_sel = NULL;
 	Monitor *m = NULL;
 
 	if (arg->i != UNDIR) {
@@ -295,7 +295,7 @@ setmfact(const Arg *arg) {
 }
 
 void killclient(const Arg *arg) {
-	Client *c;
+	Client *c = NULL;
 	c = selmon->sel;
 	if (c) {
 		pending_kill_client(c);
@@ -333,7 +333,7 @@ moveresize(const Arg *arg) {
 }
 
 void movewin(const Arg *arg) {
-	Client *c;
+	Client *c = NULL;
 	c = selmon->sel;
 	if (!c || c->isfullscreen)
 		return;
@@ -375,7 +375,7 @@ quit(const Arg *arg) {
 }
 
 void resizewin(const Arg *arg) {
-	Client *c;
+	Client *c = NULL;
 	c = selmon->sel;
 	if (!c || c->isfullscreen)
 		return;
@@ -412,7 +412,7 @@ void resizewin(const Arg *arg) {
 }
 
 void restore_minimized(const Arg *arg) {
-	Client *c;
+	Client *c = NULL;
 
 	if (selmon && selmon->isoverview)
 		return;
@@ -471,7 +471,7 @@ void set_proportion(const Arg *arg) {
 }
 
 void smartmovewin(const Arg *arg) {
-	Client *c, *tc;
+	Client *c = NULL, *tc = NULL;
 	int nx, ny;
 	int buttom, top, left, right, tar;
 	c = selmon->sel;
@@ -571,7 +571,7 @@ void smartmovewin(const Arg *arg) {
 }
 
 void smartresizewin(const Arg *arg) {
-	Client *c, *tc;
+	Client *c = NULL, *tc = NULL;
 	int nw, nh;
 	int buttom, top, left, right, tar;
 	c = selmon->sel;
@@ -640,7 +640,7 @@ void smartresizewin(const Arg *arg) {
 }
 
 void centerwin(const Arg *arg) {
-	Client *c;
+	Client *c = NULL;
 	c = selmon->sel;
 
 	if (!c || c->isfullscreen)
@@ -720,7 +720,7 @@ void spawn(const Arg *arg) {
 
 void spawn_on_empty(const Arg *arg) {
 	bool is_empty = true;
-	Client *c;
+	Client *c = NULL;
 
 	wl_list_for_each(c, &clients, link) {
 		if (arg->ui & c->tags && c->mon == selmon) {
@@ -999,8 +999,8 @@ void tagmon(const Arg *arg) {
 }
 
 void tagsilent(const Arg *arg) {
-	Client *fc;
-	Client *target_client;
+	Client *fc = NULL;
+	Client *target_client = NULL;
 
 	if (!selmon || !selmon->sel)
 		return;
@@ -1055,7 +1055,7 @@ void toggle_render_border(const Arg *arg) {
 	arrange(selmon, false);
 }
 void toggle_scratchpad(const Arg *arg) {
-	Client *c;
+	Client *c = NULL;
 	bool hit = false;
 	Client *tmp = NULL;
 
@@ -1314,7 +1314,7 @@ void comboview(const Arg *arg) {
 }
 
 void zoom(const Arg *arg) {
-	Client *c, *sel = focustop(selmon);
+	Client *c = NULL, *sel = focustop(selmon);
 
 	if (!sel || !selmon ||
 		!selmon->pertag->ltidxs[selmon->pertag->curtag]->arrange ||

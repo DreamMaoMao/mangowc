@@ -18,7 +18,7 @@ bool check_hit_no_border(Client *c) {
 	return hit_no_border;
 }
 Client *termforwin(Client *w) {
-	Client *c;
+	Client *c = NULL;
 
 	if (!w->pid || w->isterm || w->noswallow)
 		return NULL;
@@ -143,7 +143,7 @@ Client *center_tiled_select(Monitor *m) {
 }
 Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 								 bool align) {
-	Client *c;
+	Client *c = NULL;
 	Client **tempClients = NULL; // 初始化为 NULL
 	int last = -1;
 
@@ -324,9 +324,8 @@ Client *direction_select(const Arg *arg) {
 /* We probably should change the name of this, it sounds like
  * will focus the topmost client of this mon, when actually will
  * only return that client */
-Client * // 0.5
-focustop(Monitor *m) {
-	Client *c;
+Client *focustop(Monitor *m) {
+	Client *c = NULL;
 	wl_list_for_each(c, &fstack, flink) {
 		if (c->iskilling || c->isunglobal)
 			continue;

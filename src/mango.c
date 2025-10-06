@@ -1236,7 +1236,7 @@ void applyrules(Client *c) {
 	unsigned int i, newtags = 0;
 	const ConfigWinRule *r;
 	Monitor *mon = selmon, *m;
-	Client *fc;
+	Client *fc = NULL;
 	bool hit_rule_pos = false;
 
 	c->isfloating = client_is_float_type(c);
@@ -1369,7 +1369,7 @@ void applyrules(Client *c) {
 
 void // 17
 arrange(Monitor *m, bool want_animation) {
-	Client *c;
+	Client *c = NULL;
 
 	if (!m)
 		return;
@@ -1459,7 +1459,7 @@ void apply_window_snap(Client *c) {
 	cw = c->geom.width - 2 * cbw;
 	ch = c->geom.height - 2 * cbw;
 
-	Client *tc;
+	Client *tc = NULL;
 	if (!c || !c->mon || !client_surface(c)->mapped || c->iskilling)
 		return;
 
@@ -1830,10 +1830,10 @@ buttonpress(struct wl_listener *listener, void *data) {
 	struct wlr_pointer_button_event *event = data;
 	struct wlr_keyboard *hard_keyboard, *keyboard;
 	unsigned int hard_mods, mods;
-	Client *c;
-	LayerSurface *l;
+	Client *c = NULL;
+	LayerSurface *l = NULL;
 	struct wlr_surface *surface;
-	Client *tmpc;
+	Client *tmpc = NULL;
 	int ji;
 	const MouseBinding *m;
 	struct wlr_surface *old_pointer_focus_surface =
@@ -2085,7 +2085,7 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 void closemon(Monitor *m) {
 	/* update selmon if needed and
 	 * move closed monitor's clients to the focused one */
-	Client *c;
+	Client *c = NULL;
 	int i = 0, nmons = wl_list_length(&mons);
 	if (!nmons) {
 		selmon = NULL;
@@ -3458,7 +3458,7 @@ void // old fix to 0.5
 mapnotify(struct wl_listener *listener, void *data) {
 	/* Called when the surface is mapped, or ready to display on-screen. */
 	Client *p = NULL;
-	Client *at_client;
+	Client *at_client = NULL;
 	Client *c = wl_container_of(listener, c, map);
 	int i;
 	/* Create scene tree for this client and its border */
@@ -4013,7 +4013,7 @@ void client_set_opacity(Client *c, double opacity) {
 
 void rendermon(struct wl_listener *listener, void *data) {
 	Monitor *m = wl_container_of(listener, m, frame);
-	Client *c, *tmp;
+	Client *c = NULL, *tmp = NULL;
 	struct wlr_output_state pending = {0};
 	LayerSurface *l, *tmpl;
 	int i;
@@ -4263,7 +4263,7 @@ void setcursor(struct wl_listener *listener, void *data) {
 void // 0.5
 setfloating(Client *c, int floating) {
 
-	Client *fc;
+	Client *fc = NULL;
 	int hit;
 	struct wlr_box target_box, backup_box;
 	c->isfloating = floating;
@@ -4934,7 +4934,7 @@ void startdrag(struct wl_listener *listener, void *data) {
 }
 
 void tag_client(const Arg *arg, Client *target_client) {
-	Client *fc;
+	Client *fc = NULL;
 	if (target_client && arg->ui & TAGMASK) {
 
 		target_client->tags = arg->ui & TAGMASK;
@@ -5055,7 +5055,7 @@ int hidecursor(void *data) {
 
 // 显示所有tag 或 跳转到聚焦窗口的tag
 void toggleoverview(const Arg *arg) {
-	Client *c;
+	Client *c = NULL;
 
 	if (selmon->isoverview && ov_tab_mode && arg->i != -1 && selmon->sel) {
 		focusstack(&(Arg){.i = 1});
@@ -5240,7 +5240,7 @@ void updatemons(struct wl_listener *listener, void *data) {
 	 */
 	struct wlr_output_configuration_v1 *config =
 		wlr_output_configuration_v1_create();
-	Client *c;
+	Client *c = NULL;
 	struct wlr_output_configuration_head_v1 *config_head;
 	Monitor *m;
 	int mon_pos_offsetx, mon_pos_offsety, oldx, oldy;
@@ -5589,7 +5589,7 @@ void configurex11(struct wl_listener *listener, void *data) {
 
 void createnotifyx11(struct wl_listener *listener, void *data) {
 	struct wlr_xwayland_surface *xsurface = data;
-	Client *c;
+	Client *c = NULL;
 
 	/* Allocate a Client for this surface */
 	c = xsurface->data = ecalloc(1, sizeof(*c));

@@ -36,7 +36,7 @@ bool is_scroller_layout(Monitor *m) {
 }
 
 unsigned int get_tag_status(unsigned int tag, Monitor *m) {
-	Client *c;
+	Client *c = NULL;
 	unsigned int status = 0;
 	wl_list_for_each(c, &clients, link) {
 		if (c->mon == m && c->tags & 1 << (tag - 1) & TAGMASK) {

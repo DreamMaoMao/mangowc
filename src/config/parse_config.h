@@ -2727,7 +2727,7 @@ void reapply_monitor_rules(void) {
 }
 
 void reapply_border(void) {
-	Client *c;
+	Client *c = NULL;
 
 	// reset border width when config change
 	wl_list_for_each(c, &clients, link) {

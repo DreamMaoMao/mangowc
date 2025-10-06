@@ -109,7 +109,7 @@ void dwl_ipc_output_printstatus(Monitor *monitor) {
 
 void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	Monitor *monitor = ipc_output->mon;
-	Client *c, *focused;
+	Client *c = NULL, *focused = NULL;
 	struct wlr_keyboard *keyboard;
 	xkb_layout_index_t current;
 	int tagmask, state, numclients, focused_client, tag;
@@ -210,7 +210,7 @@ void dwl_ipc_output_set_client_tags(struct wl_client *client,
 									unsigned int xor_tags) {
 	DwlIpcOutput *ipc_output;
 	Monitor *monitor;
-	Client *selected_client;
+	Client *selected_client = NULL;
 	unsigned int newtags = 0;
 
 	ipc_output = wl_resource_get_user_data(resource);
