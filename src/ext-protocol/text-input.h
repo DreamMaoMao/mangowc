@@ -68,7 +68,7 @@ void dwl_im_relay_set_focus(struct dwl_input_method_relay *relay,
 
 /*------------------协议内部代码------------------------------*/
 Monitor *output_from_wlr_output(struct wlr_output *wlr_output) {
-	Monitor *m;
+	Monitor *m = NULL;
 	wl_list_for_each(m, &mons, link) {
 		if (m->wlr_output == wlr_output) {
 			return m;
@@ -222,7 +222,7 @@ static void update_popup_position(struct dwl_input_method_popup *popup) {
 	struct wlr_xdg_surface *xdg_surface;
 	struct wlr_layer_surface_v1 *layer_surface;
 	struct wlr_scene_tree *tree;
-	Monitor *output;
+	Monitor *output = NULL;
 	struct wlr_xdg_positioner_rules pointer_rules;
 	struct wlr_box output_box;
 	int lx, ly;

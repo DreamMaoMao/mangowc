@@ -209,7 +209,7 @@ void dwl_ipc_output_set_client_tags(struct wl_client *client,
 									unsigned int and_tags,
 									unsigned int xor_tags) {
 	DwlIpcOutput *ipc_output;
-	Monitor *monitor;
+	Monitor *monitor = NULL;
 	Client *selected_client = NULL;
 	unsigned int newtags = 0;
 
@@ -237,7 +237,7 @@ void dwl_ipc_output_set_layout(struct wl_client *client,
 							   struct wl_resource *resource,
 							   unsigned int index) {
 	DwlIpcOutput *ipc_output;
-	Monitor *monitor;
+	Monitor *monitor = NULL;
 
 	ipc_output = wl_resource_get_user_data(resource);
 	if (!ipc_output)
@@ -256,7 +256,7 @@ void dwl_ipc_output_set_tags(struct wl_client *client,
 							 struct wl_resource *resource, unsigned int tagmask,
 							 unsigned int toggle_tagset) {
 	DwlIpcOutput *ipc_output;
-	Monitor *monitor;
+	Monitor *monitor = NULL;
 	unsigned int newtags = tagmask & TAGMASK;
 
 	ipc_output = wl_resource_get_user_data(resource);

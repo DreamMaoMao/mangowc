@@ -78,7 +78,7 @@ double find_animation_curve_at(double t, int type) {
 
 double all_output_frame_duration_ms() {
 	int32_t refresh_total = 0;
-	Monitor *m;
+	Monitor *m = NULL;
 	wl_list_for_each(m, &mons, link) {
 		if (!m->wlr_output->enabled) {
 			continue;

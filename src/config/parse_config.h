@@ -2666,7 +2666,7 @@ void parse_config(void) {
 
 void reapply_monitor_rules(void) {
 	ConfigMonitorRule *mr;
-	Monitor *m;
+	Monitor *m = NULL;
 	int ji, jk;
 	struct wlr_output_state state;
 	struct wlr_output_mode *internal_mode = NULL;
@@ -2766,7 +2766,7 @@ void reapply_pointer(void) {
 void reapply_master(void) {
 
 	int i;
-	Monitor *m;
+	Monitor *m = NULL;
 	for (i = 0; i <= LENGTH(tags); i++) {
 		wl_list_for_each(m, &mons, link) {
 			if (!m->wlr_output->enabled) {
@@ -2784,7 +2784,7 @@ void reapply_master(void) {
 }
 
 void reapply_tagrule(void) {
-	Monitor *m;
+	Monitor *m = NULL;
 	int i, jk;
 	char *rule_monitor_name = NULL;
 	wl_list_for_each(m, &mons, link) {

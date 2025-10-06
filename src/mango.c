@@ -1064,7 +1064,7 @@ void apply_named_scratchpad(Client *target_client) {
 void gpureset(struct wl_listener *listener, void *data) {
 	struct wlr_renderer *old_drw = drw;
 	struct wlr_allocator *old_alloc = alloc;
-	struct Monitor *m;
+	struct Monitor *m = NULL;
 
 	wlr_log(WLR_DEBUG, "gpu reset");
 
@@ -1235,7 +1235,7 @@ void applyrules(Client *c) {
 	const char *appid, *title;
 	unsigned int i, newtags = 0;
 	const ConfigWinRule *r;
-	Monitor *mon = selmon, *m;
+	Monitor *mon = selmon, *m = NULL;
 	Client *fc = NULL;
 	bool hit_rule_pos = false;
 
@@ -2514,7 +2514,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	unsigned int i;
 	int ji, jk;
 	struct wlr_output_state state;
-	Monitor *m;
+	Monitor *m = NULL;
 	struct wlr_output_mode *internal_mode = NULL;
 	bool custom_monitor_mode = false;
 
@@ -4103,7 +4103,7 @@ void setborder_color(Client *c) {
 
 void exchange_two_client(Client *c1, Client *c2) {
 
-	Monitor *tmp_mon;
+	Monitor *tmp_mon = NULL;
 	unsigned int tmp_tags;
 
 	if (c1 == NULL || c2 == NULL ||
@@ -5141,7 +5141,7 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	/* Called when the surface is unmapped, and should no longer be shown.
 	 */
 	Client *c = wl_container_of(listener, c, unmap);
-	Monitor *m;
+	Monitor *m = NULL;
 	c->iskilling = 1;
 
 	if (animations && !c->is_clip_to_hide && !c->isminied &&
@@ -5242,7 +5242,7 @@ void updatemons(struct wl_listener *listener, void *data) {
 		wlr_output_configuration_v1_create();
 	Client *c = NULL;
 	struct wlr_output_configuration_head_v1 *config_head;
-	Monitor *m;
+	Monitor *m = NULL;
 	int mon_pos_offsetx, mon_pos_offsety, oldx, oldy;
 
 	/* First remove from the layout the disabled monitors */
@@ -5461,7 +5461,7 @@ toggleseltags:
 }
 
 void view(const Arg *arg, bool want_animation) {
-	Monitor *m;
+	Monitor *m = NULL;
 	if (arg->i) {
 		view_in_mon(arg, want_animation, selmon, true);
 		wl_list_for_each(m, &mons, link) {
