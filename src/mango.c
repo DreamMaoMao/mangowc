@@ -1191,16 +1191,38 @@ int applyrulesgeom(Client *c) {
 
 void set_float_malposition(Client *tc) {
 	Client *c = NULL;
-	int x, y, offset;
+	int x, y, offset, xreverse, yreverse;
 	x = tc->geom.x;
 	y = tc->geom.y;
-	offset = MIN(tc->mon->m.width / 20, tc->mon->m.height / 20);
+	xreverse = 1;
+	yreverse = 1;
+	offset = MIN(tc->mon->w.width / 20, tc->mon->w.height / 20);
 
 	wl_list_for_each(c, &clients, link) {
 		if (c->isfloating && c != tc && VISIBLEON(c, tc->mon) &&
-			x - c->geom.x < offset && y - c->geom.y < offset) {
-			x = c->geom.x + offset;
-			y = c->geom.y + offset;
+			abs(x - c->geom.x) < offset && abs(y - c->geom.y) < offset) {
+
+			x = c->geom.x + offset * xreverse;
+			y = c->geom.y + offset * yreverse;
+			if (x < tc->mon->w.x) {
+				x = x + offset;
+				xreverse = 1;
+			}
+
+			if (y < tc->mon->w.y) {
+				y = y + offset;
+				yreverse = 1;
+			}
+
+			if (x + tc->geom.width > tc->mon->w.x + tc->mon->w.width) {
+				x = x - offset;
+				xreverse = -1;
+			}
+
+			if (y + tc->geom.height > tc->mon->w.y + tc->mon->w.height) {
+				y = y - offset;
+				yreverse = -1;
+			}
 		}
 	}
 
@@ -1256,7 +1278,7 @@ void applyrules(Client *c) {
 			c->float_geom.height = r->height;
 
 		if (r->offsetx || r->offsety || r->width > 0 || r->height > 0) {
-			hit_rule_pos = true;
+			hit_rule_pos = r->offsetx || r->offsety ? true : false;
 			c->iscustomsize = 1;
 			c->float_geom = setclient_coordinate_center(c, c->float_geom,
 														r->offsetx, r->offsety);
@@ -1327,7 +1349,9 @@ void applyrules(Client *c) {
 		arrange(c->mon, false);
 	}
 
-	if (c->isfloating && !hit_rule_pos) {
+	if (c->isfloating && !hit_rule_pos && !c->isnamedscratchpad) {
+		wl_list_remove(&c->link);
+		wl_list_insert(clients.prev, &c->link);
 		set_float_malposition(c);
 	}
 
