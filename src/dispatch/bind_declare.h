@@ -22,6 +22,7 @@ void tagmon(const Arg *arg);
 void spawn(const Arg *arg);
 void spawn_shell(const Arg *arg);
 void spawn_on_empty(const Arg *arg);
+void setkeymode(const Arg *arg);
 void setlayout(const Arg *arg);
 void switch_layout(const Arg *arg);
 void switch_keyboard_layout(const Arg *arg);

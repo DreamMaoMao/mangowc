@@ -459,6 +459,17 @@ setlayout(const Arg *arg) {
 	}
 }
 
+void // 17
+setkeymode(const Arg *arg) {
+	snprintf(keymode.mode, sizeof(keymode.mode), "%.27s", arg->v);
+	if (strcmp(keymode.mode, "default") == 0) {
+		keymode.isdefault = true;
+	} else {
+		keymode.isdefault = false;
+	}
+	printstatus();
+}
+
 void set_proportion(const Arg *arg) {
 	if (selmon->sel) {
 		unsigned int max_client_width =

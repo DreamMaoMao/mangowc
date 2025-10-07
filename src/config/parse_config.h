@@ -31,6 +31,9 @@ typedef struct {
 	KeySymCode keysymcode;
 	void (*func)(const Arg *);
 	Arg arg;
+	char mode[28];
+	bool iscommonmode;
+	bool isdefaultmode;
 } KeyBinding;
 
 typedef struct {
@@ -301,6 +304,9 @@ typedef struct {
 	int adaptive_sync;
 
 	struct xkb_rule_names xkb_rules;
+
+	char keymode[28];
+
 } Config;
 
 typedef void (*FuncType)(const Arg *);
@@ -746,6 +752,9 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = focuslast;
 	} else if (strcmp(func_name, "toggle_trackpad_enable") == 0) {
 		func = toggle_trackpad_enable;
+	} else if (strcmp(func_name, "setkeymode") == 0) {
+		func = setkeymode;
+		(*arg).v = strdup(arg_value);
 	} else if (strcmp(func_name, "setlayout") == 0) {
 		func = setlayout;
 		(*arg).v = strdup(arg_value);
@@ -904,7 +913,9 @@ void parse_config_line(Config *config, const char *line) {
 	trim_whitespace(key);
 	trim_whitespace(value);
 
-	if (strcmp(key, "animations") == 0) {
+	if (strcmp(key, "keymode") == 0) {
+		snprintf(config->keymode, sizeof(config->keymode), "%.27s", value);
+	} else if (strcmp(key, "animations") == 0) {
 		config->animations = atoi(value);
 	} else if (strcmp(key, "layer_animations") == 0) {
 		config->layer_animations = atoi(value);
@@ -1709,6 +1720,18 @@ void parse_config_line(Config *config, const char *line) {
 		trim_whitespace(arg_value3);
 		trim_whitespace(arg_value4);
 		trim_whitespace(arg_value5);
+
+		strcpy(binding->mode, config->keymode);
+		if (strcmp(binding->mode, "common") == 0) {
+			binding->iscommonmode = true;
+			binding->isdefaultmode = false;
+		} else if (strcmp(binding->mode, "default") == 0) {
+			binding->isdefaultmode = true;
+			binding->iscommonmode = false;
+		} else {
+			binding->isdefaultmode = false;
+			binding->iscommonmode = false;
+		}
 
 		binding->mod = parse_mod(mod_str);
 		binding->keysymcode = parse_key(keysym_str);
@@ -2588,6 +2611,8 @@ void set_default_key_bindings(Config *config) {
 	for (size_t i = 0; i < default_key_bindings_count; i++) {
 		config->key_bindings[config->key_bindings_count + i] =
 			default_key_bindings[i];
+		config->key_bindings[config->key_bindings_count + i].iscommonmode =
+			true;
 	}
 
 	// 更新按键绑定的总数
@@ -2631,6 +2656,7 @@ void parse_config(void) {
 	config.tag_rules = NULL;
 	config.tag_rules_count = 0;
 	config.cursor_theme = NULL;
+	strcpy(config.keymode, "default");
 
 	// 获取 MANGOCONFIG 环境变量
 	const char *mangoconfig = getenv("MANGOCONFIG");

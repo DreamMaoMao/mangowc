@@ -201,6 +201,11 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 		zdwl_ipc_output_v2_send_kb_layout(ipc_output->resource, kb_layout);
 	}
 
+	if (wl_resource_get_version(ipc_output->resource) >=
+		ZDWL_IPC_OUTPUT_V2_KEYMODE_SINCE_VERSION) {
+		zdwl_ipc_output_v2_send_keymode(ipc_output->resource, keymode.mode);
+	}
+
 	zdwl_ipc_output_v2_send_frame(ipc_output->resource);
 }
 

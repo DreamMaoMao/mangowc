@@ -192,6 +192,11 @@ typedef struct {
 } Button; // 鼠标按键
 
 typedef struct {
+	char mode[28];
+	bool isdefault;
+} KeyMode;
+
+typedef struct {
 	unsigned int mod;
 	unsigned int dir;
 	void (*func)(const Arg *);
@@ -796,7 +801,10 @@ struct dvec2 *baked_points_close;
 static struct wl_event_source *hide_source;
 static bool cursor_hidden = false;
 static bool tag_combo = false;
-
+static KeyMode keymode = {
+	.mode = {'d', 'e', 'f', 'a', 'u', 'l', 't', '\0'},
+	.isdefault = true,
+};
 static struct {
 	enum wp_cursor_shape_device_v1_shape shape;
 	struct wlr_surface *surface;
@@ -3214,7 +3222,9 @@ keybinding(unsigned int mods, xkb_keysym_t sym, unsigned int keycode) {
 		if (config.key_bindings_count < 1)
 			break;
 		k = &config.key_bindings[ji];
-		if (CLEANMASK(mods) == CLEANMASK(k->mod) &&
+		if ((k->iscommonmode || (k->isdefaultmode && keymode.isdefault) ||
+			 (strcmp(keymode.mode, k->mode) == 0)) &&
+			CLEANMASK(mods) == CLEANMASK(k->mod) &&
 			((k->keysymcode.type == KEY_TYPE_SYM &&
 			  normalize_keysym(sym) ==
 				  normalize_keysym(k->keysymcode.keysym)) ||
@@ -3223,6 +3233,7 @@ keybinding(unsigned int mods, xkb_keysym_t sym, unsigned int keycode) {
 			k->func) {
 			k->func(&k->arg);
 			handled = 1;
+			break;
 		}
 	}
 	return handled;
