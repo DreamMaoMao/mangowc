@@ -1355,3 +1355,9 @@ void zoom(const Arg *arg) {
 	focusclient(sel, 1);
 	arrange(selmon, false);
 }
+
+void setoption(const Arg *arg) {
+	parse_option(&config, arg->v, arg->v2);
+	override_config();
+	reset_option();
+}

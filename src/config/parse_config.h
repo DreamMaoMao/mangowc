@@ -341,21 +341,25 @@ void trim_whitespace(char *str) {
 }
 
 int parse_double_array(const char *input, double *output, int max_count) {
-	char *dup = strdup(input); // 复制一份用于修改
+	char *dup = strdup(input);
 	char *token;
 	int count = 0;
 
+	// 先清空整个数组
+	memset(output, 0, max_count * sizeof(double));
+
 	token = strtok(dup, ",");
 	while (token != NULL && count < max_count) {
-		trim_whitespace(token); // 对每一个分割后的 token 去除前后空格
+		trim_whitespace(token);
 		char *endptr;
 		double val = strtod(token, &endptr);
 		if (endptr == token || *endptr != '\0') {
 			fprintf(stderr, "Error: Invalid number in array: %s\n", token);
 			free(dup);
-			return -1; // 解析失败
+			return -1;
 		}
-		output[count++] = val;
+		output[count] = val; // 赋值到当前count位置
+		count++;			 // 然后才自增
 		token = strtok(NULL, ",");
 	}
 
@@ -752,6 +756,50 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = focuslast;
 	} else if (strcmp(func_name, "toggle_trackpad_enable") == 0) {
 		func = toggle_trackpad_enable;
+	} else if (strcmp(func_name, "setoption") == 0) {
+		func = setoption;
+
+		(*arg).v = strdup(arg_value);
+
+		// 收集需要拼接的参数
+		const char *non_empty_params[4] = {NULL};
+		int param_index = 0;
+
+		if (arg_value2 && arg_value2[0] != '\0')
+			non_empty_params[param_index++] = arg_value2;
+		if (arg_value3 && arg_value3[0] != '\0')
+			non_empty_params[param_index++] = arg_value3;
+		if (arg_value4 && arg_value4[0] != '\0')
+			non_empty_params[param_index++] = arg_value4;
+		if (arg_value5 && arg_value5[0] != '\0')
+			non_empty_params[param_index++] = arg_value5;
+
+		// 处理拼接
+		if (param_index == 0) {
+			(*arg).v2 = strdup("");
+		} else {
+			// 计算总长度
+			size_t len = 0;
+			for (int i = 0; i < param_index; i++) {
+				len += strlen(non_empty_params[i]);
+			}
+			len += (param_index - 1) + 1; // 逗号数 + null终止符
+
+			char *temp = malloc(len);
+			if (temp) {
+				char *cursor = temp;
+				for (int i = 0; i < param_index; i++) {
+					if (i > 0) {
+						*cursor++ = ',';
+					}
+					size_t param_len = strlen(non_empty_params[i]);
+					memcpy(cursor, non_empty_params[i], param_len);
+					cursor += param_len;
+				}
+				*cursor = '\0';
+				(*arg).v2 = temp;
+			}
+		}
 	} else if (strcmp(func_name, "setkeymode") == 0) {
 		func = setkeymode;
 		(*arg).v = strdup(arg_value);
@@ -902,17 +950,7 @@ void run_exec_once() {
 	}
 }
 
-void parse_config_line(Config *config, const char *line) {
-	char key[256], value[256];
-	if (sscanf(line, "%[^=]=%[^\n]", key, value) != 2) {
-		// fprintf(stderr, "Error: Invalid line format: %s\n", line);
-		return;
-	}
-
-	// Then trim each part separately
-	trim_whitespace(key);
-	trim_whitespace(value);
-
+void parse_option(Config *config, char *key, char *value) {
 	if (strcmp(key, "keymode") == 0) {
 		snprintf(config->keymode, sizeof(config->keymode), "%.27s", value);
 	} else if (strcmp(key, "animations") == 0) {
@@ -2008,6 +2046,20 @@ void parse_config_line(Config *config, const char *line) {
 	}
 }
 
+void parse_config_line(Config *config, const char *line) {
+	char key[256], value[256];
+	if (sscanf(line, "%[^=]=%[^\n]", key, value) != 2) {
+		// fprintf(stderr, "Error: Invalid line format: %s\n", line);
+		return;
+	}
+
+	// Then trim each part separately
+	trim_whitespace(key);
+	trim_whitespace(value);
+
+	parse_option(config, key, value);
+}
+
 void parse_config_file(Config *config, const char *file_path) {
 	FILE *file;
 	// 检查路径是否以 ~/ 开头
@@ -2839,8 +2891,7 @@ void reapply_tagrule(void) {
 	}
 }
 
-void reload_config(const Arg *arg) {
-	parse_config();
+void reset_option(void) {
 	init_baked_points();
 	handlecursoractivity();
 	reset_keyboard_layout();
@@ -2856,4 +2907,9 @@ void reload_config(const Arg *arg) {
 	reapply_monitor_rules();
 
 	arrange(selmon, false);
+}
+
+void reload_config(const Arg *arg) {
+	parse_config();
+	reset_option();
 }
