@@ -3617,12 +3617,21 @@ void init_client_properties(Client *c) {
 
 void set_size_per(Monitor *m, Client *c) {
 	Client *fc = NULL;
+	bool found = false;
 	wl_list_for_each(fc, &clients, link) {
 		if (VISIBLEON(fc, m) && ISTILED(fc) && fc != c) {
 			c->master_width_per = fc->master_width_per;
 			c->master_height_per = fc->master_height_per;
 			c->slave_height_per = fc->slave_height_per;
+			found = true;
+			break;
 		}
+	}
+
+	if(!found) {
+		c->master_width_per = 0.5f;
+		c->master_height_per = 1.0f;
+		c->slave_height_per = 1.0f;
 	}
 }
 
@@ -3935,13 +3944,13 @@ void resize_tile_client(Client *grabc) {
 			} else {
 				delta_y = fabsf(delta_y);
 			}
-		} else if(grabc->ismaster && !next->ismaster) {
+		} else if(grabc->ismaster && next && !next->ismaster) {
 			if(moving_up) {
 				delta_y = fabsf(delta_y);
 			} else {
 				delta_y = -fabsf(delta_y);
 			}			
-		} else if(!grabc->ismaster && prev->ismaster) {
+		} else if(!grabc->ismaster && prev && prev->ismaster) {
 			if(moving_up) {
 				delta_y = -fabsf(delta_y);
 			} else {
