@@ -24,10 +24,6 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Hycov-like overview
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
 
-3. **Some disadvantages**
-   - Since it uses the fully automatic layout like dwm style, it does not allow you to manually adjust the window size when the window is in tiled state. It only allows you to use dispatch like `setmfact` or `increase_proportion` bind to adjust the tiled window ratio.
-
-
 Master-Stack Layout
 
 https://github.com/user-attachments/assets/a9d4776e-b50b-48fb-94ce-651d8a749b8a
@@ -43,23 +39,14 @@ https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
 
 # Supported layouts
 
-## Horizontal Layouts
 - tile
 - scroller
 - monocle
 - grid
-- dwindle
-- spiral
 - deck
 - center_tile
-
-## Vertical Layouts
 - vertical_tile
 - vertical_scroller
-- vertical_monocle
-- vertical_grid
-- vertical_dwindle
-- vertical_spiral
 
 # Installation
 
