@@ -3628,7 +3628,7 @@ void set_size_per(Monitor *m, Client *c) {
 		}
 	}
 
-	if(!found) {
+	if (!found) {
 		c->master_width_per = 0.5f;
 		c->master_height_per = 1.0f;
 		c->slave_height_per = 1.0f;
@@ -3887,20 +3887,20 @@ void resize_tile_client(Client *grabc) {
 	float delta_x, delta_y;
 	Client *next = NULL;
 	Client *prev = NULL;
-    // 查找 grabc 在链表中的前一个和后一个客户端
-    wl_list_for_each(tc, &clients, link) {
-        if (tc == grabc) {
-            // 找到当前客户端，下一个节点就是 next
-            if (tc->link.next != &clients) {
-                next = wl_container_of(tc->link.next, next, link);
-            }
-            // 前一个节点就是 prev  
-            if (tc->link.prev != &clients) {
-                prev = wl_container_of(tc->link.prev, prev, link);
-            }
-            break;
-        }
-    }
+	// 查找 grabc 在链表中的前一个和后一个客户端
+	wl_list_for_each(tc, &clients, link) {
+		if (tc == grabc) {
+			// 找到当前客户端，下一个节点就是 next
+			if (tc->link.next != &clients) {
+				next = wl_container_of(tc->link.next, next, link);
+			}
+			// 前一个节点就是 prev
+			if (tc->link.prev != &clients) {
+				prev = wl_container_of(tc->link.prev, prev, link);
+			}
+			break;
+		}
+	}
 
 	if (!start_drag_window) {
 		begin_cursorx = cursor->x;
@@ -3917,53 +3917,48 @@ void resize_tile_client(Client *grabc) {
 		grabc->begin_geom = grabc->geom;
 	} else {
 		// 计算相对于屏幕尺寸的比例变化
-		if(grabc->ismaster) {
+		if (grabc->ismaster) {
 			delta_x = (float)(cursor->x - begin_cursorx) *
-							(grabc->old_master_width_per) /
-							grabc->begin_geom.width;
+					  (grabc->old_master_width_per) / grabc->begin_geom.width;
 			delta_y = (float)(cursor->y - begin_cursory) *
-							(grabc->old_master_height_per) /
-							grabc->begin_geom.height;
+					  (grabc->old_master_height_per) / grabc->begin_geom.height;
 		} else {
 			delta_x = (float)(cursor->x - begin_cursorx) *
-							(1 - grabc->old_master_width_per) /
-							grabc->begin_geom.width;
+					  (1 - grabc->old_master_width_per) /
+					  grabc->begin_geom.width;
 			delta_y = (float)(cursor->y - begin_cursory) *
-							(grabc->old_slave_height_per) /
-							grabc->begin_geom.height;
+					  (grabc->old_slave_height_per) / grabc->begin_geom.height;
 		}
-
 
 		bool moving_up = cursor->y < begin_cursory;
 		bool moving_down = cursor->y > begin_cursory;
 
-
-		if(grabc->ismaster && !prev) {
-			if(moving_up) {
+		if (grabc->ismaster && !prev) {
+			if (moving_up) {
 				delta_y = -fabsf(delta_y);
 			} else {
 				delta_y = fabsf(delta_y);
 			}
-		} else if(grabc->ismaster && next && !next->ismaster) {
-			if(moving_up) {
+		} else if (grabc->ismaster && next && !next->ismaster) {
+			if (moving_up) {
 				delta_y = fabsf(delta_y);
 			} else {
 				delta_y = -fabsf(delta_y);
-			}			
-		} else if(!grabc->ismaster && prev && prev->ismaster) {
-			if(moving_up) {
+			}
+		} else if (!grabc->ismaster && prev && prev->ismaster) {
+			if (moving_up) {
 				delta_y = -fabsf(delta_y);
 			} else {
 				delta_y = fabsf(delta_y);
-			}			
-		} else if(!grabc->ismaster && !next) {
-			if(moving_up) {
+			}
+		} else if (!grabc->ismaster && !next) {
+			if (moving_up) {
 				delta_y = fabsf(delta_y);
 			} else {
 				delta_y = -fabsf(delta_y);
-			}				
+			}
 		} else if ((grabc->cursor_in_upper_half && moving_up) ||
-			(!grabc->cursor_in_upper_half && moving_down)) {
+				   (!grabc->cursor_in_upper_half && moving_down)) {
 			// 光标在窗口上方且向上移动，或在窗口下方且向下移动 → 增加高度
 			delta_y = fabsf(delta_y);
 		} else {
