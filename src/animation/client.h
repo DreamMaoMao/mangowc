@@ -17,10 +17,8 @@ bool is_horizontal_stack_layout(Monitor *m) {
 		return true;
 
 	if (m->pertag->curtag &&
-		(strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "tile") == 0 ||
-		 strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "spiral") == 0 ||
-		 strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "dwindle") == 0 ||
-		 strcmp(m->pertag->ltidxs[m->pertag->curtag]->name, "deck") == 0))
+		(m->pertag->ltidxs[m->pertag->curtag]->id == TILE ||
+		 m->pertag->ltidxs[m->pertag->curtag]->id == DECK))
 		return true;
 
 	return false;
@@ -775,6 +773,11 @@ void client_set_pending_state(Client *c) {
 	if (c->istagswitching) {
 		c->animation.duration = 0;
 		c->istagswitching = 0;
+	}
+
+	if (start_drag_window) {
+		c->animation.should_animate = false;
+		c->animation.duration = 0;
 	}
 
 	// 开始动画

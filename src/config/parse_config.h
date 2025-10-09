@@ -199,10 +199,9 @@ typedef struct {
 
 	unsigned int new_is_master;
 	float default_mfact;
-	float default_smfact;
 	unsigned int default_nmaster;
 	int center_master_overspread;
-	int center_when_single_slave;
+	int center_when_single_stack;
 
 	unsigned int hotarea_size;
 	unsigned int enable_hotarea;
@@ -710,9 +709,6 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "setmfact") == 0) {
 		func = setmfact;
 		(*arg).f = atof(arg_value);
-	} else if (strcmp(func_name, "setsmfact") == 0) {
-		func = setsmfact;
-		(*arg).f = atof(arg_value);
 	} else if (strcmp(func_name, "zoom") == 0) {
 		func = zoom;
 	} else if (strcmp(func_name, "exchange_client") == 0) {
@@ -1209,14 +1205,12 @@ void parse_option(Config *config, char *key, char *value) {
 		config->new_is_master = atoi(value);
 	} else if (strcmp(key, "default_mfact") == 0) {
 		config->default_mfact = atof(value);
-	} else if (strcmp(key, "default_smfact") == 0) {
-		config->default_smfact = atof(value);
 	} else if (strcmp(key, "default_nmaster") == 0) {
 		config->default_nmaster = atoi(value);
 	} else if (strcmp(key, "center_master_overspread") == 0) {
 		config->center_master_overspread = atoi(value);
-	} else if (strcmp(key, "center_when_single_slave") == 0) {
-		config->center_when_single_slave = atoi(value);
+	} else if (strcmp(key, "center_when_single_stack") == 0) {
+		config->center_when_single_stack = atoi(value);
 	} else if (strcmp(key, "hotarea_size") == 0) {
 		config->hotarea_size = atoi(value);
 	} else if (strcmp(key, "enable_hotarea") == 0) {
@@ -2412,10 +2406,9 @@ void override_config(void) {
 
 	// 主从布局设置
 	default_mfact = CLAMP_FLOAT(config.default_mfact, 0.1f, 0.9f);
-	default_smfact = CLAMP_FLOAT(config.default_smfact, 0.1f, 0.9f);
 	default_nmaster = CLAMP_INT(config.default_nmaster, 1, 1000);
 	center_master_overspread = CLAMP_INT(config.center_master_overspread, 0, 1);
-	center_when_single_slave = CLAMP_INT(config.center_when_single_slave, 0, 1);
+	center_when_single_stack = CLAMP_INT(config.center_when_single_stack, 0, 1);
 	new_is_master = CLAMP_INT(config.new_is_master, 0, 1);
 
 	// 概述模式设置
@@ -2539,15 +2532,14 @@ void set_value_default() {
 	config.axis_bind_apply_timeout =
 		axis_bind_apply_timeout; // 滚轮绑定动作的触发的时间间隔
 	config.focus_on_activate =
-		focus_on_activate;					// 收到窗口激活请求是否自动跳转聚焦
-	config.new_is_master = new_is_master;	// 新窗口是否插在头部
-	config.default_mfact = default_mfact;	// master 窗口比例
-	config.default_smfact = default_smfact; // 第一个stack比例
+		focus_on_activate;				  // 收到窗口激活请求是否自动跳转聚焦
+	config.new_is_master = new_is_master; // 新窗口是否插在头部
+	config.default_mfact = default_mfact; // master 窗口比例
 	config.default_nmaster = default_nmaster; // 默认master数量
 	config.center_master_overspread =
 		center_master_overspread; // 中心master时是否铺满
-	config.center_when_single_slave =
-		center_when_single_slave; // 单个slave时是否居中
+	config.center_when_single_stack =
+		center_when_single_stack; // 单个stack时是否居中
 
 	config.numlockon = numlockon; // 是否打开右边小键盘
 
@@ -2852,7 +2844,6 @@ void reapply_master(void) {
 			}
 			m->pertag->nmasters[i] = default_nmaster;
 			m->pertag->mfacts[i] = default_mfact;
-			m->pertag->smfacts[i] = default_smfact;
 			m->gappih = gappih;
 			m->gappiv = gappiv;
 			m->gappoh = gappoh;

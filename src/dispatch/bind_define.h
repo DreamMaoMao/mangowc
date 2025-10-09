@@ -263,20 +263,6 @@ void increase_proportion(const Arg *arg) {
 	}
 }
 
-void setsmfact(const Arg *arg) {
-	float f;
-
-	if (!arg || !selmon ||
-		!selmon->pertag->ltidxs[selmon->pertag->curtag]->arrange)
-		return;
-	f = arg->f < 1.0 ? arg->f + selmon->pertag->smfacts[selmon->pertag->curtag]
-					 : arg->f - 1.0;
-	if (f < 0.1 || f > 0.9)
-		return;
-	// selmon->mfact = f;
-	selmon->pertag->smfacts[selmon->pertag->curtag] = f;
-	arrange(selmon, false);
-}
 /* arg > 1.0 will set mfact absolutely */
 void // 17
 setmfact(const Arg *arg) {
@@ -309,15 +295,15 @@ moveresize(const Arg *arg) {
 	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
 	if (!grabc || client_is_unmanaged(grabc) || grabc->isfullscreen)
 		return;
-
 	/* Float the window and tell motionnotify to grab it */
-	if (grabc->isfloating == 0) {
+	if (grabc->isfloating == 0 && arg->ui == CurMove) {
 		grabc->drag_to_tile = true;
 		setfloating(grabc, 1);
 	}
 
 	switch (cursor_mode = arg->ui) {
 	case CurMove:
+
 		grabcx = cursor->x - grabc->geom.x;
 		grabcy = cursor->y - grabc->geom.y;
 		wlr_cursor_set_xcursor(cursor, cursor_mgr, "grab");
@@ -325,9 +311,14 @@ moveresize(const Arg *arg) {
 	case CurResize:
 		/* Doesn't work for X11 output - the next absolute motion event
 		 * returns the cursor to where it started */
-		wlr_cursor_warp_closest(cursor, NULL, grabc->geom.x + grabc->geom.width,
-								grabc->geom.y + grabc->geom.height);
-		wlr_cursor_set_xcursor(cursor, cursor_mgr, "bottom_right_corner");
+		if (grabc->isfloating) {
+			wlr_cursor_warp_closest(cursor, NULL,
+									grabc->geom.x + grabc->geom.width,
+									grabc->geom.y + grabc->geom.height);
+			wlr_cursor_set_xcursor(cursor, cursor_mgr, "bottom_right_corner");
+		} else {
+			wlr_cursor_set_xcursor(cursor, cursor_mgr, "grab");
+		}
 		break;
 	}
 }
@@ -377,10 +368,38 @@ quit(const Arg *arg) {
 void resizewin(const Arg *arg) {
 	Client *c = NULL;
 	c = selmon->sel;
-	if (!c || c->isfullscreen)
+	int offsetx = 0, offsety = 0;
+
+	if (!c || c->isfullscreen || c->ismaxmizescreen)
 		return;
-	if (!c->isfloating)
-		togglefloating(NULL);
+
+	if (ISTILED(c)) {
+		switch (arg->ui) {
+		case NUM_TYPE_MINUS:
+			offsetx = -arg->i;
+			break;
+		case NUM_TYPE_PLUS:
+			offsetx = arg->i;
+			break;
+		default:
+			offsetx = arg->i;
+			break;
+		}
+
+		switch (arg->ui2) {
+		case NUM_TYPE_MINUS:
+			offsety = -arg->i2;
+			break;
+		case NUM_TYPE_PLUS:
+			offsety = arg->i2;
+			break;
+		default:
+			offsety = arg->i2;
+			break;
+		}
+		resize_tile_client(c, false, offsetx, offsety, 0);
+		return;
+	}
 
 	switch (arg->ui) {
 	case NUM_TYPE_MINUS:

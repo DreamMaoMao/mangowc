@@ -248,7 +248,8 @@ struct Client {
 	/* Must keep these three elements in this order */
 	unsigned int type; /* XDGShell or X11* */
 	struct wlr_box geom, pending, float_geom, animainit_geom,
-		overview_backup_geom, current; /* layout-relative, includes border */
+		overview_backup_geom, current,
+		drag_begin_geom; /* layout-relative, includes border */
 	Monitor *mon;
 	struct wlr_scene_tree *scene;
 	struct wlr_scene_rect *border[4]; /* top, bottom, left, right */
@@ -337,6 +338,12 @@ struct Client {
 	float unfocused_opacity;
 	char oldmonname[128];
 	struct wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_toplevel;
+	double master_mfact_per, master_inner_per, stack_innder_per;
+	double old_master_mfact_per, old_master_inner_per, old_stack_innder_per;
+	double old_scroller_pproportion;
+	bool ismaster;
+	bool cursor_in_upper_half, cursor_in_left_half;
+	bool isleftstack;
 };
 
 typedef struct {
@@ -410,6 +417,7 @@ typedef struct {
 	const char *symbol;
 	void (*arrange)(Monitor *);
 	const char *name;
+	unsigned int id;
 } Layout;
 
 struct Monitor {
@@ -711,6 +719,9 @@ static unsigned int get_tag_status(unsigned int tag, Monitor *m);
 static void enable_adaptive_sync(Monitor *m, struct wlr_output_state *state);
 static Client *get_next_stack_client(Client *c, bool reverse);
 static void set_float_malposition(Client *tc);
+static void set_size_per(Monitor *m, Client *c);
+static void resize_tile_client(Client *grabc, bool isdrag, int offsetx,
+							   int offsety, unsigned int time);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -770,7 +781,10 @@ static struct wl_list keyboards;
 static struct wl_list inputdevices;
 static unsigned int cursor_mode;
 static Client *grabc;
-static int grabcx, grabcy; /* client-relative */
+static int grabcx, grabcy;						   /* client-relative */
+static int drag_begin_cursorx, drag_begin_cursory; /* client-relative */
+static bool start_drag_window = false;
+static int last_apply_drap_time = 0;
 
 static struct wlr_ext_foreign_toplevel_image_capture_source_manager_v1
 	*ext_foreign_toplevel_image_capture_source_manager_v1;
@@ -816,11 +830,10 @@ static struct {
 #include "config/preset.h"
 
 struct Pertag {
-	unsigned int curtag, prevtag;	 /* current and previous tag */
-	int nmasters[LENGTH(tags) + 1];	 /* number of windows in master area */
-	float mfacts[LENGTH(tags) + 1];	 /* mfacts per tag */
-	float smfacts[LENGTH(tags) + 1]; /* smfacts per tag */
-	bool no_hide[LENGTH(tags) + 1];	 /* no_hide per tag */
+	unsigned int curtag, prevtag;	/* current and previous tag */
+	int nmasters[LENGTH(tags) + 1]; /* number of windows in master area */
+	float mfacts[LENGTH(tags) + 1]; /* mfacts per tag */
+	bool no_hide[LENGTH(tags) + 1]; /* no_hide per tag */
 	const Layout
 		*ltidxs[LENGTH(tags) + 1]; /* matrix of tags and layouts indexes  */
 };
@@ -878,6 +891,7 @@ static struct wlr_xwayland *xwayland;
 #include "dispatch/bind_define.h"
 #include "ext-protocol/all.h"
 #include "fetch/fetch.h"
+#include "layout/arrange.h"
 #include "layout/horizontal.h"
 #include "layout/vertical.h"
 
@@ -1300,6 +1314,8 @@ void applyrules(Client *c) {
 		}
 	}
 
+	set_size_per(mon, c);
+
 	// if no geom rule hit and is normal winodw, use the center pos and record
 	// the hit size
 	if (!hit_rule_pos &&
@@ -1373,61 +1389,6 @@ void applyrules(Client *c) {
 		wlr_scene_node_reparent(&selmon->sel->scene->node, layers[LyrOverlay]);
 		wlr_scene_node_raise_to_top(&selmon->sel->scene->node);
 	}
-}
-
-void // 17
-arrange(Monitor *m, bool want_animation) {
-	Client *c = NULL;
-
-	if (!m)
-		return;
-
-	if (!m->wlr_output->enabled)
-		return;
-
-	m->visible_clients = 0;
-	m->visible_tiling_clients = 0;
-	wl_list_for_each(c, &clients, link) {
-		if (c->iskilling)
-			continue;
-
-		if (c->mon == m && (c->isglobal || c->isunglobal)) {
-			c->tags = m->tagset[m->seltags];
-			if (c->mon->sel == NULL)
-				focusclient(c, 0);
-		}
-
-		if (c->mon == m) {
-			if (VISIBLEON(c, m)) {
-
-				m->visible_clients++;
-				if (ISTILED(c))
-					m->visible_tiling_clients++;
-
-				set_arrange_visible(m, c, want_animation);
-			} else {
-				set_arrange_hidden(m, c, want_animation);
-			}
-		}
-
-		if (c->mon == m && c->ismaxmizescreen && !c->animation.tagouted &&
-			!c->animation.tagouting && VISIBLEON(c, m)) {
-			reset_maxmizescreen_size(c);
-		}
-	}
-
-	if (m->isoverview) {
-		overviewlayout.arrange(m);
-	} else if (m && m->pertag->curtag &&
-			   m->pertag->ltidxs[m->pertag->curtag]->arrange) {
-		m->pertag->ltidxs[m->pertag->curtag]->arrange(m);
-	} else if (m && m->pertag->prevtag &&
-			   m->pertag->ltidxs[m->pertag->prevtag]->arrange) {
-		m->pertag->ltidxs[m->pertag->prevtag]->arrange(m);
-	}
-
-	motionnotify(0, NULL, 0, 0, 0, 0);
-	checkidleinhibitor(NULL);
 }
 
 void arrangelayer(Monitor *m, struct wl_list *list, struct wlr_box *usable_area,
@@ -1930,6 +1891,8 @@ buttonpress(struct wl_listener *listener, void *data) {
 			selmon->sel = grabc;
 			tmpc = grabc;
 			grabc = NULL;
+			start_drag_window = false;
+			last_apply_drap_time = 0;
 			if (tmpc->drag_to_tile && drag_tile_to_tile) {
 				place_drag_tile_client(tmpc);
 			} else {
@@ -2623,7 +2586,6 @@ void createmon(struct wl_listener *listener, void *data) {
 	for (i = 0; i <= LENGTH(tags); i++) {
 		m->pertag->nmasters[i] = m->nmaster;
 		m->pertag->mfacts[i] = m->mfact;
-		m->pertag->smfacts[i] = default_smfact;
 		m->pertag->ltidxs[i] = m->lt;
 	}
 
@@ -3463,6 +3425,9 @@ void init_client_properties(Client *c) {
 	c->ignore_maximize = 0;
 	c->ignore_minimize = 1;
 	c->iscustomsize = 0;
+	c->master_mfact_per = 0.0f;
+	c->master_inner_per = 0.0f;
+	c->stack_innder_per = 0.0f;
 }
 
 void // old fix to 0.5
@@ -3788,14 +3753,18 @@ void motionnotify(unsigned int time, struct wlr_input_device *device, double dx,
 		resize(grabc, grabc->float_geom, 1);
 		return;
 	} else if (cursor_mode == CurResize) {
-		grabc->iscustomsize = 1;
-		grabc->float_geom =
-			(struct wlr_box){.x = grabc->geom.x,
-							 .y = grabc->geom.y,
-							 .width = (int)round(cursor->x) - grabc->geom.x,
-							 .height = (int)round(cursor->y) - grabc->geom.y};
-		resize(grabc, grabc->float_geom, 1);
-		return;
+		if (grabc->isfloating) {
+			grabc->iscustomsize = 1;
+			grabc->float_geom = (struct wlr_box){
+				.x = grabc->geom.x,
+				.y = grabc->geom.y,
+				.width = (int)round(cursor->x) - grabc->geom.x,
+				.height = (int)round(cursor->y) - grabc->geom.y};
+			resize(grabc, grabc->float_geom, 1);
+			return;
+		} else {
+			resize_tile_client(grabc, true, 0, 0, time);
+		}
 	}
 
 	/* If there's no client surface under the cursor, set the cursor image
@@ -4116,11 +4085,26 @@ void exchange_two_client(Client *c1, Client *c2) {
 
 	Monitor *tmp_mon = NULL;
 	unsigned int tmp_tags;
+	double master_inner_per = 0.0f;
+	double master_mfact_per = 0.0f;
+	double stack_innder_per = 0.0f;
 
 	if (c1 == NULL || c2 == NULL ||
 		(!exchange_cross_monitor && c1->mon != c2->mon)) {
 		return;
 	}
+
+	master_inner_per = c1->master_inner_per;
+	master_mfact_per = c1->master_mfact_per;
+	stack_innder_per = c1->stack_innder_per;
+
+	c1->master_inner_per = c2->master_inner_per;
+	c1->master_mfact_per = c2->master_mfact_per;
+	c1->stack_innder_per = c2->stack_innder_per;
+
+	c2->master_inner_per = master_inner_per;
+	c2->master_mfact_per = master_mfact_per;
+	c2->stack_innder_per = stack_innder_per;
 
 	struct wl_list *tmp1_prev = c1->link.prev;
 	struct wl_list *tmp2_prev = c2->link.prev;
@@ -4345,6 +4329,10 @@ setfloating(Client *c, int floating) {
 								layers[c->isfloating ? LyrTop : LyrTile]);
 	}
 
+	if (!c->isfloating) {
+		set_size_per(c->mon, c);
+	}
+
 	arrange(c->mon, false);
 	setborder_color(c);
 	printstatus();
@@ -4389,12 +4377,15 @@ void setmaxmizescreen(Client *c, int maxmizescreen) {
 		c->ismaxmizescreen = 0;
 		if (c->isfloating)
 			setfloating(c, 1);
-		arrange(c->mon, false);
 	}
 
 	wlr_scene_node_reparent(&c->scene->node, layers[maxmizescreen	? LyrTile
 													: c->isfloating ? LyrTop
 																	: LyrTile]);
+	if (!c->ismaxmizescreen) {
+		set_size_per(c->mon, c);
+	}
+	arrange(c->mon, false);
 }
 
 void setfakefullscreen(Client *c, int fakefullscreen) {
@@ -4448,6 +4439,10 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 		wlr_scene_node_reparent(
 			&c->scene->node,
 			layers[fullscreen || c->isfloating ? LyrTop : LyrTile]);
+	}
+
+	if (!c->isfullscreen) {
+		set_size_per(c->mon, c);
 	}
 
 	arrange(c->mon, false);

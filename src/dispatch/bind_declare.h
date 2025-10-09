@@ -27,7 +27,6 @@ void setlayout(const Arg *arg);
 void switch_layout(const Arg *arg);
 void switch_keyboard_layout(const Arg *arg);
 void setmfact(const Arg *arg);
-void setsmfact(const Arg *arg);
 void quit(const Arg *arg);
 void moveresize(const Arg *arg);
 void exchange_client(const Arg *arg);

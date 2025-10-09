@@ -1,292 +1,91 @@
-void vertical_fibonacci(Monitor *mon, int s) {
-	unsigned int i = 0, n = 0, nx, ny, nw, nh;
+void vertical_tile(Monitor *m) {
+	unsigned int i, n = 0, w, r, ie = enablegaps, mh, mx, tx;
 	Client *c = NULL;
-	unsigned int cur_gappih = enablegaps ? mon->gappih : 0;
-	unsigned int cur_gappiv = enablegaps ? mon->gappiv : 0;
-	unsigned int cur_gappoh = enablegaps ? mon->gappoh : 0;
-	unsigned int cur_gappov = enablegaps ? mon->gappov : 0;
-
-	cur_gappih = smartgaps && mon->visible_tiling_clients == 1 ? 0 : cur_gappih;
-	cur_gappiv = smartgaps && mon->visible_tiling_clients == 1 ? 0 : cur_gappiv;
-	cur_gappoh = smartgaps && mon->visible_tiling_clients == 1 ? 0 : cur_gappoh;
-	cur_gappov = smartgaps && mon->visible_tiling_clients == 1 ? 0 : cur_gappov;
-
-	n = mon->visible_tiling_clients;
-
-	if (n == 0)
-		return;
-
-	// Initial dimensions including outer gaps
-	nx = mon->w.x + cur_gappoh;
-	ny = mon->w.y + cur_gappov;
-	nw = mon->w.width - 2 * cur_gappoh;
-	nh = mon->w.height - 2 * cur_gappov;
-
-	// First pass: calculate client geometries
-	wl_list_for_each(c, &clients, link) {
-		if (!VISIBLEON(c, mon) || !ISTILED(c))
-			continue;
-
-		c->bw = mon->visible_tiling_clients == 1 && no_border_when_single &&
-						smartgaps
-					? 0
-					: borderpx;
-		if ((i % 2 && nw / 2 > 2 * c->bw) || (!(i % 2) && nh / 2 > 2 * c->bw)) {
-			if (i < n - 1) {
-				if (i % 2) {
-					if (i == 1) {
-						nw = nw * mon->pertag->smfacts[mon->pertag->curtag];
-					} else {
-						nw = (nw - cur_gappih) / 2;
-					}
-				} else {
-					nh = (nh - cur_gappiv) / 2;
-				}
-
-				if ((i % 4) == 2 && !s)
-					ny += nh + cur_gappiv;
-				else if ((i % 4) == 3 && !s)
-					nx += nw + cur_gappih;
-			}
-
-			if ((i % 4) == 0) {
-				if (s)
-					nx += nw + cur_gappih;
-				else
-					nx -= nw + cur_gappih;
-			} else if ((i % 4) == 1)
-				ny += nh + cur_gappiv;
-			else if ((i % 4) == 2)
-				nx += nw + cur_gappih;
-			else if ((i % 4) == 3) {
-				if (s)
-					ny += nh + cur_gappiv;
-				else
-					ny -= nh + cur_gappiv;
-			}
-
-			if (i == 0) {
-				if (n != 1)
-					nh = (mon->w.height - 2 * cur_gappov) *
-						 mon->pertag->mfacts[mon->pertag->curtag];
-				nx = mon->w.x + cur_gappoh;
-			} else if (i == 1) {
-				nh = mon->w.height - 2 * cur_gappov - nh - cur_gappiv;
-			} else if (i == 2) {
-				nw = mon->w.width - 2 * cur_gappoh - nw - cur_gappih;
-			}
-			i++;
-		}
-
-		c->geom = (struct wlr_box){.x = nx, .y = ny, .width = nw, .height = nh};
-	}
-
-	// Second pass: apply gaps between clients
-	wl_list_for_each(c, &clients, link) {
-		if (!VISIBLEON(c, mon) || !ISTILED(c))
-			continue;
-
-		unsigned int right_gap = 0;
-		unsigned int bottom_gap = 0;
-		Client *nc = NULL;
-
-		wl_list_for_each(nc, &clients, link) {
-			if (!VISIBLEON(nc, mon) || !ISTILED(nc))
-				continue;
-
-			if (c == nc)
-				continue;
-
-			// Check for right neighbor
-			if (c->geom.y == nc->geom.y &&
-				c->geom.x + c->geom.width == nc->geom.x) {
-				right_gap = cur_gappih;
-			}
-
-			// Check for bottom neighbor
-			if (c->geom.x == nc->geom.x &&
-				c->geom.y + c->geom.height == nc->geom.y) {
-				bottom_gap = cur_gappiv;
-			}
-		}
-
-		resize(c,
-			   (struct wlr_box){.x = c->geom.x,
-								.y = c->geom.y,
-								.width = c->geom.width - right_gap,
-								.height = c->geom.height - bottom_gap},
-			   0);
-	}
-}
-
-void vertical_dwindle(Monitor *mon) { vertical_fibonacci(mon, 1); }
-
-void vertical_spiral(Monitor *mon) { vertical_fibonacci(mon, 0); }
-
-void vertical_grid(Monitor *m) {
-	unsigned int i, n;
-	unsigned int cx, cy, cw, ch;
-	unsigned int dy;
-	unsigned int rows, cols, overrows;
-	Client *c = NULL;
-
-	n = m->isoverview ? m->visible_clients : m->visible_tiling_clients;
-
-	if (n == 0) {
-		return;
-	}
-
-	if (n == 1) {
-		wl_list_for_each(c, &clients, link) {
-
-			if (c->mon != m)
-				continue;
-
-			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
-							smartgaps
-						? 0
-						: borderpx;
-			if (VISIBLEON(c, m) && !c->isunglobal &&
-				((m->isoverview && !client_should_ignore_focus(c)) ||
-				 ISTILED(c))) {
-				ch = (m->w.height - 2 * overviewgappo) * 0.7;
-				cw = (m->w.width - 2 * overviewgappo) * 0.8;
-				c->geom.x = m->w.x + (m->w.width - cw) / 2;
-				c->geom.y = m->w.y + (m->w.height - ch) / 2;
-				c->geom.width = cw - 2 * c->bw;
-				c->geom.height = ch - 2 * c->bw;
-				resize(c, c->geom, 0);
-				return;
-			}
-		}
-	}
-
-	if (n == 2) {
-		ch = (m->w.height - 2 * overviewgappo - overviewgappi) / 2;
-		cw = (m->w.width - 2 * overviewgappo) * 0.65;
-		i = 0;
-		wl_list_for_each(c, &clients, link) {
-
-			if (c->mon != m)
-				continue;
-
-			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
-							smartgaps
-						? 0
-						: borderpx;
-			if (VISIBLEON(c, m) && !c->isunglobal &&
-				((m->isoverview && !client_should_ignore_focus(c)) ||
-				 ISTILED(c))) {
-				if (i == 0) {
-					c->geom.x = m->w.x + (m->w.width - cw) / 2 + overviewgappo;
-					c->geom.y = m->w.y + overviewgappo;
-					c->geom.width = cw - 2 * c->bw;
-					c->geom.height = ch - 2 * c->bw;
-					resize(c, c->geom, 0);
-				} else if (i == 1) {
-					c->geom.x = m->w.x + (m->w.width - cw) / 2 + overviewgappo;
-					c->geom.y = m->w.y + ch + overviewgappo + overviewgappi;
-					c->geom.width = cw - 2 * c->bw;
-					c->geom.height = ch - 2 * c->bw;
-					resize(c, c->geom, 0);
-				}
-				i++;
-			}
-		}
-		return;
-	}
-
-	for (rows = 0; rows <= n / 2; rows++) {
-		if (rows * rows >= n) {
-			break;
-		}
-	}
-	cols = (rows && (rows - 1) * rows >= n) ? rows - 1 : rows;
-
-	cw = (m->w.width - 2 * overviewgappo - (cols - 1) * overviewgappi) / cols;
-	ch = (m->w.height - 2 * overviewgappo - (rows - 1) * overviewgappi) / rows;
-
-	overrows = n % rows;
-	if (overrows) {
-		dy =
-			(m->w.height - overrows * ch - (overrows - 1) * overviewgappi) / 2 -
-			overviewgappo;
-	}
-
-	i = 0;
-	wl_list_for_each(c, &clients, link) {
-		if (c->mon != m)
-			continue;
-
-		c->bw =
-			m->visible_tiling_clients == 1 && no_border_when_single && smartgaps
-				? 0
-				: borderpx;
-		if (VISIBLEON(c, m) && !c->isunglobal &&
-			((m->isoverview && !client_should_ignore_focus(c)) || ISTILED(c))) {
-			cx = m->w.x + (i / rows) * (cw + overviewgappi);
-			cy = m->w.y + (i % rows) * (ch + overviewgappi);
-			if (overrows && i >= n - overrows) {
-				cy += dy;
-			}
-			c->geom.x = cx + overviewgappo;
-			c->geom.y = cy + overviewgappo;
-			c->geom.width = cw - 2 * c->bw;
-			c->geom.height = ch - 2 * c->bw;
-			resize(c, c->geom, 0);
-			i++;
-		}
-	}
-}
-
-void vertical_deck(Monitor *m) {
-	unsigned int mh, mx;
-	int i, n = 0;
-	Client *c = NULL;
-	unsigned int cur_gappiv = enablegaps ? m->gappiv : 0;
-	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
-	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
-
-	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
-	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
-	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
+	Client *fc = NULL;
+	double mfact = 0;
+	int master_num = 0;
+	int stack_num = 0;
 
 	n = m->visible_tiling_clients;
+	master_num = m->pertag->nmasters[m->pertag->curtag];
+	stack_num = n - master_num;
 
 	if (n == 0)
 		return;
 
-	float mfact = m->pertag ? m->pertag->mfacts[m->pertag->curtag] : m->mfact;
+	unsigned int cur_gapih = enablegaps ? m->gappih : 0;
+	unsigned int cur_gapiv = enablegaps ? m->gappiv : 0;
+	unsigned int cur_gapoh = enablegaps ? m->gappoh : 0;
+	unsigned int cur_gapov = enablegaps ? m->gappov : 0;
 
-	if (n > m->nmaster)
-		mh = m->nmaster ? round((m->w.height - 2 * cur_gappov) * mfact) : 0;
+	cur_gapih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gapih;
+	cur_gapiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gapiv;
+	cur_gapoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gapoh;
+	cur_gapov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gapov;
+
+	wl_list_for_each(fc, &clients, link) {
+		if (VISIBLEON(fc, m) && ISTILED(fc))
+			break;
+	}
+
+	mfact = fc->master_mfact_per > 0.0f ? fc->master_mfact_per
+										: m->pertag->mfacts[m->pertag->curtag];
+
+	if (n > m->pertag->nmasters[m->pertag->curtag])
+		mh = m->pertag->nmasters[m->pertag->curtag]
+				 ? (m->w.height + cur_gapiv * ie) * mfact
+				 : 0;
 	else
-		mh = m->w.height - 2 * cur_gappov;
+		mh = m->w.height - 2 * cur_gapov + cur_gapiv * ie;
 
-	i = mx = 0;
+	i = 0;
+	mx = tx = cur_gapih;
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
-		if (i < m->nmaster) {
-			resize(
-				c,
-				(struct wlr_box){.x = m->w.x + cur_gappoh + mx,
-								 .y = m->w.y + cur_gappov,
-								 .width = (m->w.width - 2 * cur_gappoh - mx) /
-										  (MIN(n, m->nmaster) - i),
-								 .height = mh},
-				0);
-			mx += c->geom.width;
-		} else {
+		if (i < m->pertag->nmasters[m->pertag->curtag]) {
+			r = MIN(n, m->pertag->nmasters[m->pertag->curtag]) - i;
+			if (c->master_inner_per > 0.0f) {
+				w = (m->w.width - 2 * cur_gapih -
+					 cur_gapih * ie * (master_num - 1)) *
+					c->master_inner_per;
+				c->master_mfact_per = mfact;
+			} else {
+				w = (m->w.width - mx - cur_gapih - cur_gapih * ie * (r - 1)) /
+					r;
+				c->master_inner_per = w / (m->w.width - mx - cur_gapih -
+										   cur_gapih * ie * (r - 1));
+				c->master_mfact_per = mfact;
+			}
 			resize(c,
-				   (struct wlr_box){.x = m->w.x + cur_gappoh,
-									.y = m->w.y + mh + cur_gappov + cur_gappiv,
-									.width = m->w.width - 2 * cur_gappoh,
-									.height = m->w.height - mh -
-											  2 * cur_gappov - cur_gappiv},
+				   (struct wlr_box){.x = m->w.x + mx,
+									.y = m->w.y + cur_gapov,
+									.width = w,
+									.height = mh - cur_gapiv * ie},
 				   0);
-			if (c == focustop(m))
-				wlr_scene_node_raise_to_top(&c->scene->node);
+			mx += c->geom.width + cur_gapih * ie;
+		} else {
+			r = n - i;
+			if (c->stack_innder_per > 0.0f) {
+				w = (m->w.width - 2 * cur_gapih -
+					 cur_gapih * ie * (stack_num - 1)) *
+					c->stack_innder_per;
+				c->master_mfact_per = mfact;
+			} else {
+				w = (m->w.width - tx - cur_gapih - cur_gapih * ie * (r - 1)) /
+					r;
+				c->stack_innder_per = w / (m->w.width - tx - cur_gapih -
+										   cur_gapih * ie * (r - 1));
+				c->master_mfact_per = mfact;
+			}
+
+			resize(c,
+				   (struct wlr_box){.x = m->w.x + tx,
+									.y = m->w.y + mh + cur_gapov,
+									.width = w,
+									.height = m->w.height - mh - 2 * cur_gapov},
+				   0);
+			tx += c->geom.width + cur_gapih * ie;
 		}
 		i++;
 	}
@@ -417,61 +216,4 @@ void vertical_scroller(Monitor *m) {
 	}
 
 	free(tempClients);
-}
-
-void vertical_tile(Monitor *m) {
-	unsigned int i, n = 0, w, r, ie = enablegaps, mh, mx, tx;
-	Client *c = NULL;
-
-	n = m->visible_tiling_clients;
-
-	if (n == 0)
-		return;
-
-	unsigned int cur_gappiv = enablegaps ? m->gappiv : 0;
-	unsigned int cur_gappih = enablegaps ? m->gappih : 0;
-	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
-	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
-
-	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
-	cur_gappih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappih;
-	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
-	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
-
-	if (n > m->pertag->nmasters[m->pertag->curtag])
-		mh = m->pertag->nmasters[m->pertag->curtag]
-				 ? (m->w.height + cur_gappiv * ie) *
-					   m->pertag->mfacts[m->pertag->curtag]
-				 : 0;
-	else
-		mh = m->w.height - 2 * cur_gappoh + cur_gappiv * ie;
-	i = 0;
-	mx = tx = cur_gappov;
-	wl_list_for_each(c, &clients, link) {
-		if (!VISIBLEON(c, m) || !ISTILED(c))
-			continue;
-		if (i < m->pertag->nmasters[m->pertag->curtag]) {
-			r = MIN(n, m->pertag->nmasters[m->pertag->curtag]) - i;
-			w = (m->w.width - mx - cur_gappov - cur_gappiv * ie * (r - 1)) / r;
-			resize(c,
-				   (struct wlr_box){.x = m->w.x + mx,
-									.y = m->w.y + cur_gappoh,
-									.width = w,
-									.height = mh - cur_gappih * ie},
-				   0);
-			mx += c->geom.width + cur_gappiv * ie;
-		} else {
-			r = n - i;
-			w = (m->w.width - tx - cur_gappov - cur_gappiv * ie * (r - 1)) / r;
-			resize(
-				c,
-				(struct wlr_box){.x = m->w.x + tx,
-								 .y = m->w.y + mh + cur_gappoh,
-								 .width = w,
-								 .height = m->w.height - mh - 2 * cur_gappoh},
-				0);
-			tx += c->geom.width + cur_gappiv * ie;
-		}
-		i++;
-	}
 }

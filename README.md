@@ -16,17 +16,13 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Base tags not workspaces (supports separate window layouts for each tag)
      - Smooth and customizable complete animations (window open/move/close, tag enter/leave,layer open/close/move)
      - Excellent input method support (text input v2/v3)
-     - Flexible window layouts with easy switching (scroller, master, monocle, spiral, etc.)
+     - Flexible window layouts with easy switching (scroller, master-stack, monocle,center-master, etc.)
      - Rich window states (swallow, minimize, maximize, unglobal, global, fakefullscreen, overlay, etc.)
      - Simple yet powerful external configuration(support shortcuts hot-reload)
      - Sway-like scratchpad and named scratchpad
      - Ipc support(get/send message from/to compositor by external program)
      - Hycov-like overview
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
-
-3. **Some disadvantages**
-   - Since it uses the fully automatic layout like dwm style, it does not allow you to manually adjust the window size when the window is in tiled state. It only allows you to use dispatch like `setmfact` or `increase_proportion` bind to adjust the tiled window ratio.
-
 
 Master-Stack Layout
 
@@ -38,23 +34,14 @@ https://github.com/user-attachments/assets/c9bf9415-fad1-4400-bcdc-3ad2d76de85a
 
 # Supported layouts
 
-## Horizontal Layouts
 - tile
 - scroller
 - monocle
 - grid
-- dwindle
-- spiral
 - deck
 - center_tile
-
-## Vertical Layouts
 - vertical_tile
 - vertical_scroller
-- vertical_monocle
-- vertical_grid
-- vertical_dwindle
-- vertical_spiral
 
 # Installation
 
