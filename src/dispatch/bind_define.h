@@ -309,15 +309,15 @@ moveresize(const Arg *arg) {
 	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
 	if (!grabc || client_is_unmanaged(grabc) || grabc->isfullscreen)
 		return;
-
 	/* Float the window and tell motionnotify to grab it */
-	if (grabc->isfloating == 0) {
+	if (grabc->isfloating == 0 && arg->ui == CurMove) {
 		grabc->drag_to_tile = true;
 		setfloating(grabc, 1);
 	}
 
 	switch (cursor_mode = arg->ui) {
 	case CurMove:
+
 		grabcx = cursor->x - grabc->geom.x;
 		grabcy = cursor->y - grabc->geom.y;
 		wlr_cursor_set_xcursor(cursor, cursor_mgr, "grab");
@@ -325,9 +325,14 @@ moveresize(const Arg *arg) {
 	case CurResize:
 		/* Doesn't work for X11 output - the next absolute motion event
 		 * returns the cursor to where it started */
-		wlr_cursor_warp_closest(cursor, NULL, grabc->geom.x + grabc->geom.width,
-								grabc->geom.y + grabc->geom.height);
-		wlr_cursor_set_xcursor(cursor, cursor_mgr, "bottom_right_corner");
+		if (grabc->isfloating) {
+			wlr_cursor_warp_closest(cursor, NULL,
+									grabc->geom.x + grabc->geom.width,
+									grabc->geom.y + grabc->geom.height);
+			wlr_cursor_set_xcursor(cursor, cursor_mgr, "bottom_right_corner");
+		} else {
+			wlr_cursor_set_xcursor(cursor, cursor_mgr, "grab");
+		}
 		break;
 	}
 }

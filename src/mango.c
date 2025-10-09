@@ -253,7 +253,8 @@ struct Client {
 	/* Must keep these three elements in this order */
 	unsigned int type; /* XDGShell or X11* */
 	struct wlr_box geom, pending, float_geom, animainit_geom,
-		overview_backup_geom, current; /* layout-relative, includes border */
+		overview_backup_geom, current,
+		begin_geom; /* layout-relative, includes border */
 	Monitor *mon;
 	struct wlr_scene_tree *scene;
 	struct wlr_scene_rect *border; /* top, bottom, left, right */
@@ -337,6 +338,10 @@ struct Client {
 	float unfocused_opacity;
 	char oldmonname[128];
 	int noblur;
+	double master_width_per, master_height_per, slave_height_per;
+	double old_master_width_per, old_master_height_per, old_slave_height_per;
+	bool ismaster;
+	bool cursor_in_upper_half;
 };
 
 typedef struct {
@@ -706,6 +711,7 @@ static unsigned int get_tag_status(unsigned int tag, Monitor *m);
 static void enable_adaptive_sync(Monitor *m, struct wlr_output_state *state);
 static Client *get_next_stack_client(Client *c, bool reverse);
 static void set_float_malposition(Client *tc);
+static void set_size_per(Monitor *m, Client *c);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -765,7 +771,9 @@ static struct wl_list keyboards;
 static struct wl_list inputdevices;
 static unsigned int cursor_mode;
 static Client *grabc;
-static int grabcx, grabcy; /* client-relative */
+static int grabcx, grabcy;				 /* client-relative */
+static int begin_cursorx, begin_cursory; /* client-relative */
+static bool start_drag_window = false;
 
 static struct wlr_output_layout *output_layout;
 static struct wlr_box sgeom;
@@ -1291,6 +1299,8 @@ void applyrules(Client *c) {
 		}
 	}
 
+	set_size_per(mon, c);
+
 	// if no geom rule hit and is normal winodw, use the center pos and record
 	// the hit size
 	if (!hit_rule_pos &&
@@ -1366,9 +1376,50 @@ void applyrules(Client *c) {
 	}
 }
 
+void reset_size_per_mon(Monitor *m, double total_slave_hight_percent,
+						double total_master_height_percent, int master_num,
+						int slave_num) {
+	Client *c;
+	int i = 0;
+	wl_list_for_each(c, &clients, link) {
+		if (VISIBLEON(c, m) && ISTILED(c)) {
+
+			if (total_master_height_percent <= 0.0)
+				return;
+			// wlr_log(WLR_ERROR,"reset before: %f %f", c->slave_height_per,
+			// total_slave_hight_percent);
+
+			if (i < m->pertag->nmasters[m->pertag->curtag]) {
+				c->ismaster = true;
+				c->slave_height_per = slave_num ? 1.0f / slave_num : 1.0f;
+				c->master_height_per =
+					c->master_height_per / total_master_height_percent;
+			} else {
+				// wlr_log(WLR_ERROR,"###### reset before: %f %f",
+				// c->slave_height_per,
+				// total_slave_hight_percent);
+				c->ismaster = false;
+				c->master_height_per = 1.0f / master_num;
+				c->slave_height_per =
+					c->slave_height_per / total_slave_hight_percent;
+				// wlr_log(WLR_ERROR,"------reset after: %f %f",
+				// c->slave_height_per,
+				// total_slave_hight_percent);
+			}
+		}
+
+		i++;
+	}
+}
+
 void // 17
 arrange(Monitor *m, bool want_animation) {
 	Client *c = NULL;
+	double total_slave_height_percent = 0;
+	double total_master_height_percent = 0;
+	int i = 0;
+	int master_num = 0;
+	int slave_num = 0;
 
 	if (!m)
 		return;
@@ -1392,8 +1443,19 @@ arrange(Monitor *m, bool want_animation) {
 			if (VISIBLEON(c, m)) {
 
 				m->visible_clients++;
-				if (ISTILED(c))
+				if (ISTILED(c)) {
+
+					if (i < m->pertag->nmasters[m->pertag->curtag]) {
+						master_num++;
+						total_master_height_percent += c->master_height_per;
+					} else {
+						slave_num++;
+						total_slave_height_percent += c->slave_height_per;
+					}
+
 					m->visible_tiling_clients++;
+					i++;
+				}
 
 				set_arrange_visible(m, c, want_animation);
 			} else {
@@ -1407,14 +1469,19 @@ arrange(Monitor *m, bool want_animation) {
 		}
 	}
 
+	reset_size_per_mon(m, total_slave_height_percent,
+					   total_master_height_percent, master_num, slave_num);
+
 	if (m->isoverview) {
 		overviewlayout.arrange(m);
 	} else {
 		m->pertag->ltidxs[m->pertag->curtag]->arrange(m);
 	}
 
-	motionnotify(0, NULL, 0, 0, 0, 0);
-	checkidleinhibitor(NULL);
+	if (!start_drag_window) {
+		motionnotify(0, NULL, 0, 0, 0, 0);
+		checkidleinhibitor(NULL);
+	}
 }
 
 void arrangelayer(Monitor *m, struct wl_list *list, struct wlr_box *usable_area,
@@ -1917,6 +1984,7 @@ buttonpress(struct wl_listener *listener, void *data) {
 			selmon->sel = grabc;
 			tmpc = grabc;
 			grabc = NULL;
+			start_drag_window = false;
 			if (tmpc->drag_to_tile && drag_tile_to_tile) {
 				place_drag_tile_client(tmpc);
 			} else {
@@ -3542,6 +3610,20 @@ void init_client_properties(Client *c) {
 	c->ignore_maximize = 0;
 	c->ignore_minimize = 1;
 	c->iscustomsize = 0;
+	c->master_width_per = 0.0f;
+	c->master_height_per = 0.0f;
+	c->slave_height_per = 0.0f;
+}
+
+void set_size_per(Monitor *m, Client *c) {
+	Client *fc = NULL;
+	wl_list_for_each(fc, &clients, link) {
+		if (VISIBLEON(fc, m) && ISTILED(fc) && fc != c) {
+			c->master_width_per = fc->master_width_per;
+			c->master_height_per = fc->master_height_per;
+			c->slave_height_per = fc->slave_height_per;
+		}
+	}
 }
 
 void // old fix to 0.5
@@ -3791,6 +3873,68 @@ void motionabsolute(struct wl_listener *listener, void *data) {
 	motionnotify(event->time_msec, &event->pointer->base, dx, dy, dx, dy);
 }
 
+void resize_tile_client(Client *grabc) {
+	Client *tc;
+
+	if (!start_drag_window) {
+		begin_cursorx = cursor->x;
+		begin_cursory = cursor->y;
+		start_drag_window = true;
+
+		// 记录初始状态
+		grabc->old_master_width_per = grabc->master_width_per;
+		grabc->old_master_height_per = grabc->master_height_per;
+		grabc->old_slave_height_per = grabc->slave_height_per;
+		grabc->cursor_in_upper_half =
+			cursor->y < grabc->geom.y + grabc->geom.height / 2;
+		// 记录初始几何信息
+		grabc->begin_geom = grabc->geom;
+	} else {
+		// 计算相对于屏幕尺寸的比例变化
+		float delta_x = (float)(cursor->x - begin_cursorx) *
+						(1 - grabc->old_master_width_per) /
+						grabc->begin_geom.width;
+		float delta_y = (float)(cursor->y - begin_cursory) *
+						(grabc->old_slave_height_per) /
+						grabc->begin_geom.height;
+
+
+		bool moving_up = cursor->y < begin_cursory;
+		bool moving_down = cursor->y > begin_cursory;
+
+		if ((grabc->cursor_in_upper_half && moving_up) ||
+			(!grabc->cursor_in_upper_half && moving_down)) {
+			// 光标在窗口上方且向上移动，或在窗口下方且向下移动 → 增加高度
+			delta_y = fabsf(delta_y);
+		} else {
+			// 其他情况 → 减小高度
+			delta_y = -fabsf(delta_y);
+		}
+
+		// 直接设置新的比例，基于初始值 + 变化量
+		float new_master_width_per = grabc->old_master_width_per + delta_x;
+		float new_master_height_per = grabc->old_master_height_per + delta_y;
+		float new_slave_height_per = grabc->old_slave_height_per + delta_y;
+
+		// 应用限制，确保比例在合理范围内
+		new_master_width_per = fmaxf(0.1f, fminf(0.9f, new_master_width_per));
+		new_master_height_per = fmaxf(0.1f, fminf(0.9f, new_master_height_per));
+		new_slave_height_per = fmaxf(0.1f, fminf(0.9f, new_slave_height_per));
+
+		// 应用到所有平铺窗口
+		wl_list_for_each(tc, &clients, link) {
+			if (VISIBLEON(tc, grabc->mon) && ISTILED(tc)) {
+				tc->master_width_per = new_master_width_per;
+			}
+		}
+
+		grabc->master_height_per = new_master_height_per;
+		grabc->slave_height_per = new_slave_height_per;
+
+		arrange(grabc->mon, false);
+	}
+}
+
 void motionnotify(unsigned int time, struct wlr_input_device *device, double dx,
 				  double dy, double dx_unaccel, double dy_unaccel) {
 	double sx = 0, sy = 0, sx_confined, sy_confined;
@@ -3866,14 +4010,18 @@ void motionnotify(unsigned int time, struct wlr_input_device *device, double dx,
 		resize(grabc, grabc->float_geom, 1);
 		return;
 	} else if (cursor_mode == CurResize) {
-		grabc->iscustomsize = 1;
-		grabc->float_geom =
-			(struct wlr_box){.x = grabc->geom.x,
-							 .y = grabc->geom.y,
-							 .width = (int)round(cursor->x) - grabc->geom.x,
-							 .height = (int)round(cursor->y) - grabc->geom.y};
-		resize(grabc, grabc->float_geom, 1);
-		return;
+		if (grabc->isfloating) {
+			grabc->iscustomsize = 1;
+			grabc->float_geom = (struct wlr_box){
+				.x = grabc->geom.x,
+				.y = grabc->geom.y,
+				.width = (int)round(cursor->x) - grabc->geom.x,
+				.height = (int)round(cursor->y) - grabc->geom.y};
+			resize(grabc, grabc->float_geom, 1);
+			return;
+		} else {
+			resize_tile_client(grabc);
+		}
 	}
 
 	/* If there's no client surface under the cursor, set the cursor image
@@ -4174,11 +4322,26 @@ void exchange_two_client(Client *c1, Client *c2) {
 
 	Monitor *tmp_mon = NULL;
 	unsigned int tmp_tags;
+	double master_height_per = 0.0f;
+	double master_width_per = 0.0f;
+	double slave_height_per = 0.0f;
 
 	if (c1 == NULL || c2 == NULL ||
 		(!exchange_cross_monitor && c1->mon != c2->mon)) {
 		return;
 	}
+
+	master_height_per = c1->master_height_per;
+	master_width_per = c1->master_width_per;
+	slave_height_per = c1->slave_height_per;
+
+	c1->master_height_per = c2->master_height_per;
+	c1->master_width_per = c2->master_width_per;
+	c1->slave_height_per = c2->slave_height_per;
+
+	c2->master_height_per = master_height_per;
+	c2->master_width_per = master_width_per;
+	c2->slave_height_per = slave_height_per;
 
 	struct wl_list *tmp1_prev = c1->link.prev;
 	struct wl_list *tmp2_prev = c2->link.prev;
@@ -4403,6 +4566,10 @@ setfloating(Client *c, int floating) {
 								layers[c->isfloating ? LyrTop : LyrTile]);
 	}
 
+	if (!c->isfloating) {
+		set_size_per(c->mon, c);
+	}
+
 	arrange(c->mon, false);
 	setborder_color(c);
 	printstatus();
@@ -4447,12 +4614,15 @@ void setmaxmizescreen(Client *c, int maxmizescreen) {
 		c->ismaxmizescreen = 0;
 		if (c->isfloating)
 			setfloating(c, 1);
-		arrange(c->mon, false);
 	}
 
 	wlr_scene_node_reparent(&c->scene->node, layers[maxmizescreen	? LyrTile
 													: c->isfloating ? LyrTop
 																	: LyrTile]);
+	if (!c->ismaxmizescreen) {
+		set_size_per(c->mon, c);
+	}
+	arrange(c->mon, false);
 }
 
 void setfakefullscreen(Client *c, int fakefullscreen) {
@@ -4506,6 +4676,10 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 		wlr_scene_node_reparent(
 			&c->scene->node,
 			layers[fullscreen || c->isfloating ? LyrTop : LyrTile]);
+	}
+
+	if (!c->isfullscreen) {
+		set_size_per(c->mon, c);
 	}
 
 	arrange(c->mon, false);
