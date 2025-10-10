@@ -14,17 +14,31 @@ static void vertical_deck(Monitor *mon);
 /* layout(s) */
 Layout overviewlayout = {"󰃇", overview, "overview"};
 
+enum {
+	SCROLLER,
+	TILE,
+	GRID,
+	MONOCLE,
+	DECK,
+	CENTER_TILE,
+	VERTICAL_SCROLLER,
+	VERTICAL_TILE,
+	VERTICAL_GRID,
+	VERTICAL_DECK
+};
+
 Layout layouts[] = {
 	// 最少两个,不能删除少于两个
 	/* symbol     arrange function   name */
-	{"S", scroller, "scroller"}, // 滚动布局
-	{"T", tile, "tile"},		 // 堆栈布局
-	{"G", grid, "grid"},
-	{"M", monocle, "monocle"},
-	{"K", deck, "deck"},
-	{"CT", center_tile, "center_tile"},
-	{"VS", vertical_scroller, "vertical_scroller"},
-	{"VT", vertical_tile, "vertical_tile"},
-	{"VG", vertical_grid, "vertical_grid"},
-	{"VK", vertical_deck, "vertical_deck"},
+	{"S", scroller, "scroller", SCROLLER},			 // 滚动布局
+	{"T", tile, "tile", TILE},						 // 平铺布局
+	{"G", grid, "grid", GRID},						 // 格子布局
+	{"M", monocle, "monocle", MONOCLE},				 // 单屏布局
+	{"K", deck, "deck", DECK},						 // 卡片布局
+	{"CT", center_tile, "center_tile", CENTER_TILE}, // 居中布局
+	{"VS", vertical_scroller, "vertical_scroller",
+	 VERTICAL_SCROLLER},								   // 垂直滚动布局
+	{"VT", vertical_tile, "vertical_tile", VERTICAL_TILE}, // 垂直平铺布局
+	{"VG", vertical_grid, "vertical_grid", VERTICAL_GRID}, // 垂直格子布局
+	{"VK", vertical_deck, "vertical_deck", VERTICAL_DECK}, // 垂直卡片布局
 };

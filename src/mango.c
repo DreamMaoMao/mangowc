@@ -340,8 +340,9 @@ struct Client {
 	int noblur;
 	double master_width_per, master_height_per, slave_height_per;
 	double old_master_width_per, old_master_height_per, old_slave_height_per;
+	double old_scroller_pproportion;
 	bool ismaster;
-	bool cursor_in_upper_half;
+	bool cursor_in_upper_half, cursor_in_left_half;
 };
 
 typedef struct {
@@ -418,6 +419,7 @@ typedef struct {
 	const char *symbol;
 	void (*arrange)(Monitor *);
 	const char *name;
+	unsigned int id;
 } Layout;
 
 struct Monitor {
@@ -3884,15 +3886,12 @@ void motionabsolute(struct wl_listener *listener, void *data) {
 	motionnotify(event->time_msec, &event->pointer->base, dx, dy, dx, dy);
 }
 
-void resize_tile_client(Client *grabc, unsigned int time) {
+void resize_tile_master(Client *grabc, unsigned int time) {
 	Client *tc = NULL;
 	float delta_x, delta_y;
 	Client *next = NULL;
 	Client *prev = NULL;
 	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
-	wlr_log(WLR_ERROR, "%f", refresh_interval);
-	// 查找 grabc 在链表中的前一个和后一个客户端
-
 	struct wl_list *node;
 
 	// 从当前节点的下一个开始遍历
@@ -4001,6 +4000,90 @@ void resize_tile_client(Client *grabc, unsigned int time) {
 			arrange(grabc->mon, false);
 			last_apply_drap_time = time;
 		}
+	}
+}
+
+void resize_tile_scroller(Client *grabc, unsigned int time, bool isvertical) {
+	float delta_x, delta_y;
+	float new_scroller_proportion;
+	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
+
+	if (!start_drag_window) {
+		begin_cursorx = cursor->x;
+		begin_cursory = cursor->y;
+		start_drag_window = true;
+
+		// 记录初始状态
+		grabc->old_scroller_pproportion = grabc->scroller_proportion;
+
+		grabc->cursor_in_left_half =
+			cursor->x < grabc->geom.x + grabc->geom.width / 2;
+		grabc->cursor_in_upper_half =
+			cursor->y < grabc->geom.y + grabc->geom.height / 2;
+		// 记录初始几何信息
+		grabc->begin_geom = grabc->geom;
+	} else {
+		// 计算相对于屏幕尺寸的比例变化
+		delta_x = (float)(cursor->x - begin_cursorx) *
+				  (grabc->old_scroller_pproportion) / grabc->begin_geom.width;
+		delta_y = (float)(cursor->y - begin_cursory) *
+				  (grabc->old_scroller_pproportion) / grabc->begin_geom.height;
+
+		bool moving_up = cursor->y < begin_cursory;
+		bool moving_down = cursor->y > begin_cursory;
+		bool moving_left = cursor->x < begin_cursorx;
+		bool moving_right = cursor->x > begin_cursorx;
+
+		if ((grabc->cursor_in_upper_half && moving_up) ||
+			(!grabc->cursor_in_upper_half && moving_down)) {
+			// 光标在窗口上方且向上移动，或在窗口下方且向下移动 → 增加高度
+			delta_y = fabsf(delta_y);
+		} else {
+			// 其他情况 → 减小高度
+			delta_y = -fabsf(delta_y);
+		}
+
+		if ((grabc->cursor_in_left_half && moving_left) ||
+			(!grabc->cursor_in_left_half && moving_right)) {
+			delta_x = fabsf(delta_x);
+		} else {
+			delta_x = -fabsf(delta_x);
+		}
+
+		// 直接设置新的比例，基于初始值 + 变化量
+		if (isvertical) {
+			new_scroller_proportion = grabc->old_scroller_pproportion + delta_y;
+		} else {
+			new_scroller_proportion = grabc->old_scroller_pproportion + delta_x;
+		}
+
+		// 应用限制，确保比例在合理范围内
+		new_scroller_proportion =
+			fmaxf(0.1f, fminf(0.9f, new_scroller_proportion));
+
+		grabc->scroller_proportion = new_scroller_proportion;
+
+		if (last_apply_drap_time == 0 ||
+			time - last_apply_drap_time > refresh_interval) {
+			arrange(grabc->mon, false);
+			last_apply_drap_time = time;
+		}
+	}
+}
+
+void resize_tile_client(Client *grabc, unsigned int time) {
+	const Layout *current_layout =
+		grabc->mon->pertag->ltidxs[grabc->mon->pertag->curtag];
+	if (current_layout->id == TILE || current_layout->id == VERTICAL_TILE ||
+		current_layout->id == DECK || current_layout->id == VERTICAL_DECK ||
+		current_layout->id == CENTER_TILE
+
+	) {
+		resize_tile_master(grabc, time);
+	} else if (current_layout->id == SCROLLER) {
+		resize_tile_scroller(grabc, time, false);
+	} else if (current_layout->id == VERTICAL_SCROLLER) {
+		resize_tile_scroller(grabc, time, true);
 	}
 }
 
