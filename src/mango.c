@@ -343,6 +343,7 @@ struct Client {
 	double old_scroller_pproportion;
 	bool ismaster;
 	bool cursor_in_upper_half, cursor_in_left_half;
+	bool isleftslave;
 };
 
 typedef struct {
@@ -1499,9 +1500,11 @@ arrange(Monitor *m, bool want_animation) {
 						stack_index = i - nmasters;
 						if ((stack_index % 2) ^
 							(m->visible_tiling_clients % 2 == 0)) {
+							c->isleftslave = false;
 							total_right_slave_hight_percent +=
 								c->slave_height_per;
 						} else {
+							c->isleftslave = true;
 							total_left_slave_hight_percent +=
 								c->slave_height_per;
 						}
@@ -3938,7 +3941,7 @@ void motionabsolute(struct wl_listener *listener, void *data) {
 	motionnotify(event->time_msec, &event->pointer->base, dx, dy, dx, dy);
 }
 
-void resize_tile_master(Client *grabc, unsigned int time) {
+void resize_tile_master(Client *grabc, unsigned int time, int type) {
 	Client *tc = NULL;
 	float delta_x, delta_y;
 	Client *next = NULL;
@@ -3974,6 +3977,8 @@ void resize_tile_master(Client *grabc, unsigned int time) {
 		grabc->old_slave_height_per = grabc->slave_height_per;
 		grabc->cursor_in_upper_half =
 			cursor->y < grabc->geom.y + grabc->geom.height / 2;
+		grabc->cursor_in_left_half =
+			cursor->x < grabc->geom.x + grabc->geom.width / 2;
 		// 记录初始几何信息
 		grabc->begin_geom = grabc->geom;
 	} else {
@@ -3993,6 +3998,8 @@ void resize_tile_master(Client *grabc, unsigned int time) {
 
 		bool moving_up = cursor->y < begin_cursory;
 		bool moving_down = cursor->y > begin_cursory;
+		bool moving_left = cursor->x < begin_cursorx;
+		bool moving_right = cursor->x > begin_cursorx;
 
 		if (grabc->ismaster && !prev) {
 			if (moving_up) {
@@ -4025,6 +4032,24 @@ void resize_tile_master(Client *grabc, unsigned int time) {
 		} else {
 			// 其他情况 → 减小高度
 			delta_y = -fabsf(delta_y);
+		}
+
+		if (grabc->ismaster &&
+			((grabc->cursor_in_left_half && moving_left) ||
+			 (!grabc->cursor_in_left_half && moving_right))) {
+			// 光标在窗口左侧且向右移动 → 增加宽度
+			delta_x = fabsf(delta_x);
+		} else if (grabc->ismaster) {
+			// 其他情况 → 减小宽度
+			delta_x = -fabsf(delta_x);
+		}
+
+		if (!grabc->ismaster && grabc->isleftslave && type == CENTER_TILE) {
+			delta_x = delta_x * -1.0f;
+		}
+
+		if (grabc->ismaster && type == CENTER_TILE) {
+			delta_x = delta_x * 2;
 		}
 
 		// 直接设置新的比例，基于初始值 + 变化量
@@ -4131,7 +4156,7 @@ void resize_tile_client(Client *grabc, unsigned int time) {
 		current_layout->id == CENTER_TILE
 
 	) {
-		resize_tile_master(grabc, time);
+		resize_tile_master(grabc, time, current_layout->id);
 	} else if (current_layout->id == SCROLLER) {
 		resize_tile_scroller(grabc, time, false);
 	} else if (current_layout->id == VERTICAL_SCROLLER) {
