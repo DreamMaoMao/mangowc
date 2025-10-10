@@ -338,8 +338,8 @@ struct Client {
 	float unfocused_opacity;
 	char oldmonname[128];
 	int noblur;
-	double master_width_per, master_height_per, slave_height_per;
-	double old_master_width_per, old_master_height_per, old_slave_height_per;
+	double master_mfact_per, master_inner_per, slave_innder_per;
+	double old_master_mfact_per, old_master_inner_per, old_slave_innder_per;
 	double old_scroller_pproportion;
 	bool ismaster;
 	bool cursor_in_upper_half, cursor_in_left_half;
@@ -1384,7 +1384,7 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 						double total_left_slave_hight_percent,
 						double total_right_slave_hight_percent,
 						double total_slave_hight_percent,
-						double total_master_height_percent, int master_num,
+						double total_master_inner_percent, int master_num,
 						int slave_num) {
 	Client *c;
 	int i = 0;
@@ -1396,18 +1396,18 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 		wl_list_for_each(c, &clients, link) {
 			if (VISIBLEON(c, m) && ISTILED(c)) {
 
-				if (total_master_height_percent <= 0.0)
+				if (total_master_inner_percent <= 0.0)
 					return;
 				if (i < m->pertag->nmasters[m->pertag->curtag]) {
 					c->ismaster = true;
-					c->slave_height_per = slave_num ? 1.0f / slave_num : 1.0f;
-					c->master_height_per =
-						c->master_height_per / total_master_height_percent;
+					c->slave_innder_per = slave_num ? 1.0f / slave_num : 1.0f;
+					c->master_inner_per =
+						c->master_inner_per / total_master_inner_percent;
 				} else {
 					c->ismaster = false;
-					c->master_height_per = 1.0f / master_num;
-					c->slave_height_per =
-						c->slave_height_per / total_slave_hight_percent;
+					c->master_inner_per = 1.0f / master_num;
+					c->slave_innder_per =
+						c->slave_innder_per / total_slave_hight_percent;
 				}
 			}
 
@@ -1417,24 +1417,24 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 		wl_list_for_each(c, &clients, link) {
 			if (VISIBLEON(c, m) && ISTILED(c)) {
 
-				if (total_master_height_percent <= 0.0)
+				if (total_master_inner_percent <= 0.0)
 					return;
 				if (i < m->pertag->nmasters[m->pertag->curtag]) {
 					c->ismaster = true;
-					c->slave_height_per =
+					c->slave_innder_per =
 						slave_num > 1 ? 2.0f / slave_num : 1.0f;
-					c->master_height_per =
-						c->master_height_per / total_master_height_percent;
+					c->master_inner_per =
+						c->master_inner_per / total_master_inner_percent;
 				} else {
 					stack_index = i - nmasters;
 
 					c->ismaster = false;
-					c->master_height_per = 1.0f / master_num;
+					c->master_inner_per = 1.0f / master_num;
 					if ((stack_index % 2) ^ (tile_cilent_num % 2 == 0)) {
-						c->slave_height_per = c->slave_height_per /
+						c->slave_innder_per = c->slave_innder_per /
 											  total_right_slave_hight_percent;
 					} else {
-						c->slave_height_per = c->slave_height_per /
+						c->slave_innder_per = c->slave_innder_per /
 											  total_left_slave_hight_percent;
 					}
 				}
@@ -1448,8 +1448,8 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 void // 17
 arrange(Monitor *m, bool want_animation) {
 	Client *c = NULL;
-	double total_slave_height_percent = 0;
-	double total_master_height_percent = 0;
+	double total_slave_innder_percent = 0;
+	double total_master_inner_percent = 0;
 	double total_right_slave_hight_percent = 0;
 	double total_left_slave_hight_percent = 0;
 	int i = 0;
@@ -1493,20 +1493,20 @@ arrange(Monitor *m, bool want_animation) {
 
 					if (i < m->pertag->nmasters[m->pertag->curtag]) {
 						master_num++;
-						total_master_height_percent += c->master_height_per;
+						total_master_inner_percent += c->master_inner_per;
 					} else {
 						slave_num++;
-						total_slave_height_percent += c->slave_height_per;
+						total_slave_innder_percent += c->slave_innder_per;
 						stack_index = i - nmasters;
 						if ((stack_index % 2) ^
 							(m->visible_tiling_clients % 2 == 0)) {
 							c->isleftslave = false;
 							total_right_slave_hight_percent +=
-								c->slave_height_per;
+								c->slave_innder_per;
 						} else {
 							c->isleftslave = true;
 							total_left_slave_hight_percent +=
-								c->slave_height_per;
+								c->slave_innder_per;
 						}
 					}
 
@@ -1527,8 +1527,8 @@ arrange(Monitor *m, bool want_animation) {
 
 	reset_size_per_mon(
 		m, m->visible_tiling_clients, total_left_slave_hight_percent,
-		total_right_slave_hight_percent, total_slave_height_percent,
-		total_master_height_percent, master_num, slave_num);
+		total_right_slave_hight_percent, total_slave_innder_percent,
+		total_master_inner_percent, master_num, slave_num);
 
 	if (m->isoverview) {
 		overviewlayout.arrange(m);
@@ -3669,9 +3669,9 @@ void init_client_properties(Client *c) {
 	c->ignore_maximize = 0;
 	c->ignore_minimize = 1;
 	c->iscustomsize = 0;
-	c->master_width_per = 0.0f;
-	c->master_height_per = 0.0f;
-	c->slave_height_per = 0.0f;
+	c->master_mfact_per = 0.0f;
+	c->master_inner_per = 0.0f;
+	c->slave_innder_per = 0.0f;
 }
 
 void set_size_per(Monitor *m, Client *c) {
@@ -3679,18 +3679,18 @@ void set_size_per(Monitor *m, Client *c) {
 	bool found = false;
 	wl_list_for_each(fc, &clients, link) {
 		if (VISIBLEON(fc, m) && ISTILED(fc) && fc != c) {
-			c->master_width_per = fc->master_width_per;
-			c->master_height_per = fc->master_height_per;
-			c->slave_height_per = fc->slave_height_per;
+			c->master_mfact_per = fc->master_mfact_per;
+			c->master_inner_per = fc->master_inner_per;
+			c->slave_innder_per = fc->slave_innder_per;
 			found = true;
 			break;
 		}
 	}
 
 	if (!found) {
-		c->master_width_per = 0.5f;
-		c->master_height_per = 1.0f;
-		c->slave_height_per = 1.0f;
+		c->master_mfact_per = 0.5f;
+		c->master_inner_per = 1.0f;
+		c->slave_innder_per = 1.0f;
 	}
 }
 
@@ -3946,6 +3946,7 @@ void resize_tile_master(Client *grabc, unsigned int time, int type) {
 	float delta_x, delta_y;
 	Client *next = NULL;
 	Client *prev = NULL;
+	int tempdelta = 0;
 	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
 	struct wl_list *node;
 
@@ -3972,9 +3973,9 @@ void resize_tile_master(Client *grabc, unsigned int time, int type) {
 		start_drag_window = true;
 
 		// 记录初始状态
-		grabc->old_master_width_per = grabc->master_width_per;
-		grabc->old_master_height_per = grabc->master_height_per;
-		grabc->old_slave_height_per = grabc->slave_height_per;
+		grabc->old_master_mfact_per = grabc->master_mfact_per;
+		grabc->old_master_inner_per = grabc->master_inner_per;
+		grabc->old_slave_innder_per = grabc->slave_innder_per;
 		grabc->cursor_in_upper_half =
 			cursor->y < grabc->geom.y + grabc->geom.height / 2;
 		grabc->cursor_in_left_half =
@@ -3985,15 +3986,15 @@ void resize_tile_master(Client *grabc, unsigned int time, int type) {
 		// 计算相对于屏幕尺寸的比例变化
 		if (grabc->ismaster) {
 			delta_x = (float)(cursor->x - begin_cursorx) *
-					  (grabc->old_master_width_per) / grabc->begin_geom.width;
+					  (grabc->old_master_mfact_per) / grabc->begin_geom.width;
 			delta_y = (float)(cursor->y - begin_cursory) *
-					  (grabc->old_master_height_per) / grabc->begin_geom.height;
+					  (grabc->old_master_inner_per) / grabc->begin_geom.height;
 		} else {
 			delta_x = (float)(cursor->x - begin_cursorx) *
-					  (1 - grabc->old_master_width_per) /
+					  (1 - grabc->old_master_mfact_per) /
 					  grabc->begin_geom.width;
 			delta_y = (float)(cursor->y - begin_cursory) *
-					  (grabc->old_slave_height_per) / grabc->begin_geom.height;
+					  (grabc->old_slave_innder_per) / grabc->begin_geom.height;
 		}
 
 		bool moving_up = cursor->y < begin_cursory;
@@ -4052,25 +4053,31 @@ void resize_tile_master(Client *grabc, unsigned int time, int type) {
 			delta_x = delta_x * 2;
 		}
 
+		if (type == VERTICAL_TILE || type == VERTICAL_DECK) {
+			tempdelta = delta_x;
+			delta_x = delta_y;
+			delta_y = tempdelta;
+		}
+
 		// 直接设置新的比例，基于初始值 + 变化量
-		float new_master_width_per = grabc->old_master_width_per + delta_x;
-		float new_master_height_per = grabc->old_master_height_per + delta_y;
-		float new_slave_height_per = grabc->old_slave_height_per + delta_y;
+		float new_master_mfact_per = grabc->old_master_mfact_per + delta_x;
+		float new_master_inner_per = grabc->old_master_inner_per + delta_y;
+		float new_slave_innder_per = grabc->old_slave_innder_per + delta_y;
 
 		// 应用限制，确保比例在合理范围内
-		new_master_width_per = fmaxf(0.1f, fminf(0.9f, new_master_width_per));
-		new_master_height_per = fmaxf(0.1f, fminf(0.9f, new_master_height_per));
-		new_slave_height_per = fmaxf(0.1f, fminf(0.9f, new_slave_height_per));
+		new_master_mfact_per = fmaxf(0.1f, fminf(0.9f, new_master_mfact_per));
+		new_master_inner_per = fmaxf(0.1f, fminf(0.9f, new_master_inner_per));
+		new_slave_innder_per = fmaxf(0.1f, fminf(0.9f, new_slave_innder_per));
 
 		// 应用到所有平铺窗口
 		wl_list_for_each(tc, &clients, link) {
 			if (VISIBLEON(tc, grabc->mon) && ISTILED(tc)) {
-				tc->master_width_per = new_master_width_per;
+				tc->master_mfact_per = new_master_mfact_per;
 			}
 		}
 
-		grabc->master_height_per = new_master_height_per;
-		grabc->slave_height_per = new_slave_height_per;
+		grabc->master_inner_per = new_master_inner_per;
+		grabc->slave_innder_per = new_slave_innder_per;
 
 		if (last_apply_drap_time == 0 ||
 			time - last_apply_drap_time > refresh_interval) {
@@ -4551,26 +4558,26 @@ void exchange_two_client(Client *c1, Client *c2) {
 
 	Monitor *tmp_mon = NULL;
 	unsigned int tmp_tags;
-	double master_height_per = 0.0f;
-	double master_width_per = 0.0f;
-	double slave_height_per = 0.0f;
+	double master_inner_per = 0.0f;
+	double master_mfact_per = 0.0f;
+	double slave_innder_per = 0.0f;
 
 	if (c1 == NULL || c2 == NULL ||
 		(!exchange_cross_monitor && c1->mon != c2->mon)) {
 		return;
 	}
 
-	master_height_per = c1->master_height_per;
-	master_width_per = c1->master_width_per;
-	slave_height_per = c1->slave_height_per;
+	master_inner_per = c1->master_inner_per;
+	master_mfact_per = c1->master_mfact_per;
+	slave_innder_per = c1->slave_innder_per;
 
-	c1->master_height_per = c2->master_height_per;
-	c1->master_width_per = c2->master_width_per;
-	c1->slave_height_per = c2->slave_height_per;
+	c1->master_inner_per = c2->master_inner_per;
+	c1->master_mfact_per = c2->master_mfact_per;
+	c1->slave_innder_per = c2->slave_innder_per;
 
-	c2->master_height_per = master_height_per;
-	c2->master_width_per = master_width_per;
-	c2->slave_height_per = slave_height_per;
+	c2->master_inner_per = master_inner_per;
+	c2->master_mfact_per = master_mfact_per;
+	c2->slave_innder_per = slave_innder_per;
 
 	struct wl_list *tmp1_prev = c1->link.prev;
 	struct wl_list *tmp2_prev = c2->link.prev;

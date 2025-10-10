@@ -39,6 +39,5 @@ Layout layouts[] = {
 	{"VS", vertical_scroller, "vertical_scroller",
 	 VERTICAL_SCROLLER},								   // 垂直滚动布局
 	{"VT", vertical_tile, "vertical_tile", VERTICAL_TILE}, // 垂直平铺布局
-	{"VG", vertical_grid, "vertical_grid", VERTICAL_GRID}, // 垂直格子布局
 	{"VK", vertical_deck, "vertical_deck", VERTICAL_DECK}, // 垂直卡片布局
 };
