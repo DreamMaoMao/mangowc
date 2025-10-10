@@ -1389,25 +1389,16 @@ void reset_size_per_mon(Monitor *m, double total_slave_hight_percent,
 
 			if (total_master_height_percent <= 0.0)
 				return;
-			// wlr_log(WLR_ERROR,"reset before: %f %f", c->slave_height_per,
-			// total_slave_hight_percent);
-
 			if (i < m->pertag->nmasters[m->pertag->curtag]) {
 				c->ismaster = true;
 				c->slave_height_per = slave_num ? 1.0f / slave_num : 1.0f;
 				c->master_height_per =
 					c->master_height_per / total_master_height_percent;
 			} else {
-				// wlr_log(WLR_ERROR,"###### reset before: %f %f",
-				// c->slave_height_per,
-				// total_slave_hight_percent);
 				c->ismaster = false;
 				c->master_height_per = 1.0f / master_num;
 				c->slave_height_per =
 					c->slave_height_per / total_slave_hight_percent;
-				// wlr_log(WLR_ERROR,"------reset after: %f %f",
-				// c->slave_height_per,
-				// total_slave_hight_percent);
 			}
 		}
 
