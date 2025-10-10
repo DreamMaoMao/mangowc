@@ -3941,12 +3941,11 @@ void motionabsolute(struct wl_listener *listener, void *data) {
 	motionnotify(event->time_msec, &event->pointer->base, dx, dy, dx, dy);
 }
 
-void resize_tile_master(Client *grabc, unsigned int time, int type) {
+void resize_tile_master_horizontal(Client *grabc, unsigned int time, int type) {
 	Client *tc = NULL;
 	float delta_x, delta_y;
 	Client *next = NULL;
 	Client *prev = NULL;
-	int tempdelta = 0;
 	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
 	struct wl_list *node;
 
@@ -4053,16 +4052,142 @@ void resize_tile_master(Client *grabc, unsigned int time, int type) {
 			delta_x = delta_x * 2;
 		}
 
-		if (type == VERTICAL_TILE || type == VERTICAL_DECK) {
-			tempdelta = delta_x;
-			delta_x = delta_y;
-			delta_y = tempdelta;
-		}
-
 		// 直接设置新的比例，基于初始值 + 变化量
 		float new_master_mfact_per = grabc->old_master_mfact_per + delta_x;
 		float new_master_inner_per = grabc->old_master_inner_per + delta_y;
 		float new_slave_innder_per = grabc->old_slave_innder_per + delta_y;
+
+		// 应用限制，确保比例在合理范围内
+		new_master_mfact_per = fmaxf(0.1f, fminf(0.9f, new_master_mfact_per));
+		new_master_inner_per = fmaxf(0.1f, fminf(0.9f, new_master_inner_per));
+		new_slave_innder_per = fmaxf(0.1f, fminf(0.9f, new_slave_innder_per));
+
+		// 应用到所有平铺窗口
+		wl_list_for_each(tc, &clients, link) {
+			if (VISIBLEON(tc, grabc->mon) && ISTILED(tc)) {
+				tc->master_mfact_per = new_master_mfact_per;
+			}
+		}
+
+		grabc->master_inner_per = new_master_inner_per;
+		grabc->slave_innder_per = new_slave_innder_per;
+
+		if (last_apply_drap_time == 0 ||
+			time - last_apply_drap_time > refresh_interval) {
+			arrange(grabc->mon, false);
+			last_apply_drap_time = time;
+		}
+	}
+}
+
+void resize_tile_master_vertical(Client *grabc, unsigned int time, int type) {
+	Client *tc = NULL;
+	float delta_x, delta_y;
+	Client *next = NULL;
+	Client *prev = NULL;
+	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
+	struct wl_list *node;
+
+	// 从当前节点的下一个开始遍历
+	for (node = grabc->link.next; node != &clients; node = node->next) {
+		tc = wl_container_of(node, tc, link);
+		if (!tc->isfloating) { // 根据你的实际字段名调整
+			next = tc;
+			break;
+		}
+	}
+
+	// 从当前节点的上一个开始遍历
+	for (node = grabc->link.prev; node != &clients; node = node->prev) {
+		tc = wl_container_of(node, tc, link);
+		if (!tc->isfloating) { // 根据你的实际字段名调整
+			prev = tc;
+			break;
+		}
+	}
+	if (!start_drag_window) {
+		begin_cursorx = cursor->x;
+		begin_cursory = cursor->y;
+		start_drag_window = true;
+
+		// 记录初始状态
+		grabc->old_master_mfact_per = grabc->master_mfact_per;
+		grabc->old_master_inner_per = grabc->master_inner_per;
+		grabc->old_slave_innder_per = grabc->slave_innder_per;
+		grabc->cursor_in_upper_half =
+			cursor->y < grabc->geom.y + grabc->geom.height / 2;
+		grabc->cursor_in_left_half =
+			cursor->x < grabc->geom.x + grabc->geom.width / 2;
+		// 记录初始几何信息
+		grabc->begin_geom = grabc->geom;
+	} else {
+		// 计算相对于屏幕尺寸的比例变化
+		if (grabc->ismaster) {
+			// 垂直版本：左右移动调整高度比例，上下移动调整宽度比例
+			delta_x = (float)(cursor->x - begin_cursorx) *
+					  (grabc->old_master_inner_per) / grabc->begin_geom.width;
+			delta_y = (float)(cursor->y - begin_cursory) *
+					  (grabc->old_master_mfact_per) / grabc->begin_geom.height;
+		} else {
+			delta_x = (float)(cursor->x - begin_cursorx) *
+					  (grabc->old_slave_innder_per) / grabc->begin_geom.width;
+			delta_y = (float)(cursor->y - begin_cursory) *
+					  (1 - grabc->old_master_mfact_per) /
+					  grabc->begin_geom.height;
+		}
+
+		bool moving_left = cursor->x < begin_cursorx;
+		bool moving_right = cursor->x > begin_cursorx;
+
+		// 调整主区域和栈区域的高度比例（垂直分割）
+		if (grabc->ismaster && !prev) {
+			if (moving_left) {
+				delta_x = -fabsf(delta_x); // 向上移动减少主区域高度
+			} else {
+				delta_x = fabsf(delta_x); // 向下移动增加主区域高度
+			}
+		} else if (grabc->ismaster && next && !next->ismaster) {
+			if (moving_left) {
+				delta_x = fabsf(delta_x); // 向上移动增加主区域高度
+			} else {
+				delta_x = -fabsf(delta_x); // 向下移动减少主区域高度
+			}
+		} else if (!grabc->ismaster && prev && prev->ismaster) {
+			if (moving_left) {
+				delta_x = -fabsf(delta_x); // 向上移动减少栈区域高度
+			} else {
+				delta_x = fabsf(delta_x); // 向下移动增加栈区域高度
+			}
+		} else if (!grabc->ismaster && !next) {
+			if (moving_left) {
+				delta_x = fabsf(delta_x); // 向上移动增加栈区域高度
+			} else {
+				delta_x = -fabsf(delta_x); // 向下移动减少栈区域高度
+			}
+		} else if ((grabc->cursor_in_left_half && moving_left) ||
+				   (!grabc->cursor_in_left_half && moving_right)) {
+			// 光标在窗口左侧且向左移动，或在窗口右侧且向右移动 → 增加宽度
+			delta_x = fabsf(delta_x);
+		} else {
+			// 其他情况 → 减小宽度
+			delta_x = -fabsf(delta_x);
+		}
+
+		if (!grabc->ismaster && grabc->isleftslave && type == CENTER_TILE) {
+			delta_x = delta_x * -1.0f;
+		}
+
+		// if (grabc->ismaster && type == CENTER_TILE) {
+		// 	delta_x = delta_x * 2;
+		// }
+
+		// 直接设置新的比例，基于初始值 + 变化量
+		float new_master_mfact_per = grabc->old_master_mfact_per +
+									 delta_y; // 垂直：delta_y调整主区域高度
+		float new_master_inner_per = grabc->old_master_inner_per +
+									 delta_x; // 垂直：delta_x调整主区域内部宽度
+		float new_slave_innder_per = grabc->old_slave_innder_per +
+									 delta_x; // 垂直：delta_x调整栈区域内部宽度
 
 		// 应用限制，确保比例在合理范围内
 		new_master_mfact_per = fmaxf(0.1f, fminf(0.9f, new_master_mfact_per));
@@ -4158,12 +4283,13 @@ void resize_tile_scroller(Client *grabc, unsigned int time, bool isvertical) {
 void resize_tile_client(Client *grabc, unsigned int time) {
 	const Layout *current_layout =
 		grabc->mon->pertag->ltidxs[grabc->mon->pertag->curtag];
-	if (current_layout->id == TILE || current_layout->id == VERTICAL_TILE ||
-		current_layout->id == DECK || current_layout->id == VERTICAL_DECK ||
+	if (current_layout->id == TILE || current_layout->id == DECK ||
 		current_layout->id == CENTER_TILE
 
 	) {
-		resize_tile_master(grabc, time, current_layout->id);
+		resize_tile_master_horizontal(grabc, time, current_layout->id);
+	} else if (current_layout->id == VERTICAL_TILE) {
+		resize_tile_master_vertical(grabc, time, current_layout->id);
 	} else if (current_layout->id == SCROLLER) {
 		resize_tile_scroller(grabc, time, false);
 	} else if (current_layout->id == VERTICAL_SCROLLER) {
