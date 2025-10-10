@@ -1379,30 +1379,68 @@ void applyrules(Client *c) {
 	}
 }
 
-void reset_size_per_mon(Monitor *m, double total_slave_hight_percent,
+void reset_size_per_mon(Monitor *m, int tile_cilent_num,
+						double total_left_slave_hight_percent,
+						double total_right_slave_hight_percent,
+						double total_slave_hight_percent,
 						double total_master_height_percent, int master_num,
 						int slave_num) {
 	Client *c;
 	int i = 0;
-	wl_list_for_each(c, &clients, link) {
-		if (VISIBLEON(c, m) && ISTILED(c)) {
+	unsigned int stack_index;
+	unsigned int nmasters = m->pertag->nmasters[m->pertag->curtag];
 
-			if (total_master_height_percent <= 0.0)
-				return;
-			if (i < m->pertag->nmasters[m->pertag->curtag]) {
-				c->ismaster = true;
-				c->slave_height_per = slave_num ? 1.0f / slave_num : 1.0f;
-				c->master_height_per =
-					c->master_height_per / total_master_height_percent;
-			} else {
-				c->ismaster = false;
-				c->master_height_per = 1.0f / master_num;
-				c->slave_height_per =
-					c->slave_height_per / total_slave_hight_percent;
+	if (m->pertag->ltidxs[m->pertag->curtag]->id != CENTER_TILE) {
+
+		wl_list_for_each(c, &clients, link) {
+			if (VISIBLEON(c, m) && ISTILED(c)) {
+
+				if (total_master_height_percent <= 0.0)
+					return;
+				if (i < m->pertag->nmasters[m->pertag->curtag]) {
+					c->ismaster = true;
+					c->slave_height_per = slave_num ? 1.0f / slave_num : 1.0f;
+					c->master_height_per =
+						c->master_height_per / total_master_height_percent;
+				} else {
+					c->ismaster = false;
+					c->master_height_per = 1.0f / master_num;
+					c->slave_height_per =
+						c->slave_height_per / total_slave_hight_percent;
+				}
 			}
-		}
 
-		i++;
+			i++;
+		}
+	} else {
+		wl_list_for_each(c, &clients, link) {
+			if (VISIBLEON(c, m) && ISTILED(c)) {
+
+				if (total_master_height_percent <= 0.0)
+					return;
+				if (i < m->pertag->nmasters[m->pertag->curtag]) {
+					c->ismaster = true;
+					c->slave_height_per =
+						slave_num > 1 ? 2.0f / slave_num : 1.0f;
+					c->master_height_per =
+						c->master_height_per / total_master_height_percent;
+				} else {
+					stack_index = i - nmasters;
+
+					c->ismaster = false;
+					c->master_height_per = 1.0f / master_num;
+					if ((stack_index % 2) ^ (tile_cilent_num % 2 == 0)) {
+						c->slave_height_per = c->slave_height_per /
+											  total_right_slave_hight_percent;
+					} else {
+						c->slave_height_per = c->slave_height_per /
+											  total_left_slave_hight_percent;
+					}
+				}
+			}
+
+			i++;
+		}
 	}
 }
 
@@ -1411,7 +1449,11 @@ arrange(Monitor *m, bool want_animation) {
 	Client *c = NULL;
 	double total_slave_height_percent = 0;
 	double total_master_height_percent = 0;
+	double total_right_slave_hight_percent = 0;
+	double total_left_slave_hight_percent = 0;
 	int i = 0;
+	int nmasters = 0;
+	int stack_index = 0;
 	int master_num = 0;
 	int slave_num = 0;
 
@@ -1420,9 +1462,20 @@ arrange(Monitor *m, bool want_animation) {
 
 	if (!m->wlr_output->enabled)
 		return;
-
 	m->visible_clients = 0;
 	m->visible_tiling_clients = 0;
+
+	wl_list_for_each(c, &clients, link) {
+		if (VISIBLEON(c, m)) {
+			m->visible_clients++;
+			if (ISTILED(c)) {
+				m->visible_tiling_clients++;
+			}
+		}
+	}
+
+	nmasters = m->pertag->nmasters[m->pertag->curtag];
+
 	wl_list_for_each(c, &clients, link) {
 		if (c->iskilling)
 			continue;
@@ -1435,8 +1488,6 @@ arrange(Monitor *m, bool want_animation) {
 
 		if (c->mon == m) {
 			if (VISIBLEON(c, m)) {
-
-				m->visible_clients++;
 				if (ISTILED(c)) {
 
 					if (i < m->pertag->nmasters[m->pertag->curtag]) {
@@ -1445,9 +1496,17 @@ arrange(Monitor *m, bool want_animation) {
 					} else {
 						slave_num++;
 						total_slave_height_percent += c->slave_height_per;
+						stack_index = i - nmasters;
+						if ((stack_index % 2) ^
+							(m->visible_tiling_clients % 2 == 0)) {
+							total_right_slave_hight_percent +=
+								c->slave_height_per;
+						} else {
+							total_left_slave_hight_percent +=
+								c->slave_height_per;
+						}
 					}
 
-					m->visible_tiling_clients++;
 					i++;
 				}
 
@@ -1463,8 +1522,10 @@ arrange(Monitor *m, bool want_animation) {
 		}
 	}
 
-	reset_size_per_mon(m, total_slave_height_percent,
-					   total_master_height_percent, master_num, slave_num);
+	reset_size_per_mon(
+		m, m->visible_tiling_clients, total_left_slave_hight_percent,
+		total_right_slave_hight_percent, total_slave_height_percent,
+		total_master_height_percent, master_num, slave_num);
 
 	if (m->isoverview) {
 		overviewlayout.arrange(m);
