@@ -774,6 +774,7 @@ static Client *grabc;
 static int grabcx, grabcy;				 /* client-relative */
 static int begin_cursorx, begin_cursory; /* client-relative */
 static bool start_drag_window = false;
+static int last_apply_drap_time = 0;
 
 static struct wlr_output_layout *output_layout;
 static struct wlr_box sgeom;
@@ -1985,6 +1986,7 @@ buttonpress(struct wl_listener *listener, void *data) {
 			tmpc = grabc;
 			grabc = NULL;
 			start_drag_window = false;
+			last_apply_drap_time = 0;
 			if (tmpc->drag_to_tile && drag_tile_to_tile) {
 				place_drag_tile_client(tmpc);
 			} else {
@@ -3882,11 +3884,13 @@ void motionabsolute(struct wl_listener *listener, void *data) {
 	motionnotify(event->time_msec, &event->pointer->base, dx, dy, dx, dy);
 }
 
-void resize_tile_client(Client *grabc) {
+void resize_tile_client(Client *grabc, unsigned int time) {
 	Client *tc = NULL;
 	float delta_x, delta_y;
 	Client *next = NULL;
 	Client *prev = NULL;
+	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
+	wlr_log(WLR_ERROR, "%f", refresh_interval);
 	// 查找 grabc 在链表中的前一个和后一个客户端
 	wl_list_for_each(tc, &clients, link) {
 		if (tc == grabc) {
@@ -3986,7 +3990,11 @@ void resize_tile_client(Client *grabc) {
 		grabc->master_height_per = new_master_height_per;
 		grabc->slave_height_per = new_slave_height_per;
 
-		arrange(grabc->mon, false);
+		if (last_apply_drap_time == 0 ||
+			time - last_apply_drap_time > refresh_interval) {
+			arrange(grabc->mon, false);
+			last_apply_drap_time = time;
+		}
 	}
 }
 
@@ -4075,7 +4083,7 @@ void motionnotify(unsigned int time, struct wlr_input_device *device, double dx,
 			resize(grabc, grabc->float_geom, 1);
 			return;
 		} else {
-			resize_tile_client(grabc);
+			resize_tile_client(grabc, time);
 		}
 	}
 
