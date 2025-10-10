@@ -382,10 +382,38 @@ quit(const Arg *arg) {
 void resizewin(const Arg *arg) {
 	Client *c = NULL;
 	c = selmon->sel;
-	if (!c || c->isfullscreen)
+	int offsetx = 0, offsety = 0;
+
+	if (!c || c->isfullscreen || c->ismaxmizescreen)
 		return;
-	if (!c->isfloating)
-		togglefloating(NULL);
+
+	if (ISTILED(c)) {
+		switch (arg->ui) {
+		case NUM_TYPE_MINUS:
+			offsetx = -arg->i;
+			break;
+		case NUM_TYPE_PLUS:
+			offsetx = arg->i;
+			break;
+		default:
+			offsetx = arg->i;
+			break;
+		}
+
+		switch (arg->ui2) {
+		case NUM_TYPE_MINUS:
+			offsety = -arg->i2;
+			break;
+		case NUM_TYPE_PLUS:
+			offsety = arg->i2;
+			break;
+		default:
+			offsety = arg->i2;
+			break;
+		}
+		resize_tile_client(c, offsetx, offsety, 0);
+		return;
+	}
 
 	switch (arg->ui) {
 	case NUM_TYPE_MINUS:

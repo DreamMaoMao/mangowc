@@ -18,7 +18,8 @@ void set_size_per(Monitor *m, Client *c) {
 	}
 }
 
-void resize_tile_master_horizontal(Client *grabc, unsigned int time, int type) {
+void resize_tile_master_horizontal(Client *grabc, int offsetx, int offsety,
+								   unsigned int time, int type) {
 	Client *tc = NULL;
 	float delta_x, delta_y;
 	Client *next = NULL;
@@ -63,11 +64,10 @@ void resize_tile_master_horizontal(Client *grabc, unsigned int time, int type) {
 		}
 	}
 
-	if (!start_drag_window) {
+	if (!start_drag_window && offsetx == 0 && offsety == 0) {
 		drag_begin_cursorx = cursor->x;
 		drag_begin_cursory = cursor->y;
 		start_drag_window = true;
-
 		// 记录初始状态
 		grabc->old_master_mfact_per = grabc->master_mfact_per;
 		grabc->old_master_inner_per = grabc->master_inner_per;
@@ -80,24 +80,40 @@ void resize_tile_master_horizontal(Client *grabc, unsigned int time, int type) {
 		grabc->drag_begin_geom = grabc->geom;
 	} else {
 		// 计算相对于屏幕尺寸的比例变化
-		if (grabc->ismaster) {
-			delta_x = (float)(cursor->x - drag_begin_cursorx) *
-					  (grabc->old_master_mfact_per) /
-					  grabc->drag_begin_geom.width;
-			delta_y = (float)(cursor->y - drag_begin_cursory) *
-					  (grabc->old_master_inner_per) /
-					  grabc->drag_begin_geom.height;
+		if (!offsetx && !offsety) {
+
+			offsetx = cursor->x - drag_begin_cursorx;
+			offsety = cursor->y - drag_begin_cursory;
 		} else {
-			delta_x = (float)(cursor->x - drag_begin_cursorx) *
-					  (1 - grabc->old_master_mfact_per) /
-					  grabc->drag_begin_geom.width;
-			delta_y = (float)(cursor->y - drag_begin_cursory) *
-					  (grabc->old_slave_innder_per) /
-					  grabc->drag_begin_geom.height;
+			grabc->old_master_mfact_per = grabc->master_mfact_per;
+			grabc->old_master_inner_per = grabc->master_inner_per;
+			grabc->old_slave_innder_per = grabc->slave_innder_per;
+			grabc->drag_begin_geom = grabc->geom;
+			grabc->cursor_in_upper_half = false;
+			grabc->cursor_in_left_half = false;
 		}
 
-		bool moving_up = cursor->y < drag_begin_cursory;
-		bool moving_down = cursor->y > drag_begin_cursory;
+		if (grabc->ismaster) {
+			delta_x = (float)(offsetx) * (grabc->old_master_mfact_per) /
+					  grabc->drag_begin_geom.width;
+			delta_y = (float)(offsety) * (grabc->old_master_inner_per) /
+					  grabc->drag_begin_geom.height;
+		} else {
+			delta_x = (float)(offsetx) * (1 - grabc->old_master_mfact_per) /
+					  grabc->drag_begin_geom.width;
+			delta_y = (float)(offsety) * (grabc->old_slave_innder_per) /
+					  grabc->drag_begin_geom.height;
+		}
+		bool moving_up;
+		bool moving_down;
+
+		if (offsetx || offsety) {
+			moving_up = offsety < 0 ? true : false;
+			moving_down = offsety > 0 ? true : false;
+		} else {
+			moving_up = cursor->y < drag_begin_cursory;
+			moving_down = cursor->y > drag_begin_cursory;
+		}
 
 		if (grabc->ismaster && !prev) {
 			if (moving_up) {
@@ -180,6 +196,11 @@ void resize_tile_master_horizontal(Client *grabc, unsigned int time, int type) {
 		grabc->master_inner_per = new_master_inner_per;
 		grabc->slave_innder_per = new_slave_innder_per;
 
+		if (offsetx || offsety) {
+			arrange(grabc->mon, false);
+			return;
+		}
+
 		if (last_apply_drap_time == 0 ||
 			time - last_apply_drap_time > refresh_interval) {
 			arrange(grabc->mon, false);
@@ -188,7 +209,8 @@ void resize_tile_master_horizontal(Client *grabc, unsigned int time, int type) {
 	}
 }
 
-void resize_tile_master_vertical(Client *grabc, unsigned int time, int type) {
+void resize_tile_master_vertical(Client *grabc, int offsetx, int offsety,
+								 unsigned int time, int type) {
 	Client *tc = NULL;
 	float delta_x, delta_y;
 	Client *next = NULL;
@@ -218,7 +240,7 @@ void resize_tile_master_vertical(Client *grabc, unsigned int time, int type) {
 		}
 	}
 
-	if (!start_drag_window) {
+	if (!start_drag_window && offsetx == 0 && offsety == 0) {
 		drag_begin_cursorx = cursor->x;
 		drag_begin_cursory = cursor->y;
 		start_drag_window = true;
@@ -235,25 +257,43 @@ void resize_tile_master_vertical(Client *grabc, unsigned int time, int type) {
 		grabc->drag_begin_geom = grabc->geom;
 	} else {
 		// 计算相对于屏幕尺寸的比例变化
+		// 计算相对于屏幕尺寸的比例变化
+		if (!offsetx && !offsety) {
+
+			offsetx = cursor->x - drag_begin_cursorx;
+			offsety = cursor->y - drag_begin_cursory;
+		} else {
+			grabc->old_master_mfact_per = grabc->master_mfact_per;
+			grabc->old_master_inner_per = grabc->master_inner_per;
+			grabc->old_slave_innder_per = grabc->slave_innder_per;
+			grabc->drag_begin_geom = grabc->geom;
+			grabc->cursor_in_upper_half = false;
+			grabc->cursor_in_left_half = false;
+		}
+
 		if (grabc->ismaster) {
 			// 垂直版本：左右移动调整高度比例，上下移动调整宽度比例
-			delta_x = (float)(cursor->x - drag_begin_cursorx) *
-					  (grabc->old_master_inner_per) /
+			delta_x = (float)(offsetx) * (grabc->old_master_inner_per) /
 					  grabc->drag_begin_geom.width;
-			delta_y = (float)(cursor->y - drag_begin_cursory) *
-					  (grabc->old_master_mfact_per) /
+			delta_y = (float)(offsety) * (grabc->old_master_mfact_per) /
 					  grabc->drag_begin_geom.height;
 		} else {
-			delta_x = (float)(cursor->x - drag_begin_cursorx) *
-					  (grabc->old_slave_innder_per) /
+			delta_x = (float)(offsetx) * (grabc->old_slave_innder_per) /
 					  grabc->drag_begin_geom.width;
-			delta_y = (float)(cursor->y - drag_begin_cursory) *
-					  (1 - grabc->old_master_mfact_per) /
+			delta_y = (float)(offsety) * (1 - grabc->old_master_mfact_per) /
 					  grabc->drag_begin_geom.height;
 		}
 
-		bool moving_left = cursor->x < drag_begin_cursorx;
-		bool moving_right = cursor->x > drag_begin_cursorx;
+		bool moving_left;
+		bool moving_right;
+
+		if (offsetx || offsety) {
+			moving_left = offsetx < 0 ? true : false;
+			moving_right = offsetx > 0 ? true : false;
+		} else {
+			moving_left = cursor->x < drag_begin_cursorx;
+			moving_right = cursor->x > drag_begin_cursorx;
+		}
 
 		// 调整主区域和栈区域的高度比例（垂直分割）
 		if (grabc->ismaster && !prev) {
@@ -318,6 +358,11 @@ void resize_tile_master_vertical(Client *grabc, unsigned int time, int type) {
 		grabc->master_inner_per = new_master_inner_per;
 		grabc->slave_innder_per = new_slave_innder_per;
 
+		if (offsetx || offsety) {
+			arrange(grabc->mon, false);
+			return;
+		}
+
 		if (last_apply_drap_time == 0 ||
 			time - last_apply_drap_time > refresh_interval) {
 			arrange(grabc->mon, false);
@@ -326,12 +371,13 @@ void resize_tile_master_vertical(Client *grabc, unsigned int time, int type) {
 	}
 }
 
-void resize_tile_scroller(Client *grabc, unsigned int time, bool isvertical) {
+void resize_tile_scroller(Client *grabc, int offsetx, int offsety,
+						  unsigned int time, bool isvertical) {
 	float delta_x, delta_y;
 	float new_scroller_proportion;
 	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
 
-	if (!start_drag_window) {
+	if (!start_drag_window && offsetx == 0 && offsety == 0) {
 		drag_begin_cursorx = cursor->x;
 		drag_begin_cursory = cursor->y;
 		start_drag_window = true;
@@ -347,17 +393,42 @@ void resize_tile_scroller(Client *grabc, unsigned int time, bool isvertical) {
 		grabc->drag_begin_geom = grabc->geom;
 	} else {
 		// 计算相对于屏幕尺寸的比例变化
-		delta_x = (float)(cursor->x - drag_begin_cursorx) *
-				  (grabc->old_scroller_pproportion) /
+		// 计算相对于屏幕尺寸的比例变化
+		if (!offsetx && !offsety) {
+
+			offsetx = cursor->x - drag_begin_cursorx;
+			offsety = cursor->y - drag_begin_cursory;
+		} else {
+			grabc->old_master_mfact_per = grabc->master_mfact_per;
+			grabc->old_master_inner_per = grabc->master_inner_per;
+			grabc->old_slave_innder_per = grabc->slave_innder_per;
+			grabc->drag_begin_geom = grabc->geom;
+			grabc->old_scroller_pproportion = grabc->scroller_proportion;
+			grabc->cursor_in_upper_half = false;
+			grabc->cursor_in_left_half = false;
+		}
+
+		delta_x = (float)(offsetx) * (grabc->old_scroller_pproportion) /
 				  grabc->drag_begin_geom.width;
-		delta_y = (float)(cursor->y - drag_begin_cursory) *
-				  (grabc->old_scroller_pproportion) /
+		delta_y = (float)(offsety) * (grabc->old_scroller_pproportion) /
 				  grabc->drag_begin_geom.height;
 
-		bool moving_up = cursor->y < drag_begin_cursory;
-		bool moving_down = cursor->y > drag_begin_cursory;
-		bool moving_left = cursor->x < drag_begin_cursorx;
-		bool moving_right = cursor->x > drag_begin_cursorx;
+		bool moving_up;
+		bool moving_down;
+		bool moving_left;
+		bool moving_right;
+
+		if (offsetx || offsety) {
+			moving_up = offsety < 0 ? true : false;
+			moving_down = offsety > 0 ? true : false;
+			moving_left = offsetx < 0 ? true : false;
+			moving_right = offsetx > 0 ? true : false;
+		} else {
+			moving_up = cursor->y < drag_begin_cursory;
+			moving_down = cursor->y > drag_begin_cursory;
+			moving_left = cursor->x < drag_begin_cursorx;
+			moving_right = cursor->x > drag_begin_cursorx;
+		}
 
 		if ((grabc->cursor_in_upper_half && moving_up) ||
 			(!grabc->cursor_in_upper_half && moving_down)) {
@@ -388,6 +459,11 @@ void resize_tile_scroller(Client *grabc, unsigned int time, bool isvertical) {
 
 		grabc->scroller_proportion = new_scroller_proportion;
 
+		if (offsetx || offsety) {
+			arrange(grabc->mon, false);
+			return;
+		}
+
 		if (last_apply_drap_time == 0 ||
 			time - last_apply_drap_time > refresh_interval) {
 			arrange(grabc->mon, false);
@@ -396,20 +472,23 @@ void resize_tile_scroller(Client *grabc, unsigned int time, bool isvertical) {
 	}
 }
 
-void resize_tile_client(Client *grabc, unsigned int time) {
+void resize_tile_client(Client *grabc, int offsetx, int offsety,
+						unsigned int time) {
 	const Layout *current_layout =
 		grabc->mon->pertag->ltidxs[grabc->mon->pertag->curtag];
 	if (current_layout->id == TILE || current_layout->id == DECK ||
 		current_layout->id == CENTER_TILE
 
 	) {
-		resize_tile_master_horizontal(grabc, time, current_layout->id);
+		resize_tile_master_horizontal(grabc, offsetx, offsety, time,
+									  current_layout->id);
 	} else if (current_layout->id == VERTICAL_TILE) {
-		resize_tile_master_vertical(grabc, time, current_layout->id);
+		resize_tile_master_vertical(grabc, offsetx, offsety, time,
+									current_layout->id);
 	} else if (current_layout->id == SCROLLER) {
-		resize_tile_scroller(grabc, time, false);
+		resize_tile_scroller(grabc, offsetx, offsety, time, false);
 	} else if (current_layout->id == VERTICAL_SCROLLER) {
-		resize_tile_scroller(grabc, time, true);
+		resize_tile_scroller(grabc, offsetx, offsety, time, true);
 	}
 }
 
