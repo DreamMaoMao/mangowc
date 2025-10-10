@@ -3892,20 +3892,26 @@ void resize_tile_client(Client *grabc, unsigned int time) {
 	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
 	wlr_log(WLR_ERROR, "%f", refresh_interval);
 	// 查找 grabc 在链表中的前一个和后一个客户端
-	wl_list_for_each(tc, &clients, link) {
-		if (tc == grabc) {
-			// 找到当前客户端，下一个节点就是 next
-			if (tc->link.next != &clients) {
-				next = wl_container_of(tc->link.next, next, link);
-			}
-			// 前一个节点就是 prev
-			if (tc->link.prev != &clients) {
-				prev = wl_container_of(tc->link.prev, prev, link);
-			}
+
+	struct wl_list *node;
+
+	// 从当前节点的下一个开始遍历
+	for (node = grabc->link.next; node != &clients; node = node->next) {
+		tc = wl_container_of(node, tc, link);
+		if (!tc->isfloating) { // 根据你的实际字段名调整
+			next = tc;
 			break;
 		}
 	}
 
+	// 从当前节点的上一个开始遍历
+	for (node = grabc->link.prev; node != &clients; node = node->prev) {
+		tc = wl_container_of(node, tc, link);
+		if (!tc->isfloating) { // 根据你的实际字段名调整
+			prev = tc;
+			break;
+		}
+	}
 	if (!start_drag_window) {
 		begin_cursorx = cursor->x;
 		begin_cursory = cursor->y;
