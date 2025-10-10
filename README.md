@@ -43,23 +43,14 @@ https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
 
 # Supported layouts
 
-## Horizontal Layouts
 - tile
 - scroller
 - monocle
 - grid
-- dwindle
-- spiral
 - deck
 - center_tile
-
-## Vertical Layouts
 - vertical_tile
 - vertical_scroller
-- vertical_monocle
-- vertical_grid
-- vertical_dwindle
-- vertical_spiral
 
 # Installation
 
