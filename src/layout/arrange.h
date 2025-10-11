@@ -89,7 +89,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 			grabc->old_master_inner_per = grabc->master_inner_per;
 			grabc->old_stack_innder_per = grabc->stack_innder_per;
 			grabc->drag_begin_geom = grabc->geom;
-			grabc->cursor_in_upper_half = false;
+			grabc->cursor_in_upper_half = true;
 			grabc->cursor_in_left_half = false;
 		}
 
@@ -267,7 +267,7 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 			grabc->old_master_inner_per = grabc->master_inner_per;
 			grabc->old_stack_innder_per = grabc->stack_innder_per;
 			grabc->drag_begin_geom = grabc->geom;
-			grabc->cursor_in_upper_half = false;
+			grabc->cursor_in_upper_half = true;
 			grabc->cursor_in_left_half = false;
 		}
 
