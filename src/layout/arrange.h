@@ -494,7 +494,7 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 						double total_stack_hight_percent,
 						double total_master_inner_percent, int master_num,
 						int stack_num) {
-	Client *c;
+	Client *c = NULL;
 	int i = 0;
 	unsigned int stack_index;
 	unsigned int nmasters = m->pertag->nmasters[m->pertag->curtag];
