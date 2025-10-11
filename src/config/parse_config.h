@@ -204,7 +204,7 @@ typedef struct {
 	float default_mfact;
 	unsigned int default_nmaster;
 	int center_master_overspread;
-	int center_when_single_slave;
+	int center_when_single_stack;
 
 	unsigned int hotarea_size;
 	unsigned int enable_hotarea;
@@ -1262,8 +1262,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->default_nmaster = atoi(value);
 	} else if (strcmp(key, "center_master_overspread") == 0) {
 		config->center_master_overspread = atoi(value);
-	} else if (strcmp(key, "center_when_single_slave") == 0) {
-		config->center_when_single_slave = atoi(value);
+	} else if (strcmp(key, "center_when_single_stack") == 0) {
+		config->center_when_single_stack = atoi(value);
 	} else if (strcmp(key, "hotarea_size") == 0) {
 		config->hotarea_size = atoi(value);
 	} else if (strcmp(key, "enable_hotarea") == 0) {
@@ -2474,7 +2474,7 @@ void override_config(void) {
 	default_mfact = CLAMP_FLOAT(config.default_mfact, 0.1f, 0.9f);
 	default_nmaster = CLAMP_INT(config.default_nmaster, 1, 1000);
 	center_master_overspread = CLAMP_INT(config.center_master_overspread, 0, 1);
-	center_when_single_slave = CLAMP_INT(config.center_when_single_slave, 0, 1);
+	center_when_single_stack = CLAMP_INT(config.center_when_single_stack, 0, 1);
 	new_is_master = CLAMP_INT(config.new_is_master, 0, 1);
 
 	// 概述模式设置
@@ -2623,8 +2623,8 @@ void set_value_default() {
 	config.default_nmaster = default_nmaster; // 默认master数量
 	config.center_master_overspread =
 		center_master_overspread; // 中心master时是否铺满
-	config.center_when_single_slave =
-		center_when_single_slave; // 单个slave时是否居中
+	config.center_when_single_stack =
+		center_when_single_stack; // 单个stack时是否居中
 
 	config.numlockon = numlockon; // 是否打开右边小键盘
 

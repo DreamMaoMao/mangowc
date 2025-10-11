@@ -338,12 +338,12 @@ struct Client {
 	float unfocused_opacity;
 	char oldmonname[128];
 	int noblur;
-	double master_mfact_per, master_inner_per, slave_innder_per;
-	double old_master_mfact_per, old_master_inner_per, old_slave_innder_per;
+	double master_mfact_per, master_inner_per, stack_innder_per;
+	double old_master_mfact_per, old_master_inner_per, old_stack_innder_per;
 	double old_scroller_pproportion;
 	bool ismaster;
 	bool cursor_in_upper_half, cursor_in_left_half;
-	bool isleftslave;
+	bool isleftstack;
 };
 
 typedef struct {
@@ -3510,7 +3510,7 @@ void init_client_properties(Client *c) {
 	c->iscustomsize = 0;
 	c->master_mfact_per = 0.0f;
 	c->master_inner_per = 0.0f;
-	c->slave_innder_per = 0.0f;
+	c->stack_innder_per = 0.0f;
 }
 
 void // old fix to 0.5
@@ -4149,7 +4149,7 @@ void exchange_two_client(Client *c1, Client *c2) {
 	unsigned int tmp_tags;
 	double master_inner_per = 0.0f;
 	double master_mfact_per = 0.0f;
-	double slave_innder_per = 0.0f;
+	double stack_innder_per = 0.0f;
 
 	if (c1 == NULL || c2 == NULL ||
 		(!exchange_cross_monitor && c1->mon != c2->mon)) {
@@ -4158,15 +4158,15 @@ void exchange_two_client(Client *c1, Client *c2) {
 
 	master_inner_per = c1->master_inner_per;
 	master_mfact_per = c1->master_mfact_per;
-	slave_innder_per = c1->slave_innder_per;
+	stack_innder_per = c1->stack_innder_per;
 
 	c1->master_inner_per = c2->master_inner_per;
 	c1->master_mfact_per = c2->master_mfact_per;
-	c1->slave_innder_per = c2->slave_innder_per;
+	c1->stack_innder_per = c2->stack_innder_per;
 
 	c2->master_inner_per = master_inner_per;
 	c2->master_mfact_per = master_mfact_per;
-	c2->slave_innder_per = slave_innder_per;
+	c2->stack_innder_per = stack_innder_per;
 
 	struct wl_list *tmp1_prev = c1->link.prev;
 	struct wl_list *tmp2_prev = c2->link.prev;

@@ -328,11 +328,11 @@ void center_tile(Monitor *m) {
 	Client *fc = NULL;
 	double mfact = 0;
 	int master_num = 0;
-	int slave_num = 0;
+	int stack_num = 0;
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
-	slave_num = n - master_num;
+	stack_num = n - master_num;
 
 	if (n == 0)
 		return;
@@ -379,12 +379,12 @@ void center_tile(Monitor *m) {
 			mx = cur_gappoh + tw + cur_gappih * ie;
 		} else if (n - nmasters == 1) {
 			// 单个堆叠窗口的处理
-			if (center_when_single_slave) {
-				// slave在右边，master居中，左边空着
+			if (center_when_single_stack) {
+				// stack在右边，master居中，左边空着
 				tw = (m->w.width - mw) / 2 - cur_gappoh - cur_gappih * ie;
 				mx = cur_gappoh + tw + cur_gappih * ie; // master居中
 			} else {
-				// slave在右边，master在左边
+				// stack在右边，master在左边
 				tw = m->w.width - mw - 2 * cur_gappoh - cur_gappih * ie;
 				mx = cur_gappoh; // master在左边
 			}
@@ -439,26 +439,26 @@ void center_tile(Monitor *m) {
 			if (n - nmasters == 1) {
 				// 单个堆叠窗口
 				r = n - i;
-				if (c->slave_innder_per > 0.0f) {
+				if (c->stack_innder_per > 0.0f) {
 					h = (m->w.height - 2 * cur_gappov -
-						 cur_gappiv * ie * (slave_num - 1)) *
-						c->slave_innder_per;
+						 cur_gappiv * ie * (stack_num - 1)) *
+						c->stack_innder_per;
 					c->master_mfact_per = mfact;
 				} else {
 					h = (m->w.height - ety - cur_gappov -
 						 cur_gappiv * ie * (r - 1)) /
 						r;
-					c->slave_innder_per = h / (m->w.height - ety - cur_gappov -
+					c->stack_innder_per = h / (m->w.height - ety - cur_gappov -
 											   cur_gappiv * ie * (r - 1));
 					c->master_mfact_per = mfact;
 				}
 
 				int stack_x;
-				if (center_when_single_slave) {
-					// 放在右侧（master居中时，slave在右边）
+				if (center_when_single_stack) {
+					// 放在右侧（master居中时，stack在右边）
 					stack_x = m->w.x + mx + mw + cur_gappih * ie;
 				} else {
-					// 放在右侧（master在左边时，slave在右边）
+					// 放在右侧（master在左边时，stack在右边）
 					stack_x = m->w.x + mx + mw + cur_gappih * ie;
 				}
 
@@ -475,16 +475,16 @@ void center_tile(Monitor *m) {
 
 				if ((stack_index % 2) ^ (n % 2 == 0)) {
 					// 右侧堆叠窗口
-					if (c->slave_innder_per > 0.0f) {
+					if (c->stack_innder_per > 0.0f) {
 						h = (m->w.height - 2 * cur_gappov -
-							 cur_gappiv * ie * (slave_num / 2 - 1)) *
-							c->slave_innder_per;
+							 cur_gappiv * ie * (stack_num / 2 - 1)) *
+							c->stack_innder_per;
 						c->master_mfact_per = mfact;
 					} else {
 						h = (m->w.height - ety - cur_gappov -
 							 cur_gappiv * ie * (r - 1)) /
 							r;
-						c->slave_innder_per =
+						c->stack_innder_per =
 							h / (m->w.height - ety - cur_gappov -
 								 cur_gappiv * ie * (r - 1));
 						c->master_mfact_per = mfact;
@@ -500,16 +500,16 @@ void center_tile(Monitor *m) {
 					ety += c->geom.height + cur_gappiv * ie;
 				} else {
 					// 左侧堆叠窗口
-					if (c->slave_innder_per > 0.0f) {
+					if (c->stack_innder_per > 0.0f) {
 						h = (m->w.height - 2 * cur_gappov -
-							 cur_gappiv * ie * (slave_num / 2 - 1)) *
-							c->slave_innder_per;
+							 cur_gappiv * ie * (stack_num / 2 - 1)) *
+							c->stack_innder_per;
 						c->master_mfact_per = mfact;
 					} else {
 						h = (m->w.height - oty - cur_gappov -
 							 cur_gappiv * ie * (r - 1)) /
 							r;
-						c->slave_innder_per =
+						c->stack_innder_per =
 							h / (m->w.height - oty - cur_gappov -
 								 cur_gappiv * ie * (r - 1));
 						c->master_mfact_per = mfact;
@@ -536,11 +536,11 @@ void tile(Monitor *m) {
 	Client *fc = NULL;
 	double mfact = 0;
 	int master_num = 0;
-	int slave_num = 0;
+	int stack_num = 0;
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
-	slave_num = n - master_num;
+	stack_num = n - master_num;
 
 	if (n == 0)
 		return;
@@ -599,21 +599,21 @@ void tile(Monitor *m) {
 			my += c->geom.height + cur_gappiv * ie;
 		} else {
 			r = n - i;
-			if (c->slave_innder_per > 0.0f) {
+			if (c->stack_innder_per > 0.0f) {
 				h = (m->w.height - 2 * cur_gappov -
-					 cur_gappiv * ie * (slave_num - 1)) *
-					c->slave_innder_per;
+					 cur_gappiv * ie * (stack_num - 1)) *
+					c->stack_innder_per;
 				c->master_mfact_per = mfact;
 			} else {
 				h = (m->w.height - ty - cur_gappov -
 					 cur_gappiv * ie * (r - 1)) /
 					r;
-				c->slave_innder_per = h / (m->w.height - ty - cur_gappov -
+				c->stack_innder_per = h / (m->w.height - ty - cur_gappov -
 										   cur_gappiv * ie * (r - 1));
 				c->master_mfact_per = mfact;
 			}
 
-			// wlr_log(WLR_ERROR, "slave_innder_per: %f", c->slave_innder_per);
+			// wlr_log(WLR_ERROR, "stack_innder_per: %f", c->stack_innder_per);
 
 			resize(c,
 				   (struct wlr_box){.x = m->w.x + mw + cur_gappoh,

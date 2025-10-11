@@ -16,7 +16,7 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Base tags not workspaces (supports separate window layouts for each tag)
      - Smooth and customizable complete animations (window open/move/close, tag enter/leave,layer open/close/move)
      - Excellent input method support (text input v2/v3)
-     - Flexible window layouts with easy switching (scroller, master-slave, monocle,center-master, etc.)
+     - Flexible window layouts with easy switching (scroller, master-stack, monocle,center-master, etc.)
      - Rich window states (swallow, minimize, maximize, unglobal, global, fakefullscreen, overlay, etc.)
      - Simple yet powerful external configuration(support shortcuts hot-reload)
      - Sway-like scratchpad and named scratchpad

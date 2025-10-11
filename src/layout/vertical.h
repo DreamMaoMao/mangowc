@@ -4,11 +4,11 @@ void vertical_tile(Monitor *m) {
 	Client *fc = NULL;
 	double mfact = 0;
 	int master_num = 0;
-	int slave_num = 0;
+	int stack_num = 0;
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
-	slave_num = n - master_num;
+	stack_num = n - master_num;
 
 	if (n == 0)
 		return;
@@ -66,15 +66,15 @@ void vertical_tile(Monitor *m) {
 			mx += c->geom.width + cur_gapih * ie;
 		} else {
 			r = n - i;
-			if (c->slave_innder_per > 0.0f) {
+			if (c->stack_innder_per > 0.0f) {
 				w = (m->w.width - 2 * cur_gapih -
-					 cur_gapih * ie * (slave_num - 1)) *
-					c->slave_innder_per;
+					 cur_gapih * ie * (stack_num - 1)) *
+					c->stack_innder_per;
 				c->master_mfact_per = mfact;
 			} else {
 				w = (m->w.width - tx - cur_gapih - cur_gapih * ie * (r - 1)) /
 					r;
-				c->slave_innder_per = w / (m->w.width - tx - cur_gapih -
+				c->stack_innder_per = w / (m->w.width - tx - cur_gapih -
 										   cur_gapih * ie * (r - 1));
 				c->master_mfact_per = mfact;
 			}
