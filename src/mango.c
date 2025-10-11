@@ -820,11 +820,10 @@ static struct {
 #include "config/preset.h"
 
 struct Pertag {
-	unsigned int curtag, prevtag;	 /* current and previous tag */
-	int nmasters[LENGTH(tags) + 1];	 /* number of windows in master area */
-	float mfacts[LENGTH(tags) + 1];	 /* mfacts per tag */
-	float smfacts[LENGTH(tags) + 1]; /* smfacts per tag */
-	bool no_hide[LENGTH(tags) + 1];	 /* no_hide per tag */
+	unsigned int curtag, prevtag;	/* current and previous tag */
+	int nmasters[LENGTH(tags) + 1]; /* number of windows in master area */
+	float mfacts[LENGTH(tags) + 1]; /* mfacts per tag */
+	bool no_hide[LENGTH(tags) + 1]; /* no_hide per tag */
 	const Layout
 		*ltidxs[LENGTH(tags) + 1]; /* matrix of tags and layouts indexes  */
 };
@@ -2635,7 +2634,6 @@ void createmon(struct wl_listener *listener, void *data) {
 	for (i = 0; i <= LENGTH(tags); i++) {
 		m->pertag->nmasters[i] = m->nmaster;
 		m->pertag->mfacts[i] = m->mfact;
-		m->pertag->smfacts[i] = default_smfact;
 		m->pertag->ltidxs[i] = m->lt;
 	}
 

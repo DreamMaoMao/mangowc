@@ -263,20 +263,6 @@ void increase_proportion(const Arg *arg) {
 	}
 }
 
-void setsmfact(const Arg *arg) {
-	float f;
-
-	if (!arg || !selmon ||
-		!selmon->pertag->ltidxs[selmon->pertag->curtag]->arrange)
-		return;
-	f = arg->f < 1.0 ? arg->f + selmon->pertag->smfacts[selmon->pertag->curtag]
-					 : arg->f - 1.0;
-	if (f < 0.1 || f > 0.9)
-		return;
-	// selmon->mfact = f;
-	selmon->pertag->smfacts[selmon->pertag->curtag] = f;
-	arrange(selmon, false);
-}
 /* arg > 1.0 will set mfact absolutely */
 void // 17
 setmfact(const Arg *arg) {
