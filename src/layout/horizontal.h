@@ -327,8 +327,13 @@ void center_tile(Monitor *m) {
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
+	int master_num = 0;
+	int slave_num = 0;
 
 	n = m->visible_tiling_clients;
+	master_num = m->pertag->nmasters[m->pertag->curtag];
+	slave_num = n - master_num;
+
 	if (n == 0)
 		return;
 
@@ -407,7 +412,8 @@ void center_tile(Monitor *m) {
 			// 主区域窗口
 			r = MIN(n, nmasters) - i;
 			if (c->master_inner_per > 0.0f) {
-				h = (m->w.height - 2 * cur_gappov - cur_gappiv * ie * (r - 1)) *
+				h = (m->w.height - 2 * cur_gappov -
+					 cur_gappiv * ie * (master_num - 1)) *
 					c->master_inner_per;
 				c->master_mfact_per = mfact;
 			} else {
@@ -435,7 +441,7 @@ void center_tile(Monitor *m) {
 				r = n - i;
 				if (c->slave_innder_per > 0.0f) {
 					h = (m->w.height - 2 * cur_gappov -
-						 cur_gappiv * ie * (r - 1)) *
+						 cur_gappiv * ie * (slave_num - 1)) *
 						c->slave_innder_per;
 					c->master_mfact_per = mfact;
 				} else {
@@ -471,7 +477,7 @@ void center_tile(Monitor *m) {
 					// 右侧堆叠窗口
 					if (c->slave_innder_per > 0.0f) {
 						h = (m->w.height - 2 * cur_gappov -
-							 cur_gappiv * ie * (r - 1)) *
+							 cur_gappiv * ie * (slave_num / 2 - 1)) *
 							c->slave_innder_per;
 						c->master_mfact_per = mfact;
 					} else {
@@ -496,7 +502,7 @@ void center_tile(Monitor *m) {
 					// 左侧堆叠窗口
 					if (c->slave_innder_per > 0.0f) {
 						h = (m->w.height - 2 * cur_gappov -
-							 cur_gappiv * ie * (r - 1)) *
+							 cur_gappiv * ie * (slave_num / 2 - 1)) *
 							c->slave_innder_per;
 						c->master_mfact_per = mfact;
 					} else {
@@ -529,8 +535,12 @@ void tile(Monitor *m) {
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
+	int master_num = 0;
+	int slave_num = 0;
 
 	n = m->visible_tiling_clients;
+	master_num = m->pertag->nmasters[m->pertag->curtag];
+	slave_num = n - master_num;
 
 	if (n == 0)
 		return;
@@ -568,7 +578,8 @@ void tile(Monitor *m) {
 		if (i < m->pertag->nmasters[m->pertag->curtag]) {
 			r = MIN(n, m->pertag->nmasters[m->pertag->curtag]) - i;
 			if (c->master_inner_per > 0.0f) {
-				h = (m->w.height - 2 * cur_gappov - cur_gappiv * ie * (r - 1)) *
+				h = (m->w.height - 2 * cur_gappov -
+					 cur_gappiv * ie * (master_num - 1)) *
 					c->master_inner_per;
 				c->master_mfact_per = mfact;
 			} else {
@@ -589,7 +600,8 @@ void tile(Monitor *m) {
 		} else {
 			r = n - i;
 			if (c->slave_innder_per > 0.0f) {
-				h = (m->w.height - 2 * cur_gappov - cur_gappiv * ie * (r - 1)) *
+				h = (m->w.height - 2 * cur_gappov -
+					 cur_gappiv * ie * (slave_num - 1)) *
 					c->slave_innder_per;
 				c->master_mfact_per = mfact;
 			} else {
