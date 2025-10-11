@@ -470,6 +470,10 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
 
 void resize_tile_client(Client *grabc, bool isdrag, int offsetx, int offsety,
 						unsigned int time) {
+
+	if (!grabc || grabc->isfullscreen || grabc->ismaxmizescreen)
+		return;
+
 	const Layout *current_layout =
 		grabc->mon->pertag->ltidxs[grabc->mon->pertag->curtag];
 	if (current_layout->id == TILE || current_layout->id == DECK ||
