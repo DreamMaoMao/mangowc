@@ -41,6 +41,7 @@ https://github.com/user-attachments/assets/c9bf9415-fad1-4400-bcdc-3ad2d76de85a
 - deck
 - center_tile
 - vertical_tile
+- vertical_grid
 - vertical_scroller
 
 # Installation

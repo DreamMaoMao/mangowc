@@ -217,3 +217,119 @@ void vertical_scroller(Monitor *m) {
 
 	free(tempClients);
 }
+
+void vertical_grid(Monitor *m) {
+	unsigned int i, n;
+	unsigned int cx, cy, cw, ch;
+	unsigned int dy;
+	unsigned int rows, cols, overrows;
+	Client *c = NULL;
+
+	n = m->isoverview ? m->visible_clients : m->visible_tiling_clients;
+
+	if (n == 0) {
+		return;
+	}
+
+	if (n == 1) {
+		wl_list_for_each(c, &clients, link) {
+
+			if (c->mon != m)
+				continue;
+
+			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
+							smartgaps
+						? 0
+						: borderpx;
+			if (VISIBLEON(c, m) && !c->isunglobal &&
+				((m->isoverview && !client_should_ignore_focus(c)) ||
+				 ISTILED(c))) {
+				ch = (m->w.height - 2 * overviewgappo) * 0.7;
+				cw = (m->w.width - 2 * overviewgappo) * 0.8;
+				c->geom.x = m->w.x + (m->w.width - cw) / 2;
+				c->geom.y = m->w.y + (m->w.height - ch) / 2;
+				c->geom.width = cw - 2 * c->bw;
+				c->geom.height = ch - 2 * c->bw;
+				resize(c, c->geom, 0);
+				return;
+			}
+		}
+	}
+
+	if (n == 2) {
+		ch = (m->w.height - 2 * overviewgappo - overviewgappi) / 2;
+		cw = (m->w.width - 2 * overviewgappo) * 0.65;
+		i = 0;
+		wl_list_for_each(c, &clients, link) {
+
+			if (c->mon != m)
+				continue;
+
+			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
+							smartgaps
+						? 0
+						: borderpx;
+			if (VISIBLEON(c, m) && !c->isunglobal &&
+				((m->isoverview && !client_should_ignore_focus(c)) ||
+				 ISTILED(c))) {
+				if (i == 0) {
+					c->geom.x = m->w.x + (m->w.width - cw) / 2 + overviewgappo;
+					c->geom.y = m->w.y + overviewgappo;
+					c->geom.width = cw - 2 * c->bw;
+					c->geom.height = ch - 2 * c->bw;
+					resize(c, c->geom, 0);
+				} else if (i == 1) {
+					c->geom.x = m->w.x + (m->w.width - cw) / 2 + overviewgappo;
+					c->geom.y = m->w.y + ch + overviewgappo + overviewgappi;
+					c->geom.width = cw - 2 * c->bw;
+					c->geom.height = ch - 2 * c->bw;
+					resize(c, c->geom, 0);
+				}
+				i++;
+			}
+		}
+		return;
+	}
+
+	for (rows = 0; rows <= n / 2; rows++) {
+		if (rows * rows >= n) {
+			break;
+		}
+	}
+	cols = (rows && (rows - 1) * rows >= n) ? rows - 1 : rows;
+
+	cw = (m->w.width - 2 * overviewgappo - (cols - 1) * overviewgappi) / cols;
+	ch = (m->w.height - 2 * overviewgappo - (rows - 1) * overviewgappi) / rows;
+
+	overrows = n % rows;
+	if (overrows) {
+		dy =
+			(m->w.height - overrows * ch - (overrows - 1) * overviewgappi) / 2 -
+			overviewgappo;
+	}
+
+	i = 0;
+	wl_list_for_each(c, &clients, link) {
+		if (c->mon != m)
+			continue;
+
+		c->bw =
+			m->visible_tiling_clients == 1 && no_border_when_single && smartgaps
+				? 0
+				: borderpx;
+		if (VISIBLEON(c, m) && !c->isunglobal &&
+			((m->isoverview && !client_should_ignore_focus(c)) || ISTILED(c))) {
+			cx = m->w.x + (i / rows) * (cw + overviewgappi);
+			cy = m->w.y + (i % rows) * (ch + overviewgappi);
+			if (overrows && i >= n - overrows) {
+				cy += dy;
+			}
+			c->geom.x = cx + overviewgappo;
+			c->geom.y = cy + overviewgappo;
+			c->geom.width = cw - 2 * c->bw;
+			c->geom.height = ch - 2 * c->bw;
+			resize(c, c->geom, 0);
+			i++;
+		}
+	}
+}
