@@ -331,10 +331,6 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 			delta_x = delta_x * 2;
 		}
 
-		if (!grabc->ismaster && grabc->isleftslave && type == CENTER_TILE) {
-			delta_x = delta_x * -1.0f;
-		}
-
 		// 直接设置新的比例，基于初始值 + 变化量
 		float new_master_mfact_per = grabc->old_master_mfact_per +
 									 delta_y; // 垂直：delta_y调整主区域高度
