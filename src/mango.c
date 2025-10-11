@@ -715,8 +715,8 @@ static void enable_adaptive_sync(Monitor *m, struct wlr_output_state *state);
 static Client *get_next_stack_client(Client *c, bool reverse);
 static void set_float_malposition(Client *tc);
 static void set_size_per(Monitor *m, Client *c);
-static void resize_tile_client(Client *grabc, int offsetx, int offsety,
-							   unsigned int time);
+static void resize_tile_client(Client *grabc, bool isdrag, int offsetx,
+							   int offsety, unsigned int time);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -3847,7 +3847,7 @@ void motionnotify(unsigned int time, struct wlr_input_device *device, double dx,
 			resize(grabc, grabc->float_geom, 1);
 			return;
 		} else {
-			resize_tile_client(grabc, 0, 0, time);
+			resize_tile_client(grabc, true, 0, 0, time);
 		}
 	}
 

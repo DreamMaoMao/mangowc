@@ -411,7 +411,7 @@ void resizewin(const Arg *arg) {
 			offsety = arg->i2;
 			break;
 		}
-		resize_tile_client(c, offsetx, offsety, 0);
+		resize_tile_client(c, false, offsetx, offsety, 0);
 		return;
 	}
 
