@@ -6,6 +6,10 @@ void grid(Monitor *m) {
 	unsigned int cols, rows, overcols;
 	Client *c = NULL;
 	n = 0;
+	int target_gappo = enablegaps ? m->isoverview ? overviewgappo : gappoh : 0;
+	int target_gappi = enablegaps ? m->isoverview ? overviewgappi : gappih : 0;
+	float single_width_ratio = m->isoverview ? 0.7 : 0.9;
+	float single_height_ratio = m->isoverview ? 0.8 : 0.9;
 
 	n = m->isoverview ? m->visible_clients : m->visible_tiling_clients;
 
@@ -26,8 +30,8 @@ void grid(Monitor *m) {
 			if (VISIBLEON(c, m) && !c->isunglobal &&
 				((m->isoverview && !client_should_ignore_focus(c)) ||
 				 ISTILED(c))) {
-				cw = (m->w.width - 2 * overviewgappo) * 0.7;
-				ch = (m->w.height - 2 * overviewgappo) * 0.8;
+				cw = (m->w.width - 2 * target_gappo) * single_width_ratio;
+				ch = (m->w.height - 2 * target_gappo) * single_height_ratio;
 				c->geom.x = m->w.x + (m->w.width - cw) / 2;
 				c->geom.y = m->w.y + (m->w.height - ch) / 2;
 				c->geom.width = cw - 2 * c->bw;
@@ -39,8 +43,8 @@ void grid(Monitor *m) {
 	}
 
 	if (n == 2) {
-		cw = (m->w.width - 2 * overviewgappo - overviewgappi) / 2;
-		ch = (m->w.height - 2 * overviewgappo) * 0.65;
+		cw = (m->w.width - 2 * target_gappo - target_gappi) / 2;
+		ch = (m->w.height - 2 * target_gappo) * 0.65;
 		i = 0;
 		wl_list_for_each(c, &clients, link) {
 			if (c->mon != m)
@@ -54,14 +58,14 @@ void grid(Monitor *m) {
 				((m->isoverview && !client_should_ignore_focus(c)) ||
 				 ISTILED(c))) {
 				if (i == 0) {
-					c->geom.x = m->w.x + overviewgappo;
-					c->geom.y = m->w.y + (m->w.height - ch) / 2 + overviewgappo;
+					c->geom.x = m->w.x + target_gappo;
+					c->geom.y = m->w.y + (m->w.height - ch) / 2 + target_gappo;
 					c->geom.width = cw - 2 * c->bw;
 					c->geom.height = ch - 2 * c->bw;
 					resize(c, c->geom, 0);
 				} else if (i == 1) {
-					c->geom.x = m->w.x + cw + overviewgappo + overviewgappi;
-					c->geom.y = m->w.y + (m->w.height - ch) / 2 + overviewgappo;
+					c->geom.x = m->w.x + cw + target_gappo + target_gappi;
+					c->geom.y = m->w.y + (m->w.height - ch) / 2 + target_gappo;
 					c->geom.width = cw - 2 * c->bw;
 					c->geom.height = ch - 2 * c->bw;
 					resize(c, c->geom, 0);
@@ -81,14 +85,14 @@ void grid(Monitor *m) {
 	rows = (cols && (cols - 1) * cols >= n) ? cols - 1 : cols;
 
 	// 计算每个客户端的高度和宽度
-	ch = (m->w.height - 2 * overviewgappo - (rows - 1) * overviewgappi) / rows;
-	cw = (m->w.width - 2 * overviewgappo - (cols - 1) * overviewgappi) / cols;
+	ch = (m->w.height - 2 * target_gappo - (rows - 1) * target_gappi) / rows;
+	cw = (m->w.width - 2 * target_gappo - (cols - 1) * target_gappi) / cols;
 
 	// 处理多余的列
 	overcols = n % cols;
 	if (overcols) {
-		dx = (m->w.width - overcols * cw - (overcols - 1) * overviewgappi) / 2 -
-			 overviewgappo;
+		dx = (m->w.width - overcols * cw - (overcols - 1) * target_gappi) / 2 -
+			 target_gappo;
 	}
 
 	// 调整每个客户端的位置和大小
@@ -103,13 +107,13 @@ void grid(Monitor *m) {
 				: borderpx;
 		if (VISIBLEON(c, m) && !c->isunglobal &&
 			((m->isoverview && !client_should_ignore_focus(c)) || ISTILED(c))) {
-			cx = m->w.x + (i % cols) * (cw + overviewgappi);
-			cy = m->w.y + (i / cols) * (ch + overviewgappi);
+			cx = m->w.x + (i % cols) * (cw + target_gappi);
+			cy = m->w.y + (i / cols) * (ch + target_gappi);
 			if (overcols && i >= n - overcols) {
 				cx += dx;
 			}
-			c->geom.x = cx + overviewgappo;
-			c->geom.y = cy + overviewgappo;
+			c->geom.x = cx + target_gappo;
+			c->geom.y = cy + target_gappo;
 			c->geom.width = cw - 2 * c->bw;
 			c->geom.height = ch - 2 * c->bw;
 			resize(c, c->geom, 0);

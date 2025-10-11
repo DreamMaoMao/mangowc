@@ -224,6 +224,10 @@ void vertical_grid(Monitor *m) {
 	unsigned int dy;
 	unsigned int rows, cols, overrows;
 	Client *c = NULL;
+	int target_gappo = enablegaps ? m->isoverview ? overviewgappo : gappov : 0;
+	int target_gappi = enablegaps ? m->isoverview ? overviewgappi : gappiv : 0;
+	float single_width_ratio = m->isoverview ? 0.7 : 0.9;
+	float single_height_ratio = m->isoverview ? 0.8 : 0.9;
 
 	n = m->isoverview ? m->visible_clients : m->visible_tiling_clients;
 
@@ -244,8 +248,8 @@ void vertical_grid(Monitor *m) {
 			if (VISIBLEON(c, m) && !c->isunglobal &&
 				((m->isoverview && !client_should_ignore_focus(c)) ||
 				 ISTILED(c))) {
-				ch = (m->w.height - 2 * overviewgappo) * 0.7;
-				cw = (m->w.width - 2 * overviewgappo) * 0.8;
+				ch = (m->w.height - 2 * target_gappo) * single_height_ratio;
+				cw = (m->w.width - 2 * target_gappo) * single_width_ratio;
 				c->geom.x = m->w.x + (m->w.width - cw) / 2;
 				c->geom.y = m->w.y + (m->w.height - ch) / 2;
 				c->geom.width = cw - 2 * c->bw;
@@ -257,8 +261,8 @@ void vertical_grid(Monitor *m) {
 	}
 
 	if (n == 2) {
-		ch = (m->w.height - 2 * overviewgappo - overviewgappi) / 2;
-		cw = (m->w.width - 2 * overviewgappo) * 0.65;
+		ch = (m->w.height - 2 * target_gappo - target_gappi) / 2;
+		cw = (m->w.width - 2 * target_gappo) * 0.65;
 		i = 0;
 		wl_list_for_each(c, &clients, link) {
 
@@ -273,14 +277,14 @@ void vertical_grid(Monitor *m) {
 				((m->isoverview && !client_should_ignore_focus(c)) ||
 				 ISTILED(c))) {
 				if (i == 0) {
-					c->geom.x = m->w.x + (m->w.width - cw) / 2 + overviewgappo;
-					c->geom.y = m->w.y + overviewgappo;
+					c->geom.x = m->w.x + (m->w.width - cw) / 2 + target_gappo;
+					c->geom.y = m->w.y + target_gappo;
 					c->geom.width = cw - 2 * c->bw;
 					c->geom.height = ch - 2 * c->bw;
 					resize(c, c->geom, 0);
 				} else if (i == 1) {
-					c->geom.x = m->w.x + (m->w.width - cw) / 2 + overviewgappo;
-					c->geom.y = m->w.y + ch + overviewgappo + overviewgappi;
+					c->geom.x = m->w.x + (m->w.width - cw) / 2 + target_gappo;
+					c->geom.y = m->w.y + ch + target_gappo + target_gappi;
 					c->geom.width = cw - 2 * c->bw;
 					c->geom.height = ch - 2 * c->bw;
 					resize(c, c->geom, 0);
@@ -298,14 +302,13 @@ void vertical_grid(Monitor *m) {
 	}
 	cols = (rows && (rows - 1) * rows >= n) ? rows - 1 : rows;
 
-	cw = (m->w.width - 2 * overviewgappo - (cols - 1) * overviewgappi) / cols;
-	ch = (m->w.height - 2 * overviewgappo - (rows - 1) * overviewgappi) / rows;
+	cw = (m->w.width - 2 * target_gappo - (cols - 1) * target_gappi) / cols;
+	ch = (m->w.height - 2 * target_gappo - (rows - 1) * target_gappi) / rows;
 
 	overrows = n % rows;
 	if (overrows) {
-		dy =
-			(m->w.height - overrows * ch - (overrows - 1) * overviewgappi) / 2 -
-			overviewgappo;
+		dy = (m->w.height - overrows * ch - (overrows - 1) * target_gappi) / 2 -
+			 target_gappo;
 	}
 
 	i = 0;
@@ -319,13 +322,13 @@ void vertical_grid(Monitor *m) {
 				: borderpx;
 		if (VISIBLEON(c, m) && !c->isunglobal &&
 			((m->isoverview && !client_should_ignore_focus(c)) || ISTILED(c))) {
-			cx = m->w.x + (i / rows) * (cw + overviewgappi);
-			cy = m->w.y + (i % rows) * (ch + overviewgappi);
+			cx = m->w.x + (i / rows) * (cw + target_gappi);
+			cy = m->w.y + (i % rows) * (ch + target_gappi);
 			if (overrows && i >= n - overrows) {
 				cy += dy;
 			}
-			c->geom.x = cx + overviewgappo;
-			c->geom.y = cy + overviewgappo;
+			c->geom.x = cx + target_gappo;
+			c->geom.y = cy + target_gappo;
 			c->geom.width = cw - 2 * c->bw;
 			c->geom.height = ch - 2 * c->bw;
 			resize(c, c->geom, 0);
