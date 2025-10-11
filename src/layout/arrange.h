@@ -451,7 +451,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
 
 		// 应用限制，确保比例在合理范围内
 		new_scroller_proportion =
-			fmaxf(0.1f, fminf(0.9f, new_scroller_proportion));
+			fmaxf(0.1f, fminf(1.0f, new_scroller_proportion));
 
 		grabc->scroller_proportion = new_scroller_proportion;
 
