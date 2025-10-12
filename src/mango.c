@@ -187,7 +187,7 @@ typedef struct {
 typedef struct {
 	unsigned int mod;
 	unsigned int button;
-	void (*func)(const Arg *);
+	int (*func)(const Arg *);
 	const Arg arg;
 } Button; // 鼠标按键
 
@@ -199,7 +199,7 @@ typedef struct {
 typedef struct {
 	unsigned int mod;
 	unsigned int dir;
-	void (*func)(const Arg *);
+	int (*func)(const Arg *);
 	const Arg arg;
 } Axis;
 
@@ -355,7 +355,7 @@ typedef struct {
 typedef struct {
 	unsigned int mod;
 	xkb_keysym_t keysym;
-	void (*func)(const Arg *);
+	int (*func)(const Arg *);
 	const Arg arg;
 } Key;
 
@@ -722,6 +722,7 @@ static void set_float_malposition(Client *tc);
 static void set_size_per(Monitor *m, Client *c);
 static void resize_tile_client(Client *grabc, bool isdrag, int offsetx,
 							   int offsety, unsigned int time);
+static void refresh_monitors_workspaces_status(Monitor *m);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -926,16 +927,6 @@ void clear_fullscreen_flag(Client *c) {
 
 	if (c->ismaxmizescreen) {
 		setmaxmizescreen(c, 0);
-	}
-}
-
-void minimized(const Arg *arg) {
-
-	if (selmon && selmon->isoverview)
-		return;
-
-	if (selmon->sel && !selmon->sel->isminied) {
-		set_minimized(selmon->sel);
 	}
 }
 
@@ -3180,6 +3171,8 @@ keybinding(unsigned int mods, xkb_keysym_t sym, unsigned int keycode) {
 	int handled = 0;
 	const KeyBinding *k;
 	int ji;
+	int isbreak = 0;
+
 	for (ji = 0; ji < config.key_bindings_count; ji++) {
 		if (config.key_bindings_count < 1)
 			break;
@@ -3193,9 +3186,12 @@ keybinding(unsigned int mods, xkb_keysym_t sym, unsigned int keycode) {
 			 (k->keysymcode.type == KEY_TYPE_CODE &&
 			  keycode == k->keysymcode.keycode)) &&
 			k->func) {
-			k->func(&k->arg);
+
+			isbreak = k->func(&k->arg);
 			handled = 1;
-			break;
+
+			if (isbreak)
+				break;
 		}
 	}
 	return handled;
@@ -5057,68 +5053,6 @@ int hidecursor(void *data) {
 	wlr_cursor_unset_image(cursor);
 	cursor_hidden = true;
 	return 1;
-}
-
-// 显示所有tag 或 跳转到聚焦窗口的tag
-void toggleoverview(const Arg *arg) {
-	Client *c = NULL;
-
-	if (selmon->isoverview && ov_tab_mode && arg->i != -1 && selmon->sel) {
-		focusstack(&(Arg){.i = 1});
-		return;
-	}
-
-	selmon->isoverview ^= 1;
-	unsigned int target;
-	unsigned int visible_client_number = 0;
-
-	if (selmon->isoverview) {
-		wl_list_for_each(c, &clients,
-						 link) if (c && c->mon == selmon &&
-								   !client_is_unmanaged(c) &&
-								   !client_should_ignore_focus(c) &&
-								   !c->isminied && !c->isunglobal) {
-			visible_client_number++;
-		}
-		if (visible_client_number > 0) {
-			target = ~0 & TAGMASK;
-		} else {
-			selmon->isoverview ^= 1;
-			return;
-		}
-	} else if (!selmon->isoverview && selmon->sel) {
-		target = get_tags_first_tag(selmon->sel->tags);
-	} else if (!selmon->isoverview && !selmon->sel) {
-		target = (1 << (selmon->pertag->prevtag - 1));
-		view(&(Arg){.ui = target}, false);
-		refresh_monitors_workspaces_status(selmon);
-		return;
-	}
-
-	// 正常视图到overview,退出所有窗口的浮动和全屏状态参与平铺,
-	// overview到正常视图,还原之前退出的浮动和全屏窗口状态
-	if (selmon->isoverview) {
-		wl_list_for_each(c, &clients, link) {
-			if (c && c->mon == selmon && !client_is_unmanaged(c) &&
-				!client_should_ignore_focus(c) && !c->isunglobal)
-				overview_backup(c);
-		}
-	} else {
-		wl_list_for_each(c, &clients, link) {
-			if (c && c->mon == selmon && !c->iskilling &&
-				!client_is_unmanaged(c) && !c->isunglobal &&
-				!client_should_ignore_focus(c) && client_surface(c)->mapped)
-				overview_restore(c, &(Arg){.ui = target});
-		}
-	}
-
-	view(&(Arg){.ui = target}, false);
-
-	if (ov_tab_mode && selmon->isoverview && selmon->sel) {
-		focusstack(&(Arg){.i = 1});
-	}
-
-	refresh_monitors_workspaces_status(selmon);
 }
 
 void unlocksession(struct wl_listener *listener, void *data) {

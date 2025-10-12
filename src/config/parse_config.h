@@ -29,7 +29,7 @@ typedef struct {
 typedef struct {
 	uint32_t mod;
 	KeySymCode keysymcode;
-	void (*func)(const Arg *);
+	int (*func)(const Arg *);
 	Arg arg;
 	char mode[28];
 	bool iscommonmode;
@@ -109,20 +109,20 @@ KeyBinding default_key_bindings[] = {CHVT(1), CHVT(2),	CHVT(3),  CHVT(4),
 typedef struct {
 	unsigned int mod;
 	unsigned int button;
-	void (*func)(const Arg *);
+	int (*func)(const Arg *);
 	Arg arg;
 } MouseBinding;
 
 typedef struct {
 	unsigned int mod;
 	unsigned int dir;
-	void (*func)(const Arg *);
+	int (*func)(const Arg *);
 	Arg arg;
 } AxisBinding;
 
 typedef struct {
 	unsigned int fold;
-	void (*func)(const Arg *);
+	int (*func)(const Arg *);
 	Arg arg;
 } SwitchBinding;
 
@@ -130,7 +130,7 @@ typedef struct {
 	unsigned int mod;
 	unsigned int motion;
 	unsigned int fingers_count;
-	void (*func)(const Arg *);
+	int (*func)(const Arg *);
 	Arg arg;
 } GestureBinding;
 
@@ -308,7 +308,7 @@ typedef struct {
 
 } Config;
 
-typedef void (*FuncType)(const Arg *);
+typedef int (*FuncType)(const Arg *);
 Config config;
 
 void parse_config_file(Config *config, const char *file_path);
@@ -2900,7 +2900,8 @@ void reset_option(void) {
 	arrange(selmon, false);
 }
 
-void reload_config(const Arg *arg) {
+int reload_config(const Arg *arg) {
 	parse_config();
 	reset_option();
+	return 0;
 }
