@@ -325,6 +325,7 @@ struct Client {
 	struct dwl_animation animation;
 	int isterm, noswallow;
 	int allow_csd;
+	int force_tile_state;
 	pid_t pid;
 	Client *swallowing, *swallowedby;
 	bool is_clip_to_hide;
@@ -1139,6 +1140,7 @@ void toggle_hotarea(int x_root, int y_root) {
 static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isterm);
 	APPLY_INT_PROP(c, r, allow_csd);
+	APPLY_INT_PROP(c, r, force_tile_state);
 	APPLY_INT_PROP(c, r, noswallow);
 	APPLY_INT_PROP(c, r, nofadein);
 	APPLY_INT_PROP(c, r, nofadeout);
@@ -3428,6 +3430,7 @@ void init_client_properties(Client *c) {
 	c->stack_innder_per = 0.0f;
 	c->isterm = 0;
 	c->allow_csd = 0;
+	c->force_tile_state = 1;
 }
 
 void // old fix to 0.5
@@ -4343,6 +4346,15 @@ setfloating(Client *c, int floating) {
 
 	if (!c->isfloating) {
 		set_size_per(c->mon, c);
+	}
+
+	if (!c->force_tile_state) {
+		if (c->isfloating) {
+			client_set_tiled(c, WLR_EDGE_NONE);
+		} else {
+			client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
+									WLR_EDGE_RIGHT);
+		}
 	}
 
 	arrange(c->mon, false);
