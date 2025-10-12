@@ -324,6 +324,7 @@ struct Client {
 	bool need_output_flush;
 	struct dwl_animation animation;
 	int isterm, noswallow;
+	int allow_csd;
 	pid_t pid;
 	Client *swallowing, *swallowedby;
 	bool is_clip_to_hide;
@@ -1137,6 +1138,7 @@ void toggle_hotarea(int x_root, int y_root) {
 
 static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isterm);
+	APPLY_INT_PROP(c, r, allow_csd);
 	APPLY_INT_PROP(c, r, noswallow);
 	APPLY_INT_PROP(c, r, nofadein);
 	APPLY_INT_PROP(c, r, nofadeout);
@@ -3424,6 +3426,8 @@ void init_client_properties(Client *c) {
 	c->master_mfact_per = 0.0f;
 	c->master_inner_per = 0.0f;
 	c->stack_innder_per = 0.0f;
+	c->isterm = 0;
+	c->allow_csd = 0;
 }
 
 void // old fix to 0.5
@@ -4040,9 +4044,21 @@ skip:
 
 void requestdecorationmode(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, set_decoration_mode);
-	if (c->surface.xdg->initialized)
-		wlr_xdg_toplevel_decoration_v1_set_mode(
-			c->decoration, WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+	struct wlr_xdg_toplevel_decoration_v1 *deco = data;
+
+	if (c->surface.xdg->initialized) {
+		// 获取客户端请求的模式
+		enum wlr_xdg_toplevel_decoration_v1_mode requested_mode =
+			deco->requested_mode;
+
+		// 如果客户端没有指定，使用默认模式
+		if (!c->allow_csd) {
+			requested_mode = WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
+		}
+
+		// 尊重客户端的请求
+		wlr_xdg_toplevel_decoration_v1_set_mode(c->decoration, requested_mode);
+	}
 }
 
 void requeststartdrag(struct wl_listener *listener, void *data) {
