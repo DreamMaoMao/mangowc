@@ -2210,8 +2210,9 @@ void commitnotify(struct wl_listener *listener, void *data) {
 		setmon(c, NULL, 0,
 			   true); /* Make sure to reapply rules in mapnotify() */
 
-		client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
-								WLR_EDGE_RIGHT);
+		if (c->force_tile_state)
+			client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
+									WLR_EDGE_RIGHT);
 
 		uint32_t serial = wlr_xdg_surface_schedule_configure(c->surface.xdg);
 		if (serial > 0) {
@@ -3547,8 +3548,9 @@ mapnotify(struct wl_listener *listener, void *data) {
 		applyrules(c);
 	}
 
-	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
-							WLR_EDGE_RIGHT);
+	if (c->force_tile_state)
+		client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
+								WLR_EDGE_RIGHT);
 
 	// set border color
 	setborder_color(c);
