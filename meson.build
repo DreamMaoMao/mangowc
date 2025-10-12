@@ -40,18 +40,29 @@ libwayland_client_dep = dependency('wayland-client')
 pcre2_dep = dependency('libpcre2-8')
 
 
-# 获取 Git Commit Hash 和最新的 tag
+# 获取版本信息
 git = find_program('git', required : false)
+is_git_repo = false
+
+# 检查当前目录是否是 Git 仓库
 if git.found()
-  commit_hash = run_command(git, 'rev-parse', '--short', 'HEAD', check : false).stdout().strip()
-  latest_tag = run_command(git, 'describe', '--tags', '--abbrev=0', check : false).stdout().strip()
-else
-  commit_hash = 'unknown'
-  latest_tag = meson.project_version()  # 如果 Git 不可用，使用默认版本号
+  git_status = run_command(git, 'rev-parse', '--is-inside-work-tree', check : false)
+  if git_status.returncode() == 0 and git_status.stdout().strip() == 'true'
+    is_git_repo = true
+  endif
 endif
 
-# 将 Commit Hash 和最新的 tag 添加到版本信息中
-version_with_hash = '@0@(@1@)'.format(latest_tag, commit_hash)
+if is_git_repo
+  # 如果是 Git 目录，获取 Commit Hash 和最新的 tag
+  commit_hash = run_command(git, 'rev-parse', '--short', 'HEAD', check : false).stdout().strip()
+  latest_tag = run_command(git, 'describe', '--tags', '--abbrev=0', check : false).stdout().strip()
+  version_with_hash = '@0@(@1@)'.format(latest_tag, commit_hash)
+else
+  # 如果不是 Git 目录，使用项目版本号和 "release" 字符串
+  commit_hash = 'release'
+  latest_tag = meson.project_version()
+  version_with_hash = '@0@(@1@)'.format(latest_tag, commit_hash)
+endif
 
 # 定义编译参数
 c_args = [
