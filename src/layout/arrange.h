@@ -482,7 +482,8 @@ void resize_tile_client(Client *grabc, bool isdrag, int offsetx, int offsety,
 	) {
 		resize_tile_master_horizontal(grabc, isdrag, offsetx, offsety, time,
 									  current_layout->id);
-	} else if (current_layout->id == VERTICAL_TILE) {
+	} else if (current_layout->id == VERTICAL_TILE ||
+			   current_layout->id == VERTICAL_DECK) {
 		resize_tile_master_vertical(grabc, isdrag, offsetx, offsety, time,
 									current_layout->id);
 	} else if (current_layout->id == SCROLLER) {

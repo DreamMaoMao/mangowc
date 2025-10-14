@@ -91,6 +91,70 @@ void vertical_tile(Monitor *m) {
 	}
 }
 
+void vertical_deck(Monitor *m) {
+	unsigned int mh, mx;
+	int i, n = 0;
+	Client *c = NULL;
+	Client *fc = NULL;
+	float mfact;
+
+	unsigned int cur_gappiv = enablegaps ? m->gappiv : 0;
+	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
+	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
+
+	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
+	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
+	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
+
+	n = m->visible_tiling_clients;
+
+	if (n == 0)
+		return;
+
+	wl_list_for_each(fc, &clients, link) {
+
+		if (VISIBLEON(fc, m) && ISTILED(fc))
+			break;
+	}
+
+	// Calculate master width using mfact from pertag
+	mfact = fc->master_mfact_per > 0.0f ? fc->master_mfact_per
+										: m->pertag->mfacts[m->pertag->curtag];
+
+	if (n > m->nmaster)
+		mh = m->nmaster ? round((m->w.height - 2 * cur_gappov) * mfact) : 0;
+	else
+		mh = m->w.height - 2 * cur_gappov;
+
+	i = mx = 0;
+	wl_list_for_each(c, &clients, link) {
+		if (!VISIBLEON(c, m) || !ISTILED(c))
+			continue;
+		if (i < m->nmaster) {
+			resize(
+				c,
+				(struct wlr_box){.x = m->w.x + cur_gappoh + mx,
+								 .y = m->w.y + cur_gappov,
+								 .width = (m->w.width - 2 * cur_gappoh - mx) /
+										  (MIN(n, m->nmaster) - i),
+								 .height = mh},
+				0);
+			mx += c->geom.width;
+		} else {
+			resize(c,
+				   (struct wlr_box){.x = m->w.x + cur_gappoh,
+									.y = m->w.y + mh + cur_gappov + cur_gappiv,
+									.width = m->w.width - 2 * cur_gappoh,
+									.height = m->w.height - mh -
+											  2 * cur_gappov - cur_gappiv},
+				   0);
+			if (c == focustop(m))
+				wlr_scene_node_raise_to_top(&c->scene->node);
+		}
+		i++;
+	}
+}
+
 void vertical_scroller(Monitor *m) {
 	unsigned int i, n, j;
 	Client *c = NULL, *root_client = NULL;
