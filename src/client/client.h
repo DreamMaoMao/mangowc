@@ -343,6 +343,21 @@ static inline void client_set_minimized(Client *c, bool minimized) {
 	return;
 }
 
+static inline void client_set_maximized(Client *c, bool maximized) {
+	struct wlr_xdg_toplevel *toplevel;
+
+#ifdef XWAYLAND
+	if (client_is_x11(c)) {
+		wlr_xwayland_surface_set_maximized(c->surface.xwayland, maximized,
+										   maximized);
+		return;
+	}
+#endif
+	toplevel = c->surface.xdg->toplevel;
+	wlr_xdg_toplevel_set_maximized(toplevel, maximized);
+	return;
+}
+
 static inline void client_set_tiled(Client *c, uint32_t edges) {
 	struct wlr_xdg_toplevel *toplevel;
 #ifdef XWAYLAND
@@ -361,7 +376,7 @@ static inline void client_set_tiled(Client *c, uint32_t edges) {
 		wlr_xdg_toplevel_set_tiled(c->surface.xdg->toplevel, edges);
 	}
 
-	if (!c->ignore_maximize) {
+	if (!c->ignore_maximize && c->force_maximize) {
 		wlr_xdg_toplevel_set_maximized(toplevel, edges != WLR_EDGE_NONE);
 	}
 }

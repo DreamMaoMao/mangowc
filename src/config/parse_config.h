@@ -72,6 +72,7 @@ typedef struct {
 	int no_force_center;
 	int isterm;
 	int allow_csd;
+	int force_maximize;
 	int noswallow;
 	float focused_opacity;
 	float unfocused_opacity;
@@ -1483,6 +1484,7 @@ void parse_option(Config *config, char *key, char *value) {
 		rule->isnosizehint = -1;
 		rule->isterm = -1;
 		rule->allow_csd = -1;
+		rule->force_maximize = -1;
 		rule->noswallow = -1;
 		rule->nofadein = -1;
 		rule->nofadeout = -1;
@@ -1576,6 +1578,8 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->isterm = atoi(val);
 				} else if (strcmp(key, "allow_csd") == 0) {
 					rule->allow_csd = atoi(val);
+				} else if (strcmp(key, "force_maximize") == 0) {
+					rule->force_maximize = atoi(val);
 				} else if (strcmp(key, "noswallow") == 0) {
 					rule->noswallow = atoi(val);
 				} else if (strcmp(key, "scroller_proportion") == 0) {
