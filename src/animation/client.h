@@ -180,12 +180,15 @@ void scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx, int sy,
 		return;
 
 	struct wlr_surface *surface = scene_surface->surface;
+	unsigned int surface_width = surface->current.width;
+	unsigned int surface_height = surface->current.height;
+
+	if (buffer_data->iscsd &&
+		wlr_subsurface_try_from_wlr_surface(surface) == NULL &&
+		buffer_data->width_scale <= 1 && buffer_data->height_scale <= 1)
+		buffer_data->should_scale = false;
 
 	if (buffer_data->should_scale) {
-
-		unsigned int surface_width = surface->current.width;
-		unsigned int surface_height = surface->current.height;
-
 		surface_width = buffer_data->width_scale < 1
 							? surface_width
 							: buffer_data->width_scale * surface_width;
@@ -548,7 +551,8 @@ void client_apply_clip(Client *c, float factor) {
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
 		buffer_set_effect(c, (BufferData){1.0f, 1.0f, clip_box.width,
 										  clip_box.height, opacity, opacity,
-										  current_corner_location, true});
+										  current_corner_location, true,
+										  c->iscsd});
 		return;
 	}
 
@@ -616,6 +620,7 @@ void client_apply_clip(Client *c, float factor) {
 	buffer_data.corner_location = current_corner_location;
 	buffer_data.percent = percent;
 	buffer_data.opacity = opacity;
+	buffer_data.iscsd = c->iscsd;
 
 	if (factor == 1.0) {
 		buffer_data.width_scale = 1.0;

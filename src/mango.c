@@ -247,6 +247,7 @@ typedef struct {
 	float opacity;
 	enum corner_location corner_location;
 	bool should_scale;
+	bool iscsd;
 } BufferData;
 
 struct Client {
@@ -346,6 +347,7 @@ struct Client {
 	bool ismaster;
 	bool cursor_in_upper_half, cursor_in_left_half;
 	bool isleftstack;
+	bool iscsd;
 };
 
 typedef struct {
@@ -3524,6 +3526,7 @@ void init_client_properties(Client *c) {
 	c->isterm = 0;
 	c->allow_csd = 0;
 	c->force_maximize = 1;
+	c->iscsd = false;
 }
 
 void // old fix to 0.5
@@ -4129,11 +4132,14 @@ void requestdecorationmode(struct wl_listener *listener, void *data) {
 
 		// 如果客户端没有指定，使用默认模式
 		if (!c->allow_csd) {
+			c->iscsd = false;
 			requested_mode = WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
 		} else if (requested_mode ==
 				   WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE) {
+			c->iscsd = true;
+		} else {
+			c->iscsd = false;
 		}
-
 		wlr_xdg_toplevel_decoration_v1_set_mode(c->decoration, requested_mode);
 	}
 }
