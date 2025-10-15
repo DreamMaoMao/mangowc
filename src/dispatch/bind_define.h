@@ -910,6 +910,8 @@ cleanup_layouts:
 
 cleanup_context:
 	xkb_context_unref(context);
+
+	printstatus();
 	return 0;
 }
 
