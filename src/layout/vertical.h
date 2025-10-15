@@ -316,8 +316,8 @@ void vertical_grid(Monitor *m) {
 				cw = (m->w.width - 2 * target_gappo) * single_width_ratio;
 				c->geom.x = m->w.x + (m->w.width - cw) / 2;
 				c->geom.y = m->w.y + (m->w.height - ch) / 2;
-				c->geom.width = cw - 2 * c->bw;
-				c->geom.height = ch - 2 * c->bw;
+				c->geom.width = cw;
+				c->geom.height = ch;
 				resize(c, c->geom, 0);
 				return;
 			}
@@ -343,14 +343,14 @@ void vertical_grid(Monitor *m) {
 				if (i == 0) {
 					c->geom.x = m->w.x + (m->w.width - cw) / 2 + target_gappo;
 					c->geom.y = m->w.y + target_gappo;
-					c->geom.width = cw - 2 * c->bw;
-					c->geom.height = ch - 2 * c->bw;
+					c->geom.width = cw;
+					c->geom.height = ch;
 					resize(c, c->geom, 0);
 				} else if (i == 1) {
 					c->geom.x = m->w.x + (m->w.width - cw) / 2 + target_gappo;
 					c->geom.y = m->w.y + ch + target_gappo + target_gappi;
-					c->geom.width = cw - 2 * c->bw;
-					c->geom.height = ch - 2 * c->bw;
+					c->geom.width = cw;
+					c->geom.height = ch;
 					resize(c, c->geom, 0);
 				}
 				i++;
@@ -393,8 +393,8 @@ void vertical_grid(Monitor *m) {
 			}
 			c->geom.x = cx + target_gappo;
 			c->geom.y = cy + target_gappo;
-			c->geom.width = cw - 2 * c->bw;
-			c->geom.height = ch - 2 * c->bw;
+			c->geom.width = cw;
+			c->geom.height = ch;
 			resize(c, c->geom, 0);
 			i++;
 		}
