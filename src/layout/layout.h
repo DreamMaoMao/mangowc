@@ -1,5 +1,6 @@
 static void tile(Monitor *m);
 static void center_tile(Monitor *m);
+static void right_tile(Monitor *m);
 static void overview(Monitor *m);
 static void grid(Monitor *m);
 static void scroller(Monitor *m);
@@ -25,6 +26,7 @@ enum {
 	VERTICAL_TILE,
 	VERTICAL_GRID,
 	VERTICAL_DECK,
+	RIGHT_TILE,
 };
 
 Layout layouts[] = {
@@ -36,6 +38,7 @@ Layout layouts[] = {
 	{"M", monocle, "monocle", MONOCLE},				 // 单屏布局
 	{"K", deck, "deck", DECK},						 // 卡片布局
 	{"CT", center_tile, "center_tile", CENTER_TILE}, // 居中布局
+	{"RT", right_tile, "right_tile", RIGHT_TILE},	 // 右布局
 	{"VS", vertical_scroller, "vertical_scroller",
 	 VERTICAL_SCROLLER},								   // 垂直滚动布局
 	{"VT", vertical_tile, "vertical_tile", VERTICAL_TILE}, // 垂直平铺布局

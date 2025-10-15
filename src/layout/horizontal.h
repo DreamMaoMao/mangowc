@@ -631,6 +631,104 @@ void tile(Monitor *m) {
 	}
 }
 
+void right_tile(Monitor *m) {
+	unsigned int i, n = 0, h, r, ie = enablegaps, mw, my, ty;
+	Client *c = NULL;
+	Client *fc = NULL;
+	double mfact = 0;
+	int master_num = 0;
+	int stack_num = 0;
+
+	n = m->visible_tiling_clients;
+	master_num = m->pertag->nmasters[m->pertag->curtag];
+	stack_num = n - master_num;
+
+	if (n == 0)
+		return;
+
+	unsigned int cur_gappiv = enablegaps ? m->gappiv : 0;
+	unsigned int cur_gappih = enablegaps ? m->gappih : 0;
+	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
+	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
+
+	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
+	cur_gappih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappih;
+	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
+	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
+
+	wl_list_for_each(fc, &clients, link) {
+
+		if (VISIBLEON(fc, m) && ISTILED(fc))
+			break;
+	}
+
+	mfact = fc->master_mfact_per > 0.0f ? fc->master_mfact_per
+										: m->pertag->mfacts[m->pertag->curtag];
+
+	if (n > m->pertag->nmasters[m->pertag->curtag])
+		mw = m->pertag->nmasters[m->pertag->curtag]
+				 ? (m->w.width + cur_gappih * ie) * mfact
+				 : 0;
+	else
+		mw = m->w.width - 2 * cur_gappoh + cur_gappih * ie;
+	i = 0;
+	my = ty = cur_gappov;
+	wl_list_for_each(c, &clients, link) {
+		if (!VISIBLEON(c, m) || !ISTILED(c))
+			continue;
+		if (i < m->pertag->nmasters[m->pertag->curtag]) {
+			r = MIN(n, m->pertag->nmasters[m->pertag->curtag]) - i;
+			if (c->master_inner_per > 0.0f) {
+				h = (m->w.height - 2 * cur_gappov -
+					 cur_gappiv * ie * (master_num - 1)) *
+					c->master_inner_per;
+				c->master_mfact_per = mfact;
+			} else {
+				h = (m->w.height - my - cur_gappov -
+					 cur_gappiv * ie * (r - 1)) /
+					r;
+				c->master_inner_per = h / (m->w.height - my - cur_gappov -
+										   cur_gappiv * ie * (r - 1));
+				c->master_mfact_per = mfact;
+			}
+			resize(c,
+				   (struct wlr_box){.x = m->w.x + m->w.width - mw - cur_gappoh +
+										 cur_gappih * ie,
+									.y = m->w.y + my,
+									.width = mw - cur_gappih * ie,
+									.height = h},
+				   0);
+			my += c->geom.height + cur_gappiv * ie;
+		} else {
+			r = n - i;
+			if (c->stack_innder_per > 0.0f) {
+				h = (m->w.height - 2 * cur_gappov -
+					 cur_gappiv * ie * (stack_num - 1)) *
+					c->stack_innder_per;
+				c->master_mfact_per = mfact;
+			} else {
+				h = (m->w.height - ty - cur_gappov -
+					 cur_gappiv * ie * (r - 1)) /
+					r;
+				c->stack_innder_per = h / (m->w.height - ty - cur_gappov -
+										   cur_gappiv * ie * (r - 1));
+				c->master_mfact_per = mfact;
+			}
+
+			// wlr_log(WLR_ERROR, "stack_innder_per: %f", c->stack_innder_per);
+
+			resize(c,
+				   (struct wlr_box){.x = m->w.x + cur_gappoh,
+									.y = m->w.y + ty,
+									.width = m->w.width - mw - 2 * cur_gappoh,
+									.height = h},
+				   0);
+			ty += c->geom.height + cur_gappiv * ie;
+		}
+		i++;
+	}
+}
+
 void // 17
 monocle(Monitor *m) {
 	Client *c = NULL;

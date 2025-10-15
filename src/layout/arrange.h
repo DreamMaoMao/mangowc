@@ -176,6 +176,10 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 			delta_x = delta_x * 2;
 		}
 
+		if (type == RIGHT_TILE) {
+			delta_x = delta_x * -1.0f;
+		}
+
 		// 直接设置新的比例，基于初始值 + 变化量
 		float new_master_mfact_per = grabc->old_master_mfact_per + delta_x;
 		float new_master_inner_per = grabc->old_master_inner_per + delta_y;
@@ -477,7 +481,7 @@ void resize_tile_client(Client *grabc, bool isdrag, int offsetx, int offsety,
 	const Layout *current_layout =
 		grabc->mon->pertag->ltidxs[grabc->mon->pertag->curtag];
 	if (current_layout->id == TILE || current_layout->id == DECK ||
-		current_layout->id == CENTER_TILE
+		current_layout->id == CENTER_TILE || current_layout->id == RIGHT_TILE
 
 	) {
 		resize_tile_master_horizontal(grabc, isdrag, offsetx, offsety, time,
