@@ -725,6 +725,7 @@ static void set_size_per(Monitor *m, Client *c);
 static void resize_tile_client(Client *grabc, bool isdrag, int offsetx,
 							   int offsety, unsigned int time);
 static void refresh_monitors_workspaces_status(Monitor *m);
+static void init_client_properties(Client *c);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -2203,6 +2204,7 @@ void commitnotify(struct wl_listener *listener, void *data) {
 
 	if (c->surface.xdg->initial_commit) {
 		// xdg client will first enter this before mapnotify
+		init_client_properties(c);
 		applyrules(c);
 		if (c->mon) {
 			client_set_scale(client_surface(c), c->mon->wlr_output->scale);
