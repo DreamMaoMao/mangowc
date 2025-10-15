@@ -2220,9 +2220,14 @@ void commitnotify(struct wl_listener *listener, void *data) {
 		}
 
 		uint32_t wm_caps = WLR_XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU |
-						   WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE |
-						   WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN |
-						   WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE;
+						   WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN;
+
+		if (!c->ignore_minimize)
+			wm_caps |= WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE;
+
+		if (!c->ignore_maximize)
+			wm_caps |= WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE;
+
 		wlr_xdg_toplevel_set_wm_capabilities(c->surface.xdg->toplevel, wm_caps);
 
 		if (c->mon) {
