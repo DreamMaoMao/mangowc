@@ -4423,7 +4423,7 @@ void setmaxmizescreen(Client *c, int maxmizescreen) {
 		set_size_per(c->mon, c);
 	}
 
-	if (!c->ismaxmizescreen && !c->force_tile_state) {
+	if (!c->ismaxmizescreen && !c->force_tile_state && c->isfloating) {
 		client_set_tiled(c, WLR_EDGE_NONE);
 
 	} else {
