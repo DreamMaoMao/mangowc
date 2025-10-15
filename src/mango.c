@@ -2221,8 +2221,7 @@ void commitnotify(struct wl_listener *listener, void *data) {
 			c->configure_serial = serial;
 		}
 
-		uint32_t wm_caps = WLR_XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU |
-						   WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN;
+		uint32_t wm_caps = WLR_XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN;
 
 		if (!c->ignore_minimize)
 			wm_caps |= WLR_XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE;
