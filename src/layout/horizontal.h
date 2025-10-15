@@ -636,13 +636,19 @@ monocle(Monitor *m) {
 	Client *c = NULL;
 	struct wlr_box geom;
 
+	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
+	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
+
+	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
+	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
+
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
-		geom.x = m->w.x + gappoh;
-		geom.y = m->w.y + gappov;
-		geom.width = m->w.width - 2 * gappoh;
-		geom.height = m->w.height - 2 * gappov;
+		geom.x = m->w.x + cur_gappoh;
+		geom.y = m->w.y + cur_gappov;
+		geom.width = m->w.width - 2 * cur_gappoh;
+		geom.height = m->w.height - 2 * cur_gappov;
 		resize(c, geom, 0);
 	}
 	if ((c = focustop(m)))
