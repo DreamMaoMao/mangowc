@@ -432,7 +432,7 @@ void center_tile(Monitor *m) {
 			resize(c,
 				   (struct wlr_box){.x = m->w.x + mx,
 									.y = m->w.y + my,
-									.width = mw - cur_gappih * ie,
+									.width = mw,
 									.height = h},
 				   0);
 			my += c->geom.height + cur_gappiv * ie;
@@ -469,7 +469,7 @@ void center_tile(Monitor *m) {
 				resize(c,
 					   (struct wlr_box){.x = stack_x,
 										.y = m->w.y + ety,
-										.width = tw - cur_gappih * ie,
+										.width = tw,
 										.height = h},
 					   0);
 				ety += c->geom.height + cur_gappiv * ie;
@@ -481,7 +481,7 @@ void center_tile(Monitor *m) {
 					// 右侧堆叠窗口
 					if (c->stack_innder_per > 0.0f) {
 						h = (m->w.height - 2 * cur_gappov -
-							 cur_gappiv * ie * (stack_num / 2 - 1)) *
+							 cur_gappiv * ie * ((stack_num + 1) / 2 - 1)) *
 							c->stack_innder_per;
 						c->master_mfact_per = mfact;
 					} else {
@@ -495,10 +495,11 @@ void center_tile(Monitor *m) {
 					}
 
 					int stack_x = m->w.x + mx + mw + cur_gappih * ie;
+
 					resize(c,
 						   (struct wlr_box){.x = stack_x,
 											.y = m->w.y + ety,
-											.width = tw - cur_gappih * ie,
+											.width = tw,
 											.height = h},
 						   0);
 					ety += c->geom.height + cur_gappiv * ie;
@@ -523,7 +524,7 @@ void center_tile(Monitor *m) {
 					resize(c,
 						   (struct wlr_box){.x = stack_x,
 											.y = m->w.y + oty,
-											.width = tw - cur_gappih * ie,
+											.width = tw,
 											.height = h},
 						   0);
 					oty += c->geom.height + cur_gappiv * ie;
