@@ -539,8 +539,15 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 					return;
 				if (i < m->pertag->nmasters[m->pertag->curtag]) {
 					c->ismaster = true;
-					c->stack_innder_per =
-						stack_num > 1 ? 2.0f / stack_num : 1.0f;
+					if ((stack_index % 2) ^ (tile_cilent_num % 2 == 0)) {
+						c->stack_innder_per =
+							stack_num > 1 ? 1.0f / ((stack_num - 1) / 2) : 1.0f;
+
+					} else {
+						c->stack_innder_per =
+							stack_num > 1 ? 2.0f / stack_num : 1.0f;
+					}
+
 					c->master_inner_per =
 						c->master_inner_per / total_master_inner_percent;
 				} else {
