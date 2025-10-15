@@ -4068,8 +4068,6 @@ void requestdecorationmode(struct wl_listener *listener, void *data) {
 		// 如果客户端没有指定，使用默认模式
 		if (!c->allow_csd) {
 			requested_mode = WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
-		} else if (requested_mode ==
-				   WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE) {
 		}
 
 		wlr_xdg_toplevel_decoration_v1_set_mode(c->decoration, requested_mode);
