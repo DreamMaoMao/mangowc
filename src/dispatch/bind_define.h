@@ -10,6 +10,11 @@ int bind_to_view(const Arg *arg) {
 			target = 0;
 	}
 
+	if (!view_current_to_back &&
+		(target & TAGMASK) == (selmon->tagset[selmon->seltags])) {
+		return 0;
+	}
+
 	if ((int)target == INT_MIN && selmon->pertag->curtag == 0) {
 		if (view_current_to_back && selmon->pertag->prevtag)
 			target = 1 << (selmon->pertag->prevtag - 1);
