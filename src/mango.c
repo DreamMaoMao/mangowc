@@ -4358,6 +4358,9 @@ setfloating(Client *c, int floating) {
 		set_size_per(c->mon, c);
 	}
 
+	if (!c->force_maximize)
+		client_set_maximized(c, false);
+
 	arrange(c->mon, false);
 	setborder_color(c);
 	printstatus();
