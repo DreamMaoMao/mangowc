@@ -21,12 +21,7 @@ in {
     environment.systemPackages =
       [
         cfg.package
-      ]
-      ++ (
-        if (builtins.hasAttr "mmsg" cfg.package)
-        then [cfg.package.mmsg]
-        else []
-      );
+      ];
 
     xdg.portal = {
       enable = lib.mkDefault true;
