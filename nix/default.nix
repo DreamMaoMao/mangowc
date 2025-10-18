@@ -16,7 +16,6 @@
   enableXWayland ? true,
   meson,
   ninja,
-  mmsg,
   scenefx,
   wlroots_0_19,
   libGL,
@@ -60,7 +59,6 @@ in
 
     passthru = {
       providedSessions = ["mango"];
-      inherit mmsg;
     };
 
     meta = {
