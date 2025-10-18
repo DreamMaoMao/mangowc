@@ -505,7 +505,7 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 						int stack_num) {
 	Client *c = NULL;
 	int i = 0;
-	unsigned int stack_index;
+	unsigned int stack_index = 0;
 	unsigned int nmasters = m->pertag->nmasters[m->pertag->curtag];
 
 	if (m->pertag->ltidxs[m->pertag->curtag]->id != CENTER_TILE) {
