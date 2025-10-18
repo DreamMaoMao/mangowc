@@ -3,6 +3,7 @@ project('mango', ['c', 'cpp'],
 )
 
 subdir('protocols')
+subdir('mmsg')
 
 is_nixos = false
 os_release = run_command('cat', '/etc/os-release', check: false)
