@@ -597,6 +597,13 @@ arrange(Monitor *m, bool want_animation) {
 	m->visible_tiling_clients = 0;
 
 	wl_list_for_each(c, &clients, link) {
+
+		if (c->mon == m && (c->isglobal || c->isunglobal)) {
+			c->tags = m->tagset[m->seltags];
+			if (c->mon->sel == NULL)
+				focusclient(c, 0);
+		}
+
 		if (VISIBLEON(c, m)) {
 			m->visible_clients++;
 			if (ISTILED(c)) {
@@ -610,12 +617,6 @@ arrange(Monitor *m, bool want_animation) {
 	wl_list_for_each(c, &clients, link) {
 		if (c->iskilling)
 			continue;
-
-		if (c->mon == m && (c->isglobal || c->isunglobal)) {
-			c->tags = m->tagset[m->seltags];
-			if (c->mon->sel == NULL)
-				focusclient(c, 0);
-		}
 
 		if (c->mon == m) {
 			if (VISIBLEON(c, m)) {

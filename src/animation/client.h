@@ -909,7 +909,7 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 		c->animainit_geom = c->geom;
 	}
 
-	if (c->scratchpad_switching_mon) {
+	if (c->scratchpad_switching_mon && c->isfloating) {
 		c->animainit_geom = c->geom;
 	}
 
