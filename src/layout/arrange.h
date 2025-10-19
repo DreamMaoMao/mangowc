@@ -26,7 +26,6 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 	Client *prev = NULL;
 	Client *nextnext = NULL;
 	Client *prevprev = NULL;
-	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
 	struct wl_list *node;
 	bool begin_find_nextnext = false;
 	bool begin_find_prevprev = false;
@@ -206,7 +205,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 		}
 
 		if (last_apply_drap_time == 0 ||
-			time - last_apply_drap_time > refresh_interval) {
+			time - last_apply_drap_time > drag_refresh_interval) {
 			arrange(grabc->mon, false);
 			last_apply_drap_time = time;
 		}
@@ -219,7 +218,6 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 	float delta_x, delta_y;
 	Client *next = NULL;
 	Client *prev = NULL;
-	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
 	struct wl_list *node;
 
 	// 从当前节点的下一个开始遍历
@@ -364,7 +362,7 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 		}
 
 		if (last_apply_drap_time == 0 ||
-			time - last_apply_drap_time > refresh_interval) {
+			time - last_apply_drap_time > drag_refresh_interval) {
 			arrange(grabc->mon, false);
 			last_apply_drap_time = time;
 		}
@@ -375,7 +373,6 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
 						  unsigned int time, bool isvertical) {
 	float delta_x, delta_y;
 	float new_scroller_proportion;
-	double refresh_interval = 1000000.0 / grabc->mon->wlr_output->refresh;
 
 	if (!start_drag_window && isdrag) {
 		drag_begin_cursorx = cursor->x;
@@ -465,7 +462,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
 		}
 
 		if (last_apply_drap_time == 0 ||
-			time - last_apply_drap_time > refresh_interval) {
+			time - last_apply_drap_time > drag_refresh_interval) {
 			arrange(grabc->mon, false);
 			last_apply_drap_time = time;
 		}

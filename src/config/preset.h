@@ -100,6 +100,7 @@ int warpcursor = 1;			  /* Warp cursor to focused client */
 int xwayland_persistence = 1; /* xwayland persistence */
 int syncobj_enable = 0;
 int adaptive_sync = 0;
+double drag_refresh_interval = 30.0;
 
 /* keyboard */
 
