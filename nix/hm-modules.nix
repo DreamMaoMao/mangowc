@@ -100,6 +100,9 @@ in {
     xdg.configFile = {
       "mango/config.conf" = lib.mkIf (cfg.settings != "") {
         text = cfg.settings;
+        onChange = ''
+          ${self.packages.${pkgs.system}.mango}/bin/mmsg -d reload_config
+        '';
       };
       "mango/autostart.sh" = lib.mkIf (cfg.autostart_sh != "") {
         source = autostart_sh;
