@@ -116,24 +116,24 @@ executable('mango',
 
 # build mmsg
 dwl_ipc_protocol = 'protocols/dwl-ipc-unstable-v2.xml'
-dwl_ipc_header = custom_target(
-  'dwl-ipc-header',
-  input: dwl_ipc_protocol,
-  output: 'dwl-ipc-unstable-v2-protocol.h',
-  command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
-  build_by_default: true,
-)
-dwl_ipc_source = custom_target(
-  'dwl-ipc-source',
-  input: dwl_ipc_protocol,
-  output: 'dwl-ipc-unstable-v2-protocol.c',
-  command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
-  build_by_default: true,
+
+wayland_scanner_client_header = generator(
+  wayland_scanner,
+  output: '@BASENAME@-protocol.h', 
+  arguments: ['client-header', '@INPUT@', '@OUTPUT@']
 )
 
+wayland_scanner_private_code = generator(
+  wayland_scanner,
+  output: '@BASENAME@-protocol.c',
+  arguments: ['private-code', '@INPUT@', '@OUTPUT@']
+)
+
+# 在 mmsg 目标中使用生成器
 executable('mmsg',
   'mmsg/mmsg.c',
-  dwl_ipc_source,
+  wayland_scanner_private_code.process(dwl_ipc_protocol),
+  wayland_scanner_client_header.process(dwl_ipc_protocol),
   dependencies: [
     libwayland_client_dep
   ],
@@ -143,7 +143,6 @@ executable('mmsg',
     '-Wno-unused-function',
   ],
 )
-
 
 desktop_install_dir = join_paths(prefix, 'share/wayland-sessions')
 install_data('mango.desktop', install_dir : desktop_install_dir)
