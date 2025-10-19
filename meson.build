@@ -3,7 +3,6 @@ project('mango', ['c', 'cpp'],
 )
 
 subdir('protocols')
-subdir('mmsg')
 
 is_nixos = false
 os_release = run_command('cat', '/etc/os-release', check: false)
@@ -115,8 +114,37 @@ executable('mango',
   link_args : link_args,
 )
 
+# build mmsg
+dwl_ipc_protocol = 'protocols/dwl-ipc-unstable-v2.xml'
+dwl_ipc_header = custom_target(
+  'dwl-ipc-header',
+  input: dwl_ipc_protocol,
+  output: 'dwl-ipc-unstable-v2-protocol.h',
+  command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
+  build_by_default: true,
+)
+dwl_ipc_source = custom_target(
+  'dwl-ipc-source',
+  input: dwl_ipc_protocol,
+  output: 'dwl-ipc-unstable-v2-protocol.c',
+  command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
+  build_by_default: true,
+)
+
+executable('mmsg',
+  'mmsg/mmsg.c',
+  dwl_ipc_source,
+  dependencies: [
+    libwayland_client_dep
+  ],
+  install: true,
+  c_args: [
+    '-g',
+    '-Wno-unused-function',
+  ],
+)
+
+
 desktop_install_dir = join_paths(prefix, 'share/wayland-sessions')
 install_data('mango.desktop', install_dir : desktop_install_dir)
-
-# 安装 config.conf
 install_data('config.conf', install_dir : join_paths(sysconfdir, 'mango'))
