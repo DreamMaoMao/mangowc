@@ -2818,10 +2818,13 @@ void reapply_border(void) {
 }
 
 void reapply_keyboard(void) {
-	Keyboard *kb;
-	wl_list_for_each(kb, &keyboards, link) {
-		wlr_keyboard_set_repeat_info(kb->wlr_keyboard, repeat_rate,
-									 repeat_delay);
+	InputDevice *id;
+	wl_list_for_each(id, &inputdevices, link) {
+		if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+			continue;
+		}
+		wlr_keyboard_set_repeat_info((struct wlr_keyboard *)id->device_data,
+									 repeat_rate, repeat_delay);
 	}
 }
 

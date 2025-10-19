@@ -376,20 +376,6 @@ typedef struct {
 } KeyboardGroup;
 
 typedef struct {
-	struct wl_list link;
-	struct wlr_keyboard *wlr_keyboard;
-
-	int nsyms;
-	const xkb_keysym_t *keysyms; /* invalid if nsyms == 0 */
-	unsigned int mods;			 /* invalid if nsyms == 0 */
-	struct wl_event_source *key_repeat_source;
-
-	struct wl_listener modifiers;
-	struct wl_listener key;
-	struct wl_listener destroy;
-} Keyboard;
-
-typedef struct {
 	/* Must keep these three elements in this order */
 	unsigned int type; /* LayerShell */
 	struct wlr_box geom, current, pending, animainit_geom;
@@ -473,21 +459,6 @@ typedef struct {
 } PointerConstraint;
 
 typedef struct {
-	const char *id;
-	const char *title;
-	unsigned int tags;
-	int isfloating;
-	int isfullscreen;
-	float scroller_proportion;
-	const char *animation_type_open;
-	const char *animation_type_close;
-	int isnoborder;
-	int monitor;
-	unsigned int width;
-	unsigned int height;
-} Rule;
-
-typedef struct {
 	struct wlr_scene_tree *scene;
 
 	struct wlr_session_lock_v1 *lock;
@@ -522,9 +493,7 @@ static void pinch_end(struct wl_listener *listener, void *data);
 static void hold_begin(struct wl_listener *listener, void *data);
 static void hold_end(struct wl_listener *listener, void *data);
 static void checkidleinhibitor(struct wlr_surface *exclude);
-static void cleanup(void); // 退出清理
-static void cleanupkeyboard(struct wl_listener *listener,
-							void *data);						  // 退出清理
+static void cleanup(void);										  // 退出清理
 static void cleanupmon(struct wl_listener *listener, void *data); // 退出清理
 static void closemon(Monitor *m);
 static void cleanuplisteners(void);
@@ -781,7 +750,6 @@ static struct wlr_pointer_constraint_v1 *active_constraint;
 
 static struct wlr_seat *seat;
 static KeyboardGroup *kb_group;
-static struct wl_list keyboards;
 static struct wl_list inputdevices;
 static unsigned int cursor_mode;
 static Client *grabc;
@@ -2010,18 +1978,6 @@ void cleanup(void) {
 	wlr_scene_node_destroy(&scene->tree.node);
 }
 
-void // 17
-cleanupkeyboard(struct wl_listener *listener, void *data) {
-	Keyboard *kb = wl_container_of(listener, kb, destroy);
-
-	wl_event_source_remove(kb->key_repeat_source);
-	wl_list_remove(&kb->link);
-	wl_list_remove(&kb->modifiers.link);
-	wl_list_remove(&kb->key.link);
-	wl_list_remove(&kb->destroy.link);
-	free(kb);
-}
-
 void cleanupmon(struct wl_listener *listener, void *data) {
 	Monitor *m = wl_container_of(listener, m, destroy);
 	LayerSurface *l = NULL, *tmp = NULL;
@@ -2326,6 +2282,23 @@ void createidleinhibitor(struct wl_listener *listener, void *data) {
 }
 
 void createkeyboard(struct wlr_keyboard *keyboard) {
+
+	struct libinput_device *device = NULL;
+
+	if (wlr_input_device_is_libinput(&keyboard->base) &&
+		(device = wlr_libinput_get_device_handle(&keyboard->base))) {
+
+		InputDevice *input_dev = calloc(1, sizeof(InputDevice));
+		input_dev->wlr_device = &keyboard->base;
+		input_dev->libinput_device = device;
+		input_dev->device_data = keyboard;
+
+		input_dev->destroy_listener.notify = destroyinputdevice;
+		wl_signal_add(&keyboard->base.events.destroy,
+					  &input_dev->destroy_listener);
+
+		wl_list_insert(&inputdevices, &input_dev->link);
+	}
 
 	/* Set the keymap to match the group keymap */
 	wlr_keyboard_set_keymap(keyboard, kb_group->wlr_group->keyboard.keymap);
@@ -4894,7 +4867,6 @@ void setup(void) {
 	 * pointer, touch, and drawing tablet device. We also rig up a listener
 	 * to let us know when new input devices are available on the backend.
 	 */
-	wl_list_init(&keyboards);
 	wl_list_init(&inputdevices);
 	wl_signal_add(&backend->events.new_input, &new_input_device);
 	virtual_keyboard_mgr = wlr_virtual_keyboard_manager_v1_create(dpy);
