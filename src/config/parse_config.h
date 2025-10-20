@@ -1746,7 +1746,7 @@ void parse_option(Config *config, char *key, char *value) {
 			arg_value[256] = "0\0", arg_value2[256] = "0\0",
 			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
 			arg_value5[256] = "0\0";
-		if (sscanf(value, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
+		if (sscanf(value, "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^\n]",
 				   mod_str, keysym_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
 			fprintf(stderr, "Error: Invalid bind format: %s\n", value);
