@@ -5347,7 +5347,7 @@ urgent(struct wl_listener *listener, void *data) {
 
 	if (focus_on_activate && !c->istagsilent && c != selmon->sel) {
 		if (!(c->mon == selmon && c->tags & c->mon->tagset[c->mon->seltags]))
-			view(&(Arg){.ui = c->tags}, true);
+			view_in_mon(&(Arg){.ui = c->tags}, true, c->mon, true);
 		focusclient(c, 1);
 	} else if (c != focustop(selmon)) {
 		if (client_surface(c)->mapped)
@@ -5494,7 +5494,7 @@ void activatex11(struct wl_listener *listener, void *data) {
 
 	if (focus_on_activate && !c->istagsilent && c != selmon->sel) {
 		if (!(c->mon == selmon && c->tags & c->mon->tagset[c->mon->seltags]))
-			view(&(Arg){.ui = c->tags}, true);
+			view_in_mon(&(Arg){.ui = c->tags}, true, c->mon, true);
 		wlr_xwayland_surface_activate(c->surface.xwayland, 1);
 		focusclient(c, 1);
 		need_arrange = true;

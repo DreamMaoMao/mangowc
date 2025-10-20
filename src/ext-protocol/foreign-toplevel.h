@@ -25,7 +25,7 @@ void handle_foreign_activate_request(struct wl_listener *listener, void *data) {
 	}
 
 	target = get_tags_first_tag(c->tags);
-	view(&(Arg){.ui = target}, true);
+	view_in_mon(&(Arg){.ui = target}, true, c->mon, true);
 	focusclient(c, 1);
 	wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel, true);
 }
