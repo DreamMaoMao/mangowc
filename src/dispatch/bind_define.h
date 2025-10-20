@@ -190,7 +190,9 @@ int focusmon(const Arg *arg) {
 
 	old_selmon_sel = selmon->sel;
 	selmon = m;
-	warp_cursor_to_selmon(selmon);
+	if (warpcursor) {
+		warp_cursor_to_selmon(selmon);
+	}
 	c = focustop(selmon);
 	if (!c) {
 		selmon->sel = NULL;
@@ -1071,7 +1073,9 @@ int tagmon(const Arg *arg) {
 		focusclient(c, 1);
 		arrange(selmon, false);
 	}
-	warp_cursor_to_selmon(c->mon);
+	if (warpcursor) {
+		warp_cursor_to_selmon(c->mon);
+	}
 	return 0;
 }
 
