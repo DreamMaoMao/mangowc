@@ -70,7 +70,7 @@ https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
 - pcre2
 
 ## Arch Linux
-
+The package is in the Arch User Repository and is availble for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper like yay:
 ```bash
 yay -S mangowc-git
 
