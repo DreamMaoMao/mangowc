@@ -295,6 +295,7 @@ int increase_proportion(const Arg *arg) {
 
 int setmfact(const Arg *arg) {
 	float f;
+	Client *c = NULL;
 
 	if (!arg || !selmon ||
 		!selmon->pertag->ltidxs[selmon->pertag->curtag]->arrange)
@@ -303,8 +304,13 @@ int setmfact(const Arg *arg) {
 					 : arg->f - 1.0;
 	if (f < 0.1 || f > 0.9)
 		return 0;
-	// selmon->mfact = f;
+
 	selmon->pertag->mfacts[selmon->pertag->curtag] = f;
+	wl_list_for_each(c, &clients, link) {
+		if (VISIBLEON(c, selmon) && ISTILED(c)) {
+			c->master_mfact_per = f;
+		}
+	}
 	arrange(selmon, false);
 	return 0;
 }

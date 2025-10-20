@@ -12,7 +12,7 @@ void set_size_per(Monitor *m, Client *c) {
 	}
 
 	if (!found) {
-		c->master_mfact_per = default_mfact;
+		c->master_mfact_per = m->pertag->mfacts[m->pertag->curtag];
 		c->master_inner_per = 1.0f;
 		c->stack_innder_per = 1.0f;
 	}
