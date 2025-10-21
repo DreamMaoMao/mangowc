@@ -2278,6 +2278,23 @@ void destroydecoration(struct wl_listener *listener, void *data) {
 	wl_list_remove(&c->set_decoration_mode.link);
 }
 
+static void iter_popup_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
+									 int sy, void *user_data) {
+	struct wlr_scene_surface *scene_surface =
+		wlr_scene_surface_try_from_buffer(buffer);
+	if (!scene_surface) {
+		return;
+	}
+
+	wlr_scene_buffer_set_backdrop_blur(buffer, true);
+	wlr_scene_buffer_set_backdrop_blur_ignore_transparent(buffer, true);
+	if (blur_optimized) {
+		wlr_scene_buffer_set_backdrop_blur_optimized(buffer, true);
+	} else {
+		wlr_scene_buffer_set_backdrop_blur_optimized(buffer, false);
+	}
+}
+
 void commitpopup(struct wl_listener *listener, void *data) {
 	struct wlr_surface *surface = data;
 	struct wlr_xdg_popup *popup = wlr_xdg_popup_try_from_wlr_surface(surface);
@@ -2301,6 +2318,12 @@ void commitpopup(struct wl_listener *listener, void *data) {
 		wlr_xdg_popup_destroy(popup);
 		return;
 	}
+
+	if (blur) {
+		wlr_scene_node_for_each_buffer(popup->parent->data,
+									   iter_popup_scene_buffers, popup);
+	}
+
 	box = type == LayerShell ? l->mon->m : c->mon->w;
 	box.x -= (type == LayerShell ? l->scene->node.x : c->geom.x);
 	box.y -= (type == LayerShell ? l->scene->node.y : c->geom.y);
