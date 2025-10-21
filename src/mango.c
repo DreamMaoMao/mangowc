@@ -31,6 +31,7 @@
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_drm.h>
+#include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_ext_data_control_v1.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
@@ -577,6 +578,7 @@ static void quitsignal(int signo);
 static void powermgrsetmode(struct wl_listener *listener, void *data);
 static void rendermon(struct wl_listener *listener, void *data);
 static void requestdecorationmode(struct wl_listener *listener, void *data);
+static void requestdrmlease(struct wl_listener *listener, void *data);
 static void requeststartdrag(struct wl_listener *listener, void *data);
 static void resize(Client *c, struct wlr_box geo, int interact);
 static void run(char *startup_cmd);
@@ -733,6 +735,7 @@ static struct wlr_virtual_keyboard_manager_v1 *virtual_keyboard_mgr;
 static struct wlr_virtual_pointer_manager_v1 *virtual_pointer_mgr;
 static struct wlr_output_power_manager_v1 *power_mgr;
 static struct wlr_pointer_gestures_v1 *pointer_gestures;
+static struct wlr_drm_lease_v1_manager *drm_lease_manager;
 
 static struct wlr_cursor *cursor;
 static struct wlr_xcursor_manager *cursor_mgr;
@@ -841,6 +844,7 @@ static struct wl_listener request_set_cursor_shape = {.notify = setcursorshape};
 static struct wl_listener request_start_drag = {.notify = requeststartdrag};
 static struct wl_listener start_drag = {.notify = startdrag};
 static struct wl_listener new_session_lock = {.notify = locksession};
+static struct wl_listener drm_lease_request = {.notify = requestdrmlease};
 
 #ifdef XWAYLAND
 static void activatex11(struct wl_listener *listener, void *data);
@@ -1945,6 +1949,7 @@ void cleanuplisteners(void) {
 	wl_list_remove(&start_drag.link);
 	wl_list_remove(&new_session_lock.link);
 	wl_list_remove(&new_foreign_toplevel_capture_request.link);
+	wl_list_remove(&drm_lease_request.link);
 #ifdef XWAYLAND
 	wl_list_remove(&new_xwayland_surface.link);
 	wl_list_remove(&xwayland_ready.link);
@@ -2479,6 +2484,14 @@ void createmon(struct wl_listener *listener, void *data) {
 
 	if (!wlr_output_init_render(wlr_output, alloc, drw))
 		return;
+
+	if (wlr_output->non_desktop) {
+		if (drm_lease_manager) {
+			wlr_drm_lease_v1_manager_offer_output(drm_lease_manager,
+												  wlr_output);
+		}
+		return;
+	}
 
 	m = wlr_output->data = ecalloc(1, sizeof(*m));
 	m->wlr_output = wlr_output;
@@ -4063,6 +4076,16 @@ void requestdecorationmode(struct wl_listener *listener, void *data) {
 	}
 }
 
+static void requestdrmlease(struct wl_listener *listener, void *data) {
+	struct wlr_drm_lease_request_v1 *req = data;
+	struct wlr_drm_lease_v1 *lease = wlr_drm_lease_request_v1_grant(req);
+
+	if (!lease) {
+		wlr_log(WLR_ERROR, "Failed to grant lease request");
+		wlr_drm_lease_request_v1_reject(req);
+	}
+}
+
 void requeststartdrag(struct wl_listener *listener, void *data) {
 	struct wlr_seat_request_start_drag_event *event = data;
 
@@ -4968,6 +4991,14 @@ void setup(void) {
 	text_input_manager = wlr_text_input_manager_v3_create(dpy);
 
 	dwl_input_method_relay = dwl_im_relay_create();
+
+	drm_lease_manager = wlr_drm_lease_v1_manager_create(dpy, backend);
+	if (drm_lease_manager) {
+		wl_signal_add(&drm_lease_manager->events.request, &drm_lease_request);
+	} else {
+		wlr_log(WLR_ERROR, "Failed to create wlr_drm_lease_device_v1; VR will "
+						   "not be available");
+	}
 
 	wl_global_create(dpy, &zdwl_ipc_manager_v2_interface, 2, NULL,
 					 dwl_ipc_manager_bind);
