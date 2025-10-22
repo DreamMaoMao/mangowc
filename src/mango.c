@@ -695,6 +695,7 @@ static void resize_tile_client(Client *grabc, bool isdrag, int offsetx,
 							   int offsety, unsigned int time);
 static void refresh_monitors_workspaces_status(Monitor *m);
 static void init_client_properties(Client *c);
+static bool check_keyboard_rules_validate(struct xkb_rule_names *rules);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -2317,9 +2318,18 @@ KeyboardGroup *createkeyboardgroup(void) {
 	group->wlr_group = wlr_keyboard_group_create();
 	group->wlr_group->data = group;
 
+	// 4. 直接修改 rules.layout（保持原有逻辑）
+	struct xkb_rule_names rules = xkb_rules;
+	// 验证规则是否有效
+	if (!check_keyboard_rules_validate(&rules)) {
+		wlr_log(WLR_ERROR,
+				"Keyboard rules validation failed, skipping layout reset");
+		rules = xkb_fallback_rules;
+	}
+
 	/* Prepare an XKB keymap and assign it to the keyboard group. */
 	context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	if (!(keymap = xkb_keymap_new_from_names(context, &xkb_rules,
+	if (!(keymap = xkb_keymap_new_from_names(context, &rules,
 											 XKB_KEYMAP_COMPILE_NO_FLAGS)))
 		die("failed to compile keymap");
 
@@ -3171,7 +3181,9 @@ keybinding(unsigned int mods, xkb_keysym_t sym, unsigned int keycode) {
 			  normalize_keysym(sym) ==
 				  normalize_keysym(k->keysymcode.keysym)) ||
 			 (k->keysymcode.type == KEY_TYPE_CODE &&
-			  keycode == k->keysymcode.keycode)) &&
+			  (keycode == k->keysymcode.keycode.keycode1 ||
+			   keycode == k->keysymcode.keycode.keycode2 ||
+			   keycode == k->keysymcode.keycode.keycode3))) &&
 			k->func) {
 
 			isbreak = k->func(&k->arg);
@@ -3203,14 +3215,18 @@ bool keypressglobal(struct wlr_surface *last_surface,
 
 		if (!r->globalkeybinding.mod ||
 			(!r->globalkeybinding.keysymcode.keysym &&
-			 !r->globalkeybinding.keysymcode.keycode))
+			 !r->globalkeybinding.keysymcode.keycode.keycode1 &&
+			 !r->globalkeybinding.keysymcode.keycode.keycode2 &&
+			 !r->globalkeybinding.keysymcode.keycode.keycode3))
 			continue;
 
 		/* match key only (case insensitive) ignoring mods */
 		if (((r->globalkeybinding.keysymcode.type == KEY_TYPE_SYM &&
 			  r->globalkeybinding.keysymcode.keysym == keysym) ||
 			 (r->globalkeybinding.keysymcode.type == KEY_TYPE_CODE &&
-			  r->globalkeybinding.keysymcode.keycode == keycode)) &&
+			  (r->globalkeybinding.keysymcode.keycode.keycode1 == keycode ||
+			   r->globalkeybinding.keysymcode.keycode.keycode2 == keycode ||
+			   r->globalkeybinding.keysymcode.keycode.keycode3 == keycode))) &&
 			r->globalkeybinding.mod == mods) {
 			wl_list_for_each(c, &clients, link) {
 				if (c && c != lastc) {
@@ -4464,6 +4480,46 @@ void setgaps(int oh, int ov, int ih, int iv) {
 	arrange(selmon, false);
 }
 
+// 验证键盘规则是否有效
+bool check_keyboard_rules_validate(struct xkb_rule_names *rules) {
+	if (!rules) {
+		wlr_log(WLR_ERROR, "Keyboard rules are NULL");
+		return false;
+	}
+
+	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	if (!context) {
+		wlr_log(WLR_ERROR, "Failed to create XKB context for validation");
+		return false;
+	}
+
+	bool valid = false;
+	struct xkb_keymap *test_keymap =
+		xkb_keymap_new_from_names(context, rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+	if (test_keymap) {
+		// 检查keymap是否至少有一个布局
+		if (xkb_keymap_num_layouts(test_keymap) > 0) {
+			valid = true;
+		} else {
+			wlr_log(WLR_ERROR, "Keymap has no layouts");
+		}
+		xkb_keymap_unref(test_keymap);
+	} else {
+		wlr_log(WLR_ERROR,
+				"Invalid keyboard rules: rules=%s, model=%s, layout=%s, "
+				"variant=%s, options=%s",
+				rules->rules ? rules->rules : "NULL",
+				rules->model ? rules->model : "NULL",
+				rules->layout ? rules->layout : "NULL",
+				rules->variant ? rules->variant : "NULL",
+				rules->options ? rules->options : "NULL");
+	}
+
+	xkb_context_unref(context);
+	return valid;
+}
+
 void reset_keyboard_layout(void) {
 	if (!kb_group || !kb_group->wlr_group || !seat) {
 		wlr_log(WLR_ERROR, "Invalid keyboard group or seat");
@@ -4485,6 +4541,16 @@ void reset_keyboard_layout(void) {
 		return;
 	}
 
+	// Keep the same rules but just reapply them
+	struct xkb_rule_names rules = xkb_rules;
+
+	// 验证规则是否有效
+	if (!check_keyboard_rules_validate(&rules)) {
+		wlr_log(WLR_ERROR,
+				"Keyboard rules validation failed, skipping layout reset");
+		rules = xkb_fallback_rules;
+	}
+
 	// Create context
 	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	if (!context) {
@@ -4492,35 +4558,34 @@ void reset_keyboard_layout(void) {
 		return;
 	}
 
-	// Get layout abbreviations
-	const char **layout_ids = calloc(num_layouts, sizeof(char *));
-	if (!layout_ids) {
-		wlr_log(WLR_ERROR, "Failed to allocate layout IDs");
-		goto cleanup_context;
-	}
-
-	for (int i = 0; i < num_layouts; i++) {
-		layout_ids[i] =
-			get_layout_abbr(xkb_keymap_layout_get_name(keyboard->keymap, i));
-		if (!layout_ids[i]) {
-			wlr_log(WLR_ERROR, "Failed to get layout abbreviation");
-			goto cleanup_layouts;
-		}
-	}
-
-	// Keep the same rules but just reapply them
-	struct xkb_rule_names rules = xkb_rules;
-
-	// Create new keymap with current rules
+	// 现在安全地创建真正的keymap
 	struct xkb_keymap *new_keymap =
 		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
 	if (!new_keymap) {
-		wlr_log(WLR_ERROR, "Failed to create keymap for layouts: %s",
-				rules.layout);
-		goto cleanup_layouts;
+		// 理论上这里不应该失败，因为前面已经验证过了
+		wlr_log(WLR_ERROR,
+				"Unexpected failure to create keymap after validation");
+		goto cleanup_context;
 	}
 
-	// Apply the same keymap (this will reset the layout state)
+	// 验证新keymap是否有布局
+	const int new_num_layouts = xkb_keymap_num_layouts(new_keymap);
+	if (new_num_layouts < 1) {
+		wlr_log(WLR_ERROR, "New keymap has no layouts");
+		xkb_keymap_unref(new_keymap);
+		goto cleanup_context;
+	}
+
+	// 确保当前布局索引在新keymap中有效
+	if (current >= new_num_layouts) {
+		wlr_log(WLR_INFO,
+				"Current layout index %u out of range for new keymap, "
+				"resetting to 0",
+				current);
+		current = 0;
+	}
+
+	// Apply the new keymap
 	unsigned int depressed = keyboard->modifiers.depressed;
 	unsigned int latched = keyboard->modifiers.latched;
 	unsigned int locked = keyboard->modifiers.locked;
@@ -4536,9 +4601,6 @@ void reset_keyboard_layout(void) {
 
 	// Cleanup
 	xkb_keymap_unref(new_keymap);
-
-cleanup_layouts:
-	free(layout_ids);
 
 cleanup_context:
 	xkb_context_unref(context);

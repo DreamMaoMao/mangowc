@@ -21,8 +21,14 @@ enum { NUM_TYPE_MINUS, NUM_TYPE_PLUS, NUM_TYPE_DEFAULT };
 enum { KEY_TYPE_SYM, KEY_TYPE_CODE };
 
 typedef struct {
+	uint32_t keycode1;
+	uint32_t keycode2;
+	uint32_t keycode3;
+} MultiKeycode;
+
+typedef struct {
 	xkb_keysym_t keysym;
-	uint32_t keycode;
+	MultiKeycode keycode;
 	int type;
 } KeySymCode;
 
@@ -308,6 +314,8 @@ typedef struct {
 
 	char keymode[28];
 
+	struct xkb_context *ctx;
+	struct xkb_keymap *keymap;
 } Config;
 
 typedef int (*FuncType)(const Arg *);
@@ -596,23 +604,120 @@ uint32_t parse_mod(const char *mod_str) {
 	return mod;
 }
 
-KeySymCode parse_key(const char *key_str) {
-	KeySymCode kc;
+// 定义辅助函数：在 keymap 中查找 keysym 对应的多个 keycode
+static int find_keycodes_for_keysym(struct xkb_keymap *keymap, xkb_keysym_t sym,
+									MultiKeycode *multi_kc) {
+	xkb_keycode_t min_keycode = xkb_keymap_min_keycode(keymap);
+	xkb_keycode_t max_keycode = xkb_keymap_max_keycode(keymap);
+
+	multi_kc->keycode1 = 0;
+	multi_kc->keycode2 = 0;
+	multi_kc->keycode3 = 0;
+
+	int found_count = 0;
+
+	for (xkb_keycode_t keycode = min_keycode;
+		 keycode <= max_keycode && found_count < 3; keycode++) {
+		// 使用布局0和层级0
+		const xkb_keysym_t *syms;
+		int num_syms =
+			xkb_keymap_key_get_syms_by_level(keymap, keycode, 0, 0, &syms);
+
+		for (int i = 0; i < num_syms; i++) {
+			if (syms[i] == sym) {
+				switch (found_count) {
+				case 0:
+					multi_kc->keycode1 = keycode;
+					break;
+				case 1:
+					multi_kc->keycode2 = keycode;
+					break;
+				case 2:
+					multi_kc->keycode3 = keycode;
+					break;
+				}
+				found_count++;
+				break;
+			}
+		}
+	}
+
+	return found_count;
+}
+
+void cleanup_config_keymap(void) {
+	if (config.keymap != NULL) {
+		xkb_keymap_unref(config.keymap);
+		config.keymap = NULL;
+	}
+	if (config.ctx != NULL) {
+		xkb_context_unref(config.ctx);
+		config.ctx = NULL;
+	}
+}
+
+void create_config_keymap(void) {
+	// 初始化 xkb 上下文和 keymap
+
+	if (config.ctx == NULL) {
+		config.ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	}
+
+	if (config.keymap == NULL) {
+		config.keymap = xkb_keymap_new_from_names(
+			config.ctx, &xkb_fallback_rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+	}
+}
+
+KeySymCode parse_key(const char *key_str, bool isbindsym) {
+	KeySymCode kc = {0}; // 初始化为0
+
+	if (config.keymap == NULL || config.ctx == NULL) {
+		// 处理错误
+		kc.type = KEY_TYPE_SYM;
+		kc.keysym = XKB_KEY_NoSymbol;
+		return kc;
+	}
 
 	// 处理 code: 前缀的情况
 	if (strncmp(key_str, "code:", 5) == 0) {
 		char *endptr;
 		xkb_keycode_t keycode = (xkb_keycode_t)strtol(key_str + 5, &endptr, 10);
 		kc.type = KEY_TYPE_CODE;
-		kc.keycode = keycode;
+		kc.keycode.keycode1 = keycode; // 只设置第一个
+		kc.keycode.keycode2 = 0;
+		kc.keycode.keycode3 = 0;
 		return kc;
 	}
 
 	// 普通键名直接转换
 	xkb_keysym_t sym = xkb_keysym_from_name(key_str, XKB_KEYSYM_NO_FLAGS);
-	kc.type = KEY_TYPE_SYM;
-	kc.keycode = 0;
-	kc.keysym = sym;
+
+	if (isbindsym) {
+		kc.type = KEY_TYPE_SYM;
+		kc.keysym = sym;
+		return kc;
+	}
+
+	if (sym != XKB_KEY_NoSymbol) {
+		// 尝试找到对应的多个 keycode
+		int found_count =
+			find_keycodes_for_keysym(config.keymap, sym, &kc.keycode);
+		if (found_count > 0) {
+			kc.type = KEY_TYPE_CODE;
+			kc.keysym = sym; // 仍然保存 keysym 供参考
+		} else {
+			kc.type = KEY_TYPE_SYM;
+			kc.keysym = sym;
+			// keycode 字段保持为0
+		}
+	} else {
+		// 无法解析的键名
+		kc.type = KEY_TYPE_SYM;
+		kc.keysym = XKB_KEY_NoSymbol;
+		// keycode 字段保持为0
+	}
+
 	return kc;
 }
 
@@ -1584,7 +1689,8 @@ void parse_option(Config *config, char *key, char *value) {
 					trim_whitespace(mod_str);
 					trim_whitespace(keysym_str);
 					rule->globalkeybinding.mod = parse_mod(mod_str);
-					rule->globalkeybinding.keysymcode = parse_key(keysym_str);
+					rule->globalkeybinding.keysymcode =
+						parse_key(keysym_str, false);
 				}
 			}
 			token = strtok(NULL, ",");
@@ -1721,7 +1827,8 @@ void parse_option(Config *config, char *key, char *value) {
 
 		config->exec_once_count++;
 
-	} else if (strncmp(key, "bind", 4) == 0) {
+	} else if (strncmp(key, "bind", 4) == 0 ||
+			   strncmp(key, "bindsym", 7) == 0) {
 		config->key_bindings =
 			realloc(config->key_bindings,
 					(config->key_bindings_count + 1) * sizeof(KeyBinding));
@@ -1768,7 +1875,8 @@ void parse_option(Config *config, char *key, char *value) {
 		}
 
 		binding->mod = parse_mod(mod_str);
-		binding->keysymcode = parse_key(keysym_str);
+		binding->keysymcode =
+			parse_key(keysym_str, strncmp(key, "bindsym", 7) == 0);
 		binding->arg.v = NULL;
 		binding->arg.v2 = NULL;
 		binding->arg.v3 = NULL;
@@ -2366,6 +2474,9 @@ void free_config(void) {
 
 	// 释放动画资源
 	free_baked_points();
+
+	// 清理解析按键用的keymap
+	cleanup_config_keymap();
 }
 
 void override_config(void) {
@@ -2710,6 +2821,8 @@ void parse_config(void) {
 	config.tag_rules_count = 0;
 	config.cursor_theme = NULL;
 	strcpy(config.keymode, "default");
+
+	create_config_keymap();
 
 	// 获取 MANGOCONFIG 环境变量
 	const char *mangoconfig = getenv("MANGOCONFIG");
