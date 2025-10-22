@@ -40,7 +40,7 @@ int center_master_overspread = 0;			// 中心master时是否铺满
 int center_when_single_stack = 1;			// 单个stack时是否居中
 /* logging */
 int log_level = WLR_ERROR;
-unsigned int numlockon = 1; // 是否打开右边小键盘
+unsigned int numlockon = 0; // 是否打开右边小键盘
 unsigned int capslock = 0;	// 是否启用快捷键
 
 unsigned int ov_tab_mode = 0;	 // alt tab切换模式
