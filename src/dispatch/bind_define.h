@@ -868,7 +868,7 @@ int switch_keyboard_layout(const Arg *arg) {
 	if (!check_keyboard_rules_validate(&rules)) {
 		wlr_log(WLR_ERROR,
 				"Keyboard rules validation failed, skipping layout reset");
-		rules = xkb_fallback_rules;
+		rules = xkb_default_rules;
 	}
 
 	char *layout_buf = (char *)rules.layout; // 假设这是可修改的

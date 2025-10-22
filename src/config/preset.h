@@ -123,6 +123,10 @@ static const struct xkb_rule_names xkb_fallback_rules = {
 	.options = NULL,
 };
 
+static const struct xkb_rule_names xkb_default_rules = {
+	.options = NULL,
+};
+
 struct xkb_rule_names xkb_rules = {
 	/* can specify fields: rules, model, layout, variant, options */
 	/* example:
