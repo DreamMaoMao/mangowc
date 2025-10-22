@@ -114,6 +114,15 @@ char xkb_rules_layout[256];
 char xkb_rules_variant[256];
 char xkb_rules_options[256];
 
+/* keyboard */
+static const struct xkb_rule_names xkb_fallback_rules = {
+	.layout = "us",
+	.variant = NULL,
+	.model = NULL,
+	.rules = NULL,
+	.options = NULL,
+};
+
 struct xkb_rule_names xkb_rules = {
 	/* can specify fields: rules, model, layout, variant, options */
 	/* example:

@@ -861,6 +861,13 @@ int switch_keyboard_layout(const Arg *arg) {
 
 	// 4. 直接修改 rules.layout（保持原有逻辑）
 	struct xkb_rule_names rules = xkb_rules;
+	// 验证规则是否有效
+	if (!check_keyboard_rules_validate(&rules)) {
+		wlr_log(WLR_ERROR,
+				"Keyboard rules validation failed, skipping layout reset");
+		rules = xkb_fallback_rules;
+	}
+
 	char *layout_buf = (char *)rules.layout; // 假设这是可修改的
 
 	// 清空原有内容（安全方式）
