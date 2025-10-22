@@ -681,8 +681,8 @@ void create_config_keymap(void) {
 	}
 
 	if (config.keymap == NULL) {
-		config.keymap = xkb_keymap_new_from_names(config.ctx, &xkb_rules,
-												  XKB_KEYMAP_COMPILE_NO_FLAGS);
+		config.keymap = xkb_keymap_new_from_names(
+			config.ctx, &xkb_fallback_rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
 	}
 }
 
