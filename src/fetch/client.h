@@ -150,8 +150,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	// 第一次遍历，计算客户端数量
 	wl_list_for_each(c, &clients, link) {
 		if (c && (findfloating || !c->isfloating) && !c->isunglobal &&
-			(focus_cross_monitor || c->mon == selmon) &&
-			(c->tags & c->mon->tagset[c->mon->seltags])) {
+			c->mon == selmon && (c->tags & c->mon->tagset[c->mon->seltags])) {
 			last++;
 		}
 	}
@@ -171,8 +170,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	last = -1;
 	wl_list_for_each(c, &clients, link) {
 		if (c && (findfloating || !c->isfloating) && !c->isunglobal &&
-			(focus_cross_monitor || c->mon == selmon) &&
-			(c->tags & c->mon->tagset[c->mon->seltags])) {
+			c->mon == selmon && (c->tags & c->mon->tagset[c->mon->seltags])) {
 			last++;
 			tempClients[last] = c;
 		}
