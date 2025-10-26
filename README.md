@@ -32,6 +32,14 @@ Scroller Layout
 
 https://github.com/user-attachments/assets/c9bf9415-fad1-4400-bcdc-3ad2d76de85a
 
+Layer animaiton
+
+https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
+
+
+# Our discord
+[mangowc](https://discord.gg/CPjbDxesh5)
+
 # Supported layouts
 
 - tile
