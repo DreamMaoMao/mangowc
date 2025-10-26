@@ -150,7 +150,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	// 第一次遍历，计算客户端数量
 	wl_list_for_each(c, &clients, link) {
 		if (c && (findfloating || !c->isfloating) && !c->isunglobal &&
-			(focus_cross_monitor || c->mon == selmon) &&
+			(focus_cross_monitor || c->mon == tc->mon) &&
 			(c->tags & c->mon->tagset[c->mon->seltags])) {
 			last++;
 		}
@@ -171,7 +171,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	last = -1;
 	wl_list_for_each(c, &clients, link) {
 		if (c && (findfloating || !c->isfloating) && !c->isunglobal &&
-			(focus_cross_monitor || c->mon == selmon) &&
+			(focus_cross_monitor || c->mon == tc->mon) &&
 			(c->tags & c->mon->tagset[c->mon->seltags])) {
 			last++;
 			tempClients[last] = c;
@@ -187,7 +187,8 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	case UP:
 		for (int _i = 0; _i <= last; _i++) {
 			if (tempClients[_i]->geom.y < sel_y &&
-				tempClients[_i]->geom.x == sel_x) {
+				tempClients[_i]->geom.x == sel_x &&
+				tempClients[_i]->mon == tc->mon) {
 				int dis_x = tempClients[_i]->geom.x - sel_x;
 				int dis_y = tempClients[_i]->geom.y - sel_y;
 				long long int tmp_distance =
@@ -216,7 +217,8 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	case DOWN:
 		for (int _i = 0; _i <= last; _i++) {
 			if (tempClients[_i]->geom.y > sel_y &&
-				tempClients[_i]->geom.x == sel_x) {
+				tempClients[_i]->geom.x == sel_x &&
+				tempClients[_i]->mon == tc->mon) {
 				int dis_x = tempClients[_i]->geom.x - sel_x;
 				int dis_y = tempClients[_i]->geom.y - sel_y;
 				long long int tmp_distance =
@@ -245,7 +247,8 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	case LEFT:
 		for (int _i = 0; _i <= last; _i++) {
 			if (tempClients[_i]->geom.x < sel_x &&
-				tempClients[_i]->geom.y == sel_y) {
+				tempClients[_i]->geom.y == sel_y &&
+				tempClients[_i]->mon == tc->mon) {
 				int dis_x = tempClients[_i]->geom.x - sel_x;
 				int dis_y = tempClients[_i]->geom.y - sel_y;
 				long long int tmp_distance =
@@ -274,7 +277,8 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	case RIGHT:
 		for (int _i = 0; _i <= last; _i++) {
 			if (tempClients[_i]->geom.x > sel_x &&
-				tempClients[_i]->geom.y == sel_y) {
+				tempClients[_i]->geom.y == sel_y &&
+				tempClients[_i]->mon == tc->mon) {
 				int dis_x = tempClients[_i]->geom.x - sel_x;
 				int dis_y = tempClients[_i]->geom.y - sel_y;
 				long long int tmp_distance =
