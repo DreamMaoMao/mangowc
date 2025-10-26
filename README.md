@@ -37,6 +37,9 @@ Layer animaiton
 https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
 
 
+# Our discord
+[mangowc](https://discord.gg/CPjbDxesh5)
+
 # Supported layouts
 
 - tile
