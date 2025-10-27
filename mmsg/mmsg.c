@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <wayland-client.h>
 #include <wayland-util.h>
 
@@ -373,6 +374,7 @@ static void dwl_ipc_output_frame(void *data,
 				dispatch_arg3, dispatch_arg4, dispatch_arg5);
 		}
 		wl_display_flush(display);
+		usleep(1000);
 		exit(0);
 	} else {
 		if (tflag) {
