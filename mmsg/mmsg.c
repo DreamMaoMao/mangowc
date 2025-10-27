@@ -308,6 +308,41 @@ static void dwl_ipc_output_askconfirm(void *data,
 	printf("askconfirm %d\n", askconfirm);
 }
 
+static void wait_request_completed(void) {
+		struct timespec start;
+		clock_gettime(CLOCK_MONOTONIC, &start);
+		starttimestamp = (uint32_t)(start.tv_sec * 1000 +
+									start.tv_nsec / 1000000); // 毫秒时间戳
+
+		int display_fd = wl_display_get_fd(display);
+		struct pollfd pfd = {.fd = display_fd, .events = POLLIN};
+
+		while (request_completed > starttimestamp) {
+			// 非阻塞地检查事件
+			wl_display_dispatch_pending(display);
+			wl_display_flush(display);
+
+			if (request_completed)
+				break;
+
+			// 使用poll等待事件，超时时间为1000毫秒
+			int poll_ret = poll(&pfd, 1, 1000);
+			if (poll_ret == 0) {
+				fprintf(stderr, "CLIENT: Timeout waiting for confirmation\n");
+				break;
+			} else if (poll_ret < 0) {
+				perror("poll");
+				break;
+			} else {
+				// 有事件到达，调用wl_display_dispatch来处理事件
+				if (wl_display_dispatch(display) < 0) {
+					fprintf(stderr, "CLIENT: wl_display_dispatch failed\n");
+					break;
+				}
+			}
+		}
+}
+
 static void dwl_ipc_output_frame(void *data,
 								 struct zdwl_ipc_output_v2 *dwl_ipc_output) {
 	if (mode & SET) {
@@ -385,38 +420,8 @@ static void dwl_ipc_output_frame(void *data,
 				dispatch_arg3, dispatch_arg4, dispatch_arg5);
 		}
 		wl_display_flush(display);
-		struct timespec start;
-		clock_gettime(CLOCK_MONOTONIC, &start);
-		starttimestamp = (uint32_t)(start.tv_sec * 1000 +
-									start.tv_nsec / 1000000); // 毫秒时间戳
-
-		int display_fd = wl_display_get_fd(display);
-		struct pollfd pfd = {.fd = display_fd, .events = POLLIN};
-
-		while (request_completed > starttimestamp) {
-			// 非阻塞地检查事件
-			wl_display_dispatch_pending(display);
-			wl_display_flush(display);
-
-			if (request_completed)
-				break;
-
-			// 使用poll等待事件，超时时间为1000毫秒
-			int poll_ret = poll(&pfd, 1, 1000);
-			if (poll_ret == 0) {
-				fprintf(stderr, "CLIENT: Timeout waiting for confirmation\n");
-				break;
-			} else if (poll_ret < 0) {
-				perror("poll");
-				break;
-			} else {
-				// 有事件到达，调用wl_display_dispatch来处理事件
-				if (wl_display_dispatch(display) < 0) {
-					fprintf(stderr, "CLIENT: wl_display_dispatch failed\n");
-					break;
-				}
-			}
-		}
+		// wait_request_completed();
+		usleep(1000);
 		exit(0);
 	} else {
 		if (tflag) {
