@@ -1546,3 +1546,54 @@ int toggleoverview(const Arg *arg) {
 	refresh_monitors_workspaces_status(selmon);
 	return 0;
 }
+
+int view_tagmon(const Arg *arg) {
+	Client *c = NULL, *old_selmon_sel = NULL;
+	Monitor *m = NULL;
+	int _warpcursor = warpcursor;
+
+	if (arg->v) {
+		wl_list_for_each(m, &mons, link) {
+			if (!m->wlr_output->enabled) {
+				continue;
+			}
+			if (regex_match(arg->v, m->wlr_output->name)) {
+				break;
+			}
+		}
+	} else {
+		return 0;
+	}
+
+	if (!m || !m->wlr_output->enabled)
+		return 0;
+
+	if (selmon == m) {
+		// Don't warp cursor if already at monitor
+		_warpcursor = 0;
+	}
+
+	old_selmon_sel = selmon->sel;
+	selmon = m;
+	if (_warpcursor) {
+		warp_cursor_to_selmon(selmon);
+	}
+	c = focustop(selmon);
+	if (!c) {
+		selmon->sel = NULL;
+		wlr_seat_pointer_notify_clear_focus(seat);
+		wlr_seat_keyboard_notify_clear_focus(seat);
+	} else
+		focusclient(c, 1);
+
+	if (old_selmon_sel) {
+		setborder_color(old_selmon_sel);
+	}
+
+	Arg v_arg;
+	// Set the tag bitmask
+	v_arg.ui = arg->ui;
+	// default value?
+	v_arg.i = 0;
+	return bind_to_view(&v_arg);
+}

@@ -64,4 +64,5 @@ int create_virtual_output(const Arg *arg);
 int destroy_all_virtual_output(const Arg *arg);
 int focuslast(const Arg *arg);
 int toggle_trackpad_enable(const Arg *arg);
+int view_tagmon(const Arg *arg);
 int setoption(const Arg *arg);
