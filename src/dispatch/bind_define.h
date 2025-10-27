@@ -213,7 +213,7 @@ int focusstack(const Arg *arg) {
 	Client *sel = focustop(selmon);
 	Client *tc = NULL;
 
-	if (!sel || (sel->isfullscreen && !client_has_children(sel)))
+	if (!sel)
 		return 0;
 	if (arg->i == NEXT) {
 		tc = get_next_stack_client(sel, false);

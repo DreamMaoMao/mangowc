@@ -343,11 +343,17 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 	Client *next = NULL;
 	if (reverse) {
 		wl_list_for_each_reverse(next, &c->link, link) {
+			if (c->mon->has_visible_fullscreen_client && !next->isfloating &&
+				!next->isfullscreen)
+				continue;
 			if (VISIBLEON(next, c->mon) && next != c)
 				return next;
 		}
 	} else {
 		wl_list_for_each(next, &c->link, link) {
+			if (c->mon->has_visible_fullscreen_client && !next->isfloating &&
+				!next->isfullscreen)
+				continue;
 			if (VISIBLEON(next, c->mon) && next != c)
 				return next;
 		}

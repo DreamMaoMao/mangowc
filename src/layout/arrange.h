@@ -592,6 +592,7 @@ arrange(Monitor *m, bool want_animation) {
 		return;
 	m->visible_clients = 0;
 	m->visible_tiling_clients = 0;
+	m->has_visible_fullscreen_client = false;
 
 	wl_list_for_each(c, &clients, link) {
 
@@ -603,6 +604,10 @@ arrange(Monitor *m, bool want_animation) {
 
 		if (VISIBLEON(c, m)) {
 			m->visible_clients++;
+
+			if (c->isfullscreen)
+				m->has_visible_fullscreen_client = true;
+
 			if (ISTILED(c)) {
 				m->visible_tiling_clients++;
 			}
