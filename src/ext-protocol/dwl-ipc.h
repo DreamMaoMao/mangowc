@@ -207,6 +207,16 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	zdwl_ipc_output_v2_send_frame(ipc_output->resource);
 }
 
+void dwl_ipc_output_askconfirm(DwlIpcOutput *ipc_output) {
+	// 发送当前时间戳而不是固定的1
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	uint32_t timestamp =
+		(uint32_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000); // 毫秒时间戳
+
+	zdwl_ipc_output_v2_send_askconfirm(ipc_output->resource, timestamp);
+}
+
 void dwl_ipc_output_set_client_tags(struct wl_client *client,
 									struct wl_resource *resource,
 									unsigned int and_tags,
@@ -234,6 +244,7 @@ void dwl_ipc_output_set_client_tags(struct wl_client *client,
 		focusclient(focustop(monitor), 1);
 	arrange(selmon, false);
 	printstatus();
+	dwl_ipc_output_askconfirm(ipc_output);
 }
 
 void dwl_ipc_output_set_layout(struct wl_client *client,
@@ -253,6 +264,7 @@ void dwl_ipc_output_set_layout(struct wl_client *client,
 	monitor->pertag->ltidxs[monitor->pertag->curtag] = &layouts[index];
 	arrange(monitor, false);
 	printstatus();
+	dwl_ipc_output_askconfirm(ipc_output);
 }
 
 void dwl_ipc_output_set_tags(struct wl_client *client,
@@ -268,11 +280,17 @@ void dwl_ipc_output_set_tags(struct wl_client *client,
 	monitor = ipc_output->mon;
 
 	view_in_mon(&(Arg){.ui = newtags}, true, monitor, true);
+	dwl_ipc_output_askconfirm(ipc_output);
 }
 
 void dwl_ipc_output_quit(struct wl_client *client,
 						 struct wl_resource *resource) {
+	DwlIpcOutput *ipc_output;
+	ipc_output = wl_resource_get_user_data(resource);
+	if (!ipc_output)
+		return;
 	quit(&(Arg){0});
+	dwl_ipc_output_askconfirm(ipc_output);
 }
 
 void dwl_ipc_output_dispatch(struct wl_client *client,
@@ -283,6 +301,10 @@ void dwl_ipc_output_dispatch(struct wl_client *client,
 
 	int (*func)(const Arg *);
 	Arg arg;
+	DwlIpcOutput *ipc_output;
+	ipc_output = wl_resource_get_user_data(resource);
+	if (!ipc_output)
+		return;
 	func = parse_func_name((char *)dispatch, &arg, (char *)arg1, (char *)arg2,
 						   (char *)arg3, (char *)arg4, (char *)arg5);
 	if (func) {
@@ -295,6 +317,7 @@ void dwl_ipc_output_dispatch(struct wl_client *client,
 		free(arg.v2);
 	if (arg.v3)
 		free(arg.v3);
+	dwl_ipc_output_askconfirm(ipc_output);
 }
 
 void dwl_ipc_output_release(struct wl_client *client,

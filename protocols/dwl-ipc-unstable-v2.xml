@@ -241,6 +241,13 @@ I would probably just submit raphi's patchset but I don't think that would be po
       <arg name="keymode" type="string" summary="current keybind mode."/>
     </event>
 
+    <event name="askconfirm" since="2">
+      <description summary="already receive the request.">
+        already receive the request.
+      </description>
+      <arg name="askconfirm" type="uint" summary="already receive the request."/>
+    </event>
+
   </interface>
 
 </protocol>
