@@ -99,7 +99,7 @@
 	 A->geom.y + A->geom.height <= A->mon->m.y + A->mon->m.height)
 #define ISTILED(A)                                                             \
 	(A && !(A)->isfloating && !(A)->isminied && !(A)->iskilling &&             \
-	 !(A)->ismaxmizescreen && !(A)->isfullscreen)
+	 !(A)->ismaximizescreen && !(A)->isfullscreen)
 #define VISIBLEON(C, M)                                                        \
 	((M) && (C)->mon == (M) && ((C)->tags & (M)->tagset[(M)->seltags]))
 #define LENGTH(X) (sizeof X / sizeof X[0])
@@ -107,8 +107,8 @@
 #define TAGMASK ((1 << LENGTH(tags)) - 1)
 #define LISTEN(E, L, H) wl_signal_add((E), ((L)->notify = (H), (L)))
 #define ISFULLSCREEN(A)                                                        \
-	((A)->isfullscreen || (A)->ismaxmizescreen ||                              \
-	 (A)->overview_ismaxmizescreenbak || (A)->overview_isfullscreenbak)
+	((A)->isfullscreen || (A)->ismaximizescreen ||                             \
+	 (A)->overview_ismaximizescreenbak || (A)->overview_isfullscreenbak)
 #define LISTEN_STATIC(E, H)                                                    \
 	do {                                                                       \
 		struct wl_listener *_l = ecalloc(1, sizeof(*_l));                      \
@@ -292,11 +292,11 @@ struct Client {
 	int isfloating, isurgent, isfullscreen, isfakefullscreen,
 		need_float_size_reduce, isminied, isoverlay, isnosizehint,
 		ignore_maximize, ignore_minimize;
-	int ismaxmizescreen;
+	int ismaximizescreen;
 	int overview_backup_bw;
 	int fullscreen_backup_x, fullscreen_backup_y, fullscreen_backup_w,
 		fullscreen_backup_h;
-	int overview_isfullscreenbak, overview_ismaxmizescreenbak,
+	int overview_isfullscreenbak, overview_ismaximizescreenbak,
 		overview_isfloatingbak;
 
 	struct wlr_xdg_toplevel_decoration_v1 *decoration;
@@ -587,8 +587,8 @@ static void setcursor(struct wl_listener *listener, void *data);
 static void setfloating(Client *c, int floating);
 static void setfakefullscreen(Client *c, int fakefullscreen);
 static void setfullscreen(Client *c, int fullscreen);
-static void setmaxmizescreen(Client *c, int maxmizescreen);
-static void reset_maxmizescreen_size(Client *c);
+static void setmaximizescreen(Client *c, int maximizescreen);
+static void reset_maximizescreen_size(Client *c);
 static void setgaps(int oh, int ov, int ih, int iv);
 
 static void setmon(Client *c, Monitor *m, unsigned int newtags, bool focus);
@@ -902,16 +902,16 @@ void clear_fullscreen_flag(Client *c) {
 		setfullscreen(c, false);
 	}
 
-	if (c->ismaxmizescreen) {
-		setmaxmizescreen(c, 0);
+	if (c->ismaximizescreen) {
+		setmaximizescreen(c, 0);
 	}
 }
 
 void show_scratchpad(Client *c) {
 	c->is_scratchpad_show = 1;
-	if (c->isfullscreen || c->ismaxmizescreen) {
+	if (c->isfullscreen || c->ismaximizescreen) {
 		c->isfullscreen = 0; // 清除窗口全屏标志
-		c->ismaxmizescreen = 0;
+		c->ismaximizescreen = 0;
 		c->bw = c->isnoborder ? 0 : borderpx;
 	}
 
@@ -951,7 +951,7 @@ void swallow(Client *c, Client *w) {
 	c->isfloating = w->isfloating;
 	c->isurgent = w->isurgent;
 	c->isfullscreen = w->isfullscreen;
-	c->ismaxmizescreen = w->ismaxmizescreen;
+	c->ismaximizescreen = w->ismaximizescreen;
 	c->isminied = w->isminied;
 	c->is_in_scratchpad = w->is_in_scratchpad;
 	c->is_scratchpad_show = w->is_scratchpad_show;
@@ -3035,7 +3035,7 @@ void focusclient(Client *c, int lift) {
 		if (c && selmon->prevsel &&
 			(selmon->prevsel->tags & selmon->tagset[selmon->seltags]) &&
 			(c->tags & selmon->tagset[selmon->seltags]) && !c->isfloating &&
-			!c->isfullscreen && !c->ismaxmizescreen &&
+			!c->isfullscreen && !c->ismaximizescreen &&
 			is_scroller_layout(selmon)) {
 			arrange(selmon, false);
 		}
@@ -3406,7 +3406,7 @@ void locksession(struct wl_listener *listener, void *data) {
 }
 
 void init_client_properties(Client *c) {
-	c->ismaxmizescreen = 0;
+	c->ismaximizescreen = 0;
 	c->isfullscreen = 0;
 	c->need_float_size_reduce = 0;
 	c->iskilling = 0;
@@ -3584,16 +3584,16 @@ maximizenotify(struct wl_listener *listener, void *data) {
 	// if (wl_resource_get_version(c->surface.xdg->toplevel->resource)
 	// 		< XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION)
 	// 	wlr_xdg_surface_schedule_configure(c->surface.xdg);
-	// togglemaxmizescreen(&(Arg){0});
+	// togglemaximizescreen(&(Arg){0});
 	Client *c = wl_container_of(listener, c, maximize);
 
 	if (!c || !c->mon || c->iskilling || c->ignore_maximize)
 		return;
 
-	if (c->ismaxmizescreen || c->isfullscreen)
-		setmaxmizescreen(c, 0);
+	if (c->ismaximizescreen || c->isfullscreen)
+		setmaximizescreen(c, 0);
 	else
-		setmaxmizescreen(c, 1);
+		setmaximizescreen(c, 1);
 }
 
 void unminimize(Client *c) {
@@ -3652,7 +3652,7 @@ minimizenotify(struct wl_listener *listener, void *data) {
 	// if (wl_resource_get_version(c->surface.xdg->toplevel->resource)
 	// 		< XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION)
 	// 	wlr_xdg_surface_schedule_configure(c->surface.xdg);
-	// togglemaxmizescreen(&(Arg){0});
+	// togglemaximizescreen(&(Arg){0});
 
 	Client *c = wl_container_of(listener, c, minimize);
 
@@ -4110,8 +4110,8 @@ void setborder_color(Client *c) {
 		client_set_border_color(c, globalcolor);
 	} else if (c->isoverlay && selmon && c == selmon->sel) {
 		client_set_border_color(c, overlaycolor);
-	} else if (c->ismaxmizescreen && selmon && c == selmon->sel) {
-		client_set_border_color(c, maxmizescreencolor);
+	} else if (c->ismaximizescreen && selmon && c == selmon->sel) {
+		client_set_border_color(c, maximizescreencolor);
 	} else if (selmon && c == selmon->sel) {
 		client_set_border_color(c, focuscolor);
 	} else {
@@ -4309,9 +4309,9 @@ setfloating(Client *c, int floating) {
 
 	if (floating == 1 && c != grabc) {
 
-		if (c->isfullscreen || c->ismaxmizescreen) {
+		if (c->isfullscreen || c->ismaximizescreen) {
 			c->isfullscreen = 0; // 清除窗口全屏标志
-			c->ismaxmizescreen = 0;
+			c->ismaximizescreen = 0;
 			c->bw = c->isnoborder ? 0 : borderpx;
 		}
 
@@ -4379,7 +4379,7 @@ setfloating(Client *c, int floating) {
 	printstatus();
 }
 
-void reset_maxmizescreen_size(Client *c) {
+void reset_maximizescreen_size(Client *c) {
 	c->geom.x = c->mon->w.x + gappoh;
 	c->geom.y = c->mon->w.y + gappov;
 	c->geom.width = c->mon->w.width - 2 * gappoh;
@@ -4387,14 +4387,14 @@ void reset_maxmizescreen_size(Client *c) {
 	resize(c, c->geom, 0);
 }
 
-void setmaxmizescreen(Client *c, int maxmizescreen) {
-	struct wlr_box maxmizescreen_box;
+void setmaximizescreen(Client *c, int maximizescreen) {
+	struct wlr_box maximizescreen_box;
 	if (!c || !c->mon || !client_surface(c)->mapped || c->iskilling)
 		return;
 
-	c->ismaxmizescreen = maxmizescreen;
+	c->ismaximizescreen = maximizescreen;
 
-	if (maxmizescreen) {
+	if (maximizescreen) {
 
 		if (c->isfullscreen)
 			setfullscreen(c, 0);
@@ -4406,30 +4406,30 @@ void setmaxmizescreen(Client *c, int maxmizescreen) {
 			toggleoverview(&arg);
 		}
 
-		maxmizescreen_box.x = c->mon->w.x + gappoh;
-		maxmizescreen_box.y = c->mon->w.y + gappov;
-		maxmizescreen_box.width = c->mon->w.width - 2 * gappoh;
-		maxmizescreen_box.height = c->mon->w.height - 2 * gappov;
+		maximizescreen_box.x = c->mon->w.x + gappoh;
+		maximizescreen_box.y = c->mon->w.y + gappov;
+		maximizescreen_box.width = c->mon->w.width - 2 * gappoh;
+		maximizescreen_box.height = c->mon->w.height - 2 * gappov;
 		wlr_scene_node_raise_to_top(&c->scene->node); // 将视图提升到顶层
-		resize(c, maxmizescreen_box, 0);
-		c->ismaxmizescreen = 1;
+		resize(c, maximizescreen_box, 0);
+		c->ismaximizescreen = 1;
 	} else {
 		c->bw = c->isnoborder ? 0 : borderpx;
-		c->ismaxmizescreen = 0;
+		c->ismaximizescreen = 0;
 		if (c->isfloating)
 			setfloating(c, 1);
 	}
 
-	wlr_scene_node_reparent(&c->scene->node, layers[maxmizescreen	? LyrTile
+	wlr_scene_node_reparent(&c->scene->node, layers[maximizescreen	? LyrTile
 													: c->isfloating ? LyrTop
 																	: LyrTile]);
-	if (!c->ismaxmizescreen) {
+	if (!c->ismaximizescreen) {
 		set_size_per(c->mon, c);
 	}
 
-	if (!c->force_maximize && !c->ismaxmizescreen) {
+	if (!c->force_maximize && !c->ismaximizescreen) {
 		client_set_maximized(c, false);
-	} else if (!c->force_maximize && c->ismaxmizescreen) {
+	} else if (!c->force_maximize && c->ismaximizescreen) {
 		client_set_maximized(c, true);
 	}
 
@@ -4456,8 +4456,8 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 	client_set_fullscreen(c, fullscreen);
 
 	if (fullscreen) {
-		if (c->ismaxmizescreen)
-			setmaxmizescreen(c, 0);
+		if (c->ismaximizescreen)
+			setmaximizescreen(c, 0);
 
 		if (c->isfloating)
 			c->float_geom = c->geom;
@@ -5081,7 +5081,7 @@ unsigned int want_restore_fullscreen(Client *target_client) {
 void overview_backup(Client *c) {
 	c->overview_isfloatingbak = c->isfloating;
 	c->overview_isfullscreenbak = c->isfullscreen;
-	c->overview_ismaxmizescreenbak = c->ismaxmizescreen;
+	c->overview_ismaximizescreenbak = c->ismaximizescreen;
 	c->overview_isfullscreenbak = c->isfullscreen;
 	c->animation.tagining = false;
 	c->animation.tagouted = false;
@@ -5091,9 +5091,9 @@ void overview_backup(Client *c) {
 	if (c->isfloating) {
 		c->isfloating = 0;
 	}
-	if (c->isfullscreen || c->ismaxmizescreen) {
+	if (c->isfullscreen || c->ismaximizescreen) {
 		c->isfullscreen = 0; // 清除窗口全屏标志
-		c->ismaxmizescreen = 0;
+		c->ismaximizescreen = 0;
 	}
 	c->bw = c->isnoborder ? 0 : borderpx;
 }
@@ -5102,10 +5102,10 @@ void overview_backup(Client *c) {
 void overview_restore(Client *c, const Arg *arg) {
 	c->isfloating = c->overview_isfloatingbak;
 	c->isfullscreen = c->overview_isfullscreenbak;
-	c->ismaxmizescreen = c->overview_ismaxmizescreenbak;
+	c->ismaximizescreen = c->overview_ismaximizescreenbak;
 	c->overview_isfloatingbak = 0;
 	c->overview_isfullscreenbak = 0;
-	c->overview_ismaxmizescreenbak = 0;
+	c->overview_ismaximizescreenbak = 0;
 	c->geom = c->overview_backup_geom;
 	c->bw = c->overview_backup_bw;
 	c->animation.tagining = false;
@@ -5114,14 +5114,14 @@ void overview_restore(Client *c, const Arg *arg) {
 	if (c->isfloating) {
 		// XRaiseWindow(dpy, c->win); // 提升悬浮窗口到顶层
 		resize(c, c->overview_backup_geom, 0);
-	} else if (c->isfullscreen || c->ismaxmizescreen) {
-		if (want_restore_fullscreen(c) && c->ismaxmizescreen) {
-			setmaxmizescreen(c, 1);
+	} else if (c->isfullscreen || c->ismaximizescreen) {
+		if (want_restore_fullscreen(c) && c->ismaximizescreen) {
+			setmaximizescreen(c, 1);
 		} else if (want_restore_fullscreen(c) && c->isfullscreen) {
 			setfullscreen(c, 1);
 		} else {
 			c->isfullscreen = 0;
-			c->ismaxmizescreen = 0;
+			c->ismaximizescreen = 0;
 			setfullscreen(c, false);
 		}
 	} else {
@@ -5256,7 +5256,7 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	}
 
 	if (c->swallowedby) {
-		setmaxmizescreen(c->swallowedby, c->ismaxmizescreen);
+		setmaximizescreen(c->swallowedby, c->ismaximizescreen);
 		setfullscreen(c->swallowedby, c->isfullscreen);
 		c->swallowedby->swallowing = NULL;
 		c->swallowedby = NULL;

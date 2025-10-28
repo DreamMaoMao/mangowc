@@ -472,7 +472,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
 void resize_tile_client(Client *grabc, bool isdrag, int offsetx, int offsety,
 						unsigned int time) {
 
-	if (!grabc || grabc->isfullscreen || grabc->ismaxmizescreen)
+	if (!grabc || grabc->isfullscreen || grabc->ismaximizescreen)
 		return;
 
 	const Layout *current_layout =
@@ -652,9 +652,9 @@ arrange(Monitor *m, bool want_animation) {
 			}
 		}
 
-		if (c->mon == m && c->ismaxmizescreen && !c->animation.tagouted &&
+		if (c->mon == m && c->ismaximizescreen && !c->animation.tagouted &&
 			!c->animation.tagouting && VISIBLEON(c, m)) {
-			reset_maxmizescreen_size(c);
+			reset_maximizescreen_size(c);
 		}
 	}
 

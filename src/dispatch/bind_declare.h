@@ -16,7 +16,7 @@ int viewtoleft_have_client(const Arg *arg);
 int viewtoright_have_client(const Arg *arg);
 int togglefloating(const Arg *arg);
 int togglefullscreen(const Arg *arg);
-int togglemaxmizescreen(const Arg *arg);
+int togglemaximizescreen(const Arg *arg);
 int togglegaps(const Arg *arg);
 int tagmon(const Arg *arg);
 int spawn(const Arg *arg);

@@ -258,7 +258,7 @@ typedef struct {
 	float rootcolor[4];
 	float bordercolor[4];
 	float focuscolor[4];
-	float maxmizescreencolor[4];
+	float maximizescreencolor[4];
 	float urgentcolor[4];
 	float scratchpadcolor[4];
 	float globalcolor[4];
@@ -969,8 +969,8 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "moveresize") == 0) {
 		func = moveresize;
 		(*arg).ui = parse_mouse_action(arg_value);
-	} else if (strcmp(func_name, "togglemaxmizescreen") == 0) {
-		func = togglemaxmizescreen;
+	} else if (strcmp(func_name, "togglemaximizescreen") == 0) {
+		func = togglemaximizescreen;
 	} else if (strcmp(func_name, "viewtoleft_have_client") == 0) {
 		func = viewtoleft_have_client;
 		(*arg).i = atoi(arg_value);
@@ -1420,13 +1420,13 @@ void parse_option(Config *config, char *key, char *value) {
 		} else {
 			convert_hex_to_rgba(config->focuscolor, color);
 		}
-	} else if (strcmp(key, "maxmizescreencolor") == 0) {
+	} else if (strcmp(key, "maximizescreencolor") == 0) {
 		long int color = parse_color(value);
 		if (color == -1) {
-			fprintf(stderr, "Error: Invalid maxmizescreencolor format: %s\n",
+			fprintf(stderr, "Error: Invalid maximizescreencolor format: %s\n",
 					value);
 		} else {
-			convert_hex_to_rgba(config->maxmizescreencolor, color);
+			convert_hex_to_rgba(config->maximizescreencolor, color);
 		}
 	} else if (strcmp(key, "urgentcolor") == 0) {
 		long int color = parse_color(value);
@@ -2609,8 +2609,8 @@ void override_config(void) {
 	memcpy(rootcolor, config.rootcolor, sizeof(rootcolor));
 	memcpy(bordercolor, config.bordercolor, sizeof(bordercolor));
 	memcpy(focuscolor, config.focuscolor, sizeof(focuscolor));
-	memcpy(maxmizescreencolor, config.maxmizescreencolor,
-		   sizeof(maxmizescreencolor));
+	memcpy(maximizescreencolor, config.maximizescreencolor,
+		   sizeof(maximizescreencolor));
 	memcpy(urgentcolor, config.urgentcolor, sizeof(urgentcolor));
 	memcpy(scratchpadcolor, config.scratchpadcolor, sizeof(scratchpadcolor));
 	memcpy(globalcolor, config.globalcolor, sizeof(globalcolor));
@@ -2749,8 +2749,8 @@ void set_value_default() {
 	memcpy(config.rootcolor, rootcolor, sizeof(rootcolor));
 	memcpy(config.bordercolor, bordercolor, sizeof(bordercolor));
 	memcpy(config.focuscolor, focuscolor, sizeof(focuscolor));
-	memcpy(config.maxmizescreencolor, maxmizescreencolor,
-		   sizeof(maxmizescreencolor));
+	memcpy(config.maximizescreencolor, maximizescreencolor,
+		   sizeof(maximizescreencolor));
 	memcpy(config.urgentcolor, urgentcolor, sizeof(urgentcolor));
 	memcpy(config.scratchpadcolor, scratchpadcolor, sizeof(scratchpadcolor));
 	memcpy(config.globalcolor, globalcolor, sizeof(globalcolor));
