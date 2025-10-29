@@ -1423,7 +1423,7 @@ int viewtoright_have_client(const Arg *arg) {
 }
 
 int viewcrossmon(const Arg *arg) {
-	focusmon(arg);
+	focusmon(&(Arg){.v = arg->v, .i = UNDIR});
 	view_in_mon(arg, true, selmon, true);
 	return 0;
 }
