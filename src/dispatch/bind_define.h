@@ -1426,7 +1426,10 @@ int viewtoright_have_client(const Arg *arg) {
 }
 
 int viewcrossmon(const Arg *arg) {
-	focusmon(arg);
+	// Don't switch monitors if monitor is already focused
+	// This also prevents cursorwarp
+	if (!regex_match(arg->v, selmon->wlr_output->name))
+		focusmon(&(Arg){.v = arg->v, .i = UNDIR});
 	view_in_mon(arg, true, selmon, true);
 	return 0;
 }
