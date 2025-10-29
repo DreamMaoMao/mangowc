@@ -80,7 +80,7 @@ int defaultgaps(const Arg *arg) {
 
 int exchange_client(const Arg *arg) {
 	Client *c = selmon->sel;
-	if (!c || c->isfloating || c->isfullscreen || c->ismaxmizescreen)
+	if (!c || c->isfloating || c->isfullscreen || c->ismaximizescreen)
 		return 0;
 	exchange_two_client(c, direction_select(arg));
 	return 0;
@@ -89,7 +89,7 @@ int exchange_client(const Arg *arg) {
 int exchange_stack_client(const Arg *arg) {
 	Client *c = selmon->sel;
 	Client *tc = NULL;
-	if (!c || c->isfloating || c->isfullscreen || c->ismaxmizescreen)
+	if (!c || c->isfloating || c->isfullscreen || c->ismaximizescreen)
 		return 0;
 	if (arg->i == NEXT) {
 		tc = get_next_stack_client(c, false);
@@ -329,7 +329,7 @@ int moveresize(const Arg *arg) {
 		return 0;
 	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
 	if (!grabc || client_is_unmanaged(grabc) || grabc->isfullscreen ||
-		grabc->ismaxmizescreen) {
+		grabc->ismaximizescreen) {
 		grabc = NULL;
 		return 0;
 	}
@@ -410,7 +410,7 @@ int resizewin(const Arg *arg) {
 	c = selmon->sel;
 	int offsetx = 0, offsety = 0;
 
-	if (!c || c->isfullscreen || c->ismaxmizescreen)
+	if (!c || c->isfullscreen || c->ismaximizescreen)
 		return 0;
 
 	if (ISTILED(c)) {
@@ -1200,7 +1200,7 @@ int togglefloating(const Arg *arg) {
 	if (!sel)
 		return 0;
 
-	if ((sel->isfullscreen || sel->ismaxmizescreen)) {
+	if ((sel->isfullscreen || sel->ismaximizescreen)) {
 		sel->isfloating = 1;
 	} else {
 		sel->isfloating = !sel->isfloating;
@@ -1248,7 +1248,7 @@ int togglegaps(const Arg *arg) {
 	return 0;
 }
 
-int togglemaxmizescreen(const Arg *arg) {
+int togglemaximizescreen(const Arg *arg) {
 	Client *sel = focustop(selmon);
 	if (!sel)
 		return 0;
@@ -1257,10 +1257,10 @@ int togglemaxmizescreen(const Arg *arg) {
 	sel->is_in_scratchpad = 0;
 	sel->isnamedscratchpad = 0;
 
-	if (sel->ismaxmizescreen)
-		setmaxmizescreen(sel, 0);
+	if (sel->ismaximizescreen)
+		setmaximizescreen(sel, 0);
 	else
-		setmaxmizescreen(sel, 1);
+		setmaximizescreen(sel, 1);
 
 	setborder_color(sel);
 	return 0;

@@ -317,7 +317,7 @@ Client *direction_select(const Arg *arg) {
 	if (!tc)
 		return NULL;
 
-	if (tc && (tc->isfullscreen || tc->ismaxmizescreen)) {
+	if (tc && (tc->isfullscreen || tc->ismaximizescreen)) {
 		// 不支持全屏窗口的焦点切换
 		return NULL;
 	}
