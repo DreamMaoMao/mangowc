@@ -938,7 +938,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "tagmon") == 0) {
 		func = tagmon;
 		(*arg).i = parse_direction(arg_value);
-		(*arg).ui = atoi(arg_value2);
+		(*arg).i2 = atoi(arg_value2);
 		if ((*arg).i == UNDIR) {
 			(*arg).v = strdup(arg_value);
 		};
@@ -987,6 +987,14 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = bind_to_view;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);
 		(*arg).i = atoi(arg_value2);
+	} else if (strcmp(func_name, "viewcrossmon") == 0) {
+		func = viewcrossmon;
+		(*arg).ui = 1 << (atoi(arg_value) - 1);
+		(*arg).v = strdup(arg_value2);
+	} else if (strcmp(func_name, "tagcrossmon") == 0) {
+		func = tagcrossmon;
+		(*arg).ui = 1 << (atoi(arg_value) - 1);
+		(*arg).v = strdup(arg_value2);
 	} else if (strcmp(func_name, "toggletag") == 0) {
 		func = toggletag;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);

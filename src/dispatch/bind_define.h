@@ -1054,11 +1054,17 @@ int tagmon(const Arg *arg) {
 		return 0;
 	}
 
-	if (!m || !m->wlr_output->enabled || m == c->mon)
+	if (!m || !m->wlr_output->enabled)
 		return 0;
 
-	unsigned int newtags = arg->ui ? c->tags : 0;
+	unsigned int newtags = arg->ui ? arg->ui : arg->i2 ? c->tags : 0;
 	unsigned int target;
+
+	if (c->mon == m) {
+		view(&(Arg){.ui = newtags}, true);
+		return 0;
+	}
+
 	if (c == selmon->sel) {
 		selmon->sel = NULL;
 	}
@@ -1075,6 +1081,7 @@ int tagmon(const Arg *arg) {
 	selmon = c->mon;
 	c->float_geom = setclient_coordinate_center(c, c->float_geom, 0, 0);
 
+	// 重新计算居中的坐标
 	// 重新计算居中的坐标
 	if (c->isfloating) {
 		c->geom = c->float_geom;
@@ -1415,6 +1422,20 @@ int viewtoright_have_client(const Arg *arg) {
 
 	if (found)
 		view(&(Arg){.ui = (1 << (n - 1)) & TAGMASK, .i = arg->i}, true);
+	return 0;
+}
+
+int viewcrossmon(const Arg *arg) {
+	focusmon(arg);
+	view_in_mon(arg, true, selmon, true);
+	return 0;
+}
+
+int tagcrossmon(const Arg *arg) {
+	if (!selmon->sel)
+		return 0;
+
+	tagmon(&(Arg){.ui = arg->ui, .i = UNDIR, .v = arg->v});
 	return 0;
 }
 
