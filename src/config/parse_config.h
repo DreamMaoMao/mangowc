@@ -1031,6 +1031,15 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		(*arg).v = strdup(arg_value);
 		(*arg).v2 = strdup(arg_value2);
 		(*arg).v3 = strdup(arg_value3);
+	} else if (strcmp(func_name, "disable_monitor") == 0) {
+		func = disable_monitor;
+		(*arg).v = strdup(arg_value);
+	} else if (strcmp(func_name, "enable_monitor") == 0) {
+		func = enable_monitor;
+		(*arg).v = strdup(arg_value);
+	} else if (strcmp(func_name, "toggle_monitor") == 0) {
+		func = toggle_monitor;
+		(*arg).v = strdup(arg_value);
 	} else {
 		return NULL;
 	}

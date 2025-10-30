@@ -436,7 +436,6 @@ struct Monitor {
 	Client *sel, *prevsel;
 	int isoverview;
 	int is_in_hotarea;
-	int gamma_lut_changed;
 	int asleep;
 	unsigned int visible_clients;
 	unsigned int visible_tiling_clients;
@@ -3988,7 +3987,6 @@ void powermgrsetmode(struct wl_listener *listener, void *data) {
 	if (!m)
 		return;
 
-	m->gamma_lut_changed = 1; /* Reapply gamma LUT when re-enabling the ouput */
 	wlr_output_state_set_enabled(&state, event->mode);
 	wlr_output_commit_state(m->wlr_output, &state);
 
@@ -5371,10 +5369,6 @@ void updatemons(struct wl_listener *listener, void *data) {
 		if ((c = focustop(m)) && c->isfullscreen)
 			resize(c, m->m, 0);
 
-		/* Try to re-set the gamma LUT when updating monitors,
-		 * it's only really needed when enabling a disabled output, but meh.
-		 */
-		m->gamma_lut_changed = 1;
 
 		config_head->state.x = m->m.x;
 		config_head->state.y = m->m.y;

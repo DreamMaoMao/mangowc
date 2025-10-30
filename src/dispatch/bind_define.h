@@ -1573,3 +1573,48 @@ int toggleoverview(const Arg *arg) {
 	refresh_monitors_workspaces_status(selmon);
 	return 0;
 }
+
+int disable_monitor(const Arg *arg) {
+	Monitor *m = NULL;
+	struct wlr_output_state state = {0};
+	wl_list_for_each(m, &mons, link) {
+		if (regex_match(arg->v, m->wlr_output->name)) {
+			wlr_output_state_set_enabled(&state, false);
+			wlr_output_commit_state(m->wlr_output, &state);
+			m->asleep = 1;
+			updatemons(NULL, NULL);
+			break;
+		}
+	}
+	return 0;
+}
+
+int enable_monitor(const Arg *arg) {
+	Monitor *m = NULL;
+	struct wlr_output_state state = {0};
+	wl_list_for_each(m, &mons, link) {
+		if (regex_match(arg->v, m->wlr_output->name)) {
+			wlr_output_state_set_enabled(&state, true);
+			wlr_output_commit_state(m->wlr_output, &state);
+			m->asleep = 0;
+			updatemons(NULL, NULL);
+			break;
+		}
+	}
+	return 0;
+}
+
+int toggle_monitor(const Arg *arg) {
+	Monitor *m = NULL;
+	struct wlr_output_state state = {0};
+	wl_list_for_each(m, &mons, link) {
+		if (regex_match(arg->v, m->wlr_output->name)) {
+			wlr_output_state_set_enabled(&state, !m->wlr_output->enabled);
+			wlr_output_commit_state(m->wlr_output, &state);
+			m->asleep = !m->wlr_output->enabled;
+			updatemons(NULL, NULL);
+			break;
+		}
+	}
+	return 0;
+}
