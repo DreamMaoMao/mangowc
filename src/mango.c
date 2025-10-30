@@ -5369,7 +5369,6 @@ void updatemons(struct wl_listener *listener, void *data) {
 		if ((c = focustop(m)) && c->isfullscreen)
 			resize(c, m->m, 0);
 
-
 		config_head->state.x = m->m.x;
 		config_head->state.y = m->m.y;
 

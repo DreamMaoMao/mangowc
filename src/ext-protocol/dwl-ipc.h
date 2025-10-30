@@ -206,6 +206,12 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 		zdwl_ipc_output_v2_send_keymode(ipc_output->resource, keymode.mode);
 	}
 
+	if (wl_resource_get_version(ipc_output->resource) >=
+		ZDWL_IPC_OUTPUT_V2_SCALEFACTOR_SINCE_VERSION) {
+		zdwl_ipc_output_v2_send_scalefactor(ipc_output->resource,
+											monitor->wlr_output->scale * 100);
+	}
+
 	zdwl_ipc_output_v2_send_frame(ipc_output->resource);
 }
 
