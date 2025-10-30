@@ -164,6 +164,14 @@ enum { UP, DOWN, LEFT, RIGHT, UNDIR }; /* smartmovewin */
 enum { NONE, OPEN, MOVE, CLOSE, TAG };
 enum { UNFOLD, FOLD, INVALIDFOLD };
 enum { PREV, NEXT };
+enum { STATE_UNSPECIFIED = 0, STATE_ENABLED, STATE_DISABLED };
+
+enum tearing_mode {
+	TEARING_DISABLED = 0,
+	TEARING_ENABLED,
+	TEARING_FULLSCREEN,
+	TEARING_FULLSCREEN_FORCED,
+};
 
 typedef struct Pertag Pertag;
 typedef struct Monitor Monitor;
@@ -347,6 +355,8 @@ struct Client {
 	bool ismaster;
 	bool cursor_in_upper_half, cursor_in_left_half;
 	bool isleftstack;
+	bool tearing_hint;
+	bool force_tearing;
 };
 
 typedef struct {
@@ -1940,6 +1950,7 @@ void cleanuplisteners(void) {
 	wl_list_remove(&start_drag.link);
 	wl_list_remove(&new_session_lock.link);
 	wl_list_remove(&drm_lease_request.link);
+	wl_list_remove(&tearing_new_object.link);
 #ifdef XWAYLAND
 	wl_list_remove(&new_xwayland_surface.link);
 	wl_list_remove(&xwayland_ready.link);
@@ -4078,10 +4089,27 @@ void rendermon(struct wl_listener *listener, void *data) {
 
 	struct timespec now;
 	bool need_more_frames = false;
+	bool skip_commit = false; // 新增：控制是否跳过提交
 
+	struct wlr_scene_output *scene_output = m->scene_output;
+	SendFrameDoneData frame_done_data = {0};
+
+	m->wlr_output->frame_pending = false;
+
+	if (!wlr_scene_output_needs_frame(scene_output)) {
+		goto skip;
+	}
+
+	// // 初始化输出状态
+	wlr_output_state_init(&pending);
+	if (!wlr_scene_output_build_state(m->scene_output, &pending, NULL)) {
+		wlr_output_state_finish(&pending);
+		goto skip;
+	}
+
+	// 绘制层和淡出效果
 	for (i = 0; i < LENGTH(m->layers); i++) {
 		layer_list = &m->layers[i];
-		// Draw frames for all layer
 		wl_list_for_each_safe(l, tmpl, layer_list, link) {
 			need_more_frames = layer_draw_frame(l) || need_more_frames;
 		}
@@ -4095,24 +4123,43 @@ void rendermon(struct wl_listener *listener, void *data) {
 		need_more_frames = layer_draw_fadeout_frame(l) || need_more_frames;
 	}
 
-	// Draw frames for all clients
+	// 绘制客户端并检查是否需要跳过提交
 	wl_list_for_each(c, &clients, link) {
 		need_more_frames = client_draw_frame(c) || need_more_frames;
-		if (!animations && c->configure_serial && !c->isfloating &&
-			client_is_rendered_on_mon(c, m) && !client_is_stopped(c))
-			goto skip;
+		if (!animations && allow_tearing && c->configure_serial &&
+			!c->isfloating && client_is_rendered_on_mon(c, m) &&
+			!client_is_stopped(c)) {
+			skip_commit = true; // 标记跳过提交，但不中断循环
+		}
 	}
 
-	wlr_scene_output_commit(m->scene_output, NULL);
+	// 如果不需要跳过提交，才进行实际提交
+	if (!skip_commit) {
+		if (output_get_tearing_allowance(m)) {
+			pending.tearing_page_flip = true;
+
+			if (!wlr_output_test_state(m->wlr_output, &pending)) {
+				fprintf(stderr,
+						"Output test failed on '%s', retrying without tearing "
+						"page-flip\n",
+						m->wlr_output->name);
+				pending.tearing_page_flip = false;
+			}
+		}
+
+		if (!wlr_output_commit_state(m->wlr_output, &pending))
+			fprintf(stderr, "Page-flip failed on output %s",
+					m->wlr_output->name);
+	}
+
+	wlr_output_state_finish(&pending);
 
 skip:
-
-	// Send frame done notification
+	// 发送帧完成通知
 	clock_gettime(CLOCK_MONOTONIC, &now);
-	wlr_scene_output_send_frame_done(m->scene_output, &now);
-
-	// // Clean up pending state
-	wlr_output_state_finish(&pending);
+	frame_done_data.mon = m;
+	wlr_scene_output_for_each_buffer(m->scene_output, sendframedoneiterator,
+									 &frame_done_data);
 
 	if (need_more_frames) {
 		wlr_output_schedule_frame(m->wlr_output);
@@ -4899,6 +4946,10 @@ void setup(void) {
 
 	power_mgr = wlr_output_power_manager_v1_create(dpy);
 	wl_signal_add(&power_mgr->events.set_mode, &output_power_mgr_set_mode);
+
+	tearing_control = wlr_tearing_control_manager_v1_create(dpy, 1);
+	tearing_new_object.notify = handle_tearing_new_object;
+	wl_signal_add(&tearing_control->events.new_object, &tearing_new_object);
 
 	/* Creates an output layout, which a wlroots utility for working with an
 	 * arrangement of screens in a physical layout. */
