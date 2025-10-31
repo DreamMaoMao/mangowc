@@ -157,7 +157,7 @@ enum {
 }; /* EWMH atoms */
 #endif
 enum { UP, DOWN, LEFT, RIGHT, UNDIR }; /* smartmovewin */
-enum { NONE, OPEN, MOVE, CLOSE, TAG };
+enum { NONE, OPEN, MOVE, CLOSE, TAG, FOCUS };
 enum { UNFOLD, FOLD, INVALIDFOLD };
 enum { PREV, NEXT };
 
@@ -339,6 +339,12 @@ struct Client {
 	int isunglobal;
 	float focused_opacity;
 	float unfocused_opacity;
+	float current_opacity;
+	float target_opacity;
+	unsigned int opacity_animation_frames;
+	unsigned int opacity_animation_passed;
+	float current_border_color[4];
+	float target_border_color[4];
 	char oldmonname[128];
 	struct wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_toplevel;
 	double master_mfact_per, master_inner_per, stack_innder_per;
@@ -787,6 +793,7 @@ struct dvec2 *baked_points_move;
 struct dvec2 *baked_points_open;
 struct dvec2 *baked_points_tag;
 struct dvec2 *baked_points_close;
+struct dvec2 *baked_points_focus;
 
 static struct wl_event_source *hide_source;
 static bool cursor_hidden = false;
@@ -3036,7 +3043,13 @@ void focusclient(Client *c, int lift) {
 
 		// change border color
 		c->isurgent = 0;
-		setborder_color(c);
+		// Start border color animation to focused
+		memcpy(c->target_border_color, focuscolor, sizeof(c->target_border_color));
+
+		// Start opacity animation to focused
+		c->target_opacity = c->focused_opacity;
+		c->opacity_animation_frames = (animation_duration_focus * 60) / 1000; // 60fps
+		c->opacity_animation_passed = 0;
 	}
 
 	if (c && !c->iskilling && c->foreign_toplevel)
@@ -3064,7 +3077,13 @@ void focusclient(Client *c, int lift) {
 			 * probably other clients */
 		} else if (w && !client_is_unmanaged(w) &&
 				   (!c || !client_wants_focus(c))) {
-			setborder_color(w);
+			// Start border color animation to unfocused
+			memcpy(w->target_border_color, bordercolor, sizeof(w->target_border_color));
+
+			// Start opacity animation to unfocused
+			w->target_opacity = w->unfocused_opacity;
+			w->opacity_animation_frames = (animation_duration_focus * 60) / 1000; // 60fps
+			w->opacity_animation_passed = 0;
 
 			client_activate_surface(old_keyboard_focus_surface, 0);
 		}
@@ -3420,6 +3439,12 @@ void init_client_properties(Client *c) {
 	c->fake_no_border = false;
 	c->focused_opacity = focused_opacity;
 	c->unfocused_opacity = unfocused_opacity;
+	c->current_opacity = unfocused_opacity;
+	c->target_opacity = unfocused_opacity;
+	c->opacity_animation_frames = 0;
+	c->opacity_animation_passed = 0;
+	memcpy(c->current_border_color, bordercolor, sizeof(c->current_border_color));
+	memcpy(c->target_border_color, bordercolor, sizeof(c->target_border_color));
 	c->nofadein = 0;
 	c->nofadeout = 0;
 	c->no_force_center = 0;

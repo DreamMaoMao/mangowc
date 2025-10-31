@@ -932,12 +932,35 @@ bool client_draw_frame(Client *c) {
 	if (!c || !client_surface(c)->mapped)
 		return false;
 
+	// Animate focus transitions (opacity + border color)
 	if (c->isfullscreen) {
 		client_set_opacity(c, 1);
-	} else if (c == selmon->sel && !c->animation.running) {
-		client_set_opacity(c, c->focused_opacity);
-	} else if (!c->animation.running) {
-		client_set_opacity(c, c->unfocused_opacity);
+		c->current_opacity = 1;
+		c->target_opacity = 1;
+	} else if (c->opacity_animation_frames > 0 && c->opacity_animation_passed < c->opacity_animation_frames) {
+		float linear_progress = (float)c->opacity_animation_passed / c->opacity_animation_frames;
+		float eased_progress = find_animation_curve_at(linear_progress, FOCUS);
+
+		// Animate opacity
+		float opacity_start = (c->target_opacity == c->focused_opacity) ? c->unfocused_opacity : c->focused_opacity;
+		c->current_opacity = opacity_start + (c->target_opacity - opacity_start) * eased_progress;
+		client_set_opacity(c, c->current_opacity);
+
+		// Animate border color
+		bool focusing = (c->target_border_color[0] == focuscolor[0]);
+		float *border_start = focusing ? bordercolor : focuscolor;
+		for (int i = 0; i < 4; i++) {
+			c->current_border_color[i] = border_start[i] + (c->target_border_color[i] - border_start[i]) * eased_progress;
+		}
+		client_set_border_color(c, c->current_border_color);
+
+		c->opacity_animation_passed++;
+	} else {
+		// Animation complete or disabled - apply target values
+		c->current_opacity = c->target_opacity;
+		client_set_opacity(c, c->current_opacity);
+		memcpy(c->current_border_color, c->target_border_color, sizeof(c->current_border_color));
+		client_set_border_color(c, c->current_border_color);
 	}
 
 	if (!c->need_output_flush)

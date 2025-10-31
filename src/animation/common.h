@@ -9,6 +9,8 @@ struct dvec2 calculate_animation_curve_at(double t, int type) {
 		animation_curve = animation_curve_tag;
 	} else if (type == CLOSE) {
 		animation_curve = animation_curve_close;
+	} else if (type == FOCUS) {
+		animation_curve = animation_curve_focus;
 	} else {
 		animation_curve = animation_curve_move;
 	}
@@ -28,6 +30,8 @@ void init_baked_points(void) {
 	baked_points_tag = calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_tag));
 	baked_points_close =
 		calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_close));
+	baked_points_focus =
+		calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_focus));
 
 	for (unsigned int i = 0; i < BAKED_POINTS_COUNT; i++) {
 		baked_points_move[i] = calculate_animation_curve_at(
@@ -45,6 +49,10 @@ void init_baked_points(void) {
 		baked_points_close[i] = calculate_animation_curve_at(
 			(double)i / (BAKED_POINTS_COUNT - 1), CLOSE);
 	}
+	for (unsigned int i = 0; i < BAKED_POINTS_COUNT; i++) {
+		baked_points_focus[i] = calculate_animation_curve_at(
+			(double)i / (BAKED_POINTS_COUNT - 1), FOCUS);
+	}
 }
 
 double find_animation_curve_at(double t, int type) {
@@ -61,6 +69,8 @@ double find_animation_curve_at(double t, int type) {
 		baked_points = baked_points_tag;
 	} else if (type == CLOSE) {
 		baked_points = baked_points_close;
+	} else if (type == FOCUS) {
+		baked_points = baked_points_focus;
 	} else {
 		baked_points = baked_points_move;
 	}

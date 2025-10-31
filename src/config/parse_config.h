@@ -176,10 +176,12 @@ typedef struct {
 	uint32_t animation_duration_open;
 	uint32_t animation_duration_tag;
 	uint32_t animation_duration_close;
+	uint32_t animation_duration_focus;
 	double animation_curve_move[4];
 	double animation_curve_open[4];
 	double animation_curve_tag[4];
 	double animation_curve_close[4];
+	double animation_curve_focus[4];
 
 	int scroller_structs;
 	float scroller_default_proportion;
@@ -1113,6 +1115,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->animation_duration_tag = atoi(value);
 	} else if (strcmp(key, "animation_duration_close") == 0) {
 		config->animation_duration_close = atoi(value);
+	} else if (strcmp(key, "animation_duration_focus") == 0) {
+		config->animation_duration_focus = atoi(value);
 	} else if (strcmp(key, "animation_curve_move") == 0) {
 		int num = parse_double_array(value, config->animation_curve_move, 4);
 		if (num != 4) {
@@ -1136,6 +1140,13 @@ void parse_option(Config *config, char *key, char *value) {
 		if (num != 4) {
 			fprintf(stderr,
 					"Error: Failed to parse animation_curve_close: %s\n",
+					value);
+		}
+	} else if (strcmp(key, "animation_curve_focus") == 0) {
+		int num = parse_double_array(value, config->animation_curve_focus, 4);
+		if (num != 4) {
+			fprintf(stderr,
+					"Error: Failed to parse animation_curve_focus: %s\n",
 					value);
 		}
 	} else if (strcmp(key, "scroller_structs") == 0) {
@@ -2527,6 +2538,8 @@ void override_config(void) {
 	animation_duration_tag = CLAMP_INT(config.animation_duration_tag, 1, 50000);
 	animation_duration_close =
 		CLAMP_INT(config.animation_duration_close, 1, 50000);
+	animation_duration_focus =
+		CLAMP_INT(config.animation_duration_focus, 1, 50000);
 
 	// 滚动布局设置
 	scroller_default_proportion =
@@ -2640,6 +2653,8 @@ void override_config(void) {
 		   sizeof(animation_curve_tag));
 	memcpy(animation_curve_close, config.animation_curve_close,
 		   sizeof(animation_curve_close));
+	memcpy(animation_curve_focus, config.animation_curve_focus,
+		   sizeof(animation_curve_focus));
 }
 
 void set_value_default() {
@@ -2662,6 +2677,8 @@ void set_value_default() {
 		animation_duration_tag; // Animation tag speed
 	config.animation_duration_close =
 		animation_duration_close; // Animation tag speed
+	config.animation_duration_focus =
+		animation_duration_focus; // Animation focus opacity speed
 
 	/* appearance */
 	config.axis_bind_apply_timeout =
@@ -2760,6 +2777,8 @@ void set_value_default() {
 		   sizeof(animation_curve_tag));
 	memcpy(config.animation_curve_close, animation_curve_close,
 		   sizeof(animation_curve_close));
+	memcpy(config.animation_curve_focus, animation_curve_focus,
+		   sizeof(animation_curve_focus));
 
 	memcpy(config.rootcolor, rootcolor, sizeof(rootcolor));
 	memcpy(config.bordercolor, bordercolor, sizeof(bordercolor));
