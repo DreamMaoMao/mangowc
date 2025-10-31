@@ -376,7 +376,7 @@ static inline void client_set_tiled(Client *c, uint32_t edges) {
 		wlr_xdg_toplevel_set_tiled(c->surface.xdg->toplevel, edges);
 	}
 
-	if (!c->ignore_maximize && c->force_maximize) {
+	if (c->force_maximize) {
 		wlr_xdg_toplevel_set_maximized(toplevel, edges != WLR_EDGE_NONE);
 	}
 }

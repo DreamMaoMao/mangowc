@@ -3434,7 +3434,7 @@ void init_client_properties(Client *c) {
 	c->no_force_center = 0;
 	c->isnoborder = 0;
 	c->isnosizehint = 0;
-	c->ignore_maximize = 0;
+	c->ignore_maximize = 1;
 	c->ignore_minimize = 1;
 	c->iscustomsize = 0;
 	c->master_mfact_per = 0.0f;
