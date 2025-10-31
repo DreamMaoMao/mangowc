@@ -3568,31 +3568,22 @@ mapnotify(struct wl_listener *listener, void *data) {
 	printstatus();
 }
 
-void // 0.5 custom
-maximizenotify(struct wl_listener *listener, void *data) {
-	/* This event is raised when a client would like to maximize itself,
-	 * typically because the user clicked on the maximize button on
-	 * client-side decorations. dwl doesn't support maximization, but
-	 * to conform to xdg-shell protocol we still must send a configure.
-	 * Since xdg-shell protocol v5 we should ignore request of unsupported
-	 * capabilities, just schedule a empty configure when the client uses <5
-	 * protocol version
-	 * wlr_xdg_surface_schedule_configure() is used to send an empty reply.
-	 */
-	// Client *c = wl_container_of(listener, c, maximize);
-	// if (wl_resource_get_version(c->surface.xdg->toplevel->resource)
-	// 		< XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION)
-	// 	wlr_xdg_surface_schedule_configure(c->surface.xdg);
-	// togglemaximizescreen(&(Arg){0});
+void maximizenotify(struct wl_listener *listener, void *data) {
+
 	Client *c = wl_container_of(listener, c, maximize);
 
 	if (!c || !c->mon || c->iskilling || c->ignore_maximize)
 		return;
 
-	if (c->ismaximizescreen || c->isfullscreen)
-		setmaximizescreen(c, 0);
-	else
+	if (!client_is_x11(c) && !c->surface.xdg->initialized) {
+		return;
+	}
+
+	if (client_request_maximize(c, data)) {
 		setmaximizescreen(c, 1);
+	} else {
+		setmaximizescreen(c, 0);
+	}
 }
 
 void unminimize(Client *c) {
@@ -3636,22 +3627,7 @@ void set_minimized(Client *c) {
 	wl_list_insert(clients.prev, &c->link); // 插入尾部
 }
 
-void // 0.5 custom
-minimizenotify(struct wl_listener *listener, void *data) {
-	/* This event is raised when a client would like to maximize itself,
-	 * typically because the user clicked on the maximize button on
-	 * client-side decorations. dwl doesn't support maximization, but
-	 * to conform to xdg-shell protocol we still must send a configure.
-	 * Since xdg-shell protocol v5 we should ignore request of unsupported
-	 * capabilities, just schedule a empty configure when the client uses <5
-	 * protocol version
-	 * wlr_xdg_surface_schedule_configure() is used to send an empty reply.
-	 */
-	// Client *c = wl_container_of(listener, c, maximize);
-	// if (wl_resource_get_version(c->surface.xdg->toplevel->resource)
-	// 		< XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION)
-	// 	wlr_xdg_surface_schedule_configure(c->surface.xdg);
-	// togglemaximizescreen(&(Arg){0});
+void minimizenotify(struct wl_listener *listener, void *data) {
 
 	Client *c = wl_container_of(listener, c, minimize);
 

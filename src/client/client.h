@@ -475,6 +475,18 @@ static inline bool client_request_minimize(Client *c, void *data) {
 	return c->surface.xdg->toplevel->requested.minimized;
 }
 
+static inline bool client_request_maximize(Client *c, void *data) {
+
+#ifdef XWAYLAND
+	if (client_is_x11(c)) {
+		struct wlr_xwayland_surface *surface = c->surface.xwayland;
+		return surface->maximized_vert || surface->maximized_horz;
+	}
+#endif
+
+	return c->surface.xdg->toplevel->requested.maximized;
+}
+
 static inline void client_set_size_bound(Client *c) {
 	struct wlr_xdg_toplevel *toplevel;
 	struct wlr_xdg_toplevel_state state;
