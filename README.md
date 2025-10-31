@@ -119,6 +119,10 @@ sudo ninja -C build install
 
 ## Suggested Tools
 
+### integrated component
+- [dms-shell](https://github.com/AvengeMedia/DankMaterialShell)
+
+### Independent component
 - Application launcher (rofi, bemenu, wmenu, fuzzel)
 - Terminal emulator (foot, wezterm, alacritty, kitty, ghostty)
 - Status bar (waybar, eww, quickshell, ags), waybar is preferred
@@ -139,13 +143,25 @@ sudo ninja -C build install
 
 ## My Dotfiles
 
+### Daily
 - Dependencies
 
 ```bash
 yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
 ```
 
-- use my config
+### Dms
+- Dependencies
+```bash
+yay -S foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard xfce-polkit sway-audio-idle-inhibit-git brightnessctl grim slurp satty matugen-bin dms-shell-git
+
+```
+- use my dms config
+
+```bash
+git clone -b dms https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
+```
+- use my daily config
 
 ```bash
 git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
