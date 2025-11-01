@@ -101,7 +101,7 @@
 	(A && !(A)->isfloating && !(A)->isminied && !(A)->iskilling &&             \
 	 !(A)->ismaximizescreen && !(A)->isfullscreen)
 #define VISIBLEON(C, M)                                                        \
-	((M) && (C)->mon == (M) && ((C)->tags & (M)->tagset[(M)->seltags]))
+	((C) && (M) && (C)->mon == (M) && ((C)->tags & (M)->tagset[(M)->seltags]))
 #define LENGTH(X) (sizeof X / sizeof X[0])
 #define END(A) ((A) + LENGTH(A))
 #define TAGMASK ((1 << LENGTH(tags)) - 1)
