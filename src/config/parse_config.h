@@ -908,6 +908,8 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "setkeymode") == 0) {
 		func = setkeymode;
 		(*arg).v = strdup(arg_value);
+	} else if (strcmp(func_name, "switch_keyboard_layout") == 0) {
+		func = switch_keyboard_layout;
 	} else if (strcmp(func_name, "setlayout") == 0) {
 		func = setlayout;
 		(*arg).v = strdup(arg_value);

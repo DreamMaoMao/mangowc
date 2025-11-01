@@ -817,6 +817,92 @@ int spawn_on_empty(const Arg *arg) {
 	return 0;
 }
 
+int switch_keyboard_layout(const Arg *arg) {
+	if (!kb_group || !kb_group->wlr_group || !seat) {
+		wlr_log(WLR_ERROR, "Invalid keyboard group or seat");
+		return 0;
+	}
+
+	struct wlr_keyboard *keyboard = &kb_group->wlr_group->keyboard;
+	if (!keyboard || !keyboard->keymap) {
+		wlr_log(WLR_ERROR, "Invalid keyboard or keymap");
+		return 0;
+	}
+
+	// 1. 获取当前布局和计算下一个布局
+	xkb_layout_index_t current = xkb_state_serialize_layout(
+		keyboard->xkb_state, XKB_STATE_LAYOUT_EFFECTIVE);
+	const int num_layouts = xkb_keymap_num_layouts(keyboard->keymap);
+	if (num_layouts < 2) {
+		wlr_log(WLR_INFO, "Only one layout available");
+		return 0;
+	}
+	xkb_layout_index_t next = (current + 1) % num_layouts;
+
+	// 2. 创建上下文
+	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	if (!context) {
+		wlr_log(WLR_ERROR, "Failed to create XKB context");
+		return 0;
+	}
+
+	// 安全地处理 layout 字符串
+	const char *current_layout = xkb_rules.layout;
+	if (!current_layout || strlen(current_layout) == 0) {
+		wlr_log(WLR_INFO, "Using default layout 'us'");
+		current_layout = "us";
+	}
+
+	// 5. 创建新 keymap
+	struct xkb_keymap *new_keymap = xkb_keymap_new_from_names(
+		context, &xkb_rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+	if (!new_keymap) {
+		wlr_log(WLR_ERROR, "Failed to create keymap for layouts: %s",
+				xkb_rules.layout);
+		goto cleanup_context;
+	}
+
+	// 6. 应用新 keymap
+	unsigned int depressed = keyboard->modifiers.depressed;
+	unsigned int latched = keyboard->modifiers.latched;
+	unsigned int locked = keyboard->modifiers.locked;
+
+	wlr_keyboard_set_keymap(keyboard, new_keymap);
+	wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked, next);
+	keyboard->modifiers.group = 0;
+
+	// 7. 更新 seat
+	wlr_seat_set_keyboard(seat, keyboard);
+	wlr_seat_keyboard_notify_modifiers(seat, &keyboard->modifiers);
+
+	InputDevice *id;
+	wl_list_for_each(id, &inputdevices, link) {
+		if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+			continue;
+		}
+
+		keyboard = (struct wlr_keyboard *)id->device_data;
+
+		wlr_keyboard_set_keymap(keyboard, new_keymap);
+		wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked,
+									  next);
+		keyboard->modifiers.group = 0;
+
+		// 7. 更新 seat
+		wlr_seat_set_keyboard(seat, keyboard);
+		wlr_seat_keyboard_notify_modifiers(seat, &keyboard->modifiers);
+	}
+
+	// 8. 清理资源
+	xkb_keymap_unref(new_keymap);
+
+cleanup_context:
+	xkb_context_unref(context);
+
+	printstatus();
+	return 0;
+}
+
 int switch_layout(const Arg *arg) {
 
 	int jk, ji;

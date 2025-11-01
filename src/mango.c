@@ -709,7 +709,6 @@ static void resize_tile_client(Client *grabc, bool isdrag, int offsetx,
 static void refresh_monitors_workspaces_status(Monitor *m);
 static void init_client_properties(Client *c);
 static void request_fresh_all_monitors(void);
-static bool check_keyboard_rules_validate(struct xkb_rule_names *rules);
 static float *get_border_color(Client *c);
 
 #include "data/static_keymap.h"
