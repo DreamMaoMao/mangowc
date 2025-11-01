@@ -697,6 +697,7 @@ static void resize_tile_client(Client *grabc, bool isdrag, int offsetx,
 							   int offsety, unsigned int time);
 static void refresh_monitors_workspaces_status(Monitor *m);
 static void init_client_properties(Client *c);
+static void request_fresh_all_monitors(void);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -4019,7 +4020,7 @@ skip:
 	wlr_output_state_finish(&pending);
 
 	if (need_more_frames) {
-		wlr_output_schedule_frame(m->wlr_output);
+		request_fresh_all_monitors();
 	}
 }
 
