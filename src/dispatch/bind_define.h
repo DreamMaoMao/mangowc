@@ -839,35 +839,12 @@ int switch_keyboard_layout(const Arg *arg) {
 	}
 	xkb_layout_index_t next = (current + 1) % num_layouts;
 
-	// 2. 创建上下文
-	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	if (!context) {
-		wlr_log(WLR_ERROR, "Failed to create XKB context");
-		return 0;
-	}
-
-	// 安全地处理 layout 字符串
-	const char *current_layout = xkb_rules.layout;
-	if (!current_layout || strlen(current_layout) == 0) {
-		wlr_log(WLR_INFO, "Using default layout 'us'");
-		current_layout = "us";
-	}
-
-	// 5. 创建新 keymap
-	struct xkb_keymap *new_keymap = xkb_keymap_new_from_names(
-		context, &xkb_rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
-	if (!new_keymap) {
-		wlr_log(WLR_ERROR, "Failed to create keymap for layouts: %s",
-				xkb_rules.layout);
-		goto cleanup_context;
-	}
-
 	// 6. 应用新 keymap
 	unsigned int depressed = keyboard->modifiers.depressed;
 	unsigned int latched = keyboard->modifiers.latched;
 	unsigned int locked = keyboard->modifiers.locked;
 
-	wlr_keyboard_set_keymap(keyboard, new_keymap);
+	wlr_keyboard_set_keymap(keyboard, keyboard->keymap);
 	wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked, next);
 	keyboard->modifiers.group = 0;
 
@@ -881,23 +858,16 @@ int switch_keyboard_layout(const Arg *arg) {
 			continue;
 		}
 
-		keyboard = (struct wlr_keyboard *)id->device_data;
+		struct wlr_keyboard *tkb = (struct wlr_keyboard *)id->device_data;
 
-		wlr_keyboard_set_keymap(keyboard, new_keymap);
-		wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked,
-									  next);
-		keyboard->modifiers.group = 0;
+		wlr_keyboard_set_keymap(tkb, keyboard->keymap);
+		wlr_keyboard_notify_modifiers(tkb, depressed, latched, locked, next);
+		tkb->modifiers.group = 0;
 
 		// 7. 更新 seat
-		wlr_seat_set_keyboard(seat, keyboard);
-		wlr_seat_keyboard_notify_modifiers(seat, &keyboard->modifiers);
+		wlr_seat_set_keyboard(seat, tkb);
+		wlr_seat_keyboard_notify_modifiers(seat, &tkb->modifiers);
 	}
-
-	// 8. 清理资源
-	xkb_keymap_unref(new_keymap);
-
-cleanup_context:
-	xkb_context_unref(context);
 
 	printstatus();
 	return 0;
