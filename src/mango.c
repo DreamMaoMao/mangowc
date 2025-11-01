@@ -4484,6 +4484,9 @@ bool check_keyboard_rules_validate(struct xkb_rule_names *rules) {
 		return false;
 	}
 
+	if (!rules->layout || strlen(rules->layout) == 0)
+		return false;
+
 	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	if (!context) {
 		wlr_log(WLR_ERROR, "Failed to create XKB context for validation");

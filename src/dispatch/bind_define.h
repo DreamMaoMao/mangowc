@@ -862,8 +862,9 @@ int switch_keyboard_layout(const Arg *arg) {
 		}
 	}
 
-	// 4. 直接修改 rules.layout（保持原有逻辑）
+	// 4. 安全地处理 rules.layout
 	struct xkb_rule_names rules = xkb_rules;
+
 	// 验证规则是否有效
 	if (!check_keyboard_rules_validate(&rules)) {
 		wlr_log(WLR_ERROR,
@@ -871,15 +872,27 @@ int switch_keyboard_layout(const Arg *arg) {
 		rules = xkb_default_rules;
 	}
 
-	char *layout_buf = (char *)rules.layout; // 假设这是可修改的
+	// 安全地处理 layout 字符串
+	const char *current_layout = rules.layout;
+	if (!current_layout || strlen(current_layout) == 0) {
+		wlr_log(WLR_INFO, "Using default layout 'us'");
+		current_layout = "us";
+	}
 
-	// 清空原有内容（安全方式）
-	unsigned int layout_buf_size = strlen(layout_buf) + 1;
-	memset(layout_buf, 0, layout_buf_size);
+	// 创建足够大的缓冲区来构建新的布局字符串
+	unsigned int layout_buf_size =
+		1024; // 使用固定大小，避免依赖可能为NULL的字符串
+	char *layout_buf = calloc(layout_buf_size, sizeof(char));
+	if (!layout_buf) {
+		wlr_log(WLR_ERROR, "Failed to allocate layout buffer");
+		goto cleanup_layouts;
+	}
 
 	// 构建新的布局字符串
 	for (int i = 0; i < num_layouts; i++) {
 		const char *layout = layout_ids[(next + i) % num_layouts];
+		if (!layout)
+			continue;
 
 		if (i > 0) {
 			strncat(layout_buf, ",", layout_buf_size - strlen(layout_buf) - 1);
@@ -900,13 +913,16 @@ int switch_keyboard_layout(const Arg *arg) {
 		}
 	}
 
+	// 更新 rules 结构体
+	rules.layout = layout_buf;
+
 	// 5. 创建新 keymap
 	struct xkb_keymap *new_keymap =
 		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
 	if (!new_keymap) {
 		wlr_log(WLR_ERROR, "Failed to create keymap for layouts: %s",
 				rules.layout);
-		goto cleanup_layouts;
+		goto cleanup_layout_buf;
 	}
 
 	// 6. 应用新 keymap
@@ -924,6 +940,9 @@ int switch_keyboard_layout(const Arg *arg) {
 
 	// 8. 清理资源
 	xkb_keymap_unref(new_keymap);
+
+cleanup_layout_buf:
+	free(layout_buf);
 
 cleanup_layouts:
 	free(layout_ids);
