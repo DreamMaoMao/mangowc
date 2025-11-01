@@ -697,7 +697,6 @@ static void resize_tile_client(Client *grabc, bool isdrag, int offsetx,
 							   int offsety, unsigned int time);
 static void refresh_monitors_workspaces_status(Monitor *m);
 static void init_client_properties(Client *c);
-static bool check_keyboard_rules_validate(struct xkb_rule_names *rules);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -2323,18 +2322,9 @@ KeyboardGroup *createkeyboardgroup(void) {
 	group->wlr_group = wlr_keyboard_group_create();
 	group->wlr_group->data = group;
 
-	// 4. 直接修改 rules.layout（保持原有逻辑）
-	struct xkb_rule_names rules = xkb_rules;
-	// 验证规则是否有效
-	if (!check_keyboard_rules_validate(&rules)) {
-		wlr_log(WLR_ERROR,
-				"Keyboard rules validation failed, skipping layout reset");
-		rules = xkb_default_rules;
-	}
-
 	/* Prepare an XKB keymap and assign it to the keyboard group. */
 	context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	if (!(keymap = xkb_keymap_new_from_names(context, &rules,
+	if (!(keymap = xkb_keymap_new_from_names(context, &xkb_rules,
 											 XKB_KEYMAP_COMPILE_NO_FLAGS)))
 		die("failed to compile keymap");
 
@@ -4477,49 +4467,6 @@ void setgaps(int oh, int ov, int ih, int iv) {
 	arrange(selmon, false);
 }
 
-// 验证键盘规则是否有效
-bool check_keyboard_rules_validate(struct xkb_rule_names *rules) {
-	if (!rules) {
-		wlr_log(WLR_ERROR, "Keyboard rules are NULL");
-		return false;
-	}
-
-	if (!rules->layout || strlen(rules->layout) == 0)
-		return false;
-
-	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	if (!context) {
-		wlr_log(WLR_ERROR, "Failed to create XKB context for validation");
-		return false;
-	}
-
-	bool valid = false;
-	struct xkb_keymap *test_keymap =
-		xkb_keymap_new_from_names(context, rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
-
-	if (test_keymap) {
-		// 检查keymap是否至少有一个布局
-		if (xkb_keymap_num_layouts(test_keymap) > 0) {
-			valid = true;
-		} else {
-			wlr_log(WLR_ERROR, "Keymap has no layouts");
-		}
-		xkb_keymap_unref(test_keymap);
-	} else {
-		wlr_log(WLR_ERROR,
-				"Invalid keyboard rules: rules=%s, model=%s, layout=%s, "
-				"variant=%s, options=%s",
-				rules->rules ? rules->rules : "NULL",
-				rules->model ? rules->model : "NULL",
-				rules->layout ? rules->layout : "NULL",
-				rules->variant ? rules->variant : "NULL",
-				rules->options ? rules->options : "NULL");
-	}
-
-	xkb_context_unref(context);
-	return valid;
-}
-
 void reset_keyboard_layout(void) {
 	if (!kb_group || !kb_group->wlr_group || !seat) {
 		wlr_log(WLR_ERROR, "Invalid keyboard group or seat");
@@ -4541,16 +4488,6 @@ void reset_keyboard_layout(void) {
 		return;
 	}
 
-	// Keep the same rules but just reapply them
-	struct xkb_rule_names rules = xkb_rules;
-
-	// 验证规则是否有效
-	if (!check_keyboard_rules_validate(&rules)) {
-		wlr_log(WLR_ERROR,
-				"Keyboard rules validation failed, skipping layout reset");
-		rules = xkb_default_rules;
-	}
-
 	// Create context
 	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	if (!context) {
@@ -4559,8 +4496,8 @@ void reset_keyboard_layout(void) {
 	}
 
 	// 现在安全地创建真正的keymap
-	struct xkb_keymap *new_keymap =
-		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+	struct xkb_keymap *new_keymap = xkb_keymap_new_from_names(
+		context, &xkb_rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
 	if (!new_keymap) {
 		// 理论上这里不应该失败，因为前面已经验证过了
 		wlr_log(WLR_ERROR,
