@@ -846,83 +846,20 @@ int switch_keyboard_layout(const Arg *arg) {
 		return 0;
 	}
 
-	// 3. 分配并获取布局缩写
-	const char **layout_ids = calloc(num_layouts, sizeof(char *));
-	if (!layout_ids) {
-		wlr_log(WLR_ERROR, "Failed to allocate layout IDs");
-		goto cleanup_context;
-	}
-
-	for (int i = 0; i < num_layouts; i++) {
-		layout_ids[i] =
-			get_layout_abbr(xkb_keymap_layout_get_name(keyboard->keymap, i));
-		if (!layout_ids[i]) {
-			wlr_log(WLR_ERROR, "Failed to get layout abbreviation");
-			goto cleanup_layouts;
-		}
-	}
-
-	// 4. 安全地处理 rules.layout
-	struct xkb_rule_names rules = xkb_rules;
-
-	// 验证规则是否有效
-	if (!check_keyboard_rules_validate(&rules)) {
-		wlr_log(WLR_ERROR,
-				"Keyboard rules validation failed, skipping layout reset");
-		rules = xkb_default_rules;
-	}
-
 	// 安全地处理 layout 字符串
-	const char *current_layout = rules.layout;
+	const char *current_layout = xkb_rules.layout;
 	if (!current_layout || strlen(current_layout) == 0) {
 		wlr_log(WLR_INFO, "Using default layout 'us'");
 		current_layout = "us";
 	}
 
-	// 创建足够大的缓冲区来构建新的布局字符串
-	unsigned int layout_buf_size =
-		1024; // 使用固定大小，避免依赖可能为NULL的字符串
-	char *layout_buf = calloc(layout_buf_size, sizeof(char));
-	if (!layout_buf) {
-		wlr_log(WLR_ERROR, "Failed to allocate layout buffer");
-		goto cleanup_layouts;
-	}
-
-	// 构建新的布局字符串
-	for (int i = 0; i < num_layouts; i++) {
-		const char *layout = layout_ids[(next + i) % num_layouts];
-		if (!layout)
-			continue;
-
-		if (i > 0) {
-			strncat(layout_buf, ",", layout_buf_size - strlen(layout_buf) - 1);
-		}
-
-		if (strchr(layout, ',')) {
-			// 处理包含逗号的布局名
-			char *quoted = malloc(strlen(layout) + 3);
-			if (quoted) {
-				snprintf(quoted, strlen(layout) + 3, "\"%s\"", layout);
-				strncat(layout_buf, quoted,
-						layout_buf_size - strlen(layout_buf) - 1);
-				free(quoted);
-			}
-		} else {
-			strncat(layout_buf, layout,
-					layout_buf_size - strlen(layout_buf) - 1);
-		}
-	}
-
-	// 更新 rules 结构体
-	rules.layout = layout_buf;
-
 	// 5. 创建新 keymap
-	struct xkb_keymap *new_keymap =
-		xkb_keymap_new_from_names(context, &rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+	struct xkb_keymap *new_keymap = xkb_keymap_new_from_names(
+		context, &xkb_rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
 	if (!new_keymap) {
 		wlr_log(WLR_ERROR, "Failed to create keymap for layouts: %s",
-				rules.layout);
-		goto cleanup_layout_buf;
+				xkb_rules.layout);
+		goto cleanup_context;
 	}
 
 	// 6. 应用新 keymap
@@ -931,21 +868,33 @@ int switch_keyboard_layout(const Arg *arg) {
 	unsigned int locked = keyboard->modifiers.locked;
 
 	wlr_keyboard_set_keymap(keyboard, new_keymap);
-	wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked, 0);
+	wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked, next);
 	keyboard->modifiers.group = 0;
 
 	// 7. 更新 seat
 	wlr_seat_set_keyboard(seat, keyboard);
 	wlr_seat_keyboard_notify_modifiers(seat, &keyboard->modifiers);
 
+	InputDevice *id;
+	wl_list_for_each(id, &inputdevices, link) {
+		if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+			continue;
+		}
+
+		keyboard = (struct wlr_keyboard *)id->device_data;
+
+		wlr_keyboard_set_keymap(keyboard, new_keymap);
+		wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked,
+									  next);
+		keyboard->modifiers.group = 0;
+
+		// 7. 更新 seat
+		wlr_seat_set_keyboard(seat, keyboard);
+		wlr_seat_keyboard_notify_modifiers(seat, &keyboard->modifiers);
+	}
+
 	// 8. 清理资源
 	xkb_keymap_unref(new_keymap);
-
-cleanup_layout_buf:
-	free(layout_buf);
-
-cleanup_layouts:
-	free(layout_ids);
 
 cleanup_context:
 	xkb_context_unref(context);
