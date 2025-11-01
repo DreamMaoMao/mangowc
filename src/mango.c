@@ -693,7 +693,7 @@ wlr_scene_tree_snapshot(struct wlr_scene_node *node,
 						struct wlr_scene_tree *parent);
 static bool is_scroller_layout(Monitor *m);
 static void create_output(struct wlr_backend *backend, void *data);
-static const char *get_layout_abbr(const char *full_name);
+static void get_layout_abbr(char *abbr, const char *full_name);
 static void apply_named_scratchpad(Client *target_client);
 static Client *get_client_by_id_or_title(const char *arg_id,
 										 const char *arg_title);

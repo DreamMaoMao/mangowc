@@ -44,11 +44,15 @@ char *get_autostart_path(char *autostart_path, unsigned int buf_size) {
 	return autostart_path;
 }
 
-const char *get_layout_abbr(const char *full_name) {
+void get_layout_abbr(char *abbr, const char *full_name) {
+	// 清空输出缓冲区
+	abbr[0] = '\0';
+
 	// 1. 尝试在映射表中查找
 	for (int i = 0; layout_mappings[i].full_name != NULL; i++) {
 		if (strcmp(full_name, layout_mappings[i].full_name) == 0) {
-			return layout_mappings[i].abbr;
+			strcpy(abbr, layout_mappings[i].abbr);
+			return;
 		}
 	}
 
@@ -58,46 +62,37 @@ const char *get_layout_abbr(const char *full_name) {
 	if (open && close && close > open) {
 		unsigned int len = close - open - 1;
 		if (len > 0 && len <= 4) {
-			char *abbr = malloc(len + 1);
-			if (abbr) {
-				// 提取并转换为小写
-				for (unsigned int j = 0; j < len; j++) {
-					abbr[j] = tolower(open[j + 1]);
-				}
-				abbr[len] = '\0';
-				return abbr;
+			// 提取并转换为小写
+			for (unsigned int j = 0; j < len; j++) {
+				abbr[j] = tolower(open[j + 1]);
 			}
+			abbr[len] = '\0';
+			return;
 		}
 	}
 
 	// 3. 提取前2-3个字母并转换为小写
-	char *abbr = malloc(4);
-	if (abbr) {
-		unsigned int j = 0;
-		for (unsigned int i = 0; full_name[i] != '\0' && j < 3; i++) {
-			if (isalpha(full_name[i])) {
-				abbr[j++] = tolower(full_name[i]);
-			}
+	unsigned int j = 0;
+	for (unsigned int i = 0; full_name[i] != '\0' && j < 3; i++) {
+		if (isalpha(full_name[i])) {
+			abbr[j++] = tolower(full_name[i]);
 		}
-		abbr[j] = '\0';
+	}
+	abbr[j] = '\0';
 
-		// 确保至少2个字符
-		if (j >= 2)
-			return abbr;
-		free(abbr);
+	// 确保至少2个字符
+	if (j >= 2) {
+		return;
 	}
 
 	// 4. 回退方案：使用首字母小写
-	char *fallback = malloc(3);
-	if (fallback) {
-		fallback[0] = tolower(full_name[0]);
-		fallback[1] = full_name[1] ? tolower(full_name[1]) : '\0';
-		fallback[2] = '\0';
-		return fallback;
+	if (j == 1) {
+		abbr[1] = full_name[1] ? tolower(full_name[1]) : '\0';
+		abbr[2] = '\0';
+	} else {
+		// 5. 最终回退：返回 "xx"
+		strcpy(abbr, "xx");
 	}
-
-	// 5. 最终回退：返回 "xx"
-	return strdup("xx");
 }
 
 void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,

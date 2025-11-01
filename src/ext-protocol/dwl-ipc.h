@@ -113,7 +113,8 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	struct wlr_keyboard *keyboard;
 	xkb_layout_index_t current;
 	int tagmask, state, numclients, focused_client, tag;
-	const char *title, *appid, *symbol, *kb_layout;
+	const char *title, *appid, *symbol;
+	char kb_layout[32];
 	focused = focustop(monitor);
 	zdwl_ipc_output_v2_send_active(ipc_output->resource, monitor == selmon);
 
@@ -151,8 +152,8 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	keyboard = &kb_group->wlr_group->keyboard;
 	current = xkb_state_serialize_layout(keyboard->xkb_state,
 										 XKB_STATE_LAYOUT_EFFECTIVE);
-	kb_layout =
-		get_layout_abbr(xkb_keymap_layout_get_name(keyboard->keymap, current));
+	get_layout_abbr(kb_layout,
+					xkb_keymap_layout_get_name(keyboard->keymap, current));
 
 	zdwl_ipc_output_v2_send_layout(
 		ipc_output->resource,
