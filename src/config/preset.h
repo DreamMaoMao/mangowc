@@ -25,12 +25,12 @@ uint32_t animation_duration_move = 500;	 // Animation move speed
 uint32_t animation_duration_open = 400;	 // Animation open speed
 uint32_t animation_duration_tag = 300;	 // Animation tag speed
 uint32_t animation_duration_close = 300; // Animation close speed
-uint32_t animation_duration_focus = 400; // Animation focus opacity speed
+uint32_t animation_duration_focus = 0;	 // Animation focus opacity speed
 double animation_curve_move[4] = {0.46, 1.0, 0.29, 0.99};  // 动画曲线
 double animation_curve_open[4] = {0.46, 1.0, 0.29, 0.99};  // 动画曲线
 double animation_curve_tag[4] = {0.46, 1.0, 0.29, 0.99};   // 动画曲线
 double animation_curve_close[4] = {0.46, 1.0, 0.29, 0.99}; // 动画曲线
-double animation_curve_focus[4] = {0.08, 0.82, 0.17, 1};   // 动画曲线
+double animation_curve_focus[4] = {0.46, 1.0, 0.29, 0.99}; // 动画曲线
 
 /* appearance */
 unsigned int axis_bind_apply_timeout = 100; // 滚轮绑定动作的触发的时间间隔

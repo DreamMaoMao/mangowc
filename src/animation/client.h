@@ -208,12 +208,6 @@ void scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx, int sy,
 
 	if (wlr_xdg_popup_try_from_wlr_surface(surface) != NULL)
 		return;
-
-	float target_opacity = buffer_data->percent + fadein_begin_opacity;
-	if (target_opacity > buffer_data->opacity) {
-		target_opacity = buffer_data->opacity;
-	}
-	wlr_scene_buffer_set_opacity(buffer, target_opacity);
 }
 
 void buffer_set_effect(Client *c, BufferData data) {
@@ -399,7 +393,6 @@ void client_apply_clip(Client *c, float factor) {
 	bool should_render_client_surface = false;
 	struct ivec2 offset;
 	BufferData buffer_data;
-	float opacity, percent;
 
 	int bw = (int)c->bw;
 
@@ -415,29 +408,16 @@ void client_apply_clip(Client *c, float factor) {
 
 		apply_border(c);
 
-		opacity = c->isfullscreen	 ? 1
-				  : c == selmon->sel ? c->focused_opacity
-									 : c->unfocused_opacity;
-
 		if (clip_box.width <= 0 || clip_box.height <= 0) {
 			return;
 		}
 
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
 
-		buffer_set_effect(c, (BufferData){1.0f, 1.0f, clip_box.width,
-										  clip_box.height, opacity, opacity,
-										  true});
+		buffer_set_effect(
+			c, (BufferData){1.0f, 1.0f, clip_box.width, clip_box.height, true});
 		return;
 	}
-
-	percent =
-		c->animation.action == OPEN && animation_fade_in && !c->nofadein
-			? (double)c->animation.passed_frames / c->animation.total_frames
-			: 1.0;
-	opacity = c->isfullscreen	 ? 1
-			  : c == selmon->sel ? c->focused_opacity
-								 : c->unfocused_opacity;
 
 	// 获取窗口动画实时位置矩形
 	unsigned int width, height;
@@ -494,8 +474,6 @@ void client_apply_clip(Client *c, float factor) {
 	buffer_data.width_scale = (float)buffer_data.width / acutal_surface_width;
 	buffer_data.height_scale =
 		(float)buffer_data.height / acutal_surface_height;
-	buffer_data.percent = percent;
-	buffer_data.opacity = opacity;
 
 	if (factor == 1.0) {
 		buffer_data.width_scale = 1.0;
@@ -927,44 +905,127 @@ bool client_draw_fadeout_frame(Client *c) {
 	return true;
 }
 
+void client_set_focused_opacity_animation(Client *c) {
+	float *border_color = get_border_color(c);
+	memcpy(c->opacity_animation.target_border_color, border_color,
+		   sizeof(c->opacity_animation.target_border_color));
+	c->opacity_animation.target_opacity = c->focused_opacity;
+	c->opacity_animation.total_frames =
+		animation_duration_focus / all_output_frame_duration_ms();
+	c->opacity_animation.passed_frames = 0;
+	if (c->opacity_animation.running) {
+		memcpy(c->opacity_animation.initial_border_color,
+			   c->opacity_animation.current_border_color,
+			   sizeof(c->opacity_animation.initial_border_color));
+		c->opacity_animation.initial_opacity =
+			c->opacity_animation.current_opacity;
+	} else {
+		memcpy(c->opacity_animation.initial_border_color, border_color,
+			   sizeof(c->opacity_animation.initial_border_color));
+		c->opacity_animation.initial_opacity = c->unfocused_opacity;
+	}
+	c->opacity_animation.running = true;
+}
+
+void cleint_set_unfocused_opacity_animation(Client *c) {
+	// Start border color animation to unfocused
+	float *border_color = get_border_color(c);
+	memcpy(c->opacity_animation.target_border_color, border_color,
+		   sizeof(c->opacity_animation.target_border_color));
+	// Start opacity animation to unfocused
+	c->opacity_animation.target_opacity = c->unfocused_opacity;
+	c->opacity_animation.total_frames =
+		animation_duration_focus / all_output_frame_duration_ms();
+	c->opacity_animation.passed_frames = 0;
+
+	if (c->opacity_animation.running) {
+		memcpy(c->opacity_animation.initial_border_color,
+			   c->opacity_animation.current_border_color,
+			   sizeof(c->opacity_animation.initial_border_color));
+		c->opacity_animation.initial_opacity =
+			c->opacity_animation.current_opacity;
+	} else {
+		memcpy(c->opacity_animation.initial_border_color, border_color,
+			   sizeof(c->opacity_animation.initial_border_color));
+		c->opacity_animation.initial_opacity = c->focused_opacity;
+	}
+
+	c->opacity_animation.running = true;
+}
+
+bool client_apply_focus_opacity(Client *c) {
+	// Animate focus transitions (opacity + border color)
+	float *border_color = get_border_color(c);
+	if (c->isfullscreen) {
+		c->opacity_animation.running = false;
+		client_set_opacity(c, 1);
+	} else if (c->animation.running && c->animation.action == OPEN) {
+		c->opacity_animation.running = false;
+		float percent =
+			animation_fade_in && !c->nofadein
+				? (double)c->animation.passed_frames / c->animation.total_frames
+				: 1.0;
+		float opacity = c->isfullscreen	   ? 1
+						: c == selmon->sel ? c->focused_opacity
+										   : c->unfocused_opacity;
+
+		float target_opacity = percent + fadein_begin_opacity;
+		if (target_opacity > opacity) {
+			target_opacity = opacity;
+		}
+		client_set_opacity(c, target_opacity);
+	} else if (animations && c->opacity_animation.running) {
+		float linear_progress = (float)c->opacity_animation.passed_frames /
+								c->opacity_animation.total_frames;
+		float eased_progress = find_animation_curve_at(linear_progress, FOCUS);
+
+		c->opacity_animation.current_opacity =
+			c->opacity_animation.initial_opacity +
+			(c->opacity_animation.target_opacity -
+			 c->opacity_animation.initial_opacity) *
+				eased_progress;
+		client_set_opacity(c, c->opacity_animation.current_opacity);
+
+		// Animate border color
+		for (int i = 0; i < 4; i++) {
+			c->opacity_animation.current_border_color[i] =
+				c->opacity_animation.initial_border_color[i] +
+				(c->opacity_animation.target_border_color[i] -
+				 c->opacity_animation.initial_border_color[i]) *
+					eased_progress;
+		}
+		client_set_border_color(c, c->opacity_animation.current_border_color);
+		if (linear_progress == 1.0f) {
+			c->opacity_animation.running = false;
+		} else {
+			c->opacity_animation.passed_frames++;
+			return true;
+		}
+	} else if (c == selmon->sel) {
+		c->opacity_animation.running = false;
+		c->opacity_animation.current_opacity = c->focused_opacity;
+		memcpy(c->opacity_animation.current_border_color, border_color,
+			   sizeof(c->opacity_animation.current_border_color));
+		client_set_opacity(c, c->focused_opacity);
+	} else {
+		c->opacity_animation.running = false;
+		c->opacity_animation.current_opacity = c->unfocused_opacity;
+		memcpy(c->opacity_animation.current_border_color, border_color,
+			   sizeof(c->opacity_animation.current_border_color));
+		client_set_opacity(c, c->unfocused_opacity);
+	}
+
+	return false;
+}
+
 bool client_draw_frame(Client *c) {
 
 	if (!c || !client_surface(c)->mapped)
 		return false;
 
-	// Animate focus transitions (opacity + border color)
-	if (c->isfullscreen) {
-		client_set_opacity(c, 1);
-		c->current_opacity = 1;
-		c->target_opacity = 1;
-	} else if (c->opacity_animation_frames > 0 && c->opacity_animation_passed < c->opacity_animation_frames) {
-		float linear_progress = (float)c->opacity_animation_passed / c->opacity_animation_frames;
-		float eased_progress = find_animation_curve_at(linear_progress, FOCUS);
-
-		// Animate opacity
-		float opacity_start = (c->target_opacity == c->focused_opacity) ? c->unfocused_opacity : c->focused_opacity;
-		c->current_opacity = opacity_start + (c->target_opacity - opacity_start) * eased_progress;
-		client_set_opacity(c, c->current_opacity);
-
-		// Animate border color
-		bool focusing = (c->target_border_color[0] == focuscolor[0]);
-		float *border_start = focusing ? bordercolor : focuscolor;
-		for (int i = 0; i < 4; i++) {
-			c->current_border_color[i] = border_start[i] + (c->target_border_color[i] - border_start[i]) * eased_progress;
-		}
-		client_set_border_color(c, c->current_border_color);
-
-		c->opacity_animation_passed++;
-	} else {
-		// Animation complete or disabled - apply target values
-		c->current_opacity = c->target_opacity;
-		client_set_opacity(c, c->current_opacity);
-		memcpy(c->current_border_color, c->target_border_color, sizeof(c->current_border_color));
-		client_set_border_color(c, c->current_border_color);
+	if (!c->need_output_flush) {
+		return client_apply_focus_opacity(c);
 	}
-
-	if (!c->need_output_flush)
-		return false;
 
 	if (animations && c->animation.running) {
 		client_animation_next_tick(c);
@@ -976,5 +1037,6 @@ bool client_draw_frame(Client *c) {
 		client_apply_clip(c, 1.0);
 		c->need_output_flush = false;
 	}
+	client_apply_focus_opacity(c);
 	return true;
 }

@@ -372,3 +372,21 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 	}
 	return NULL;
 }
+
+float *get_border_color(Client *c) {
+	if (c->isurgent) {
+		return urgentcolor;
+	} else if (c->is_in_scratchpad && selmon && c == selmon->sel) {
+		return scratchpadcolor;
+	} else if (c->isglobal && selmon && c == selmon->sel) {
+		return globalcolor;
+	} else if (c->isoverlay && selmon && c == selmon->sel) {
+		return overlaycolor;
+	} else if (c->ismaximizescreen && selmon && c == selmon->sel) {
+		return maximizescreencolor;
+	} else if (selmon && c == selmon->sel) {
+		return focuscolor;
+	} else {
+		return bordercolor;
+	}
+}
