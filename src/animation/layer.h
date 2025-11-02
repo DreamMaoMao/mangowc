@@ -266,7 +266,9 @@ void layer_animation_next_tick(LayerSurface *l) {
 	unsigned int y = l->animation.initial.y +
 					 (l->current.y - l->animation.initial.y) * factor;
 
-	double opacity = MIN(fadein_begin_opacity + animation_passed, 1.0f);
+	double opacity = MIN(fadein_begin_opacity +
+							 animation_passed * (1.0 - fadein_begin_opacity),
+						 1.0f);
 
 	if (animation_fade_in)
 		wlr_scene_node_for_each_buffer(&l->scene->node,
