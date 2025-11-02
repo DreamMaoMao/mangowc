@@ -153,7 +153,7 @@ yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist w
 ### Dms
 - Dependencies
 ```bash
-yay -S foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard xfce-polkit sway-audio-idle-inhibit-git brightnessctl grim slurp satty matugen-bin dms-shell-git
+yay -S foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard sway-audio-idle-inhibit-git brightnessctl grim slurp satty matugen-bin dms-shell-git
 
 ```
 - use my dms config
