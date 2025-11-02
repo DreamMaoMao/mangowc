@@ -742,6 +742,9 @@ void client_commit(Client *c) {
 
 void client_set_pending_state(Client *c) {
 
+	if (!c || c->iskilling)
+		return;
+
 	// 判断是否需要动画
 	if (!animations) {
 		c->animation.should_animate = false;
