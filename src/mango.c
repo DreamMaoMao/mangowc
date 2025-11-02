@@ -4542,6 +4542,23 @@ void reset_keyboard_layout(void) {
 	wlr_seat_set_keyboard(seat, keyboard);
 	wlr_seat_keyboard_notify_modifiers(seat, &keyboard->modifiers);
 
+	InputDevice *id;
+	wl_list_for_each(id, &inputdevices, link) {
+		if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+			continue;
+		}
+
+		struct wlr_keyboard *tkb = (struct wlr_keyboard *)id->device_data;
+
+		wlr_keyboard_set_keymap(tkb, keyboard->keymap);
+		wlr_keyboard_notify_modifiers(tkb, depressed, latched, locked, 0);
+		tkb->modifiers.group = 0;
+
+		// 7. 更新 seat
+		wlr_seat_set_keyboard(seat, tkb);
+		wlr_seat_keyboard_notify_modifiers(seat, &tkb->modifiers);
+	}
+
 	// Cleanup
 	xkb_keymap_unref(new_keymap);
 

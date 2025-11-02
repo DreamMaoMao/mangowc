@@ -2831,6 +2831,11 @@ void parse_config(void) {
 
 	// 重置config结构体，确保所有指针初始化为NULL
 	memset(&config, 0, sizeof(config));
+	memset(&xkb_rules_rules, 0, sizeof(xkb_rules_rules));
+	memset(&xkb_rules_model, 0, sizeof(xkb_rules_model));
+	memset(&xkb_rules_layout, 0, sizeof(xkb_rules_layout));
+	memset(&xkb_rules_variant, 0, sizeof(xkb_rules_variant));
+	memset(&xkb_rules_options, 0, sizeof(xkb_rules_options));
 
 	// 初始化动态数组的指针为NULL，避免野指针
 	config.window_rules = NULL;
