@@ -961,15 +961,16 @@ bool client_apply_focus_opacity(Client *c) {
 		client_set_opacity(c, 1);
 	} else if (c->animation.running && c->animation.action == OPEN) {
 		c->opacity_animation.running = false;
-		float percent =
-			animation_fade_in && !c->nofadein
-				? (double)c->animation.passed_frames / c->animation.total_frames
-				: 1.0;
-		float opacity = c->isfullscreen	   ? 1
-						: c == selmon->sel ? c->focused_opacity
-										   : c->unfocused_opacity;
+		float linear_progress =
+			(float)c->animation.passed_frames / c->animation.total_frames;
 
-		float target_opacity = percent + fadein_begin_opacity;
+		float percent =
+			animation_fade_in && !c->nofadein ? linear_progress : 1.0;
+		float opacity =
+			c == selmon->sel ? c->focused_opacity : c->unfocused_opacity;
+
+		float target_opacity =
+			percent * (1.0 - fadein_begin_opacity) + fadein_begin_opacity;
 		if (target_opacity > opacity) {
 			target_opacity = opacity;
 		}
