@@ -3191,6 +3191,11 @@ keybinding(unsigned int mods, xkb_keysym_t sym, unsigned int keycode) {
 	int ji;
 	int isbreak = 0;
 
+	// not allow modifier keys to be used as a keybinding
+	if (keycode == 50 || keycode == 37 || keycode == 133 || keycode == 64 ||
+		keycode == 62 || keycode == 108 || keycode == 105 || keycode == 134)
+		return false;
+
 	for (ji = 0; ji < config.key_bindings_count; ji++) {
 		if (config.key_bindings_count < 1)
 			break;
