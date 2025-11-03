@@ -21,7 +21,7 @@ in {
       };
       package = lib.mkOption {
         type = lib.types.package;
-        default = self.packages.${pkgs.system}.mango;
+        default = self.packages.${pkgs.stdenv.hostPlatform.system}.mango;
         description = "The mango package to use";
       };
       systemd = {
