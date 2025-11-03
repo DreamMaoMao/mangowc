@@ -4938,8 +4938,8 @@ void setup(void) {
 	if (drm_lease_manager) {
 		wl_signal_add(&drm_lease_manager->events.request, &drm_lease_request);
 	} else {
-		wlr_log(WLR_ERROR, "Failed to create wlr_drm_lease_device_v1; VR will "
-						   "not be available");
+		wlr_log(WLR_DEBUG, "Failed to create wlr_drm_lease_device_v1.");
+		wlr_log(WLR_INFO, "VR will not be available.");
 	}
 
 	wl_global_create(dpy, &zdwl_ipc_manager_v2_interface, 2, NULL,
