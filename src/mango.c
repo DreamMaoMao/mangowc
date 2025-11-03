@@ -3455,7 +3455,7 @@ void init_client_properties(Client *c) {
 	c->stack_innder_per = 0.0f;
 	c->isterm = 0;
 	c->allow_csd = 0;
-	c->force_maximize = 1;
+	c->force_maximize = 0;
 }
 
 void // old fix to 0.5
