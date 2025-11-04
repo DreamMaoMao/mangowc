@@ -160,6 +160,13 @@ enum { UP, DOWN, LEFT, RIGHT, UNDIR }; /* smartmovewin */
 enum { NONE, OPEN, MOVE, CLOSE, TAG, FOCUS };
 enum { UNFOLD, FOLD, INVALIDFOLD };
 enum { PREV, NEXT };
+enum { STATE_UNSPECIFIED = 0, STATE_ENABLED, STATE_DISABLED };
+
+enum tearing_mode {
+	TEARING_DISABLED = 0,
+	TEARING_ENABLED,
+	TEARING_FULLSCREEN_ONLY,
+};
 
 typedef struct Pertag Pertag;
 typedef struct Monitor Monitor;
@@ -357,6 +364,8 @@ struct Client {
 	bool ismaster;
 	bool cursor_in_upper_half, cursor_in_left_half;
 	bool isleftstack;
+	int tearing_hint;
+	int force_tearing;
 };
 
 typedef struct {
@@ -423,6 +432,7 @@ struct Monitor {
 	struct wl_list link;
 	struct wlr_output *wlr_output;
 	struct wlr_scene_output *scene_output;
+	struct wlr_output_state pending;
 	struct wl_listener frame;
 	struct wl_listener destroy;
 	struct wl_listener request_state;
@@ -1127,6 +1137,7 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isterm);
 	APPLY_INT_PROP(c, r, allow_csd);
 	APPLY_INT_PROP(c, r, force_maximize);
+	APPLY_INT_PROP(c, r, force_tearing);
 	APPLY_INT_PROP(c, r, noswallow);
 	APPLY_INT_PROP(c, r, nofadein);
 	APPLY_INT_PROP(c, r, nofadeout);
@@ -1962,6 +1973,7 @@ void cleanuplisteners(void) {
 	wl_list_remove(&new_session_lock.link);
 	wl_list_remove(&new_foreign_toplevel_capture_request.link);
 	wl_list_remove(&drm_lease_request.link);
+	wl_list_remove(&tearing_new_object.link);
 #ifdef XWAYLAND
 	wl_list_remove(&new_xwayland_surface.link);
 	wl_list_remove(&xwayland_ready.link);
@@ -2023,6 +2035,7 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 	wlr_scene_output_destroy(m->scene_output);
 
 	closemon(m);
+	m->wlr_output->data = NULL;
 	free(m->pertag);
 	free(m);
 }
@@ -2498,6 +2511,7 @@ void createmon(struct wl_listener *listener, void *data) {
 
 	m = wlr_output->data = ecalloc(1, sizeof(*m));
 	m->wlr_output = wlr_output;
+	m->wlr_output->data = m;
 
 	wl_list_init(&m->dwl_ipc_outputs);
 
@@ -3455,6 +3469,7 @@ void init_client_properties(Client *c) {
 	c->isterm = 0;
 	c->allow_csd = 0;
 	c->force_maximize = 0;
+	c->force_tearing = 0;
 }
 
 void // old fix to 0.5
@@ -4004,10 +4019,11 @@ void rendermon(struct wl_listener *listener, void *data) {
 
 	struct timespec now;
 	bool need_more_frames = false;
+	bool frame_allow_tearing = check_tearing_frame_allow(m);
 
+	// 绘制层和淡出效果
 	for (i = 0; i < LENGTH(m->layers); i++) {
 		layer_list = &m->layers[i];
-		// Draw frames for all layer
 		wl_list_for_each_safe(l, tmpl, layer_list, link) {
 			need_more_frames = layer_draw_frame(l) || need_more_frames;
 		}
@@ -4021,25 +4037,34 @@ void rendermon(struct wl_listener *listener, void *data) {
 		need_more_frames = layer_draw_fadeout_frame(l) || need_more_frames;
 	}
 
-	// Draw frames for all clients
+	// 绘制客户端
 	wl_list_for_each(c, &clients, link) {
 		need_more_frames = client_draw_frame(c) || need_more_frames;
-		if (!animations && c->configure_serial && !c->isfloating &&
-			client_is_rendered_on_mon(c, m) && !client_is_stopped(c))
+		if (!animations && !allow_tearing && c->configure_serial &&
+			!c->isfloating && client_is_rendered_on_mon(c, m) &&
+			!client_is_stopped(c)) {
 			goto skip;
+		}
 	}
 
-	wlr_scene_output_commit(m->scene_output, NULL);
+	// 只有在需要帧时才构建和提交状态
+	if (allow_tearing && frame_allow_tearing) {
+		apply_tear_state(m);
+	} else {
+		wlr_scene_output_commit(m->scene_output, NULL);
+	}
 
 skip:
-
-	// Send frame done notification
+	// 发送帧完成通知
 	clock_gettime(CLOCK_MONOTONIC, &now);
-	wlr_scene_output_send_frame_done(m->scene_output, &now);
+	if (allow_tearing && frame_allow_tearing) {
+		wlr_scene_output_send_frame_done(m->scene_output, &now);
+	} else {
+		wlr_scene_output_send_frame_done(m->scene_output, &now);
+		wlr_output_state_finish(&pending);
+	}
 
-	// // Clean up pending state
-	wlr_output_state_finish(&pending);
-
+	// 如果需要更多帧，确保安排下一帧
 	if (need_more_frames) {
 		request_fresh_all_monitors();
 	}
@@ -4789,6 +4814,10 @@ void setup(void) {
 	wl_signal_add(&ext_foreign_toplevel_image_capture_source_manager_v1->events
 					   .new_request,
 				  &new_foreign_toplevel_capture_request);
+
+	tearing_control = wlr_tearing_control_manager_v1_create(dpy, 1);
+	tearing_new_object.notify = handle_tearing_new_object;
+	wl_signal_add(&tearing_control->events.new_object, &tearing_new_object);
 
 	/* Creates an output layout, which a wlroots utility for working with an
 	 * arrangement of screens in a physical layout. */
