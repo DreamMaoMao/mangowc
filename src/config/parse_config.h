@@ -79,6 +79,7 @@ typedef struct {
 	int isterm;
 	int allow_csd;
 	int force_maximize;
+	int force_tearing;
 	int noswallow;
 	int noblur;
 	float focused_opacity;
@@ -328,6 +329,7 @@ typedef struct {
 	int xwayland_persistence;
 	int syncobj_enable;
 	int adaptive_sync;
+	int allow_tearing;
 
 	struct xkb_rule_names xkb_rules;
 
@@ -1232,6 +1234,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->syncobj_enable = atoi(value);
 	} else if (strcmp(key, "adaptive_sync") == 0) {
 		config->adaptive_sync = atoi(value);
+	} else if (strcmp(key, "allow_tearing") == 0) {
+		config->allow_tearing = atoi(value);
 	} else if (strcmp(key, "no_border_when_single") == 0) {
 		config->no_border_when_single = atoi(value);
 	} else if (strcmp(key, "no_radius_when_single") == 0) {
@@ -1673,6 +1677,7 @@ void parse_option(Config *config, char *key, char *value) {
 		rule->isterm = -1;
 		rule->allow_csd = -1;
 		rule->force_maximize = -1;
+		rule->force_tearing = -1;
 		rule->noswallow = -1;
 		rule->noblur = -1;
 		rule->nofadein = -1;
@@ -1769,6 +1774,8 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->allow_csd = atoi(val);
 				} else if (strcmp(key, "force_maximize") == 0) {
 					rule->force_maximize = atoi(val);
+				} else if (strcmp(key, "force_tearing") == 0) {
+					rule->force_tearing = atoi(val);
 				} else if (strcmp(key, "noswallow") == 0) {
 					rule->noswallow = atoi(val);
 				} else if (strcmp(key, "noblur") == 0) {
@@ -2642,6 +2649,7 @@ void override_config(void) {
 	xwayland_persistence = CLAMP_INT(config.xwayland_persistence, 0, 1);
 	syncobj_enable = CLAMP_INT(config.syncobj_enable, 0, 1);
 	adaptive_sync = CLAMP_INT(config.adaptive_sync, 0, 1);
+	allow_tearing = CLAMP_INT(config.allow_tearing, 0, 2);
 	axis_bind_apply_timeout =
 		CLAMP_INT(config.axis_bind_apply_timeout, 0, 1000);
 	focus_on_activate = CLAMP_INT(config.focus_on_activate, 0, 1);
@@ -2816,6 +2824,7 @@ void set_value_default() {
 	config.xwayland_persistence = xwayland_persistence;
 	config.syncobj_enable = syncobj_enable;
 	config.adaptive_sync = adaptive_sync;
+	config.allow_tearing = allow_tearing;
 	config.no_border_when_single = no_border_when_single;
 	config.no_radius_when_single = no_radius_when_single;
 	config.snap_distance = snap_distance;
