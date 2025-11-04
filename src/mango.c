@@ -4065,7 +4065,7 @@ void client_set_opacity(Client *c, double opacity) {
 
 void rendermon(struct wl_listener *listener, void *data) {
 	Monitor *m = wl_container_of(listener, m, frame);
-	Client *c = NULL, *tmp = NULL;
+	Client *c = NULL;
 	struct wlr_output_state pending = {0};
 	LayerSurface *l = NULL, *tmpl = NULL;
 	int i;
@@ -4080,10 +4080,6 @@ void rendermon(struct wl_listener *listener, void *data) {
 		wl_list_for_each_safe(l, tmpl, layer_list, link) {
 			need_more_frames = layer_draw_frame(l) || need_more_frames;
 		}
-	}
-
-	wl_list_for_each_safe(l, tmpl, &fadeout_layers, fadeout_link) {
-		need_more_frames = layer_draw_fadeout_frame(l) || need_more_frames;
 	}
 
 	// Draw frames for all clients

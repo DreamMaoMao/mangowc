@@ -674,6 +674,7 @@ int fadeout_client_animation_next_tick(void *data) {
 		return 0;
 	} else {
 		wl_event_source_timer_update(c->animation.timer, c->animation.frame_duration);
+		request_fresh_all_monitors();
 		return 1;
 	}
 }

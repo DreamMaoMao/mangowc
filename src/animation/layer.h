@@ -230,14 +230,17 @@ void layer_fadeout_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer,
 								   buffer_data->height);
 }
 
-void fadeout_layer_animation_next_tick(LayerSurface *l) {
-	if (!l)
-		return;
+int fadeout_layer_animation_next_tick(void *data) {
 
-	double animation_passed =
-		l->animation.total_frames
-			? (double)l->animation.passed_frames / l->animation.total_frames
-			: 1.0;
+	LayerSurface *l = (LayerSurface *)data;
+
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    uint32_t passed_time = timespec_to_ms(&now) - l->animation.time_started;
+    double animation_passed =  (double)passed_time / (double)l->animation.duration;
+
+
 	int type = l->animation.action = l->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
 	unsigned int width =
@@ -280,13 +283,17 @@ void fadeout_layer_animation_next_tick(LayerSurface *l) {
 		wlr_scene_node_for_each_buffer(&l->scene->node,
 									   scene_buffer_apply_opacity, &opacity);
 
-	if (animation_passed == 1.0) {
+	if (animation_passed >= 1.0) {
+		layer_destroy_animation_timer(l);
 		wl_list_remove(&l->fadeout_link);
 		wlr_scene_node_destroy(&l->scene->node);
 		free(l);
 		l = NULL;
+		return 0;
 	} else {
-		l->animation.passed_frames++;
+		wl_event_source_timer_update(l->animation.timer, l->animation.frame_duration);
+		wlr_output_schedule_frame(l->mon->wlr_output);
+		return 1;
 	}
 }
 
@@ -459,14 +466,16 @@ void init_fadeout_layers(LayerSurface *l) {
 		fadeout_layer->current.height = 0;
 	}
 
-	// 计算动画帧数
-	fadeout_layer->animation.passed_frames = 0;
-	fadeout_layer->animation.total_frames =
-		fadeout_layer->animation.duration / all_output_frame_duration_ms();
-
 	// 将节点插入到关闭动画链表中，屏幕刷新哪里会检查链表中是否有节点可以应用于动画
 	wlr_scene_node_set_enabled(&fadeout_layer->scene->node, true);
 	wl_list_insert(&fadeout_layers, &fadeout_layer->fadeout_link);
+
+    fadeout_layer->animation.time_started = get_now_in_ms();
+    fadeout_layer->animation.frame_duration = get_fastest_output_refresh_ms();
+	if(!fadeout_layer->animation.running)
+    	fadeout_layer->animation.timer =
+    	        wl_event_loop_add_timer(wl_display_get_event_loop(dpy), fadeout_layer_animation_next_tick, fadeout_layer);
+    wl_event_source_timer_update(fadeout_layer->animation.timer, fadeout_layer->animation.frame_duration);
 
 	// 请求刷新屏幕
 	wlr_output_schedule_frame(l->mon->wlr_output);
@@ -593,13 +602,5 @@ bool layer_draw_frame(LayerSurface *l) {
 		layer_draw_shadow(l);
 		l->need_output_flush = false;
 	}
-	return true;
-}
-
-bool layer_draw_fadeout_frame(LayerSurface *l) {
-	if (!l)
-		return false;
-
-	fadeout_layer_animation_next_tick(l);
 	return true;
 }
