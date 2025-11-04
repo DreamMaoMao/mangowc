@@ -86,6 +86,26 @@ double find_animation_curve_at(double t, int type) {
 	return baked_points[up].y;
 }
 
+int get_fastest_output_refresh_ms(void) {
+    Monitor *m;
+    int max = 0;
+    wl_list_for_each(m, &mons, link) {
+		if(!m->wlr_output->enabled) {
+			continue;
+		}
+        if(m->wlr_output->refresh > max) {
+            max = m->wlr_output->refresh;
+        }
+    }
+
+    // we default to 60 fps
+    if(max == 0) {
+        max = 60000;
+    }
+
+    return 1000000.0 / max;
+}
+
 double all_output_frame_duration_ms() {
 	int32_t refresh_total = 0;
 	Monitor *m = NULL;
@@ -253,5 +273,12 @@ void request_fresh_all_monitors(void) {
 			continue;
 		}
 		wlr_output_schedule_frame(m->wlr_output);
+	}
+}
+
+void destroy_animation_timer(Client *c) {
+	if(c->animation.timer) {
+		wl_event_source_remove(c->animation.timer);
+		c->animation.timer = NULL;
 	}
 }

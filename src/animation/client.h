@@ -672,11 +672,18 @@ void fadeout_client_animation_next_tick(Client *c) {
 	}
 }
 
-void client_animation_next_tick(Client *c) {
-	double animation_passed =
-		c->animation.total_frames
-			? (double)c->animation.passed_frames / c->animation.total_frames
-			: 1.0;
+int client_animation_next_tick(void *data) {
+	Client *c = (Client *)data;
+
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    uint32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
+    double animation_passed =  (double)passed_time / (double)c->animation.duration;
+
+	wlr_log(WLR_ERROR,"passed_time:%d",passed_time);
+	wlr_log(WLR_ERROR,"animation_passed:%f",animation_passed);
+	wlr_log(WLR_ERROR,"duration:%d",c->animation.duration);
 
 	int type = c->animation.action == NONE ? MOVE : c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
@@ -707,7 +714,7 @@ void client_animation_next_tick(Client *c) {
 
 	c->is_pending_open_animation = false;
 
-	if (animation_passed == 1.0) {
+	if (animation_passed >= 1.0) {
 
 		// clear the open action state
 		// To prevent him from being mistaken that
@@ -735,11 +742,18 @@ void client_animation_next_tick(Client *c) {
 
 		// end flush in next frame, not the current frame
 		c->need_output_flush = false;
+		destroy_animation_timer(c);
 	} else {
-		c->animation.passed_frames++;
+		wl_event_source_timer_update(c->animation.timer, c->animation.frame_duration);
 	}
 
 	client_apply_clip(c, factor);
+
+	if(c->animation.running) {
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 void init_fadeout_client(Client *c) {
@@ -840,9 +854,14 @@ void client_commit(Client *c) {
 
 		c->animation.initial = c->animainit_geom;
 		// 设置动画速度
-		c->animation.passed_frames = 0;
-		c->animation.total_frames =
-			c->animation.duration / all_output_frame_duration_ms();
+    	c->animation.time_started = get_now_in_ms();
+    	c->animation.frame_duration = get_fastest_output_refresh_ms();
+		wlr_log(WLR_ERROR,"time_started:%d",c->animation.time_started);
+		wlr_log(WLR_ERROR,"frame_duration:%d",c->animation.frame_duration);
+		if(!c->animation.running)
+    		c->animation.timer =
+    		        wl_event_loop_add_timer(wl_display_get_event_loop(dpy), client_animation_next_tick, c);
+    	wl_event_source_timer_update(c->animation.timer, c->animation.frame_duration);
 
 		// 标记动画开始
 		c->animation.running = true;
@@ -1085,6 +1104,7 @@ void cleint_set_unfocused_opacity_animation(Client *c) {
 }
 
 bool client_apply_focus_opacity(Client *c) {
+	return false;
 	// Animate focus transitions (opacity + border color)
 	float *border_color = get_border_color(c);
 	if (c->isfullscreen) {
@@ -1160,7 +1180,7 @@ bool client_draw_frame(Client *c) {
 	}
 
 	if (animations && c->animation.running) {
-		client_animation_next_tick(c);
+		// client_animation_next_tick(c);
 	} else {
 		wlr_scene_node_set_position(&c->scene->node, c->pending.x,
 									c->pending.y);

@@ -231,6 +231,9 @@ struct dwl_animation {
 	bool tagouting;
 	bool begin_fade_in;
 	bool tag_from_rule;
+	unsigned int time_started;
+	int frame_duration;
+	struct wl_event_source *timer;
 	unsigned int total_frames;
 	unsigned int passed_frames;
 	unsigned int duration;
@@ -705,6 +708,8 @@ static void refresh_monitors_workspaces_status(Monitor *m);
 static void init_client_properties(Client *c);
 static float *get_border_color(Client *c);
 static void request_fresh_all_monitors(void);
+static int get_fastest_output_refresh_ms(void);
+static void destroy_animation_timer(Client *c);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -5187,6 +5192,8 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, unmap);
 	Monitor *m = NULL;
 	c->iskilling = 1;
+
+	destroy_animation_timer(c);
 
 	if (animations && !c->is_clip_to_hide && !c->isminied &&
 		(!c->mon || VISIBLEON(c, c->mon)))
