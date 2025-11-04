@@ -103,7 +103,8 @@ int get_fastest_output_refresh_ms(void) {
         max = 60000;
     }
 
-    return 1000000.0 / max;
+	// 监测间隔减半,避免卡帧
+    return (1000000.0 / max)/2;
 }
 
 double all_output_frame_duration_ms() {

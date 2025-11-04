@@ -609,16 +609,19 @@ void client_apply_clip(Client *c, float factor) {
 	buffer_set_effect(c, buffer_data);
 }
 
-void fadeout_client_animation_next_tick(Client *c) {
-	if (!c)
-		return;
+int fadeout_client_animation_next_tick(void *data) {
 
 	BufferData buffer_data;
 
-	double animation_passed =
-		c->animation.total_frames
-			? (double)c->animation.passed_frames / c->animation.total_frames
-			: 1.0;
+	Client *c = (Client *)data;
+
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    uint32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
+    double animation_passed =  (double)passed_time / (double)c->animation.duration;
+
+
 	int type = c->animation.action = c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
 	unsigned int width =
@@ -662,13 +665,16 @@ void fadeout_client_animation_next_tick(Client *c) {
 			&c->scene->node, snap_scene_buffer_apply_effect, &buffer_data);
 	}
 
-	if (animation_passed == 1.0) {
+	if (animation_passed >= 1.0) {
+		destroy_animation_timer(c);
 		wl_list_remove(&c->fadeout_link);
 		wlr_scene_node_destroy(&c->scene->node);
 		free(c);
 		c = NULL;
+		return 0;
 	} else {
-		c->animation.passed_frames++;
+		wl_event_source_timer_update(c->animation.timer, c->animation.frame_duration);
+		return 1;
 	}
 }
 
@@ -680,10 +686,6 @@ int client_animation_next_tick(void *data) {
 
     uint32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
     double animation_passed =  (double)passed_time / (double)c->animation.duration;
-
-	wlr_log(WLR_ERROR,"passed_time:%d",passed_time);
-	wlr_log(WLR_ERROR,"animation_passed:%f",animation_passed);
-	wlr_log(WLR_ERROR,"duration:%d",c->animation.duration);
 
 	int type = c->animation.action == NONE ? MOVE : c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
@@ -750,6 +752,7 @@ int client_animation_next_tick(void *data) {
 	client_apply_clip(c, factor);
 
 	if(c->animation.running) {
+		request_fresh_all_monitors();
 		return 1;
 	} else {
 		return 0;
@@ -834,11 +837,16 @@ void init_fadeout_client(Client *c) {
 			fadeout_cient->geom.height * zoom_end_ratio;
 	}
 
-	fadeout_cient->animation.passed_frames = 0;
-	fadeout_cient->animation.total_frames =
-		fadeout_cient->animation.duration / all_output_frame_duration_ms();
 	wlr_scene_node_set_enabled(&fadeout_cient->scene->node, true);
 	wl_list_insert(&fadeout_clients, &fadeout_cient->fadeout_link);
+
+    fadeout_cient->animation.time_started = get_now_in_ms();
+    fadeout_cient->animation.frame_duration = get_fastest_output_refresh_ms();
+	if(!fadeout_cient->animation.running)
+    	fadeout_cient->animation.timer =
+    	        wl_event_loop_add_timer(wl_display_get_event_loop(dpy), fadeout_client_animation_next_tick, fadeout_cient);
+    wl_event_source_timer_update(fadeout_cient->animation.timer, fadeout_cient->animation.frame_duration);
+
 
 	// 请求刷新屏幕
 	request_fresh_all_monitors();
@@ -856,8 +864,6 @@ void client_commit(Client *c) {
 		// 设置动画速度
     	c->animation.time_started = get_now_in_ms();
     	c->animation.frame_duration = get_fastest_output_refresh_ms();
-		wlr_log(WLR_ERROR,"time_started:%d",c->animation.time_started);
-		wlr_log(WLR_ERROR,"frame_duration:%d",c->animation.frame_duration);
 		if(!c->animation.running)
     		c->animation.timer =
     		        wl_event_loop_add_timer(wl_display_get_event_loop(dpy), client_animation_next_tick, c);
@@ -1041,14 +1047,6 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 	setborder_color(c);
 }
 
-bool client_draw_fadeout_frame(Client *c) {
-	if (!c)
-		return false;
-
-	fadeout_client_animation_next_tick(c);
-	return true;
-}
-
 void client_set_focused_opacity_animation(Client *c) {
 	float *border_color = get_border_color(c);
 	memcpy(c->opacity_animation.target_border_color, border_color,
@@ -1104,7 +1102,6 @@ void cleint_set_unfocused_opacity_animation(Client *c) {
 }
 
 bool client_apply_focus_opacity(Client *c) {
-	return false;
 	// Animate focus transitions (opacity + border color)
 	float *border_color = get_border_color(c);
 	if (c->isfullscreen) {
@@ -1112,8 +1109,11 @@ bool client_apply_focus_opacity(Client *c) {
 		client_set_opacity(c, 1);
 	} else if (c->animation.running && c->animation.action == OPEN) {
 		c->opacity_animation.running = false;
-		float linear_progress =
-			(float)c->animation.passed_frames / c->animation.total_frames;
+    	struct timespec now;
+    	clock_gettime(CLOCK_MONOTONIC, &now);
+
+    	uint32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
+    	double linear_progress =  (double)passed_time / (double)c->animation.duration;
 
 		float percent =
 			animation_fade_in && !c->nofadein ? linear_progress : 1.0;
@@ -1180,7 +1180,10 @@ bool client_draw_frame(Client *c) {
 	}
 
 	if (animations && c->animation.running) {
-		// client_animation_next_tick(c);
+		if(!c->animation.nofirstframe) {
+			client_animation_next_tick(c);
+			c->animation.nofirstframe = true;
+		}
 	} else {
 		wlr_scene_node_set_position(&c->scene->node, c->pending.x,
 									c->pending.y);

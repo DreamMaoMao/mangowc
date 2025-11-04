@@ -234,6 +234,7 @@ struct dwl_animation {
 	unsigned int time_started;
 	int frame_duration;
 	struct wl_event_source *timer;
+	bool nofirstframe;
 	unsigned int total_frames;
 	unsigned int passed_frames;
 	unsigned int duration;
@@ -4081,10 +4082,6 @@ void rendermon(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	wl_list_for_each_safe(c, tmp, &fadeout_clients, fadeout_link) {
-		need_more_frames = client_draw_fadeout_frame(c) || need_more_frames;
-	}
-
 	wl_list_for_each_safe(l, tmpl, &fadeout_layers, fadeout_link) {
 		need_more_frames = layer_draw_fadeout_frame(l) || need_more_frames;
 	}
@@ -4108,9 +4105,6 @@ skip:
 	// // Clean up pending state
 	wlr_output_state_finish(&pending);
 
-	if (need_more_frames) {
-		request_fresh_all_monitors();
-	}
 }
 
 void requestdecorationmode(struct wl_listener *listener, void *data) {
