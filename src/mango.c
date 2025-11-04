@@ -69,6 +69,9 @@
 #include <wlr/types/wlr_single_pixel_buffer_v1.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_switch.h>
+#include <wlr/types/wlr_tablet_pad.h>
+#include <wlr/types/wlr_tablet_tool.h>
+#include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
@@ -488,7 +491,8 @@ static void pinch_end(struct wl_listener *listener, void *data);
 static void hold_begin(struct wl_listener *listener, void *data);
 static void hold_end(struct wl_listener *listener, void *data);
 static void checkidleinhibitor(struct wlr_surface *exclude);
-static void cleanup(void);										  // 退出清理
+static void cleanup(void); // 退出清理
+static void createtablet(struct wlr_input_device *device);
 static void cleanupmon(struct wl_listener *listener, void *data); // 退出清理
 static void closemon(Monitor *m);
 static void cleanuplisteners(void);
@@ -525,6 +529,10 @@ static void destroynotify(struct wl_listener *listener, void *data);
 static void destroypointerconstraint(struct wl_listener *listener, void *data);
 static void destroysessionlock(struct wl_listener *listener, void *data);
 static void destroykeyboardgroup(struct wl_listener *listener, void *data);
+static void destroytablet(struct wl_listener *listener, void *data);
+static void destroytabletsurfacenotify(struct wl_listener *listener,
+									   void *data);
+static void destroytablettool(struct wl_listener *listener, void *data);
 static Monitor *dirtomon(enum wlr_direction dir);
 static void setcursorshape(struct wl_listener *listener, void *data);
 
@@ -600,6 +608,13 @@ static void view(const Arg *arg, bool want_animation);
 
 static void handlesig(int signo);
 
+static void tablettoolmotion(struct wlr_tablet_v2_tablet_tool *tool,
+							 bool change_x, bool change_y, double x, double y,
+							 double dx, double dy);
+static void tablettoolproximity(struct wl_listener *listener, void *data);
+static void tablettoolaxis(struct wl_listener *listener, void *data);
+static void tablettoolbutton(struct wl_listener *listener, void *data);
+static void tablettooltip(struct wl_listener *listener, void *data);
 static void virtualkeyboard(struct wl_listener *listener, void *data);
 static void virtualpointer(struct wl_listener *listener, void *data);
 static void warp_cursor(const Client *c);
@@ -728,6 +743,14 @@ static struct wlr_layer_shell_v1 *layer_shell;
 static struct wlr_output_manager_v1 *output_mgr;
 static struct wlr_virtual_keyboard_manager_v1 *virtual_keyboard_mgr;
 static struct wlr_virtual_pointer_manager_v1 *virtual_pointer_mgr;
+static struct wlr_tablet_manager_v2 *tablet_mgr;
+static struct wlr_tablet_v2_tablet *tablet = NULL;
+static struct wlr_tablet_v2_tablet_tool *tablet_tool = NULL;
+static struct wlr_tablet_v2_tablet_pad *tablet_pad = NULL;
+static struct wlr_surface *tablet_curr_surface = NULL;
+static struct wl_listener destroy_tablet_surface_listener = {
+	.notify = destroytabletsurfacenotify};
+
 static struct wlr_output_power_manager_v1 *power_mgr;
 static struct wlr_pointer_gestures_v1 *pointer_gestures;
 static struct wlr_drm_lease_v1_manager *drm_lease_manager;
@@ -756,6 +779,7 @@ static int grabcx, grabcy;						   /* client-relative */
 static int drag_begin_cursorx, drag_begin_cursory; /* client-relative */
 static bool start_drag_window = false;
 static int last_apply_drap_time = 0;
+static double tilt_x = 0, tilt_y = 0;
 
 static struct wlr_output_layout *output_layout;
 static struct wlr_box sgeom;
@@ -809,6 +833,13 @@ static struct wl_listener cursor_button = {.notify = buttonpress};
 static struct wl_listener cursor_frame = {.notify = cursorframe};
 static struct wl_listener cursor_motion = {.notify = motionrelative};
 static struct wl_listener cursor_motion_absolute = {.notify = motionabsolute};
+static struct wl_listener tablet_device_destroy = {.notify = destroytablet};
+static struct wl_listener tablet_tool_axis = {.notify = tablettoolaxis};
+static struct wl_listener tablet_tool_button = {.notify = tablettoolbutton};
+static struct wl_listener tablet_tool_destroy = {.notify = destroytablettool};
+static struct wl_listener tablet_tool_proximity = {.notify =
+													   tablettoolproximity};
+static struct wl_listener tablet_tool_tip = {.notify = tablettooltip};
 static struct wl_listener gpu_reset = {.notify = gpureset};
 static struct wl_listener layout_change = {.notify = updatemons};
 static struct wl_listener new_idle_inhibitor = {.notify = createidleinhibitor};
@@ -894,6 +925,23 @@ void clear_fullscreen_flag(Client *c) {
 	if (c->ismaximizescreen) {
 		setmaximizescreen(c, 0);
 	}
+}
+
+void destroytablet(struct wl_listener *listener, void *data) {
+	wl_list_remove(&tablet_device_destroy.link);
+	wlr_cursor_detach_input_device(cursor, tablet->wlr_device);
+	tablet = NULL;
+}
+
+void destroytabletsurfacenotify(struct wl_listener *listener, void *data) {
+	if (tablet_curr_surface)
+		wl_list_remove(&destroy_tablet_surface_listener.link);
+	tablet_curr_surface = NULL;
+}
+
+void destroytablettool(struct wl_listener *listener, void *data) {
+	destroytabletsurfacenotify(NULL, NULL);
+	tablet_tool = NULL;
 }
 
 void show_scratchpad(Client *c) {
@@ -2881,6 +2929,28 @@ void createpopup(struct wl_listener *listener, void *data) {
 	LISTEN_STATIC(&popup->base->surface->events.commit, commitpopup);
 }
 
+void createtablet(struct wlr_input_device *device) {
+	if (!tablet) {
+		struct libinput_device *device_handle = NULL;
+		if (!wlr_input_device_is_libinput(device) ||
+			!(device_handle = wlr_libinput_get_device_handle(device)))
+			return;
+
+		tablet = wlr_tablet_create(tablet_mgr, seat, device);
+		wl_signal_add(&tablet->wlr_device->events.destroy,
+					  &tablet_device_destroy);
+		if (libinput_device_config_send_events_get_modes(device_handle)) {
+			libinput_device_config_send_events_set_mode(device_handle,
+														send_events_mode);
+			wlr_cursor_attach_input_device(cursor, device);
+		}
+	} else if (device == tablet->wlr_device) {
+		wlr_log(WLR_ERROR, "createtablet: duplicate device");
+	} else {
+		wlr_log(WLR_ERROR, "createtablet: already have one tablet");
+	}
+}
+
 void cursorconstrain(struct wlr_pointer_constraint_v1 *constraint) {
 	if (active_constraint == constraint)
 		return;
@@ -3190,6 +3260,12 @@ void inputdevice(struct wl_listener *listener, void *data) {
 		break;
 	case WLR_INPUT_DEVICE_POINTER:
 		createpointer(wlr_pointer_from_input_device(device));
+		break;
+	case WLR_INPUT_DEVICE_TABLET:
+		createtablet(device);
+		break;
+	case WLR_INPUT_DEVICE_TABLET_PAD:
+		tablet_pad = wlr_tablet_pad_create(tablet_mgr, seat, device);
 		break;
 	case WLR_INPUT_DEVICE_SWITCH:
 		createswitch(wlr_switch_from_input_device(device));
@@ -4955,6 +5031,7 @@ void setup(void) {
 				  &new_pointer_constraint);
 
 	relative_pointer_mgr = wlr_relative_pointer_manager_v1_create(dpy);
+	tablet_mgr = wlr_tablet_v2_create(dpy);
 
 	/*
 	 * Creates a cursor, which is a wlroots utility for tracking the cursor
@@ -4989,6 +5066,11 @@ void setup(void) {
 	wl_signal_add(&cursor->events.button, &cursor_button);
 	wl_signal_add(&cursor->events.axis, &cursor_axis);
 	wl_signal_add(&cursor->events.frame, &cursor_frame);
+	wl_signal_add(&cursor->events.tablet_tool_proximity,
+				  &tablet_tool_proximity);
+	wl_signal_add(&cursor->events.tablet_tool_axis, &tablet_tool_axis);
+	wl_signal_add(&cursor->events.tablet_tool_button, &tablet_tool_button);
+	wl_signal_add(&cursor->events.tablet_tool_tip, &tablet_tool_tip);
 
 	// 这两句代码会造成obs窗口里的鼠标光标消失,不知道注释有什么影响
 	cursor_shape_mgr = wlr_cursor_shape_manager_v1_create(dpy, 1);
@@ -5093,6 +5175,146 @@ void startdrag(struct wl_listener *listener, void *data) {
 
 	drag->icon->data = &wlr_scene_drag_icon_create(drag_icon, drag->icon)->node;
 	LISTEN_STATIC(&drag->icon->events.destroy, destroydragicon);
+}
+
+void tabletapplymap(double x, double y, struct wlr_input_device *dev) {
+	struct wlr_box geom = {0};
+	wlr_cursor_map_input_to_region(cursor, dev, &geom);
+	wlr_cursor_map_input_to_output(cursor, dev, selmon->wlr_output);
+}
+
+void tablettoolmotion(struct wlr_tablet_v2_tablet_tool *tool, bool change_x,
+					  bool change_y, double x, double y, double dx, double dy) {
+	struct wlr_surface *surface = NULL;
+	double sx, sy;
+
+	if (!change_x && !change_y)
+		return;
+
+	tabletapplymap(x, y, tablet->wlr_device);
+
+	// TODO: apply constraints
+	switch (tablet_tool->wlr_tool->type) {
+	case WLR_TABLET_TOOL_TYPE_LENS:
+	case WLR_TABLET_TOOL_TYPE_MOUSE:
+		wlr_cursor_move(cursor, tablet->wlr_device, dx, dy);
+		break;
+	default:
+		wlr_cursor_warp_absolute(cursor, tablet->wlr_device, change_x ? x : NAN,
+								 change_y ? y : NAN);
+		break;
+	}
+
+	motionnotify(0, NULL, 0, 0, 0, 0);
+
+	xytonode(cursor->x, cursor->y, &surface, NULL, NULL, &sx, &sy);
+	if (surface && !wlr_surface_accepts_tablet_v2(surface, tablet))
+		surface = NULL;
+
+	if (surface != tablet_curr_surface) {
+		if (tablet_curr_surface) {
+			// TODO: wait until all buttons released before leaving
+			if (tablet_tool)
+				wlr_tablet_v2_tablet_tool_notify_proximity_out(tablet_tool);
+			if (tablet_pad)
+				wlr_tablet_v2_tablet_pad_notify_leave(tablet_pad,
+													  tablet_curr_surface);
+			wl_list_remove(&destroy_tablet_surface_listener.link);
+		}
+		if (surface) {
+			if (tablet_pad)
+				wlr_tablet_v2_tablet_pad_notify_enter(tablet_pad, tablet,
+													  surface);
+			if (tablet_tool)
+				wlr_tablet_v2_tablet_tool_notify_proximity_in(tablet_tool,
+															  tablet, surface);
+			wl_signal_add(&surface->events.destroy,
+						  &destroy_tablet_surface_listener);
+		}
+		tablet_curr_surface = surface;
+	}
+
+	if (surface)
+		wlr_tablet_v2_tablet_tool_notify_motion(tablet_tool, sx, sy);
+}
+
+void tablettoolproximity(struct wl_listener *listener, void *data) {
+	struct wlr_tablet_tool_proximity_event *event = data;
+	struct wlr_tablet_tool *tool = event->tool;
+
+	if (!tablet_tool) {
+		tablet_tool = wlr_tablet_tool_create(tablet_mgr, seat, tool);
+		wl_signal_add(&tablet_tool->wlr_tool->events.destroy,
+					  &tablet_tool_destroy);
+		wl_signal_add(&tablet_tool->events.set_cursor, &request_cursor);
+	}
+
+	switch (event->state) {
+	case WLR_TABLET_TOOL_PROXIMITY_OUT:
+		wlr_tablet_v2_tablet_tool_notify_proximity_out(tablet_tool);
+		destroytabletsurfacenotify(NULL, NULL);
+		break;
+	case WLR_TABLET_TOOL_PROXIMITY_IN:
+		tablettoolmotion(tablet_tool, true, true, event->x, event->y, 0, 0);
+		break;
+	}
+}
+
+void tablettoolaxis(struct wl_listener *listener, void *data) {
+	struct wlr_tablet_tool_axis_event *event = data;
+
+	tablettoolmotion(tablet_tool, event->updated_axes & WLR_TABLET_TOOL_AXIS_X,
+					 event->updated_axes & WLR_TABLET_TOOL_AXIS_Y, event->x,
+					 event->y, event->dx, event->dy);
+
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_PRESSURE)
+		wlr_tablet_v2_tablet_tool_notify_pressure(tablet_tool, event->pressure);
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_DISTANCE)
+		wlr_tablet_v2_tablet_tool_notify_distance(tablet_tool, event->distance);
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_TILT_X)
+		tilt_x = event->tilt_x;
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_TILT_Y)
+		tilt_y = event->tilt_y;
+	if (event->updated_axes &
+		(WLR_TABLET_TOOL_AXIS_TILT_X | WLR_TABLET_TOOL_AXIS_TILT_Y))
+		wlr_tablet_v2_tablet_tool_notify_tilt(tablet_tool, tilt_x, tilt_y);
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_ROTATION)
+		wlr_tablet_v2_tablet_tool_notify_rotation(tablet_tool, event->rotation);
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_SLIDER)
+		wlr_tablet_v2_tablet_tool_notify_slider(tablet_tool, event->slider);
+	if (event->updated_axes & WLR_TABLET_TOOL_AXIS_WHEEL)
+		wlr_tablet_v2_tablet_tool_notify_wheel(tablet_tool, event->wheel_delta,
+											   0);
+}
+
+void tablettoolbutton(struct wl_listener *listener, void *data) {
+	struct wlr_tablet_tool_button_event *event = data;
+	wlr_tablet_v2_tablet_tool_notify_button(
+		tablet_tool, event->button,
+		(enum zwp_tablet_pad_v2_button_state)event->state);
+}
+
+void tablettooltip(struct wl_listener *listener, void *data) {
+	struct wlr_tablet_tool_tip_event *event = data;
+
+	if (!tablet_curr_surface) {
+		struct wlr_pointer_button_event fakeptrbtnevent = {
+			.button = BTN_LEFT,
+			.state = event->state == WLR_TABLET_TOOL_TIP_UP
+						 ? WL_POINTER_BUTTON_STATE_RELEASED
+						 : WL_POINTER_BUTTON_STATE_PRESSED,
+			.time_msec = event->time_msec,
+		};
+		buttonpress(NULL, (void *)&fakeptrbtnevent);
+	}
+
+	if (event->state == WLR_TABLET_TOOL_TIP_UP) {
+		wlr_tablet_v2_tablet_tool_notify_up(tablet_tool);
+		return;
+	}
+
+	wlr_tablet_v2_tablet_tool_notify_down(tablet_tool);
+	wlr_tablet_tool_v2_start_implicit_grab(tablet_tool);
 }
 
 void tag_client(const Arg *arg, Client *target_client) {
@@ -5424,7 +5646,6 @@ void updatemons(struct wl_listener *listener, void *data) {
 		/* make sure fullscreen clients have the right size */
 		if ((c = focustop(m)) && c->isfullscreen)
 			resize(c, m->m, 0);
-
 
 		config_head->state.x = m->m.x;
 		config_head->state.y = m->m.y;
