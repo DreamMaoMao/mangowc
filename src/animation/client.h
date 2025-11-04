@@ -494,10 +494,15 @@ void fadeout_client_animation_next_tick(Client *c) {
 
 	BufferData buffer_data;
 
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	uint32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
 	double animation_passed =
-		c->animation.total_frames
-			? (double)c->animation.passed_frames / c->animation.total_frames
+		c->animation.duration
+			? (double)passed_time / (double)c->animation.duration
 			: 1.0;
+
 	int type = c->animation.action = c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
 	unsigned int width =
@@ -541,20 +546,22 @@ void fadeout_client_animation_next_tick(Client *c) {
 			&c->scene->node, snap_scene_buffer_apply_effect, &buffer_data);
 	}
 
-	if (animation_passed == 1.0) {
+	if (animation_passed >= 1.0) {
 		wl_list_remove(&c->fadeout_link);
 		wlr_scene_node_destroy(&c->scene->node);
 		free(c);
 		c = NULL;
-	} else {
-		c->animation.passed_frames++;
 	}
 }
 
 void client_animation_next_tick(Client *c) {
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	uint32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
 	double animation_passed =
-		c->animation.total_frames
-			? (double)c->animation.passed_frames / c->animation.total_frames
+		c->animation.duration
+			? (double)passed_time / (double)c->animation.duration
 			: 1.0;
 
 	int type = c->animation.action == NONE ? MOVE : c->animation.action;
@@ -586,7 +593,7 @@ void client_animation_next_tick(Client *c) {
 
 	c->is_pending_open_animation = false;
 
-	if (animation_passed == 1.0) {
+	if (animation_passed >= 1.0) {
 
 		// clear the open action state
 		// To prevent him from being mistaken that
@@ -614,8 +621,6 @@ void client_animation_next_tick(Client *c) {
 
 		// end flush in next frame, not the current frame
 		c->need_output_flush = false;
-	} else {
-		c->animation.passed_frames++;
 	}
 
 	client_apply_clip(c, factor);
@@ -699,9 +704,7 @@ void init_fadeout_client(Client *c) {
 			fadeout_cient->geom.height * zoom_end_ratio;
 	}
 
-	fadeout_cient->animation.passed_frames = 0;
-	fadeout_cient->animation.total_frames =
-		fadeout_cient->animation.duration / all_output_frame_duration_ms();
+	fadeout_cient->animation.time_started = get_now_in_ms();
 	wlr_scene_node_set_enabled(&fadeout_cient->scene->node, true);
 	wl_list_insert(&fadeout_clients, &fadeout_cient->fadeout_link);
 
@@ -718,23 +721,11 @@ void client_commit(Client *c) {
 		}
 
 		c->animation.initial = c->animainit_geom;
-		// 设置动画速度
-		c->animation.passed_frames = 0;
-		c->animation.total_frames =
-			c->animation.duration / all_output_frame_duration_ms();
+		c->animation.time_started = get_now_in_ms();
 
 		// 标记动画开始
 		c->animation.running = true;
 		c->animation.should_animate = false;
-	} else {
-		// 如果动画没有开始,且被判定为不应该动画，
-		// 则设置总帧数为1,不然其他地方一旦获取动画
-		// 进度，总帧数作为分母会造成除零
-		// 比如动画类型为none的时候
-		if (!c->animation.running) {
-			c->animation.passed_frames = 1;
-			c->animation.total_frames = 1;
-		}
 	}
 	// 请求刷新屏幕
 	request_fresh_all_monitors();
@@ -910,12 +901,11 @@ bool client_draw_fadeout_frame(Client *c) {
 
 void client_set_focused_opacity_animation(Client *c) {
 	float *border_color = get_border_color(c);
+	c->opacity_animation.duration = animation_duration_focus;
 	memcpy(c->opacity_animation.target_border_color, border_color,
 		   sizeof(c->opacity_animation.target_border_color));
 	c->opacity_animation.target_opacity = c->focused_opacity;
-	c->opacity_animation.total_frames =
-		animation_duration_focus / all_output_frame_duration_ms();
-	c->opacity_animation.passed_frames = 0;
+	c->opacity_animation.time_started = get_now_in_ms();
 	if (c->opacity_animation.running) {
 		memcpy(c->opacity_animation.initial_border_color,
 			   c->opacity_animation.current_border_color,
@@ -936,13 +926,12 @@ void client_set_focused_opacity_animation(Client *c) {
 void cleint_set_unfocused_opacity_animation(Client *c) {
 	// Start border color animation to unfocused
 	float *border_color = get_border_color(c);
+	c->opacity_animation.duration = animation_duration_focus;
 	memcpy(c->opacity_animation.target_border_color, border_color,
 		   sizeof(c->opacity_animation.target_border_color));
 	// Start opacity animation to unfocused
 	c->opacity_animation.target_opacity = c->unfocused_opacity;
-	c->opacity_animation.total_frames =
-		animation_duration_focus / all_output_frame_duration_ms();
-	c->opacity_animation.passed_frames = 0;
+	c->opacity_animation.time_started = get_now_in_ms();
 
 	if (c->opacity_animation.running) {
 		memcpy(c->opacity_animation.initial_border_color,
@@ -970,8 +959,14 @@ bool client_apply_focus_opacity(Client *c) {
 		client_set_opacity(c, 1);
 	} else if (c->animation.running && c->animation.action == OPEN) {
 		c->opacity_animation.running = false;
-		float linear_progress =
-			(float)c->animation.passed_frames / c->animation.total_frames;
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+
+		uint32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
+		double linear_progress =
+			c->animation.duration
+				? (double)passed_time / (double)c->animation.duration
+				: 1.0;
 
 		float percent =
 			animation_fade_in && !c->nofadein ? linear_progress : 1.0;
@@ -985,8 +980,17 @@ bool client_apply_focus_opacity(Client *c) {
 		}
 		client_set_opacity(c, target_opacity);
 	} else if (animations && c->opacity_animation.running) {
-		float linear_progress = (float)c->opacity_animation.passed_frames /
-								c->opacity_animation.total_frames;
+
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+
+		uint32_t passed_time =
+			timespec_to_ms(&now) - c->opacity_animation.time_started;
+		double linear_progress =
+			c->opacity_animation.duration
+				? (double)passed_time / (double)c->opacity_animation.duration
+				: 1.0;
+
 		float eased_progress = find_animation_curve_at(linear_progress, FOCUS);
 
 		c->opacity_animation.current_opacity =
@@ -1008,7 +1012,6 @@ bool client_apply_focus_opacity(Client *c) {
 		if (linear_progress == 1.0f) {
 			c->opacity_animation.running = false;
 		} else {
-			c->opacity_animation.passed_frames++;
 			return true;
 		}
 	} else if (c == selmon->sel) {

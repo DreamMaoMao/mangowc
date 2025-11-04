@@ -86,22 +86,6 @@ double find_animation_curve_at(double t, int type) {
 	return baked_points[up].y;
 }
 
-double all_output_frame_duration_ms() {
-	int32_t refresh_total = 0;
-	Monitor *m = NULL;
-	wl_list_for_each(m, &mons, link) {
-		if (!m->wlr_output->enabled) {
-			continue;
-		}
-		refresh_total += m->wlr_output->refresh;
-	}
-	return 1000000.0 / refresh_total;
-}
-
-double output_frame_duration_ms(Monitor *m) {
-	return 1000000.0 / m->wlr_output->refresh;
-}
-
 static bool scene_node_snapshot(struct wlr_scene_node *node, int lx, int ly,
 								struct wlr_scene_tree *snapshot_tree) {
 	if (!node->enabled && node->type != WLR_SCENE_NODE_TREE) {

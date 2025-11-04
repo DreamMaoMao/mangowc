@@ -227,8 +227,7 @@ struct dwl_animation {
 	bool tagouting;
 	bool begin_fade_in;
 	bool tag_from_rule;
-	unsigned int total_frames;
-	unsigned int passed_frames;
+	unsigned int time_started;
 	unsigned int duration;
 	struct wlr_box initial;
 	struct wlr_box current;
@@ -240,8 +239,8 @@ struct dwl_opacity_animation {
 	float current_opacity;
 	float target_opacity;
 	float initial_opacity;
-	unsigned int total_frames;
-	unsigned int passed_frames;
+	unsigned int time_started;
+	unsigned int duration;
 	float current_border_color[4];
 	float target_border_color[4];
 	float initial_border_color[4];
