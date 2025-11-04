@@ -666,7 +666,7 @@ int fadeout_client_animation_next_tick(void *data) {
 	}
 
 	if (animation_passed >= 1.0) {
-		destroy_animation_timer(c);
+		client_destroy_animation_timer(c);
 		wl_list_remove(&c->fadeout_link);
 		wlr_scene_node_destroy(&c->scene->node);
 		free(c);
@@ -717,7 +717,7 @@ int client_animation_next_tick(void *data) {
 	c->is_pending_open_animation = false;
 
 	if (animation_passed >= 1.0) {
-
+		client_destroy_animation_timer(c);
 		// clear the open action state
 		// To prevent him from being mistaken that
 		// it's still in the opening animation in resize
@@ -744,7 +744,6 @@ int client_animation_next_tick(void *data) {
 
 		// end flush in next frame, not the current frame
 		c->need_output_flush = false;
-		destroy_animation_timer(c);
 	} else {
 		wl_event_source_timer_update(c->animation.timer, c->animation.frame_duration);
 	}

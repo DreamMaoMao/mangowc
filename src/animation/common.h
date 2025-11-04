@@ -277,9 +277,16 @@ void request_fresh_all_monitors(void) {
 	}
 }
 
-void destroy_animation_timer(Client *c) {
+void client_destroy_animation_timer(Client *c) {
 	if(c->animation.timer) {
 		wl_event_source_remove(c->animation.timer);
 		c->animation.timer = NULL;
+	}
+}
+
+void layer_destroy_animation_timer(LayerSurface *l) {
+	if(l->animation.timer) {
+		wl_event_source_remove(l->animation.timer);
+		l->animation.timer = NULL;
 	}
 }

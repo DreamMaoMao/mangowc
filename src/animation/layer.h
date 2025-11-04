@@ -290,15 +290,15 @@ void fadeout_layer_animation_next_tick(LayerSurface *l) {
 	}
 }
 
-void layer_animation_next_tick(LayerSurface *l) {
+int layer_animation_next_tick(void *data) {
 
-	if (!l || !l->mapped)
-		return;
+	LayerSurface *l = (LayerSurface *)data;
 
-	double animation_passed =
-		l->animation.total_frames
-			? (double)l->animation.passed_frames / l->animation.total_frames
-			: 1.0;
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    uint32_t passed_time = timespec_to_ms(&now) - l->animation.time_started;
+    double animation_passed =  (double)passed_time / (double)l->animation.duration;
 
 	int type = l->animation.action == NONE ? MOVE : l->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
@@ -350,12 +350,23 @@ void layer_animation_next_tick(LayerSurface *l) {
 	};
 
 	if (animation_passed == 1.0) {
+		layer_destroy_animation_timer(l);
 		l->animation.running = false;
 		l->need_output_flush = false;
 		l->animation.action = MOVE;
 	} else {
-		l->animation.passed_frames++;
+		wl_event_source_timer_update(l->animation.timer, l->animation.frame_duration);
 	}
+
+	layer_draw_shadow(l);
+
+	if(l->animation.running) {
+		wlr_output_schedule_frame(l->mon->wlr_output);
+		return 1;
+	} else {
+		return 0;
+	}
+
 }
 
 void init_fadeout_layers(LayerSurface *l) {
@@ -535,9 +546,13 @@ void layer_commit(LayerSurface *l) {
 
 		l->animation.initial = l->animainit_geom;
 		// 设置动画速度
-		l->animation.passed_frames = 0;
-		l->animation.total_frames =
-			l->animation.duration / output_frame_duration_ms(l->mon);
+    	l->animation.time_started = get_now_in_ms();
+    	l->animation.frame_duration = get_fastest_output_refresh_ms();
+		if(!l->animation.running)
+    		l->animation.timer =
+    		        wl_event_loop_add_timer(wl_display_get_event_loop(dpy), layer_animation_next_tick, l);
+    	wl_event_source_timer_update(l->animation.timer, l->animation.frame_duration);
+
 
 		// 标记动画开始
 		l->animation.running = true;
@@ -570,8 +585,10 @@ bool layer_draw_frame(LayerSurface *l) {
 	}
 
 	if (animations && layer_animations && l->animation.running && !l->noanim) {
-		layer_animation_next_tick(l);
-		layer_draw_shadow(l);
+		if(!l->animation.nofirstframe) {
+			layer_animation_next_tick(l);
+			l->animation.nofirstframe = true;
+		}
 	} else {
 		layer_draw_shadow(l);
 		l->need_output_flush = false;
