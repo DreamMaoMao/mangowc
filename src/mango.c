@@ -732,7 +732,6 @@ static unsigned int locked_mods = 0;
 static void *exclusive_focus;
 static struct wl_display *dpy;
 static struct wl_event_loop *event_loop;
-static struct wlr_relative_pointer_manager_v1 *pointer_manager;
 static struct wlr_backend *backend;
 static struct wlr_backend *headless_backend;
 static struct wlr_scene *scene;
@@ -4720,7 +4719,6 @@ void setup(void) {
 	 * clients from the Unix socket, manging Wayland globals, and so on. */
 	dpy = wl_display_create();
 	event_loop = wl_display_get_event_loop(dpy);
-	pointer_manager = wlr_relative_pointer_manager_v1_create(dpy);
 	/* The backend is a wlroots feature which abstracts the underlying input
 	 * and output hardware. The autocreate option will choose the most
 	 * suitable backend based on the current environment, such as opening an
