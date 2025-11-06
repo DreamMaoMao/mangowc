@@ -3351,7 +3351,7 @@ void keypress(struct wl_listener *listener, void *data) {
 		 keycode == 134 || keycode == 105 || keycode == 108 || keycode == 62) &&
 		selmon && selmon->sel) {
 		if (selmon->isoverview && selmon->sel) {
-			toggleoverview(&(Arg){.i = -1});
+			toggleoverview(&(Arg){.i = 1});
 		}
 	}
 

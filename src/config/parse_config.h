@@ -863,6 +863,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = toggleglobal;
 	} else if (strcmp(func_name, "toggleoverview") == 0) {
 		func = toggleoverview;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "set_proportion") == 0) {
 		func = set_proportion;
 		(*arg).f = atof(arg_value);
