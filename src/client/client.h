@@ -404,7 +404,22 @@ static inline void client_set_suspended(Client *c, int suspended) {
 	wlr_xdg_toplevel_set_suspended(c->surface.xdg->toplevel, suspended);
 }
 
-static inline int client_should_ignore_focus(Client *c) {
+static inline int client_should_ignore_focus_always(Client *c) {
+
+#ifdef XWAYLAND
+	if (client_is_x11(c)) {
+		struct wlr_xwayland_surface *surface = c->surface.xwayland;
+
+		if (!surface->hints)
+			return 0;
+
+		return !surface->hints->input;
+	}
+#endif
+	return 0;
+}
+
+static inline int client_should_ignore_focus_open(Client *c) {
 
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
