@@ -40,6 +40,8 @@ typedef struct {
 	char mode[28];
 	bool iscommonmode;
 	bool isdefaultmode;
+	bool islockapply;
+	bool isreleaseapply;
 } KeyBinding;
 
 typedef struct {
@@ -391,6 +393,35 @@ char *sanitize_string(char *str) {
 		end--;
 	*(end + 1) = '\0';
 	return str;
+}
+
+// 解析bind组合字符串
+void parse_bind_flags(const char *str, KeyBinding *kb) {
+
+	// 检查是否以"bind"开头
+	if (strncmp(str, "bind", 4) != 0) {
+		return;
+	}
+
+	const char *suffix = str + 4; // 跳过"bind"
+
+	// 遍历后缀字符
+	for (int i = 0; suffix[i] != '\0'; i++) {
+		switch (suffix[i]) {
+		case 's':
+			kb->keysymcode.type = KEY_TYPE_SYM;
+			break;
+		case 'l':
+			kb->islockapply = true;
+			break;
+		case 'r':
+			kb->isreleaseapply = true;
+			break;
+		default:
+			// 忽略其他字符或可根据需要处理错误
+			break;
+		}
+	}
 }
 
 int parse_circle_direction(const char *str) {
@@ -1862,8 +1893,7 @@ void parse_option(Config *config, char *key, char *value) {
 
 		config->exec_once_count++;
 
-	} else if (strncmp(key, "bind", 4) == 0 ||
-			   strncmp(key, "bindsym", 7) == 0) {
+	} else if (regex_match("^bind[s|l|r]*$", key)) {
 		config->key_bindings =
 			realloc(config->key_bindings,
 					(config->key_bindings_count + 1) * sizeof(KeyBinding));
@@ -1909,9 +1939,9 @@ void parse_option(Config *config, char *key, char *value) {
 			binding->iscommonmode = false;
 		}
 
+		parse_bind_flags(key, binding);
+		binding->keysymcode = parse_key(keysym_str, binding->keysymcode.type);
 		binding->mod = parse_mod(mod_str);
-		binding->keysymcode =
-			parse_key(keysym_str, strncmp(key, "bindsym", 7) == 0);
 		binding->arg.v = NULL;
 		binding->arg.v2 = NULL;
 		binding->arg.v3 = NULL;
@@ -2826,6 +2856,7 @@ void set_default_key_bindings(Config *config) {
 			default_key_bindings[i];
 		config->key_bindings[config->key_bindings_count + i].iscommonmode =
 			true;
+		config->key_bindings[config->key_bindings_count + i].islockapply = true;
 	}
 
 	// 更新按键绑定的总数

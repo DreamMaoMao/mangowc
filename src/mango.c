@@ -564,8 +564,8 @@ static void gpureset(struct wl_listener *listener, void *data);
 static int keyrepeat(void *data);
 
 static void inputdevice(struct wl_listener *listener, void *data);
-static int keybinding(unsigned int mods, xkb_keysym_t sym,
-					  unsigned int keycode);
+static int keybinding(unsigned int state, bool locked, unsigned int mods,
+					  xkb_keysym_t sym, unsigned int keycode);
 static void keypress(struct wl_listener *listener, void *data);
 static void keypressmod(struct wl_listener *listener, void *data);
 static bool keypressglobal(struct wlr_surface *last_surface,
@@ -3186,13 +3186,15 @@ int keyrepeat(void *data) {
 		1000 / group->wlr_group->keyboard.repeat_info.rate);
 
 	for (i = 0; i < group->nsyms; i++)
-		keybinding(group->mods, group->keysyms[i], group->keycode);
+		keybinding(WL_KEYBOARD_KEY_STATE_PRESSED, false, group->mods,
+				   group->keysyms[i], group->keycode);
 
 	return 0;
 }
 
 int // 17
-keybinding(unsigned int mods, xkb_keysym_t sym, unsigned int keycode) {
+keybinding(unsigned int state, bool locked, unsigned int mods, xkb_keysym_t sym,
+		   unsigned int keycode) {
 	/*
 	 * Here we handle compositor keybindings. This is when the compositor is
 	 * processing keys, rather than passing them on to the client for its
@@ -3211,6 +3213,22 @@ keybinding(unsigned int mods, xkb_keysym_t sym, unsigned int keycode) {
 	for (ji = 0; ji < config.key_bindings_count; ji++) {
 		if (config.key_bindings_count < 1)
 			break;
+
+		if (locked && config.key_bindings[ji].islockapply == false)
+			continue;
+
+		if (state == WL_KEYBOARD_KEY_STATE_RELEASED &&
+			config.key_bindings[ji].isreleaseapply == false)
+			continue;
+
+		if (state == WL_KEYBOARD_KEY_STATE_PRESSED &&
+			config.key_bindings[ji].isreleaseapply == true)
+			continue;
+
+		if (state != WL_KEYBOARD_KEY_STATE_PRESSED &&
+			state != WL_KEYBOARD_KEY_STATE_RELEASED)
+			continue;
+
 		k = &config.key_bindings[ji];
 		if ((k->iscommonmode || (k->isdefaultmode && keymode.isdefault) ||
 			 (strcmp(keymode.mode, k->mode) == 0)) &&
@@ -3339,10 +3357,11 @@ void keypress(struct wl_listener *listener, void *data) {
 
 	/* On _press_ if there is no active screen locker,
 	 * attempt to process a compositor keybinding. */
-	if (!locked && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-		for (i = 0; i < nsyms; i++)
-			handled = keybinding(mods, syms[i], keycode) || handled;
-	} else if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
+	for (i = 0; i < nsyms; i++)
+		handled =
+			keybinding(event->state, locked, mods, syms[i], keycode) || handled;
+
+	if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
 		tag_combo = false;
 	}
 
