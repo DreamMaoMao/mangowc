@@ -200,6 +200,9 @@ static bool scene_node_snapshot(struct wlr_scene_node *node, int lx, int ly,
 	}
 	case WLR_SCENE_NODE_OPTIMIZED_BLUR:
 		return true;
+
+	default:
+		return true;
 	}
 
 	if (snapshot_node != NULL) {
