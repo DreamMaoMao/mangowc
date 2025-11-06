@@ -603,7 +603,8 @@ arrange(Monitor *m, bool want_animation) {
 		}
 
 		if (VISIBLEON(c, m)) {
-			m->visible_clients++;
+			if (!c->isunglobal)
+				m->visible_clients++;
 
 			if (c->isfullscreen)
 				m->has_visible_fullscreen_client = true;

@@ -99,7 +99,7 @@
 	 A->geom.y + A->geom.height <= A->mon->m.y + A->mon->m.height)
 #define ISTILED(A)                                                             \
 	(A && !(A)->isfloating && !(A)->isminied && !(A)->iskilling &&             \
-	 !(A)->ismaximizescreen && !(A)->isfullscreen)
+	 !(A)->ismaximizescreen && !(A)->isfullscreen && !(A)->isunglobal)
 #define VISIBLEON(C, M)                                                        \
 	((C) && (M) && (C)->mon == (M) && ((C)->tags & (M)->tagset[(M)->seltags]))
 #define LENGTH(X) (sizeof X / sizeof X[0])
