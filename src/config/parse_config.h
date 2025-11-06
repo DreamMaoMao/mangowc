@@ -18,7 +18,7 @@
 
 enum { NUM_TYPE_MINUS, NUM_TYPE_PLUS, NUM_TYPE_DEFAULT };
 
-enum { KEY_TYPE_SYM, KEY_TYPE_CODE };
+enum { KEY_TYPE_CODE, KEY_TYPE_SYM };
 
 typedef struct {
 	uint32_t keycode1;
@@ -1949,7 +1949,8 @@ void parse_option(Config *config, char *key, char *value) {
 		}
 
 		parse_bind_flags(key, binding);
-		binding->keysymcode = parse_key(keysym_str, binding->keysymcode.type);
+		binding->keysymcode =
+			parse_key(keysym_str, binding->keysymcode.type == KEY_TYPE_SYM);
 		binding->mod = parse_mod(mod_str);
 		binding->arg.v = NULL;
 		binding->arg.v2 = NULL;
