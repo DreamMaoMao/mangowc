@@ -230,7 +230,7 @@ void buffer_set_effect(Client *c, BufferData data) {
 void apply_border(Client *c) {
 	bool hit_no_border = false;
 
-	if (c->iskilling || !client_surface(c)->mapped)
+	if (c->iskilling || !client_surface(c)->mapped || c->isnoshadow)
 		return;
 
 	hit_no_border = check_hit_no_border(c);
@@ -763,6 +763,11 @@ void client_set_pending_state(Client *c) {
 	}
 
 	if (start_drag_window) {
+		c->animation.should_animate = false;
+		c->animation.duration = 0;
+	}
+
+	if (c->isnoanimation) {
 		c->animation.should_animate = false;
 		c->animation.duration = 0;
 	}

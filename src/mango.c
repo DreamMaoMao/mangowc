@@ -330,6 +330,8 @@ struct Client {
 	int is_scratchpad_show;
 	int isglobal;
 	int isnoborder;
+	int isnoshadow;
+	int isnoanimation;
 	int isopensilent;
 	int istagsilent;
 	int iskilling;
@@ -1144,6 +1146,8 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isfloating);
 	APPLY_INT_PROP(c, r, isfullscreen);
 	APPLY_INT_PROP(c, r, isnoborder);
+	APPLY_INT_PROP(c, r, isnoshadow);
+	APPLY_INT_PROP(c, r, isnoanimation);
 	APPLY_INT_PROP(c, r, isopensilent);
 	APPLY_INT_PROP(c, r, istagsilent);
 	APPLY_INT_PROP(c, r, isnamedscratchpad);

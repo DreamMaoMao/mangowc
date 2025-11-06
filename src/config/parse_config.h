@@ -61,6 +61,8 @@ typedef struct {
 	const char *layer_animation_type_open;
 	const char *layer_animation_type_close;
 	int isnoborder;
+	int isnoshadow;
+	int isnoanimation;
 	int isopensilent;
 	int istagsilent;
 	int isnamedscratchpad;
@@ -1634,6 +1636,8 @@ void parse_option(Config *config, char *key, char *value) {
 		rule->isfloating = -1;
 		rule->isfullscreen = -1;
 		rule->isnoborder = -1;
+		rule->isnoshadow = -1;
+		rule->isnoanimation = -1;
 		rule->isopensilent = -1;
 		rule->istagsilent = -1;
 		rule->isnamedscratchpad = -1;
@@ -1714,6 +1718,10 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->height = atoi(val);
 				} else if (strcmp(key, "isnoborder") == 0) {
 					rule->isnoborder = atoi(val);
+				} else if (strcmp(key, "isnoshadow") == 0) {
+					rule->isnoshadow = atoi(val);
+				} else if (strcmp(key, "isnoanimation") == 0) {
+					rule->isnoanimation = atoi(val);
 				} else if (strcmp(key, "isopensilent") == 0) {
 					rule->isopensilent = atoi(val);
 				} else if (strcmp(key, "istagsilent") == 0) {
