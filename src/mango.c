@@ -4058,9 +4058,9 @@ void rendermon(struct wl_listener *listener, void *data) {
 	// 绘制客户端
 	wl_list_for_each(c, &clients, link) {
 		need_more_frames = client_draw_frame(c) || need_more_frames;
-		if (!animations && !allow_tearing && c->configure_serial &&
-			!c->isfloating && client_is_rendered_on_mon(c, m) &&
-			!client_is_stopped(c)) {
+		if (!animations && !(allow_tearing && frame_allow_tearing) &&
+			c->configure_serial && !c->isfloating &&
+			client_is_rendered_on_mon(c, m) && !client_is_stopped(c)) {
 			goto skip;
 		}
 	}
