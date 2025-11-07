@@ -3533,7 +3533,7 @@ static void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
 
 	if (blur && c && !c->noblur) {
 		wlr_scene_node_set_enabled(&c->blur->node, true);
-		// wlr_scene_blur_set_transparency_mask_source(c->blur, buffer);
+		wlr_scene_blur_set_transparency_mask_source(c->blur, buffer);
 		if (blur_optimized) {
 			wlr_scene_blur_set_should_only_blur_bottom_layer(c->blur, true);
 		} else {
