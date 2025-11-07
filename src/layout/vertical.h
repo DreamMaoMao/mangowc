@@ -310,7 +310,7 @@ void vertical_grid(Monitor *m) {
 						? 0
 						: borderpx;
 			if (VISIBLEON(c, m) && !c->isunglobal &&
-				((m->isoverview && !client_should_ignore_focus_open(c)) ||
+				((m->isoverview && !client_is_x11_popup(c)) ||
 				 ISTILED(c))) {
 				ch = (m->w.height - 2 * target_gappo) * single_height_ratio;
 				cw = (m->w.width - 2 * target_gappo) * single_width_ratio;
@@ -338,7 +338,7 @@ void vertical_grid(Monitor *m) {
 						? 0
 						: borderpx;
 			if (VISIBLEON(c, m) && !c->isunglobal &&
-				((m->isoverview && !client_should_ignore_focus_open(c)) ||
+				((m->isoverview && !client_is_x11_popup(c)) ||
 				 ISTILED(c))) {
 				if (i == 0) {
 					c->geom.x = m->w.x + (m->w.width - cw) / 2 + target_gappo;
@@ -385,7 +385,7 @@ void vertical_grid(Monitor *m) {
 				? 0
 				: borderpx;
 		if (VISIBLEON(c, m) && !c->isunglobal &&
-			((m->isoverview && !client_should_ignore_focus_open(c)) ||
+			((m->isoverview && !client_is_x11_popup(c)) ||
 			 ISTILED(c))) {
 			cx = m->w.x + (i / rows) * (cw + target_gappi);
 			cy = m->w.y + (i % rows) * (ch + target_gappi);

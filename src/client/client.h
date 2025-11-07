@@ -404,7 +404,7 @@ static inline void client_set_suspended(Client *c, int suspended) {
 	wlr_xdg_toplevel_set_suspended(c->surface.xdg->toplevel, suspended);
 }
 
-static inline int client_should_ignore_focus_always(Client *c) {
+static inline int client_should_ignore_focus(Client *c) {
 
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
@@ -419,7 +419,7 @@ static inline int client_should_ignore_focus_always(Client *c) {
 	return 0;
 }
 
-static inline int client_should_ignore_focus_open(Client *c) {
+static inline int client_is_x11_popup(Client *c) {
 
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {

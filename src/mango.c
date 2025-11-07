@@ -1314,7 +1314,7 @@ void applyrules(Client *c) {
 	// if no geom rule hit and is normal winodw, use the center pos and record
 	// the hit size
 	if (!hit_rule_pos &&
-		(!client_is_x11(c) || !client_should_ignore_focus_open(c))) {
+		(!client_is_x11(c) || !client_is_x11_popup(c))) {
 		c->float_geom = c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
 	}
 
@@ -3025,7 +3025,7 @@ void focusclient(Client *c, int lift) {
 	if (c && !client_surface(c)->mapped)
 		return;
 
-	if (c && client_should_ignore_focus_always(c))
+	if (c && client_should_ignore_focus(c) && client_is_x11_popup(c))
 		return;
 
 	/* Raise client in stacking order if requested */
@@ -3515,7 +3515,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 		init_client_properties(c);
 
 	// set special window properties
-	if (client_is_unmanaged(c) || client_should_ignore_focus_open(c)) {
+	if (client_is_unmanaged(c) || client_is_x11_popup(c)) {
 		c->bw = 0;
 		c->isnoborder = 1;
 	} else {
@@ -4336,7 +4336,7 @@ setfloating(Client *c, int floating) {
 		}
 
 		// 重新计算居中的坐标
-		if (!client_is_x11(c) || !client_should_ignore_focus_open(c))
+		if (!client_is_x11(c) || !client_is_x11_popup(c))
 			target_box = setclient_coordinate_center(c, target_box, 0, 0);
 		backup_box = c->geom;
 		hit = applyrulesgeom(c);
@@ -4645,7 +4645,7 @@ void setmon(Client *c, Monitor *m, unsigned int newtags, bool focus) {
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
 	}
 
-	if (focus && !client_should_ignore_focus_open(c)) {
+	if (focus && !client_is_x11_popup(c)) {
 		focusclient(focustop(selmon), 1);
 	}
 
