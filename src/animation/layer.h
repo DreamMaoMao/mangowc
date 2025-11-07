@@ -356,6 +356,10 @@ void layer_animation_next_tick(LayerSurface *l) {
 		.height = height,
 	};
 
+	if (blur && blur_layer && !l->noblur && l->blur)
+		wlr_scene_blur_set_size(l->blur, l->animation.current.width,
+								l->animation.current.height);
+
 	if (animation_passed >= 1.0) {
 		l->animation.running = false;
 		l->need_output_flush = false;
@@ -565,6 +569,10 @@ bool layer_draw_frame(LayerSurface *l) {
 		layer_draw_shadow(l);
 	} else {
 		layer_draw_shadow(l);
+		if (blur && blur_layer && !l->noblur && l->blur) {
+			wlr_scene_node_set_enabled(&l->blur->node, true);
+			wlr_scene_blur_set_size(l->blur, l->geom.width, l->geom.height);
+		}
 		l->need_output_flush = false;
 	}
 	return true;

@@ -535,6 +535,8 @@ void client_apply_clip(Client *c, float factor) {
 		}
 
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
+		wlr_scene_blur_set_size(c->blur, clip_box.width - c->bw,
+								clip_box.height - c->bw);
 		buffer_set_effect(c, (BufferData){1.0f, 1.0f, clip_box.width,
 										  clip_box.height,
 										  current_corner_location, true});
@@ -583,6 +585,7 @@ void client_apply_clip(Client *c, float factor) {
 
 	// 应用窗口表面剪切
 	wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
+	wlr_scene_blur_set_size(c->blur, clip_box.width, clip_box.height);
 
 	// 获取剪切后的表面的实际大小用于计算缩放
 	int acutal_surface_width = geometry.width - offset.x - offset.width;
@@ -987,6 +990,8 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 		apply_border(c);
 		client_get_clip(c, &clip);
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip);
+		wlr_scene_blur_set_size(c->blur, clip.width - c->bw,
+								clip.height - c->bw);
 		return;
 	}
 	// 如果不是工作区切换时划出去的窗口，就让动画的结束位置，就是上面的真实位置和大小

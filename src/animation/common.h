@@ -162,7 +162,7 @@ static bool scene_node_snapshot(struct wlr_scene_node *node, int lx, int ly,
 		// 	snapshot_buffer, scene_buffer->backdrop_blur_optimized);
 		// wlr_scene_buffer_set_backdrop_blur_ignore_transparent(
 		// 	snapshot_buffer, scene_buffer->backdrop_blur_ignore_transparent);
-		wlr_scene_buffer_set_backdrop_blur(snapshot_buffer, false);
+		// wlr_scene_buffer_set_backdrop_blur(snapshot_buffer, false);
 
 		snapshot_buffer->node.data = scene_buffer->node.data;
 
@@ -198,6 +198,8 @@ static bool scene_node_snapshot(struct wlr_scene_node *node, int lx, int ly,
 
 		break;
 	}
+	case WLR_SCENE_NODE_BLUR:
+		return true;
 	case WLR_SCENE_NODE_OPTIMIZED_BLUR:
 		return true;
 	}
