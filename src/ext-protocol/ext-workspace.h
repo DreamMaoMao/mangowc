@@ -47,6 +47,11 @@ static void handle_ext_workspace_activate(struct wl_listener *listener,
 										  void *data) {
 	struct workspace *workspace =
 		wl_container_of(listener, workspace, activate);
+
+	if (workspace->m->isoverview) {
+		return;
+	}
+
 	goto_workspace(workspace);
 	wlr_log(WLR_INFO, "ext activating workspace %d", workspace->tag);
 }
@@ -55,6 +60,11 @@ static void handle_ext_workspace_deactivate(struct wl_listener *listener,
 											void *data) {
 	struct workspace *workspace =
 		wl_container_of(listener, workspace, deactivate);
+
+	if (workspace->m->isoverview) {
+		return;
+	}
+
 	toggle_workspace(workspace);
 	wlr_log(WLR_INFO, "ext deactivating workspace %d", workspace->tag);
 }
