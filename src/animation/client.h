@@ -245,6 +245,13 @@ void buffer_set_effect(Client *c, BufferData data) {
 		data.corner_location = CORNER_LOCATION_NONE;
 	}
 
+	if (blur && !c->noblur) {
+		wlr_scene_blur_set_size(c->blur, c->animation.current.width - 2 * c->bw,
+								c->animation.current.height - 2 * c->bw);
+
+		wlr_scene_blur_set_corner_radius(c->blur, border_radius,
+										 data.corner_location);
+	}
 	wlr_scene_node_for_each_buffer(&c->scene_surface->node,
 								   scene_buffer_apply_effect, &data);
 }
@@ -535,6 +542,7 @@ void client_apply_clip(Client *c, float factor) {
 		}
 
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
+
 		buffer_set_effect(c, (BufferData){1.0f, 1.0f, clip_box.width,
 										  clip_box.height,
 										  current_corner_location, true});
@@ -987,6 +995,10 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 		apply_border(c);
 		client_get_clip(c, &clip);
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip);
+		if (blur && !c->noblur)
+			wlr_scene_blur_set_size(c->blur,
+									c->animation.current.width - 2 * c->bw,
+									c->animation.current.height - 2 * c->bw);
 		return;
 	}
 	// 如果不是工作区切换时划出去的窗口，就让动画的结束位置，就是上面的真实位置和大小
