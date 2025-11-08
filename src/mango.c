@@ -2086,7 +2086,8 @@ static void iter_layer_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
 	LayerSurface *l = (LayerSurface *)user_data;
 
 	wlr_scene_node_set_enabled(&l->blur->node, true);
-	wlr_scene_blur_set_transparency_mask_source(l->blur, buffer);
+	wlr_scene_blur_set_mask_source(l->blur, &buffer->node,
+								   BLUR_MASK_IGNORE_TRANSPARENCY);
 	wlr_scene_blur_set_size(l->blur, l->geom.width, l->geom.height);
 
 	if (blur_optimized) {
@@ -3533,7 +3534,8 @@ static void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
 
 	if (blur && c && !c->noblur) {
 		wlr_scene_node_set_enabled(&c->blur->node, true);
-		wlr_scene_blur_set_transparency_mask_source(c->blur, buffer);
+		wlr_scene_blur_set_mask_source(c->blur, &buffer->node,
+									   BLUR_MASK_IGNORE_TRANSPARENCY);
 		if (blur_optimized) {
 			wlr_scene_blur_set_should_only_blur_bottom_layer(c->blur, true);
 		} else {
