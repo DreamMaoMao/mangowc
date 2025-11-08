@@ -374,6 +374,10 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
 	float delta_x, delta_y;
 	float new_scroller_proportion;
 
+	if (grabc && grabc->mon->visible_tiling_clients == 1 &&
+		!scroller_ignore_proportion_single)
+		return;
+
 	if (!start_drag_window && isdrag) {
 		drag_begin_cursorx = cursor->x;
 		drag_begin_cursory = cursor->y;
