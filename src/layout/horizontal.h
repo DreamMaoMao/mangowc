@@ -234,7 +234,7 @@ void scroller(Monitor *m) {
 		}
 	}
 
-	if (n == 1) {
+	if (n == 1 && !scroller_ignore_proportion_single) {
 		c = tempClients[0];
 		target_geom.height = m->w.height - 2 * cur_gappov;
 		target_geom.width =
@@ -275,6 +275,10 @@ void scroller(Monitor *m) {
 			focus_client_index = i;
 			break;
 		}
+	}
+
+	if (n == 1 && scroller_ignore_proportion_single) {
+		need_scroller = true;
 	}
 
 	if (start_drag_window)

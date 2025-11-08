@@ -192,7 +192,7 @@ void vertical_scroller(Monitor *m) {
 		}
 	}
 
-	if (n == 1) {
+	if (n == 1 && !scroller_ignore_proportion_single) {
 		c = tempClients[0];
 		target_geom.width = m->w.width - 2 * cur_gappoh;
 		target_geom.height =
@@ -234,6 +234,13 @@ void vertical_scroller(Monitor *m) {
 			break;
 		}
 	}
+
+	if (n == 1 && scroller_ignore_proportion_single) {
+		need_scroller = true;
+	}
+
+	if (start_drag_window)
+		need_scroller = false;
 
 	target_geom.width = m->w.width - 2 * cur_gappoh;
 	target_geom.height = max_client_height * c->scroller_proportion;
