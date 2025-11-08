@@ -28,8 +28,7 @@ void grid(Monitor *m) {
 						? 0
 						: borderpx;
 			if (VISIBLEON(c, m) && !c->isunglobal &&
-				((m->isoverview && !client_is_x11_popup(c)) ||
-				 ISTILED(c))) {
+				((m->isoverview && !client_is_x11_popup(c)) || ISTILED(c))) {
 				cw = (m->w.width - 2 * target_gappo) * single_width_ratio;
 				ch = (m->w.height - 2 * target_gappo) * single_height_ratio;
 				c->geom.x = m->w.x + (m->w.width - cw) / 2;
@@ -55,8 +54,7 @@ void grid(Monitor *m) {
 						? 0
 						: borderpx;
 			if (VISIBLEON(c, m) && !c->isunglobal &&
-				((m->isoverview && !client_is_x11_popup(c)) ||
-				 ISTILED(c))) {
+				((m->isoverview && !client_is_x11_popup(c)) || ISTILED(c))) {
 				if (i == 0) {
 					c->geom.x = m->w.x + target_gappo;
 					c->geom.y = m->w.y + (m->w.height - ch) / 2 + target_gappo;
@@ -106,8 +104,7 @@ void grid(Monitor *m) {
 				? 0
 				: borderpx;
 		if (VISIBLEON(c, m) && !c->isunglobal &&
-			((m->isoverview && !client_is_x11_popup(c)) ||
-			 ISTILED(c))) {
+			((m->isoverview && !client_is_x11_popup(c)) || ISTILED(c))) {
 			cx = m->w.x + (i % cols) * (cw + target_gappi);
 			cy = m->w.y + (i / cols) * (ch + target_gappi);
 			if (overcols && i >= n - overcols) {

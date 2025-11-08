@@ -1313,8 +1313,7 @@ void applyrules(Client *c) {
 
 	// if no geom rule hit and is normal winodw, use the center pos and record
 	// the hit size
-	if (!hit_rule_pos &&
-		(!client_is_x11(c) || !client_is_x11_popup(c))) {
+	if (!hit_rule_pos && (!client_is_x11(c) || !client_is_x11_popup(c))) {
 		c->float_geom = c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
 	}
 
