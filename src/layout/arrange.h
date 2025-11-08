@@ -479,6 +479,9 @@ void resize_tile_client(Client *grabc, bool isdrag, int offsetx, int offsety,
 	if (!grabc || grabc->isfullscreen || grabc->ismaximizescreen)
 		return;
 
+	if (grabc->mon->isoverview)
+		return;
+
 	const Layout *current_layout =
 		grabc->mon->pertag->ltidxs[grabc->mon->pertag->curtag];
 	if (current_layout->id == TILE || current_layout->id == DECK ||
