@@ -521,6 +521,14 @@ int setkeymode(const Arg *arg) {
 }
 
 int set_proportion(const Arg *arg) {
+
+	if (selmon->isoverview || !is_scroller_layout(selmon))
+		return 0;
+
+	if (selmon->visible_tiling_clients == 1 &&
+		!scroller_ignore_proportion_single)
+		return 0;
+
 	if (selmon->sel) {
 		unsigned int max_client_width =
 			selmon->w.width - 2 * scroller_structs - gappih;
@@ -921,6 +929,13 @@ int switch_proportion_preset(const Arg *arg) {
 	if (config.scroller_proportion_preset_count == 0) {
 		return 0;
 	}
+
+	if (selmon->isoverview || !is_scroller_layout(selmon))
+		return 0;
+
+	if (selmon->visible_tiling_clients == 1 &&
+		!scroller_ignore_proportion_single)
+		return 0;
 
 	if (selmon->sel) {
 
