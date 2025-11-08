@@ -282,18 +282,6 @@ int incovgaps(const Arg *arg) {
 	return 0;
 }
 
-int increase_proportion(const Arg *arg) {
-	if (selmon->sel) {
-		unsigned int max_client_width =
-			selmon->w.width - 2 * scroller_structs - gappih;
-		selmon->sel->scroller_proportion =
-			MIN(MAX(arg->f + selmon->sel->scroller_proportion, 0.1), 1.0);
-		selmon->sel->geom.width = max_client_width * arg->f;
-		arrange(selmon, false);
-	}
-	return 0;
-}
-
 int setmfact(const Arg *arg) {
 	float f;
 	Client *c = NULL;

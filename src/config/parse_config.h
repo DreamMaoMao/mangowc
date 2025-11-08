@@ -870,9 +870,6 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "set_proportion") == 0) {
 		func = set_proportion;
 		(*arg).f = atof(arg_value);
-	} else if (strcmp(func_name, "increase_proportion") == 0) {
-		func = increase_proportion;
-		(*arg).f = atof(arg_value);
 	} else if (strcmp(func_name, "switch_proportion_preset") == 0) {
 		func = switch_proportion_preset;
 	} else if (strcmp(func_name, "viewtoleft") == 0) {
