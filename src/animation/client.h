@@ -246,9 +246,6 @@ void buffer_set_effect(Client *c, BufferData data) {
 	}
 
 	if (blur && !c->noblur) {
-		wlr_scene_blur_set_size(c->blur, c->animation.current.width - 2 * c->bw,
-								c->animation.current.height - 2 * c->bw);
-
 		wlr_scene_blur_set_corner_radius(c->blur, border_radius,
 										 data.corner_location);
 	}
@@ -350,6 +347,14 @@ void client_draw_shadow(Client *c) {
 	clipped_region.area.y = clipped_region.area.y - top_offset;
 
 	wlr_scene_shadow_set_clipped_region(c->shadow, clipped_region);
+}
+
+void client_draw_blur(Client *c, struct wlr_box clip_box, struct ivec2 offset) {
+	if (blur && !c->noblur) {
+		wlr_scene_node_set_position(&c->blur->node, offset.x, offset.y);
+		wlr_scene_blur_set_size(c->blur, clip_box.width - c->bw,
+								clip_box.height - c->bw);
+	}
 }
 
 void apply_border(Client *c) {
@@ -536,6 +541,7 @@ void client_apply_clip(Client *c, float factor) {
 
 		apply_border(c);
 		client_draw_shadow(c);
+		client_draw_blur(c, clip_box, offset);
 
 		if (clip_box.width <= 0 || clip_box.height <= 0) {
 			return;
@@ -574,6 +580,7 @@ void client_apply_clip(Client *c, float factor) {
 	// 应用窗口装饰
 	apply_border(c);
 	client_draw_shadow(c);
+	client_draw_blur(c, clip_box, offset);
 
 	// 如果窗口剪切区域已经剪切到0，则不渲染窗口表面
 	if (clip_box.width <= 0 || clip_box.height <= 0) {
