@@ -77,6 +77,7 @@ typedef struct {
 	int offsety;
 	int width;
 	int height;
+	int nofocus;
 	int nofadein;
 	int nofadeout;
 	int no_force_center;
@@ -1652,6 +1653,7 @@ void parse_option(Config *config, char *key, char *value) {
 		rule->force_maximize = -1;
 		rule->force_tearing = -1;
 		rule->noswallow = -1;
+		rule->nofocus = -1;
 		rule->nofadein = -1;
 		rule->nofadeout = -1;
 		rule->no_force_center = -1;
@@ -1706,6 +1708,8 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->offsetx = atoi(val);
 				} else if (strcmp(key, "offsety") == 0) {
 					rule->offsety = atoi(val);
+				} else if (strcmp(key, "nofocus") == 0) {
+					rule->nofocus = atoi(val);
 				} else if (strcmp(key, "nofadein") == 0) {
 					rule->nofadein = atoi(val);
 				} else if (strcmp(key, "nofadeout") == 0) {

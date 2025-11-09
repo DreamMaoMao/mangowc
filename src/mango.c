@@ -352,6 +352,7 @@ struct Client {
 	bool drag_to_tile;
 	bool scratchpad_switching_mon;
 	bool fake_no_border;
+	int nofocus;
 	int nofadein;
 	int nofadeout;
 	int no_force_center;
@@ -1140,6 +1141,7 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, force_maximize);
 	APPLY_INT_PROP(c, r, force_tearing);
 	APPLY_INT_PROP(c, r, noswallow);
+	APPLY_INT_PROP(c, r, nofocus);
 	APPLY_INT_PROP(c, r, nofadein);
 	APPLY_INT_PROP(c, r, nofadeout);
 	APPLY_INT_PROP(c, r, no_force_center);
@@ -1252,11 +1254,16 @@ void applyrules(Client *c) {
 	const char *appid, *title;
 	unsigned int i, newtags = 0;
 	const ConfigWinRule *r;
-	Monitor *mon = selmon, *m = NULL;
+	Monitor *m = NULL;
 	Client *fc = NULL;
 	bool hit_rule_pos = false;
+	Client *parent = NULL;
 
-	c->isfloating = client_is_float_type(c);
+	parent = client_get_parent(c);
+
+	Monitor *mon = parent && parent->mon ? parent->mon : selmon;
+
+	c->isfloating = client_is_float_type(c) || parent;
 	if (!(appid = client_get_appid(c)))
 		appid = broken;
 	if (!(title = client_get_title(c)))
@@ -1273,8 +1280,14 @@ void applyrules(Client *c) {
 		// set general properties
 		apply_rule_properties(c, r);
 
-		// set tags
-		newtags |= (r->tags > 0) ? r->tags : 0;
+		// // set tags
+		if (r->tags > 0) {
+			newtags |= r->tags;
+		} else if (parent) {
+			newtags = parent->tags;
+		} else {
+			newtags |= 0;
+		}
 
 		// set monitor of client
 		wl_list_for_each(m, &mons, link) {
@@ -1343,8 +1356,9 @@ void applyrules(Client *c) {
 
 	int fullscreen_state_backup = c->isfullscreen || client_wants_fullscreen(c);
 	setmon(c, mon, newtags,
-		   !c->isopensilent && (!c->istagsilent || !newtags ||
-								newtags & mon->tagset[mon->seltags]));
+		   !c->isopensilent && !client_should_ignore_focus(c) &&
+			   (!c->istagsilent || !newtags ||
+				newtags & mon->tagset[mon->seltags]));
 
 	if (c->mon &&
 		!(c->mon == selmon && c->tags & c->mon->tagset[c->mon->seltags]) &&
@@ -3029,6 +3043,9 @@ void focusclient(Client *c, int lift) {
 	if (c && client_should_ignore_focus(c) && client_is_x11_popup(c))
 		return;
 
+	if (c && c->nofocus)
+		return;
+
 	/* Raise client in stacking order if requested */
 	if (c && lift)
 		wlr_scene_node_raise_to_top(&c->scene->node); // 将视图提升到顶层
@@ -3477,6 +3494,7 @@ void init_client_properties(Client *c) {
 	c->fake_no_border = false;
 	c->focused_opacity = focused_opacity;
 	c->unfocused_opacity = unfocused_opacity;
+	c->nofocus = 0;
 	c->nofadein = 0;
 	c->nofadeout = 0;
 	c->no_force_center = 0;
@@ -3497,7 +3515,6 @@ void init_client_properties(Client *c) {
 void // old fix to 0.5
 mapnotify(struct wl_listener *listener, void *data) {
 	/* Called when the surface is mapped, or ready to display on-screen. */
-	Client *p = NULL;
 	Client *at_client = NULL;
 	Client *c = wl_container_of(listener, c, map);
 	int i;
@@ -3594,16 +3611,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 		wl_list_insert(clients.prev, &c->link); // 尾部入栈
 	wl_list_insert(&fstack, &c->flink);
 
-	/* Set initial monitor, tags, floating status, and focus:
-	 * we always consider floating, clients that have parent and thus
-	 * we set the same tags and monitor than its parent, if not
-	 * try to apply rules for them */
-	if ((p = client_get_parent(c))) {
-		c->isfloating = 1;
-		setmon(c, p->mon, p->tags, true);
-	} else {
-		applyrules(c);
-	}
+	applyrules(c);
 
 	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
 							WLR_EDGE_RIGHT);
