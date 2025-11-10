@@ -101,7 +101,7 @@ emerge --ask --verbose gui-wm/mangowc
 ## Other
 
 ```bash
-git clone -b 0.19.1 https://gitlab.freedesktop.org/wlroots/wlroots.git
+git clone -b 0.19.2 https://gitlab.freedesktop.org/wlroots/wlroots.git
 cd wlroots
 meson build -Dprefix=/usr
 sudo ninja -C build install
@@ -119,7 +119,7 @@ sudo ninja -C build install
 
 ## Suggested Tools
 
-### integrated component
+### Hybrid component
 - [dms-shell](https://github.com/AvengeMedia/DankMaterialShell)
 
 ### Independent component
