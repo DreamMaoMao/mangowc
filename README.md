@@ -189,7 +189,10 @@ Here's an example of using the modules in a flake:
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-parts.url = "github:hercules-ci/flake-parts";
-    mango.url = "github:DreamMaoMao/mango";
+    mango = {
+      url = "github:DreamMaoMao/mango";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs =
     inputs@{ self, flake-parts, ... }:
