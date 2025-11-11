@@ -851,253 +851,168 @@ unsigned int parse_num_type(char *str) {
 	}
 }
 
+typedef struct {
+	const char *name;
+	FuncType func;
+	int parser_type;
+} FuncEntry;
+
+#define PARSE_NONE 0
+#define PARSE_INT 1
+#define PARSE_FLOAT 2
+#define PARSE_STR 3
+#define PARSE_UINT 4
+#define PARSE_TAG 5
+#define PARSE_DIR 6
+#define PARSE_CIRCLE_DIR 7
+#define PARSE_MOUSE_ACTION 8
+#define PARSE_TAG_INT2 9
+#define PARSE_TAG_STR2 10
+#define PARSE_DIR_OR_STR 11
+#define PARSE_DIR_OR_STR_INT2 12
+#define PARSE_STR_TAG2 13
+#define PARSE_OPTION 14
+#define PARSE_NUMTYPE_NUMTYPE 15
+#define PARSE_STR_STR2_STR3 16
+
+#define REGISTER_FUNC(name, parser) {#name, name, parser},
+#define REGISTER_FUNC_ALIAS(alias, name, parser) {#alias, name, parser},
+
+static const FuncEntry func_registry[] = {
+	#include "../dispatch/function_registry.def"
+};
+
+#undef REGISTER_FUNC
+#undef REGISTER_FUNC_ALIAS
+
+static const size_t func_registry_size = sizeof(func_registry) / sizeof(func_registry[0]);
+
 FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 						 char *arg_value2, char *arg_value3, char *arg_value4,
 						 char *arg_value5) {
 
-	FuncType func = NULL;
 	(*arg).v = NULL;
 	(*arg).v2 = NULL;
 	(*arg).v3 = NULL;
 
-	if (strcmp(func_name, "focusstack") == 0) {
-		func = focusstack;
-		(*arg).i = parse_circle_direction(arg_value);
-	} else if (strcmp(func_name, "focusdir") == 0) {
-		func = focusdir;
-		(*arg).i = parse_direction(arg_value);
-	} else if (strcmp(func_name, "incnmaster") == 0) {
-		func = incnmaster;
-		(*arg).i = atoi(arg_value);
-	} else if (strcmp(func_name, "setmfact") == 0) {
-		func = setmfact;
-		(*arg).f = atof(arg_value);
-	} else if (strcmp(func_name, "zoom") == 0) {
-		func = zoom;
-	} else if (strcmp(func_name, "exchange_client") == 0) {
-		func = exchange_client;
-		(*arg).i = parse_direction(arg_value);
-	} else if (strcmp(func_name, "exchange_stack_client") == 0) {
-		func = exchange_stack_client;
-		(*arg).i = parse_circle_direction(arg_value);
-	} else if (strcmp(func_name, "toggleglobal") == 0) {
-		func = toggleglobal;
-	} else if (strcmp(func_name, "toggleoverview") == 0) {
-		func = toggleoverview;
-		(*arg).i = atoi(arg_value);
-	} else if (strcmp(func_name, "set_proportion") == 0) {
-		func = set_proportion;
-		(*arg).f = atof(arg_value);
-	} else if (strcmp(func_name, "switch_proportion_preset") == 0) {
-		func = switch_proportion_preset;
-	} else if (strcmp(func_name, "viewtoleft") == 0) {
-		func = viewtoleft;
-		(*arg).i = atoi(arg_value);
-	} else if (strcmp(func_name, "viewtoright") == 0) {
-		func = viewtoright;
-		(*arg).i = atoi(arg_value);
-	} else if (strcmp(func_name, "tagsilent") == 0) {
-		func = tagsilent;
-		(*arg).ui = 1 << (atoi(arg_value) - 1);
-	} else if (strcmp(func_name, "tagtoleft") == 0) {
-		func = tagtoleft;
-		(*arg).i = atoi(arg_value);
-	} else if (strcmp(func_name, "tagtoright") == 0) {
-		func = tagtoright;
-		(*arg).i = atoi(arg_value);
-	} else if (strcmp(func_name, "killclient") == 0) {
-		func = killclient;
-	} else if (strcmp(func_name, "centerwin") == 0) {
-		func = centerwin;
-	} else if (strcmp(func_name, "focuslast") == 0) {
-		func = focuslast;
-	} else if (strcmp(func_name, "toggle_trackpad_enable") == 0) {
-		func = toggle_trackpad_enable;
-	} else if (strcmp(func_name, "setoption") == 0) {
-		func = setoption;
+	for (size_t i = 0; i < func_registry_size; i++) {
+		if (strcmp(func_name, func_registry[i].name) == 0) {
+			FuncType func = func_registry[i].func;
+			int parser = func_registry[i].parser_type;
 
-		(*arg).v = strdup(arg_value);
-
-		// 收集需要拼接的参数
-		const char *non_empty_params[4] = {NULL};
-		int param_index = 0;
-
-		if (arg_value2 && arg_value2[0] != '\0')
-			non_empty_params[param_index++] = arg_value2;
-		if (arg_value3 && arg_value3[0] != '\0')
-			non_empty_params[param_index++] = arg_value3;
-		if (arg_value4 && arg_value4[0] != '\0')
-			non_empty_params[param_index++] = arg_value4;
-		if (arg_value5 && arg_value5[0] != '\0')
-			non_empty_params[param_index++] = arg_value5;
-
-		// 处理拼接
-		if (param_index == 0) {
-			(*arg).v2 = strdup("");
-		} else {
-			// 计算总长度
-			size_t len = 0;
-			for (int i = 0; i < param_index; i++) {
-				len += strlen(non_empty_params[i]);
-			}
-			len += (param_index - 1) + 1; // 逗号数 + null终止符
-
-			char *temp = malloc(len);
-			if (temp) {
-				char *cursor = temp;
-				for (int i = 0; i < param_index; i++) {
-					if (i > 0) {
-						*cursor++ = ',';
+			switch (parser) {
+				case PARSE_NONE:
+					break;
+				case PARSE_INT:
+					(*arg).i = atoi(arg_value);
+					break;
+				case PARSE_FLOAT:
+					(*arg).f = atof(arg_value);
+					break;
+				case PARSE_STR:
+					(*arg).v = strdup(arg_value);
+					break;
+				case PARSE_UINT:
+					(*arg).ui = atoi(arg_value);
+					break;
+				case PARSE_TAG:
+					(*arg).ui = 1 << (atoi(arg_value) - 1);
+					break;
+				case PARSE_DIR:
+					(*arg).i = parse_direction(arg_value);
+					break;
+				case PARSE_CIRCLE_DIR:
+					(*arg).i = parse_circle_direction(arg_value);
+					break;
+				case PARSE_MOUSE_ACTION:
+					(*arg).ui = parse_mouse_action(arg_value);
+					break;
+				case PARSE_TAG_INT2:
+					(*arg).ui = 1 << (atoi(arg_value) - 1);
+					(*arg).i = atoi(arg_value2);
+					break;
+				case PARSE_TAG_STR2:
+					(*arg).ui = 1 << (atoi(arg_value) - 1);
+					(*arg).v = strdup(arg_value2);
+					break;
+				case PARSE_DIR_OR_STR:
+					(*arg).i = parse_direction(arg_value);
+					if ((*arg).i == UNDIR) {
+						(*arg).v = strdup(arg_value);
 					}
-					size_t param_len = strlen(non_empty_params[i]);
-					memcpy(cursor, non_empty_params[i], param_len);
-					cursor += param_len;
+					break;
+				case PARSE_DIR_OR_STR_INT2:
+					(*arg).i = parse_direction(arg_value);
+					(*arg).i2 = atoi(arg_value2);
+					if ((*arg).i == UNDIR) {
+						(*arg).v = strdup(arg_value);
+					}
+					break;
+				case PARSE_STR_TAG2:
+					(*arg).v = strdup(arg_value);
+					(*arg).ui = 1 << (atoi(arg_value2) - 1);
+					break;
+				case PARSE_OPTION: {
+					(*arg).v = strdup(arg_value);
+
+					const char *non_empty_params[4] = {NULL};
+					int param_index = 0;
+
+					if (arg_value2 && arg_value2[0] != '\0')
+						non_empty_params[param_index++] = arg_value2;
+					if (arg_value3 && arg_value3[0] != '\0')
+						non_empty_params[param_index++] = arg_value3;
+					if (arg_value4 && arg_value4[0] != '\0')
+						non_empty_params[param_index++] = arg_value4;
+					if (arg_value5 && arg_value5[0] != '\0')
+						non_empty_params[param_index++] = arg_value5;
+
+					if (param_index == 0) {
+						(*arg).v2 = strdup("");
+					} else {
+						size_t len = 0;
+						for (int j = 0; j < param_index; j++) {
+							len += strlen(non_empty_params[j]);
+						}
+						len += (param_index - 1) + 1;
+
+						char *temp = malloc(len);
+						if (temp) {
+							char *cursor = temp;
+							for (int j = 0; j < param_index; j++) {
+								if (j > 0) {
+									*cursor++ = ',';
+								}
+								size_t param_len = strlen(non_empty_params[j]);
+								memcpy(cursor, non_empty_params[j], param_len);
+								cursor += param_len;
+							}
+							*cursor = '\0';
+							(*arg).v2 = temp;
+						}
+					}
+					break;
 				}
-				*cursor = '\0';
-				(*arg).v2 = temp;
+				case PARSE_NUMTYPE_NUMTYPE:
+					(*arg).ui = parse_num_type(arg_value);
+					(*arg).ui2 = parse_num_type(arg_value2);
+					(*arg).i = (*arg).ui == NUM_TYPE_DEFAULT ? atoi(arg_value)
+															 : atoi(arg_value + 1);
+					(*arg).i2 = (*arg).ui2 == NUM_TYPE_DEFAULT ? atoi(arg_value2)
+															   : atoi(arg_value2 + 1);
+					break;
+				case PARSE_STR_STR2_STR3:
+					(*arg).v = strdup(arg_value);
+					(*arg).v2 = strdup(arg_value2);
+					(*arg).v3 = strdup(arg_value3);
+					break;
 			}
+
+			return func;
 		}
-	} else if (strcmp(func_name, "setkeymode") == 0) {
-		func = setkeymode;
-		(*arg).v = strdup(arg_value);
-	} else if (strcmp(func_name, "switch_keyboard_layout") == 0) {
-		func = switch_keyboard_layout;
-	} else if (strcmp(func_name, "setlayout") == 0) {
-		func = setlayout;
-		(*arg).v = strdup(arg_value);
-	} else if (strcmp(func_name, "switch_layout") == 0) {
-		func = switch_layout;
-	} else if (strcmp(func_name, "togglefloating") == 0) {
-		func = togglefloating;
-	} else if (strcmp(func_name, "togglefullscreen") == 0) {
-		func = togglefullscreen;
-	} else if (strcmp(func_name, "togglefakefullscreen") == 0) {
-		func = togglefakefullscreen;
-	} else if (strcmp(func_name, "toggleoverlay") == 0) {
-		func = toggleoverlay;
-	} else if (strcmp(func_name, "minimized") == 0) {
-		func = minimized;
-	} else if (strcmp(func_name, "restore_minimized") == 0) {
-		func = restore_minimized;
-	} else if (strcmp(func_name, "toggle_scratchpad") == 0) {
-		func = toggle_scratchpad;
-	} else if (strcmp(func_name, "toggle_render_border") == 0) {
-		func = toggle_render_border;
-	} else if (strcmp(func_name, "focusmon") == 0) {
-		func = focusmon;
-		(*arg).i = parse_direction(arg_value);
-		if ((*arg).i == UNDIR) {
-			(*arg).v = strdup(arg_value);
-		}
-	} else if (strcmp(func_name, "tagmon") == 0) {
-		func = tagmon;
-		(*arg).i = parse_direction(arg_value);
-		(*arg).i2 = atoi(arg_value2);
-		if ((*arg).i == UNDIR) {
-			(*arg).v = strdup(arg_value);
-		};
-	} else if (strcmp(func_name, "incgaps") == 0) {
-		func = incgaps;
-		(*arg).i = atoi(arg_value);
-	} else if (strcmp(func_name, "togglegaps") == 0) {
-		func = togglegaps;
-	} else if (strcmp(func_name, "chvt") == 0) {
-		func = chvt;
-		(*arg).ui = atoi(arg_value);
-	} else if (strcmp(func_name, "spawn") == 0) {
-		func = spawn;
-		(*arg).v = strdup(arg_value);
-	} else if (strcmp(func_name, "spawn_shell") == 0) {
-		func = spawn_shell;
-		(*arg).v = strdup(arg_value);
-	} else if (strcmp(func_name, "spawn_on_empty") == 0) {
-		func = spawn_on_empty;
-		(*arg).v = strdup(arg_value); // 注意：之后需要释放这个内存
-		(*arg).ui = 1 << (atoi(arg_value2) - 1);
-	} else if (strcmp(func_name, "quit") == 0) {
-		func = quit;
-	} else if (strcmp(func_name, "create_virtual_output") == 0) {
-		func = create_virtual_output;
-	} else if (strcmp(func_name, "destroy_all_virtual_output") == 0) {
-		func = destroy_all_virtual_output;
-	} else if (strcmp(func_name, "moveresize") == 0) {
-		func = moveresize;
-		(*arg).ui = parse_mouse_action(arg_value);
-	} else if (strcmp(func_name, "togglemaximizescreen") == 0) {
-		func = togglemaximizescreen;
-	} else if (strcmp(func_name, "viewtoleft_have_client") == 0) {
-		func = viewtoleft_have_client;
-		(*arg).i = atoi(arg_value);
-	} else if (strcmp(func_name, "viewtoright_have_client") == 0) {
-		func = viewtoright_have_client;
-		(*arg).i = atoi(arg_value);
-	} else if (strcmp(func_name, "reload_config") == 0) {
-		func = reload_config;
-	} else if (strcmp(func_name, "tag") == 0) {
-		func = tag;
-		(*arg).ui = 1 << (atoi(arg_value) - 1);
-		(*arg).i = atoi(arg_value2);
-	} else if (strcmp(func_name, "view") == 0) {
-		func = bind_to_view;
-		(*arg).ui = 1 << (atoi(arg_value) - 1);
-		(*arg).i = atoi(arg_value2);
-	} else if (strcmp(func_name, "viewcrossmon") == 0) {
-		func = viewcrossmon;
-		(*arg).ui = 1 << (atoi(arg_value) - 1);
-		(*arg).v = strdup(arg_value2);
-	} else if (strcmp(func_name, "tagcrossmon") == 0) {
-		func = tagcrossmon;
-		(*arg).ui = 1 << (atoi(arg_value) - 1);
-		(*arg).v = strdup(arg_value2);
-	} else if (strcmp(func_name, "toggletag") == 0) {
-		func = toggletag;
-		(*arg).ui = 1 << (atoi(arg_value) - 1);
-	} else if (strcmp(func_name, "toggleview") == 0) {
-		func = toggleview;
-		(*arg).ui = 1 << (atoi(arg_value) - 1);
-	} else if (strcmp(func_name, "comboview") == 0) {
-		func = comboview;
-		(*arg).ui = 1 << (atoi(arg_value) - 1);
-	} else if (strcmp(func_name, "smartmovewin") == 0) {
-		func = smartmovewin;
-		(*arg).i = parse_direction(arg_value);
-	} else if (strcmp(func_name, "smartresizewin") == 0) {
-		func = smartresizewin;
-		(*arg).i = parse_direction(arg_value);
-	} else if (strcmp(func_name, "resizewin") == 0) {
-		func = resizewin;
-		(*arg).ui = parse_num_type(arg_value);
-		(*arg).ui2 = parse_num_type(arg_value2);
-		(*arg).i = (*arg).ui == NUM_TYPE_DEFAULT ? atoi(arg_value)
-												 : atoi(arg_value + 1);
-		(*arg).i2 = (*arg).ui2 == NUM_TYPE_DEFAULT ? atoi(arg_value2)
-												   : atoi(arg_value2 + 1);
-	} else if (strcmp(func_name, "movewin") == 0) {
-		func = movewin;
-		(*arg).ui = parse_num_type(arg_value);
-		(*arg).ui2 = parse_num_type(arg_value2);
-		(*arg).i = (*arg).ui == NUM_TYPE_DEFAULT ? atoi(arg_value)
-												 : atoi(arg_value + 1);
-		(*arg).i2 = (*arg).ui2 == NUM_TYPE_DEFAULT ? atoi(arg_value2)
-												   : atoi(arg_value2 + 1);
-	} else if (strcmp(func_name, "toggle_named_scratchpad") == 0) {
-		func = toggle_named_scratchpad;
-		(*arg).v = strdup(arg_value);
-		(*arg).v2 = strdup(arg_value2);
-		(*arg).v3 = strdup(arg_value3);
-	} else if (strcmp(func_name, "disable_monitor") == 0) {
-		func = disable_monitor;
-		(*arg).v = strdup(arg_value);
-	} else if (strcmp(func_name, "enable_monitor") == 0) {
-		func = enable_monitor;
-		(*arg).v = strdup(arg_value);
-	} else if (strcmp(func_name, "toggle_monitor") == 0) {
-		func = toggle_monitor;
-		(*arg).v = strdup(arg_value);
-	} else {
-		return NULL;
 	}
-	return func;
+
+	return NULL;
 }
 
 void set_env() {
