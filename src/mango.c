@@ -48,6 +48,7 @@
 #include <wlr/types/wlr_input_device.h>
 #include <wlr/types/wlr_keyboard.h>
 #include <wlr/types/wlr_keyboard_group.h>
+#include <wlr/types/wlr_keyboard_shortcuts_inhibit_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_linux_dmabuf_v1.h>
 #include <wlr/types/wlr_linux_drm_syncobj_v1.h>
@@ -170,6 +171,11 @@ enum tearing_mode {
 	TEARING_DISABLED = 0,
 	TEARING_ENABLED,
 	TEARING_FULLSCREEN_ONLY,
+};
+
+enum seat_config_shortcuts_inhibit {
+	SHORTCUTS_INHIBIT_DISABLE,
+	SHORTCUTS_INHIBIT_ENABLE,
 };
 
 typedef struct Pertag Pertag;
@@ -370,6 +376,7 @@ struct Client {
 	bool isleftstack;
 	int tearing_hint;
 	int force_tearing;
+	int allow_shortcuts_inhibit;
 };
 
 typedef struct {
@@ -398,6 +405,12 @@ typedef struct {
 	struct wl_listener key;
 	struct wl_listener destroy;
 } KeyboardGroup;
+
+typedef struct {
+	struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor;
+	struct wl_listener destroy;
+	struct wl_list link;
+} KeyboardShortcutsInhibitor;
 
 typedef struct {
 	/* Must keep these three elements in this order */
@@ -624,7 +637,9 @@ static void urgent(struct wl_listener *listener, void *data);
 static void view(const Arg *arg, bool want_animation);
 
 static void handlesig(int signo);
-
+static void
+handle_keyboard_shortcuts_inhibit_new_inhibitor(struct wl_listener *listener,
+												void *data);
 static void virtualkeyboard(struct wl_listener *listener, void *data);
 static void virtualpointer(struct wl_listener *listener, void *data);
 static void warp_cursor(const Client *c);
@@ -752,6 +767,8 @@ static struct wlr_idle_inhibit_manager_v1 *idle_inhibit_mgr;
 static struct wlr_layer_shell_v1 *layer_shell;
 static struct wlr_output_manager_v1 *output_mgr;
 static struct wlr_virtual_keyboard_manager_v1 *virtual_keyboard_mgr;
+static struct wlr_keyboard_shortcuts_inhibit_manager_v1
+	*keyboard_shortcuts_inhibit;
 static struct wlr_virtual_pointer_manager_v1 *virtual_pointer_mgr;
 static struct wlr_output_power_manager_v1 *power_mgr;
 static struct wlr_pointer_gestures_v1 *pointer_gestures;
@@ -775,6 +792,7 @@ static struct wlr_pointer_constraint_v1 *active_constraint;
 static struct wlr_seat *seat;
 static KeyboardGroup *kb_group;
 static struct wl_list inputdevices;
+static struct wl_list keyboard_shortcut_inhibitors;
 static unsigned int cursor_mode;
 static Client *grabc;
 static int grabcx, grabcy;						   /* client-relative */
@@ -861,6 +879,8 @@ static struct wl_listener request_start_drag = {.notify = requeststartdrag};
 static struct wl_listener start_drag = {.notify = startdrag};
 static struct wl_listener new_session_lock = {.notify = locksession};
 static struct wl_listener drm_lease_request = {.notify = requestdrmlease};
+static struct wl_listener keyboard_shortcuts_inhibit_new_inhibitor = {
+	.notify = handle_keyboard_shortcuts_inhibit_new_inhibitor};
 
 #ifdef XWAYLAND
 static void activatex11(struct wl_listener *listener, void *data);
@@ -1152,6 +1172,7 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isnosizehint);
 	APPLY_INT_PROP(c, r, isunglobal);
 	APPLY_INT_PROP(c, r, noblur);
+	APPLY_INT_PROP(c, r, allow_shortcuts_inhibit);
 
 	APPLY_FLOAT_PROP(c, r, scroller_proportion);
 	APPLY_FLOAT_PROP(c, r, focused_opacity);
@@ -1979,6 +2000,7 @@ void cleanuplisteners(void) {
 	wl_list_remove(&start_drag.link);
 	wl_list_remove(&new_session_lock.link);
 	wl_list_remove(&tearing_new_object.link);
+	wl_list_remove(&keyboard_shortcuts_inhibit_new_inhibitor.link);
 	if (drm_lease_manager) {
 		wl_list_remove(&drm_lease_request.link);
 	}
@@ -3277,6 +3299,17 @@ int keyrepeat(void *data) {
 	return 0;
 }
 
+bool is_keyboard_shortcut_inhibitor(struct wlr_surface *surface) {
+	KeyboardShortcutsInhibitor *kbsinhibitor;
+
+	wl_list_for_each(kbsinhibitor, &keyboard_shortcut_inhibitors, link) {
+		if (kbsinhibitor->inhibitor->surface == surface) {
+			return true;
+		}
+	}
+	return false;
+}
+
 int // 17
 keybinding(unsigned int state, bool locked, unsigned int mods, xkb_keysym_t sym,
 		   unsigned int keycode) {
@@ -3294,6 +3327,10 @@ keybinding(unsigned int state, bool locked, unsigned int mods, xkb_keysym_t sym,
 	if (keycode == 50 || keycode == 37 || keycode == 133 || keycode == 64 ||
 		keycode == 62 || keycode == 108 || keycode == 105 || keycode == 134)
 		return false;
+
+	if (is_keyboard_shortcut_inhibitor(seat->keyboard_state.focused_surface)) {
+		return false;
+	}
 
 	for (ji = 0; ji < config.key_bindings_count; ji++) {
 		if (config.key_bindings_count < 1)
@@ -3602,6 +3639,7 @@ void init_client_properties(Client *c) {
 	c->allow_csd = 0;
 	c->force_maximize = 0;
 	c->force_tearing = 0;
+	c->allow_shortcuts_inhibit = SHORTCUTS_INHIBIT_ENABLE;
 }
 
 void // old fix to 0.5
@@ -5017,6 +5055,7 @@ void setup(void) {
 	 * to let us know when new input devices are available on the backend.
 	 */
 	wl_list_init(&inputdevices);
+	wl_list_init(&keyboard_shortcut_inhibitors);
 	wl_signal_add(&backend->events.new_input, &new_input_device);
 	virtual_keyboard_mgr = wlr_virtual_keyboard_manager_v1_create(dpy);
 	wl_signal_add(&virtual_keyboard_mgr->events.new_virtual_keyboard,
@@ -5045,6 +5084,10 @@ void setup(void) {
 
 	kb_group = createkeyboardgroup();
 	wl_list_init(&kb_group->destroy.link);
+
+	keyboard_shortcuts_inhibit = wlr_keyboard_shortcuts_inhibit_v1_create(dpy);
+	wl_signal_add(&keyboard_shortcuts_inhibit->events.new_inhibitor,
+				  &keyboard_shortcuts_inhibit_new_inhibitor);
 
 	output_mgr = wlr_output_manager_v1_create(dpy);
 	wl_signal_add(&output_mgr->events.apply, &output_mgr_apply);
@@ -5571,6 +5614,49 @@ void view(const Arg *arg, bool want_animation) {
 	} else {
 		view_in_mon(arg, want_animation, selmon, true);
 	}
+}
+
+static void
+handle_keyboard_shortcuts_inhibitor_destroy(struct wl_listener *listener,
+											void *data) {
+	KeyboardShortcutsInhibitor *inhibitor =
+		wl_container_of(listener, inhibitor, destroy);
+
+	wlr_log(WLR_DEBUG, "Removing keyboard shortcuts inhibitor");
+
+	wl_list_remove(&inhibitor->link);
+	wl_list_remove(&inhibitor->destroy.link);
+	free(inhibitor);
+}
+
+void handle_keyboard_shortcuts_inhibit_new_inhibitor(
+	struct wl_listener *listener, void *data) {
+
+	struct wlr_keyboard_shortcuts_inhibitor_v1 *inhibitor = data;
+
+	if (allow_shortcuts_inhibit == SHORTCUTS_INHIBIT_DISABLE) {
+		return;
+	}
+
+	// per-view, seat-agnostic config via criteria
+	Client *c = get_client_from_surface(inhibitor->surface);
+	if (c && !c->allow_shortcuts_inhibit) {
+		return;
+	}
+
+	wlr_log(WLR_DEBUG, "Adding keyboard shortcuts inhibitor");
+
+	KeyboardShortcutsInhibitor *kbsinhibitor =
+		calloc(1, sizeof(KeyboardShortcutsInhibitor));
+
+	kbsinhibitor->inhibitor = inhibitor;
+
+	kbsinhibitor->destroy.notify = handle_keyboard_shortcuts_inhibitor_destroy;
+	wl_signal_add(&inhibitor->events.destroy, &kbsinhibitor->destroy);
+
+	wl_list_insert(&keyboard_shortcut_inhibitors, &kbsinhibitor->link);
+
+	wlr_keyboard_shortcuts_inhibitor_v1_activate(inhibitor);
 }
 
 void virtualkeyboard(struct wl_listener *listener, void *data) {
