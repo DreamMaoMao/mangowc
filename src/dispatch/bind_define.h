@@ -974,7 +974,7 @@ int tag(const Arg *arg) {
 }
 
 int tagmon(const Arg *arg) {
-	Monitor *m = NULL;
+	Monitor *m = NULL,*cm = NULL;
 	Client *c = focustop(selmon);
 
 	if (!c)
@@ -983,11 +983,12 @@ int tagmon(const Arg *arg) {
 	if (arg->i != UNDIR) {
 		m = dirtomon(arg->i);
 	} else if (arg->v) {
-		wl_list_for_each(m, &mons, link) {
-			if (!m->wlr_output->enabled) {
+		wl_list_for_each(cm, &mons, link) {
+			if (!cm->wlr_output->enabled) {
 				continue;
 			}
-			if (regex_match(arg->v, m->wlr_output->name)) {
+			if (regex_match(arg->v, cm->wlr_output->name)) {
+				m = cm;
 				break;
 			}
 		}
