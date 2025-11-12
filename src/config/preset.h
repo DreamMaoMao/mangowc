@@ -105,6 +105,7 @@ int syncobj_enable = 0;
 int adaptive_sync = 0;
 double drag_refresh_interval = 30.0;
 int allow_tearing = TEARING_DISABLED;
+int allow_shortcuts_inhibit = SHORTCUTS_INHIBIT_ENABLE;
 
 /* keyboard */
 

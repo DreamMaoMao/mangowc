@@ -69,6 +69,7 @@ typedef struct {
 	int isunglobal;
 	int isglobal;
 	int isoverlay;
+	int allow_shortcuts_inhibit;
 	int ignore_maximize;
 	int ignore_minimize;
 	int isnosizehint;
@@ -319,6 +320,7 @@ typedef struct {
 	int syncobj_enable;
 	int adaptive_sync;
 	int allow_tearing;
+	int allow_shortcuts_inhibit;
 
 	struct xkb_rule_names xkb_rules;
 
@@ -1220,6 +1222,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->adaptive_sync = atoi(value);
 	} else if (strcmp(key, "allow_tearing") == 0) {
 		config->allow_tearing = atoi(value);
+	} else if (strcmp(key, "allow_shortcuts_inhibit") == 0) {
+		config->allow_shortcuts_inhibit = atoi(value);
 	} else if (strcmp(key, "no_border_when_single") == 0) {
 		config->no_border_when_single = atoi(value);
 	} else if (strcmp(key, "snap_distance") == 0) {
@@ -1645,6 +1649,7 @@ void parse_option(Config *config, char *key, char *value) {
 		rule->isunglobal = -1;
 		rule->isglobal = -1;
 		rule->isoverlay = -1;
+		rule->allow_shortcuts_inhibit = -1;
 		rule->ignore_maximize = -1;
 		rule->ignore_minimize = -1;
 		rule->isnosizehint = -1;
@@ -1742,6 +1747,8 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->focused_opacity = atof(val);
 				} else if (strcmp(key, "isoverlay") == 0) {
 					rule->isoverlay = atoi(val);
+				} else if (strcmp(key, "allow_shortcuts_inhibit") == 0) {
+					rule->allow_shortcuts_inhibit = atoi(val);
 				} else if (strcmp(key, "ignore_maximize") == 0) {
 					rule->ignore_maximize = atoi(val);
 				} else if (strcmp(key, "ignore_minimize") == 0) {
@@ -2630,6 +2637,7 @@ void override_config(void) {
 	syncobj_enable = CLAMP_INT(config.syncobj_enable, 0, 1);
 	adaptive_sync = CLAMP_INT(config.adaptive_sync, 0, 1);
 	allow_tearing = CLAMP_INT(config.allow_tearing, 0, 2);
+	allow_shortcuts_inhibit = CLAMP_INT(config.allow_shortcuts_inhibit, 0, 1);
 	axis_bind_apply_timeout =
 		CLAMP_INT(config.axis_bind_apply_timeout, 0, 1000);
 	focus_on_activate = CLAMP_INT(config.focus_on_activate, 0, 1);
@@ -2788,6 +2796,7 @@ void set_value_default() {
 	config.syncobj_enable = syncobj_enable;
 	config.adaptive_sync = adaptive_sync;
 	config.allow_tearing = allow_tearing;
+	config.allow_shortcuts_inhibit = allow_shortcuts_inhibit;
 	config.no_border_when_single = no_border_when_single;
 	config.snap_distance = snap_distance;
 	config.drag_tile_to_tile = drag_tile_to_tile;
