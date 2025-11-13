@@ -974,7 +974,7 @@ int tag(const Arg *arg) {
 }
 
 int tagmon(const Arg *arg) {
-	Monitor *m = NULL,*cm = NULL;
+	Monitor *m = NULL, *cm = NULL;
 	Client *c = focustop(selmon);
 
 	if (!c)

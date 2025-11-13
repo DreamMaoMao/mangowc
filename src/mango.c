@@ -3290,8 +3290,8 @@ keybinding(unsigned int state, bool locked, unsigned int mods, xkb_keysym_t sym,
 			 (strcmp(keymode.mode, k->mode) == 0)) &&
 			CLEANMASK(mods) == CLEANMASK(k->mod) &&
 			((k->keysymcode.type == KEY_TYPE_SYM &&
-			  normalize_keysym(sym) ==
-				  normalize_keysym(k->keysymcode.keysym)) ||
+			  xkb_keysym_to_lower(sym) ==
+				  xkb_keysym_to_lower(k->keysymcode.keysym)) ||
 			 (k->keysymcode.type == KEY_TYPE_CODE &&
 			  (keycode == k->keysymcode.keycode.keycode1 ||
 			   keycode == k->keysymcode.keycode.keycode2 ||
