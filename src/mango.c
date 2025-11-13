@@ -4731,8 +4731,11 @@ void setsel(struct wl_listener *listener, void *data) {
 }
 
 void show_hide_client(Client *c) {
+	unsigned int target = 1;
 
-	unsigned int target = get_tags_first_tag(c->oldtags);
+	set_size_per(c->mon, c);
+	target = get_tags_first_tag(c->oldtags);
+
 	if (!c->is_in_scratchpad) {
 		tag_client(&(Arg){.ui = target}, c);
 	} else {

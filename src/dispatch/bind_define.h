@@ -477,7 +477,7 @@ int restore_minimized(const Arg *arg) {
 	}
 
 	wl_list_for_each(c, &clients, link) {
-		if (c->isminied) {
+		if (c->isminied && !c->isnamedscratchpad) {
 			c->is_scratchpad_show = 0;
 			c->is_in_scratchpad = 0;
 			c->isnamedscratchpad = 0;
