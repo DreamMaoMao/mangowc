@@ -808,7 +808,7 @@ int spawn_on_empty(const Arg *arg) {
 		return 0;
 	} else {
 		view(arg, true);
-		spawn(arg);
+		spawn_shell(arg);
 	}
 	return 0;
 }
@@ -1091,7 +1091,7 @@ int toggle_named_scratchpad(const Arg *arg) {
 
 	if (!target_client && arg->v3) {
 		Arg arg_spawn = {.v = arg->v3};
-		spawn(&arg_spawn);
+		spawn_shell(&arg_spawn);
 		return 0;
 	}
 
