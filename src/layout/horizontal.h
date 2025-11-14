@@ -192,6 +192,7 @@ void deck(Monitor *m) {
 // 滚动布局
 void scroller(Monitor *m) {
 	unsigned int i, n, j;
+	float single_proportion = 1.0;
 
 	Client *c = NULL, *root_client = NULL;
 	Client **tempClients = NULL; // 初始化为 NULL
@@ -233,9 +234,13 @@ void scroller(Monitor *m) {
 
 	if (n == 1 && !scroller_ignore_proportion_single) {
 		c = tempClients[0];
+
+		single_proportion = c->scroller_proportion_single > 0.0f
+								? c->scroller_proportion_single
+								: scroller_default_proportion_single;
+
 		target_geom.height = m->w.height - 2 * cur_gappov;
-		target_geom.width =
-			(m->w.width - 2 * cur_gappoh) * scroller_default_proportion_single;
+		target_geom.width = (m->w.width - 2 * cur_gappoh) * single_proportion;
 		target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
 		target_geom.y = m->w.y + (m->w.height - target_geom.height) / 2;
 		resize(c, target_geom, 0);

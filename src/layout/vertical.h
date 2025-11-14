@@ -157,6 +157,8 @@ void vertical_deck(Monitor *m) {
 
 void vertical_scroller(Monitor *m) {
 	unsigned int i, n, j;
+	float single_proportion = 1.0;
+
 	Client *c = NULL, *root_client = NULL;
 	Client **tempClients = NULL;
 	struct wlr_box target_geom;
@@ -194,9 +196,13 @@ void vertical_scroller(Monitor *m) {
 
 	if (n == 1 && !scroller_ignore_proportion_single) {
 		c = tempClients[0];
+
+		single_proportion = c->scroller_proportion_single > 0.0f
+								? c->scroller_proportion_single
+								: scroller_default_proportion_single;
+
 		target_geom.width = m->w.width - 2 * cur_gappoh;
-		target_geom.height =
-			(m->w.height - 2 * cur_gappov) * scroller_default_proportion_single;
+		target_geom.height = (m->w.height - 2 * cur_gappov) * single_proportion;
 		target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
 		target_geom.y = m->w.y + (m->w.height - target_geom.height) / 2;
 		resize(c, target_geom, 0);

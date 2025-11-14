@@ -89,6 +89,7 @@ typedef struct {
 	int noswallow;
 	float focused_opacity;
 	float unfocused_opacity;
+	float scroller_proportion_single;
 	uint32_t passmod;
 	xkb_keysym_t keysym;
 	KeyBinding globalkeybinding;
@@ -1615,6 +1616,7 @@ void parse_option(Config *config, char *key, char *value) {
 		// float rule value, relay to a client property
 		rule->focused_opacity = 0;
 		rule->unfocused_opacity = 0;
+		rule->scroller_proportion_single = 0.0f;
 		rule->scroller_proportion = 0;
 
 		// special rule value,not directly set to client property
@@ -1686,6 +1688,8 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->isunglobal = atoi(val);
 				} else if (strcmp(key, "isglobal") == 0) {
 					rule->isglobal = atoi(val);
+				} else if (strcmp(key, "scroller_proportion_single") == 0) {
+					rule->scroller_proportion_single = atof(val);
 				} else if (strcmp(key, "unfocused_opacity") == 0) {
 					rule->unfocused_opacity = atof(val);
 				} else if (strcmp(key, "focused_opacity") == 0) {
