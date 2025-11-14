@@ -3034,33 +3034,37 @@ void reapply_master(void) {
 	}
 }
 
+void parse_tagrule(Monitor *m) {
+	int i, jk;
+
+	for (i = 0; i < config.tag_rules_count; i++) {
+
+		if (config.tag_rules_count > 0 &&
+			(!config.tag_rules[i].monitor_name ||
+			 regex_match(config.tag_rules[i].monitor_name,
+						 m->wlr_output->name))) {
+
+			for (jk = 0; jk < LENGTH(layouts); jk++) {
+				if (config.tag_rules[i].layout_name &&
+					strcmp(layouts[jk].name, config.tag_rules[i].layout_name) ==
+						0) {
+					m->pertag->ltidxs[config.tag_rules[i].id] = &layouts[jk];
+				}
+			}
+
+			m->pertag->no_hide[config.tag_rules[i].id] =
+				config.tag_rules[i].no_hide;
+		}
+	}
+}
+
 void reapply_tagrule(void) {
 	Monitor *m = NULL;
-	int i, jk;
-	char *rule_monitor_name = NULL;
 	wl_list_for_each(m, &mons, link) {
 		if (!m->wlr_output->enabled) {
 			continue;
 		}
-
-		// apply tag rule
-		for (i = 1; i <= config.tag_rules_count; i++) {
-			rule_monitor_name = config.tag_rules[i - 1].monitor_name;
-			if (regex_match(rule_monitor_name, m->wlr_output->name) ||
-				!rule_monitor_name) {
-				for (jk = 0; jk < LENGTH(layouts); jk++) {
-					if (config.tag_rules_count > 0 &&
-						config.tag_rules[i - 1].layout_name &&
-						strcmp(layouts[jk].name,
-							   config.tag_rules[i - 1].layout_name) == 0) {
-						m->pertag->ltidxs[config.tag_rules[i - 1].id] =
-							&layouts[jk];
-						m->pertag->no_hide[config.tag_rules[i - 1].id] =
-							config.tag_rules[i - 1].no_hide;
-					}
-				}
-			}
-		}
+		parse_tagrule(m);
 	}
 }
 
