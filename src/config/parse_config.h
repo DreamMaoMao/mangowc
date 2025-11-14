@@ -3036,24 +3036,24 @@ void reapply_master(void) {
 
 void parse_tagrule(Monitor *m) {
 	int i, jk;
+	ConfigTagRule tr;
 
 	for (i = 0; i < config.tag_rules_count; i++) {
 
+		tr = config.tag_rules[i];
+
 		if (config.tag_rules_count > 0 &&
-			(!config.tag_rules[i].monitor_name ||
-			 regex_match(config.tag_rules[i].monitor_name,
-						 m->wlr_output->name))) {
+			(!tr.monitor_name ||
+			 regex_match(tr.monitor_name, m->wlr_output->name))) {
 
 			for (jk = 0; jk < LENGTH(layouts); jk++) {
-				if (config.tag_rules[i].layout_name &&
-					strcmp(layouts[jk].name, config.tag_rules[i].layout_name) ==
-						0) {
-					m->pertag->ltidxs[config.tag_rules[i].id] = &layouts[jk];
+				if (tr.layout_name &&
+					strcmp(layouts[jk].name, tr.layout_name) == 0) {
+					m->pertag->ltidxs[tr.id] = &layouts[jk];
 				}
 			}
 
-			m->pertag->no_hide[config.tag_rules[i].id] =
-				config.tag_rules[i].no_hide;
+			m->pertag->no_hide[tr.id] = tr.no_hide;
 		}
 	}
 }
