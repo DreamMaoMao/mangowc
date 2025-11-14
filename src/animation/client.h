@@ -934,7 +934,7 @@ void client_set_focused_opacity_animation(Client *c) {
 	c->opacity_animation.running = true;
 }
 
-void cleint_set_unfocused_opacity_animation(Client *c) {
+void client_set_unfocused_opacity_animation(Client *c) {
 	// Start border color animation to unfocused
 	float *border_color = get_border_color(c);
 

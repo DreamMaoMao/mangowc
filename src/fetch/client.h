@@ -374,7 +374,10 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 }
 
 float *get_border_color(Client *c) {
-	if (c->isurgent) {
+
+	if (c->mon != selmon) {
+		return bordercolor;
+	} else if (c->isurgent) {
 		return urgentcolor;
 	} else if (c->is_in_scratchpad && selmon && c == selmon->sel) {
 		return scratchpadcolor;

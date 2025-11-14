@@ -203,7 +203,7 @@ int focusmon(const Arg *arg) {
 		focusclient(c, 1);
 
 	if (old_selmon_sel) {
-		setborder_color(old_selmon_sel);
+		client_set_unfocused_opacity_animation(old_selmon_sel);
 	}
 	return 0;
 }
