@@ -155,6 +155,38 @@ void vertical_deck(Monitor *m) {
 	}
 }
 
+void vertical_scroll_adjust_fullandmax(Client *c, struct wlr_box *target_geom) {
+	Monitor *m = c->mon;
+	unsigned int cur_gappiv = enablegaps ? m->gappiv : 0;
+	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
+	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
+
+	cur_gappiv =
+		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappiv;
+	cur_gappov =
+		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappov;
+	cur_gappoh =
+		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappoh;
+
+	if (c->isfullscreen) {
+		target_geom->width = m->m.width;
+		target_geom->height = m->m.height;
+		target_geom->x = m->m.x;
+		return;
+	}
+
+	if (c->ismaximizescreen) {
+		target_geom->width = m->w.width - 2 * cur_gappoh;
+		target_geom->height = m->w.height - 2 * cur_gappov;
+		target_geom->x = m->w.x + cur_gappoh;
+		return;
+	}
+
+	target_geom->width = m->w.width - 2 * cur_gappoh;
+	target_geom->x = m->w.x + (m->w.width - target_geom->width) / 2;
+}
+
+// 竖屏滚动布局
 void vertical_scroller(Monitor *m) {
 	unsigned int i, n, j;
 	float single_proportion = 1.0;
@@ -168,14 +200,17 @@ void vertical_scroller(Monitor *m) {
 	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
 	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
 
-	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
-	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
-	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
+	cur_gappiv =
+		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappiv;
+	cur_gappov =
+		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappov;
+	cur_gappoh =
+		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappoh;
 
 	unsigned int max_client_height =
 		m->w.height - 2 * scroller_structs - cur_gappiv;
 
-	n = m->visible_tiling_clients;
+	n = m->visible_scroll_tiling_clients;
 
 	if (n == 0) {
 		return;
@@ -188,13 +223,14 @@ void vertical_scroller(Monitor *m) {
 
 	j = 0;
 	wl_list_for_each(c, &clients, link) {
-		if (VISIBLEON(c, m) && ISTILED(c)) {
+		if (VISIBLEON(c, m) && ISSCROLLTILED(c)) {
 			tempClients[j] = c;
 			j++;
 		}
 	}
 
-	if (n == 1 && !scroller_ignore_proportion_single) {
+	if (n == 1 && !scroller_ignore_proportion_single &&
+		!tempClients[0]->isfullscreen && !tempClients[0]->ismaximizescreen) {
 		c = tempClients[0];
 
 		single_proportion = c->scroller_proportion_single > 0.0f
@@ -203,18 +239,17 @@ void vertical_scroller(Monitor *m) {
 
 		target_geom.width = m->w.width - 2 * cur_gappoh;
 		target_geom.height = (m->w.height - 2 * cur_gappov) * single_proportion;
-		target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
 		target_geom.y = m->w.y + (m->w.height - target_geom.height) / 2;
+		target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
 		resize(c, target_geom, 0);
 		free(tempClients);
 		return;
 	}
 
-	if (m->sel && !client_is_unmanaged(m->sel) && !m->sel->isfloating &&
-		!m->sel->ismaximizescreen && !m->sel->isfullscreen) {
+	if (m->sel && !client_is_unmanaged(m->sel) && !m->sel->isfloating) {
 		root_client = m->sel;
-	} else if (m->prevsel && ISTILED(m->prevsel) && VISIBLEON(m->prevsel, m) &&
-			   !client_is_unmanaged(m->prevsel)) {
+	} else if (m->prevsel && ISSCROLLTILED(m->prevsel) &&
+			   VISIBLEON(m->prevsel, m) && !client_is_unmanaged(m->prevsel)) {
 		root_client = m->prevsel;
 	} else {
 		root_client = center_tiled_select(m);
@@ -251,11 +286,19 @@ void vertical_scroller(Monitor *m) {
 	target_geom.width = m->w.width - 2 * cur_gappoh;
 	target_geom.height = max_client_height * c->scroller_proportion;
 	target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
+	vertical_scroll_adjust_fullandmax(tempClients[focus_client_index],
+									  &target_geom);
 
-	if (need_scroller) {
+	if (tempClients[focus_client_index]->isfullscreen) {
+		target_geom.y = m->m.y;
+		resize(tempClients[focus_client_index], target_geom, 0);
+	} else if (tempClients[focus_client_index]->ismaximizescreen) {
+		target_geom.y = m->w.y + cur_gappov;
+		resize(tempClients[focus_client_index], target_geom, 0);
+	} else if (need_scroller) {
 		if (scroller_focus_center ||
 			((!m->prevsel ||
-			  (ISTILED(m->prevsel) &&
+			  (ISSCROLLTILED(m->prevsel) &&
 			   (m->prevsel->scroller_proportion * max_client_height) +
 					   (root_client->scroller_proportion * max_client_height) >
 				   m->w.height - 2 * scroller_structs - cur_gappiv)) &&
@@ -278,14 +321,17 @@ void vertical_scroller(Monitor *m) {
 	for (i = 1; i <= focus_client_index; i++) {
 		c = tempClients[focus_client_index - i];
 		target_geom.height = max_client_height * c->scroller_proportion;
+		vertical_scroll_adjust_fullandmax(c, &target_geom);
 		target_geom.y = tempClients[focus_client_index - i + 1]->geom.y -
 						cur_gappiv - target_geom.height;
+
 		resize(c, target_geom, 0);
 	}
 
 	for (i = 1; i < n - focus_client_index; i++) {
 		c = tempClients[focus_client_index + i];
 		target_geom.height = max_client_height * c->scroller_proportion;
+		vertical_scroll_adjust_fullandmax(c, &target_geom);
 		target_geom.y = tempClients[focus_client_index + i - 1]->geom.y +
 						cur_gappiv +
 						tempClients[focus_client_index + i - 1]->geom.height;

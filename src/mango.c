@@ -101,6 +101,9 @@
 #define ISTILED(A)                                                             \
 	(A && !(A)->isfloating && !(A)->isminied && !(A)->iskilling &&             \
 	 !(A)->ismaximizescreen && !(A)->isfullscreen && !(A)->isunglobal)
+#define ISSCROLLTILED(A)                                                       \
+	(A && !(A)->isfloating && !(A)->isminied && !(A)->iskilling &&             \
+	 !(A)->isunglobal)
 #define VISIBLEON(C, M)                                                        \
 	((C) && (M) && (C)->mon == (M) && ((C)->tags & (M)->tagset[(M)->seltags]))
 #define LENGTH(X) (sizeof X / sizeof X[0])
@@ -476,6 +479,7 @@ struct Monitor {
 	int asleep;
 	unsigned int visible_clients;
 	unsigned int visible_tiling_clients;
+	unsigned int visible_scroll_tiling_clients;
 	bool has_visible_fullscreen_client;
 	char last_surface_ws_name[256];
 	struct wlr_ext_workspace_group_handle_v1 *ext_group;
@@ -736,8 +740,9 @@ static void resize_tile_client(Client *grabc, bool isdrag, int offsetx,
 							   int offsety, unsigned int time);
 static void refresh_monitors_workspaces_status(Monitor *m);
 static void init_client_properties(Client *c);
-static void request_fresh_all_monitors(void);
 static float *get_border_color(Client *c);
+static void request_fresh_all_monitors(void);
+static void clear_fullscreen_and_maximized_state(Monitor *m);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -940,8 +945,26 @@ void applybounds(Client *c, struct wlr_box *bbox) {
 		c->geom.y = bbox->y;
 }
 
+void clear_fullscreen_and_maximized_state(Monitor *m) {
+	Client *fc = NULL;
+	wl_list_for_each(fc, &clients, link) {
+		if (fc && VISIBLEON(fc, m) && ISFULLSCREEN(fc)) {
+			clear_fullscreen_flag(fc);
+		}
+	}
+}
+
 /*清除全屏标志,还原全屏时清0的border*/
 void clear_fullscreen_flag(Client *c) {
+
+	if ((c->mon->pertag->ltidxs[get_tags_first_tag_num(c->tags)]->id ==
+			 SCROLLER ||
+		 c->mon->pertag->ltidxs[get_tags_first_tag_num(c->tags)]->id ==
+			 VERTICAL_SCROLLER) &&
+		!c->isfloating) {
+		return;
+	}
+
 	if (c->isfullscreen) {
 		setfullscreen(c, false);
 	}
@@ -3094,7 +3117,6 @@ void focusclient(Client *c, int lift) {
 		if (c && selmon->prevsel &&
 			(selmon->prevsel->tags & selmon->tagset[selmon->seltags]) &&
 			(c->tags & selmon->tagset[selmon->seltags]) && !c->isfloating &&
-			!c->isfullscreen && !c->ismaximizescreen &&
 			is_scroller_layout(selmon)) {
 			arrange(selmon, false);
 		}
@@ -3624,9 +3646,9 @@ mapnotify(struct wl_listener *listener, void *data) {
 		// tile at the top
 		wl_list_insert(&clients, &c->link); // 新窗口是master,头部入栈
 	else if (selmon && is_scroller_layout(selmon) &&
-			 selmon->visible_tiling_clients > 0) {
+			 selmon->visible_scroll_tiling_clients > 0) {
 
-		if (selmon->sel && ISTILED(selmon->sel) &&
+		if (selmon->sel && ISSCROLLTILED(selmon->sel) &&
 			VISIBLEON(selmon->sel, selmon)) {
 			at_client = selmon->sel;
 		} else {
@@ -4474,7 +4496,8 @@ void setmaximizescreen(Client *c, int maximizescreen) {
 		maximizescreen_box.width = c->mon->w.width - 2 * gappoh;
 		maximizescreen_box.height = c->mon->w.height - 2 * gappov;
 		wlr_scene_node_raise_to_top(&c->scene->node); // 将视图提升到顶层
-		resize(c, maximizescreen_box, 0);
+		if (!is_scroller_layout(c->mon) || c->isfloating)
+			resize(c, maximizescreen_box, 0);
 		c->ismaximizescreen = 1;
 	} else {
 		c->bw = c->isnoborder ? 0 : borderpx;
@@ -4483,9 +4506,8 @@ void setmaximizescreen(Client *c, int maximizescreen) {
 			setfloating(c, 1);
 	}
 
-	wlr_scene_node_reparent(&c->scene->node, layers[maximizescreen	? LyrTile
-													: c->isfloating ? LyrTop
-																	: LyrTile]);
+	wlr_scene_node_reparent(&c->scene->node,
+							layers[c->isfloating ? LyrTop : LyrTile]);
 	if (!c->ismaximizescreen) {
 		set_size_per(c->mon, c);
 	}
@@ -4531,7 +4553,8 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 
 		c->bw = 0;
 		wlr_scene_node_raise_to_top(&c->scene->node); // 将视图提升到顶层
-		resize(c, c->mon->m, 1);
+		if (!is_scroller_layout(c->mon) || c->isfloating)
+			resize(c, c->mon->m, 1);
 		c->isfullscreen = 1;
 	} else {
 		c->bw = c->isnoborder ? 0 : borderpx;
@@ -5110,7 +5133,11 @@ unsigned int want_restore_fullscreen(Client *target_client) {
 	Client *c = NULL;
 	wl_list_for_each(c, &clients, link) {
 		if (c && c != target_client && c->tags == target_client->tags &&
-			c == selmon->sel) {
+			c == selmon->sel &&
+			c->mon->pertag->ltidxs[get_tags_first_tag_num(c->tags)]->id !=
+				SCROLLER &&
+			c->mon->pertag->ltidxs[get_tags_first_tag_num(c->tags)]->id !=
+				VERTICAL_SCROLLER) {
 			return 0;
 		}
 	}

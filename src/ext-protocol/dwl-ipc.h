@@ -260,6 +260,7 @@ void dwl_ipc_output_set_layout(struct wl_client *client,
 		index = 0;
 
 	monitor->pertag->ltidxs[monitor->pertag->curtag] = &layouts[index];
+	clear_fullscreen_and_maximized_state(monitor);
 	arrange(monitor, false);
 	printstatus();
 }
