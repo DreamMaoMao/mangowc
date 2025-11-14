@@ -330,7 +330,8 @@ Client *direction_select(const Arg *arg) {
 		return NULL;
 	}
 
-	return find_client_by_direction(tc, arg, true, is_scroller_layout(selmon));
+	return find_client_by_direction(
+		tc, arg, true, is_scroller_layout(selmon) && !selmon->isoverview);
 }
 
 /* We probably should change the name of this, it sounds like
