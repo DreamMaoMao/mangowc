@@ -146,6 +146,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	Client *c = NULL;
 	Client **tempClients = NULL; // 初始化为 NULL
 	int last = -1;
+	bool constrain_to_row = tc->mon && is_row_layout(tc->mon);
 
 	// 第一次遍历，计算客户端数量
 	wl_list_for_each(c, &clients, link) {
@@ -249,7 +250,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 		}
 		break;
 	case LEFT:
-		if (!ignore_align) {
+		if (!ignore_align || constrain_to_row) {
 			for (int _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.x < sel_x &&
 					tempClients[_i]->geom.y == sel_y &&
@@ -265,7 +266,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 				}
 			}
 		}
-		if (!tempFocusClients) {
+		if (!tempFocusClients && !constrain_to_row) {
 			for (int _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.x < sel_x) {
 					int dis_x = tempClients[_i]->geom.x - sel_x;
@@ -281,7 +282,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 		}
 		break;
 	case RIGHT:
-		if (!ignore_align) {
+		if (!ignore_align || constrain_to_row) {
 			for (int _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.x > sel_x &&
 					tempClients[_i]->geom.y == sel_y &&
@@ -297,7 +298,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 				}
 			}
 		}
-		if (!tempFocusClients) {
+		if (!tempFocusClients && !constrain_to_row) {
 			for (int _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.x > sel_x) {
 					int dis_x = tempClients[_i]->geom.x - sel_x;

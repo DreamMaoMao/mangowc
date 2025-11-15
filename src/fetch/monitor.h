@@ -29,6 +29,16 @@ bool is_scroller_layout(Monitor *m) {
 	return false;
 }
 
+bool is_row_layout(Monitor *m) {
+	// Layout has independent horizontal rows where navigation should be constrained
+	// LEFT/RIGHT: stay within same row (same Y)
+	// UP/DOWN: move between rows
+	if (m->pertag->ltidxs[m->pertag->curtag]->id == DUAL_SCROLLER)
+		return true;
+
+	return false;
+}
+
 unsigned int get_tag_status(unsigned int tag, Monitor *m) {
 	Client *c = NULL;
 	unsigned int status = 0;
