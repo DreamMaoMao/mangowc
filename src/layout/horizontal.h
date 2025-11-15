@@ -507,13 +507,22 @@ void dual_scroller(Monitor *m) {
 
 		// Position logic for focused client
 		if (i == focus_client_index && need_scroller) {
-			if (scroller_focus_center ||
+			// For top row (even index), always position at left edge (never center)
+			// For bottom row (odd index), respect scroller_focus_center setting
+			bool should_center = (scroller_focus_center ||
 				((!m->prevsel ||
 				  (ISSCROLLTILED(m->prevsel) &&
 				   (m->prevsel->scroller_proportion * max_client_width) +
 						   (root_client->scroller_proportion * max_client_width) >
 					   m->w.width - 2 * scroller_structs - cur_gappih)) &&
-				 scroller_prefer_center)) {
+				 scroller_prefer_center));
+
+			// Top row (even index): never center
+			if (in_top_row) {
+				should_center = false;
+			}
+
+			if (should_center) {
 				target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
 			} else {
 				target_geom.x = root_client->geom.x > m->w.x + (m->w.width) / 2
