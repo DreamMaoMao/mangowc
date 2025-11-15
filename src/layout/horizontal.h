@@ -571,9 +571,10 @@ void dual_scroller(Monitor *m) {
 	}
 
 	// Position clients in the opposite row (independent scrolling)
-	// Find the first client in the opposite row and center it
+	// Keep their current positions to maintain scroll state
 	int opposite_row_start = focus_in_top_row ? 1 : 0;
 	if (opposite_row_start < n) {
+		// Find a reference client in the opposite row to anchor positioning
 		c = tempClients[opposite_row_start];
 		bool in_top_row = (opposite_row_start % 2 == 0);
 		unsigned int client_row_height = in_top_row ? top_row_height : bottom_row_height;
@@ -584,7 +585,8 @@ void dual_scroller(Monitor *m) {
 		target_geom.y = client_row_y;
 
 		if (!c->isfullscreen && !c->ismaximizescreen) {
-			target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
+			// Keep current X position to maintain scroll state
+			target_geom.x = c->geom.x;
 			resize(c, target_geom, 0);
 		}
 
