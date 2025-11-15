@@ -23,6 +23,9 @@ bool is_scroller_layout(Monitor *m) {
 	if (m->pertag->ltidxs[m->pertag->curtag]->id == VERTICAL_SCROLLER)
 		return true;
 
+	if (m->pertag->ltidxs[m->pertag->curtag]->id == DUAL_SCROLLER)
+		return true;
+
 	return false;
 }
 
