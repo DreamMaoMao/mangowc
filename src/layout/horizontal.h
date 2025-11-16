@@ -480,8 +480,7 @@ void dual_scroller(Monitor *m) {
 
 		// If no focused client in this row, keep current scroll position
 		if (!root_client && n_row > 0) {
-			root_client = row_clients[0];
-			focus_index = 0;
+			return;
 		}
 
 		// Check if scrolling is needed
