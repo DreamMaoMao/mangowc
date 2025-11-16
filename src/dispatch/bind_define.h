@@ -125,6 +125,29 @@ int focusdir(const Arg *arg) {
 	return 0;
 }
 
+int togglerow(const Arg *arg) {
+	// Toggle between top and bottom row in dual-scroller layout
+	if (!selmon || !selmon->sel || !is_row_layout(selmon))
+		return 0;
+
+	Client *c = selmon->sel;
+
+	// Only toggle for tiled windows
+	if (c->isfloating || !ISSCROLLTILED(c) || !VISIBLEON(c, selmon))
+		return 0;
+
+	// Toggle the row (0 <-> 1)
+	if (c->dual_scroller_row == 0) {
+		c->dual_scroller_row = 1;
+	} else {
+		c->dual_scroller_row = 0;
+	}
+
+	// Trigger a relayout
+	arrange(selmon, false);
+	return 0;
+}
+
 int focuslast(const Arg *arg) {
 
 	Client *c = NULL;

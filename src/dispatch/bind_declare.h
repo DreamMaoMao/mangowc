@@ -2,6 +2,7 @@ int minimized(const Arg *arg);
 int restore_minimized(const Arg *arg);
 int toggle_scratchpad(const Arg *arg);
 int focusdir(const Arg *arg);
+int togglerow(const Arg *arg);
 int toggleoverview(const Arg *arg);
 int set_proportion(const Arg *arg);
 int switch_proportion_preset(const Arg *arg);

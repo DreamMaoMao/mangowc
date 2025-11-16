@@ -380,13 +380,13 @@ void scroller(Monitor *m) {
 // Dual-row scroller layout with independent scrolling
 // Top row: 30% of screen height, Bottom row: 70% of screen height
 void dual_scroller(Monitor *m) {
-	unsigned int i, n, j;
+	unsigned int i, n_top = 0, n_bottom = 0, n_total = 0;
 
-	Client *c = NULL, *root_client = NULL;
-	Client **tempClients = NULL;
+	Client *c = NULL;
+	Client **top_row_clients = NULL;
+	Client **bottom_row_clients = NULL;
 	struct wlr_box target_geom;
-	int focus_client_index = 0;
-	bool need_scroller = false;
+
 	unsigned int cur_gappih = enablegaps ? m->gappih : 0;
 	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
 	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
@@ -404,24 +404,53 @@ void dual_scroller(Monitor *m) {
 	unsigned int max_client_width =
 		m->w.width - 2 * scroller_structs - cur_gappih;
 
-	n = m->visible_scroll_tiling_clients;
+	n_total = m->visible_scroll_tiling_clients;
 
-	if (n == 0) {
+	if (n_total == 0) {
 		return;
 	}
 
-	// Allocate memory for temp clients array
-	tempClients = malloc(n * sizeof(Client *));
-	if (!tempClients) {
-		return;
-	}
-
-	// Fill tempClients array
-	j = 0;
+	// First pass: count clients per row and assign unassigned clients
 	wl_list_for_each(c, &clients, link) {
 		if (VISIBLEON(c, m) && ISSCROLLTILED(c)) {
-			tempClients[j] = c;
-			j++;
+			// Assign to bottom row by default if not assigned
+			if (c->dual_scroller_row == -1) {
+				c->dual_scroller_row = 1; // Default to bottom row
+			}
+
+			if (c->dual_scroller_row == 0) {
+				n_top++;
+			} else {
+				n_bottom++;
+			}
+		}
+	}
+
+	// Allocate arrays for each row
+	if (n_top > 0) {
+		top_row_clients = malloc(n_top * sizeof(Client *));
+		if (!top_row_clients) {
+			return;
+		}
+	}
+
+	if (n_bottom > 0) {
+		bottom_row_clients = malloc(n_bottom * sizeof(Client *));
+		if (!bottom_row_clients) {
+			free(top_row_clients);
+			return;
+		}
+	}
+
+	// Fill row arrays
+	unsigned int top_idx = 0, bottom_idx = 0;
+	wl_list_for_each(c, &clients, link) {
+		if (VISIBLEON(c, m) && ISSCROLLTILED(c)) {
+			if (c->dual_scroller_row == 0) {
+				top_row_clients[top_idx++] = c;
+			} else {
+				bottom_row_clients[bottom_idx++] = c;
+			}
 		}
 	}
 
@@ -431,216 +460,128 @@ void dual_scroller(Monitor *m) {
 	unsigned int top_row_y = m->w.y + cur_gappov;
 	unsigned int bottom_row_y = top_row_y + top_row_height + cur_gappiv;
 
-	// Determine which row the focused client is in
-	// Clients are distributed: even indices go to top row, odd indices to bottom row
-	if (m->sel && !client_is_unmanaged(m->sel) && !m->sel->isfloating) {
-		root_client = m->sel;
-	} else if (m->prevsel && ISSCROLLTILED(m->prevsel) &&
-			   VISIBLEON(m->prevsel, m) && !client_is_unmanaged(m->prevsel)) {
-		root_client = m->prevsel;
-	} else {
-		root_client = center_tiled_select(m);
-	}
+	// Helper function to layout a single row
+	void layout_row(Client **row_clients, unsigned int n_row, unsigned int row_y,
+	                unsigned int row_height, bool is_top_row) {
+		if (n_row == 0) return;
 
-	if (!root_client) {
-		free(tempClients);
-		return;
-	}
+		Client *root_client = NULL;
+		int focus_index = -1;
+		bool need_scroller = false;
 
-	// Find focus client index
-	for (i = 0; i < n; i++) {
-		if (root_client == tempClients[i]) {
-			focus_client_index = i;
-			break;
-		}
-	}
-
-	// Determine if focused client is in top or bottom row
-	bool focus_in_top_row = (focus_client_index % 2 == 0);
-
-	// Check if scroller is needed for focused client
-	if (!root_client->is_pending_open_animation &&
-		root_client->geom.x >= m->w.x + scroller_structs &&
-		root_client->geom.x + root_client->geom.width <=
-			m->w.x + m->w.width - scroller_structs) {
-		need_scroller = false;
-	} else {
-		need_scroller = true;
-	}
-
-	if (n == 1 && scroller_ignore_proportion_single) {
-		need_scroller = true;
-	}
-
-	if (start_drag_window)
-		need_scroller = false;
-
-	// Layout all clients
-	for (i = 0; i < n; i++) {
-		c = tempClients[i];
-		bool in_top_row = (i % 2 == 0);
-		unsigned int client_row_height = in_top_row ? top_row_height : bottom_row_height;
-		unsigned int client_row_y = in_top_row ? top_row_y : bottom_row_y;
-
-		target_geom.height = client_row_height;
-		target_geom.width = max_client_width * c->scroller_proportion;
-		target_geom.y = client_row_y;
-
-		// Handle fullscreen and maximize
-		if (c->isfullscreen) {
-			target_geom.height = m->m.height;
-			target_geom.width = m->m.width;
-			target_geom.y = m->m.y;
-			target_geom.x = m->m.x;
-			resize(c, target_geom, 0);
-			continue;
-		}
-
-		if (c->ismaximizescreen) {
-			target_geom.height = m->w.height - 2 * cur_gappov;
-			target_geom.width = m->w.width - 2 * cur_gappoh;
-			target_geom.y = m->w.y + cur_gappov;
-			target_geom.x = m->w.x + cur_gappoh;
-			resize(c, target_geom, 0);
-			continue;
-		}
-
-		// Position logic for focused client
-		if (i == focus_client_index && need_scroller) {
-			// For top row (even index), always position at left edge (never center)
-			// For bottom row (odd index), respect scroller_focus_center setting
-			bool should_center = (scroller_focus_center ||
-				((!m->prevsel ||
-				  (ISSCROLLTILED(m->prevsel) &&
-				   (m->prevsel->scroller_proportion * max_client_width) +
-						   (root_client->scroller_proportion * max_client_width) >
-					   m->w.width - 2 * scroller_structs - cur_gappih)) &&
-				 scroller_prefer_center));
-
-			// Top row (even index): never center
-			if (in_top_row) {
-				should_center = false;
+		// Find focused client in this row
+		for (i = 0; i < n_row; i++) {
+			if (row_clients[i] == m->sel) {
+				root_client = row_clients[i];
+				focus_index = i;
+				break;
 			}
+		}
 
-			if (should_center) {
-				target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
+		// If no focused client in this row, keep current scroll position
+		if (!root_client && n_row > 0) {
+			root_client = row_clients[0];
+			focus_index = 0;
+		}
+
+		// Check if scrolling is needed
+		if (root_client && !root_client->is_pending_open_animation &&
+			root_client->geom.x >= m->w.x + scroller_structs &&
+			root_client->geom.x + root_client->geom.width <=
+				m->w.x + m->w.width - scroller_structs) {
+			need_scroller = false;
+		} else {
+			need_scroller = true;
+		}
+
+		if (start_drag_window)
+			need_scroller = false;
+
+		// Layout focused client
+		if (focus_index >= 0 && root_client) {
+			target_geom.height = row_height;
+			target_geom.width = max_client_width * root_client->scroller_proportion;
+			target_geom.y = row_y;
+
+			// Handle fullscreen and maximize
+			if (root_client->isfullscreen) {
+				target_geom.height = m->m.height;
+				target_geom.width = m->m.width;
+				target_geom.y = m->m.y;
+				target_geom.x = m->m.x;
+				resize(root_client, target_geom, 0);
+			} else if (root_client->ismaximizescreen) {
+				target_geom.height = m->w.height - 2 * cur_gappov;
+				target_geom.width = m->w.width - 2 * cur_gappoh;
+				target_geom.y = m->w.y + cur_gappov;
+				target_geom.x = m->w.x + cur_gappoh;
+				resize(root_client, target_geom, 0);
+			} else if (need_scroller) {
+				// Determine if we should center
+				bool should_center = (scroller_focus_center ||
+					((!m->prevsel ||
+					  (ISSCROLLTILED(m->prevsel) &&
+					   (m->prevsel->scroller_proportion * max_client_width) +
+							   (root_client->scroller_proportion * max_client_width) >
+						   m->w.width - 2 * scroller_structs - cur_gappih)) &&
+					 scroller_prefer_center));
+
+				// Top row: never center
+				if (is_top_row) {
+					should_center = false;
+				}
+
+				if (should_center) {
+					target_geom.x = m->w.x + (m->w.width - target_geom.width) / 2;
+				} else {
+					target_geom.x = root_client->geom.x > m->w.x + (m->w.width) / 2
+										? m->w.x + (m->w.width -
+													root_client->scroller_proportion *
+														max_client_width -
+													scroller_structs)
+										: m->w.x + scroller_structs;
+				}
+				resize(root_client, target_geom, 0);
 			} else {
-				target_geom.x = root_client->geom.x > m->w.x + (m->w.width) / 2
-									? m->w.x + (m->w.width -
-												root_client->scroller_proportion *
-													max_client_width -
-												scroller_structs)
-									: m->w.x + scroller_structs;
+				target_geom.x = root_client->geom.x;
+				resize(root_client, target_geom, 0);
 			}
-			resize(c, target_geom, 0);
-		} else if (i == focus_client_index) {
-			target_geom.x = c->geom.x;
-			resize(c, target_geom, 0);
 		}
-	}
 
-	// Position clients in the same row as focus, to the left
-	if (focus_client_index >= 2) {
-		for (i = focus_client_index - 2; ; i -= 2) {
-			c = tempClients[i];
-			bool in_top_row = (i % 2 == 0);
-			unsigned int client_row_height = in_top_row ? top_row_height : bottom_row_height;
-			unsigned int client_row_y = in_top_row ? top_row_y : bottom_row_y;
-
+		// Layout clients to the left of focused
+		for (i = focus_index - 1; i >= 0 && i < n_row; i--) {
+			c = row_clients[i];
 			target_geom.width = max_client_width * c->scroller_proportion;
-			target_geom.height = client_row_height;
-			target_geom.y = client_row_y;
+			target_geom.height = row_height;
+			target_geom.y = row_y;
 
 			if (!c->isfullscreen && !c->ismaximizescreen) {
-				target_geom.x = tempClients[i + 2]->geom.x - cur_gappih - target_geom.width;
+				target_geom.x = row_clients[i + 1]->geom.x - cur_gappih - target_geom.width;
 				resize(c, target_geom, 0);
 			}
-
-			if (i < 2) break;
 		}
-	}
 
-	// Position clients in the same row as focus, to the right
-	if (focus_client_index + 2 < n) {
-		for (i = focus_client_index + 2; i < n; i += 2) {
-			c = tempClients[i];
-			bool in_top_row = (i % 2 == 0);
-			unsigned int client_row_height = in_top_row ? top_row_height : bottom_row_height;
-			unsigned int client_row_y = in_top_row ? top_row_y : bottom_row_y;
-
+		// Layout clients to the right of focused
+		for (i = focus_index + 1; i < n_row; i++) {
+			c = row_clients[i];
 			target_geom.width = max_client_width * c->scroller_proportion;
-			target_geom.height = client_row_height;
-			target_geom.y = client_row_y;
+			target_geom.height = row_height;
+			target_geom.y = row_y;
 
 			if (!c->isfullscreen && !c->ismaximizescreen) {
-				target_geom.x = tempClients[i - 2]->geom.x + cur_gappih + tempClients[i - 2]->geom.width;
+				target_geom.x = row_clients[i - 1]->geom.x + cur_gappih + row_clients[i - 1]->geom.width;
 				resize(c, target_geom, 0);
 			}
 		}
 	}
 
-	// Position clients in the opposite row (independent scrolling)
-	// Keep their current positions to maintain scroll state
-	int opposite_row_start = focus_in_top_row ? 1 : 0;
-	if (opposite_row_start < n) {
-		// Find a reference client in the opposite row to anchor positioning
-		c = tempClients[opposite_row_start];
-		bool in_top_row = (opposite_row_start % 2 == 0);
-		unsigned int client_row_height = in_top_row ? top_row_height : bottom_row_height;
-		unsigned int client_row_y = in_top_row ? top_row_y : bottom_row_y;
+	// Layout both rows independently
+	layout_row(top_row_clients, n_top, top_row_y, top_row_height, true);
+	layout_row(bottom_row_clients, n_bottom, bottom_row_y, bottom_row_height, false);
 
-		target_geom.width = max_client_width * c->scroller_proportion;
-		target_geom.height = client_row_height;
-		target_geom.y = client_row_y;
-
-		if (!c->isfullscreen && !c->ismaximizescreen) {
-			// Keep current X position to maintain scroll state
-			target_geom.x = c->geom.x;
-			resize(c, target_geom, 0);
-		}
-
-		// Position other clients in the opposite row to the left
-		if (opposite_row_start >= 2) {
-			for (i = opposite_row_start - 2; ; i -= 2) {
-				c = tempClients[i];
-				in_top_row = (i % 2 == 0);
-				client_row_height = in_top_row ? top_row_height : bottom_row_height;
-				client_row_y = in_top_row ? top_row_y : bottom_row_y;
-
-				target_geom.width = max_client_width * c->scroller_proportion;
-				target_geom.height = client_row_height;
-				target_geom.y = client_row_y;
-
-				if (!c->isfullscreen && !c->ismaximizescreen) {
-					target_geom.x = tempClients[i + 2]->geom.x - cur_gappih - target_geom.width;
-					resize(c, target_geom, 0);
-				}
-
-				if (i < 2) break;
-			}
-		}
-
-		// Position other clients in the opposite row to the right
-		if (opposite_row_start + 2 < n) {
-			for (i = opposite_row_start + 2; i < n; i += 2) {
-				c = tempClients[i];
-				in_top_row = (i % 2 == 0);
-				client_row_height = in_top_row ? top_row_height : bottom_row_height;
-				client_row_y = in_top_row ? top_row_y : bottom_row_y;
-
-				target_geom.width = max_client_width * c->scroller_proportion;
-				target_geom.height = client_row_height;
-				target_geom.y = client_row_y;
-
-				if (!c->isfullscreen && !c->ismaximizescreen) {
-					target_geom.x = tempClients[i - 2]->geom.x + cur_gappih + tempClients[i - 2]->geom.width;
-					resize(c, target_geom, 0);
-				}
-			}
-		}
-	}
-
-	free(tempClients);
+	// Cleanup
+	free(top_row_clients);
+	free(bottom_row_clients);
 }
 
 void center_tile(Monitor *m) {

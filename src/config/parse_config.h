@@ -814,6 +814,8 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "focusdir") == 0) {
 		func = focusdir;
 		(*arg).i = parse_direction(arg_value);
+	} else if (strcmp(func_name, "togglerow") == 0) {
+		func = togglerow;
 	} else if (strcmp(func_name, "incnmaster") == 0) {
 		func = incnmaster;
 		(*arg).i = atoi(arg_value);
