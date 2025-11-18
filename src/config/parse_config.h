@@ -2979,6 +2979,12 @@ void reapply_monitor_rules(void) {
 	}
 }
 
+void reapply_cursor_style(void) {
+	if (cursor_mgr)
+		wlr_xcursor_manager_destroy(cursor_mgr);
+	cursor_mgr = wlr_xcursor_manager_create(config.cursor_theme, cursor_size);
+}
+
 void reapply_border(void) {
 	Client *c = NULL;
 
@@ -3079,6 +3085,7 @@ void reset_option(void) {
 	set_env();
 	run_exec();
 
+	reapply_cursor_style();
 	reapply_border();
 	reapply_keyboard();
 	reapply_pointer();
