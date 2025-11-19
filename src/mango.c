@@ -628,7 +628,7 @@ static void setgaps(int oh, int ov, int ih, int iv);
 static void setmon(Client *c, Monitor *m, unsigned int newtags, bool focus);
 static void setpsel(struct wl_listener *listener, void *data);
 static void setsel(struct wl_listener *listener, void *data);
-static void setup(void);
+static void setup(const char *config_file);
 static void startdrag(struct wl_listener *listener, void *data);
 
 static void unlocksession(struct wl_listener *listener, void *data);
@@ -4852,11 +4852,11 @@ void create_output(struct wlr_backend *backend, void *data) {
 #endif
 }
 
-void setup(void) {
+void setup(const char *config_file) {
 
 	setenv("XCURSOR_SIZE", "24", 1);
 	setenv("XDG_CURRENT_DESKTOP", "mango", 1);
-	parse_config();
+	parse_config(config_file);
 	init_baked_points();
 
 	int drm_fd, i, sig[] = {SIGCHLD, SIGINT, SIGTERM, SIGPIPE};
@@ -5858,11 +5858,14 @@ static void setgeometrynotify(struct wl_listener *listener, void *data) {
 
 int main(int argc, char *argv[]) {
 	char *startup_cmd = NULL;
+	char *config_file = NULL;
 	int c;
 
-	while ((c = getopt(argc, argv, "s:hdv")) != -1) {
+	while ((c = getopt(argc, argv, "s:c:hdv")) != -1) {
 		if (c == 's')
 			startup_cmd = optarg;
+		else if (c == 'c')
+				config_file = optarg;
 		else if (c == 'd')
 			log_level = WLR_DEBUG;
 		else if (c == 'v')
@@ -5878,11 +5881,11 @@ int main(int argc, char *argv[]) {
 	 */
 	if (!getenv("XDG_RUNTIME_DIR"))
 		die("XDG_RUNTIME_DIR must be set");
-	setup();
+	setup(config_file);
 	run(startup_cmd);
 	cleanup();
 	return EXIT_SUCCESS;
 
 usage:
-	die("Usage: %s [-v] [-d] [-s startup command]", argv[0]);
+	die("Usage: %s [-v] [-d] [-c config_file] [-s startup command]", argv[0]);
 }
