@@ -1146,6 +1146,16 @@ bool client_apply_focus_opacity(Client *c) {
 			target_opacity = opacity;
 		}
 		client_set_opacity(c, target_opacity);
+		if (blur && !c->noblur && !blur_optimized) {
+			wlr_scene_blur_set_strength(
+				c->blur, MIN(percent * (1.0 - fadein_begin_opacity) +
+								 fadein_begin_opacity,
+							 1.0));
+			wlr_scene_blur_set_alpha(
+				c->blur, MIN(percent * (1.0 - fadein_begin_opacity) +
+								 fadein_begin_opacity,
+							 1.0));
+		}
 	} else if (animations && c->opacity_animation.running) {
 
 		struct timespec now;
