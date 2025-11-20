@@ -2208,35 +2208,53 @@ void parse_config_line(Config *config, const char *line) {
 
 void parse_config_file(Config *config, const char *file_path) {
 	FILE *file;
-	// 检查路径是否以 ~/ 开头
-	if (file_path[0] == '~' && (file_path[1] == '/' || file_path[1] == '\0')) {
+	char full_path[1024];
+
+	if (file_path[0] == '.' && file_path[1] == '/') {
+		// Relative path
+
+		const char *mangoconfig = getenv("MANGOCONFIG");
+		if (mangoconfig && mangoconfig[0] != '\0') {
+			snprintf(full_path, sizeof(full_path), "%s/%s", mangoconfig,
+					 file_path + 1);
+		} else {
+			const char *home = getenv("HOME");
+			if (!home) {
+				fprintf(stderr, "Error: HOME environment variable not set.\n");
+				return;
+			}
+			snprintf(full_path, sizeof(full_path), "%s/.config/mango/%s", home,
+					 file_path + 1);
+		}
+		file = fopen(full_path, "r");
+
+	} else if (file_path[0] == '~' &&
+			   (file_path[1] == '/' || file_path[1] == '\0')) {
+		// Home directory
+
 		const char *home = getenv("HOME");
 		if (!home) {
 			fprintf(stderr, "Error: HOME environment variable not set.\n");
 			return;
 		}
-
-		// 构建完整路径（家目录 + / + 原路径去掉 ~）
-		char full_path[1024];
 		snprintf(full_path, sizeof(full_path), "%s%s", home, file_path + 1);
-
 		file = fopen(full_path, "r");
-		if (!file) {
-			perror("Error opening file");
-			return;
-		}
+
 	} else {
+		// Absolute path
 		file = fopen(file_path, "r");
-		if (!file) {
-			perror("Error opening file");
-			return;
-		}
+	}
+
+	if (!file) {
+		perror("Error opening file");
+		return;
 	}
 
 	char line[512];
 	while (fgets(line, sizeof(line), file)) {
-		if (line[0] == '#' || line[0] == '\n')
+		if (line[0] == '#' || line[0] == '\n') {
 			continue;
+		}
 		parse_config_line(config, line);
 	}
 
