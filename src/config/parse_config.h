@@ -2943,6 +2943,8 @@ void set_default_key_bindings(Config *config) {
 	config->key_bindings_count += default_key_bindings_count;
 }
 
+static char *active_config_path = NULL;
+
 void parse_config(const char *cli_config_file) {
 
 	char filename[1024];
@@ -2988,8 +2990,13 @@ void parse_config(const char *cli_config_file) {
 	strcpy(config.keymode, "default");
 
 	create_config_keymap();
-
+	
 	if (cli_config_path != NULL) {
+		if (active_config_path) free(active_config_path);
+		active_config_path = strdup(cli_config_path);
+	}
+
+	if (active_config_path != NULL) {
 		snprintf(filename, sizeof(filename), "%s", cli_config_path);
 	} else {
 		// 获取 MANGOCONFIG 环境变量
@@ -3017,6 +3024,8 @@ void parse_config(const char *cli_config_file) {
 			// 使用 MANGOCONFIG 环境变量作为配置文件夹路径
 			snprintf(filename, sizeof(filename), "%s/config.conf", mangoconfig);
 		}
+
+		active_config_path = strdup(filename)
 	}
 
 	set_value_default();
@@ -3234,7 +3243,7 @@ void reset_option(void) {
 }
 
 int reload_config(const Arg *arg) {
-	parse_config();
+	parse_config(NULL);
 	reset_option();
 	printstatus();
 	return 0;
