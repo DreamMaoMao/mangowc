@@ -2185,6 +2185,15 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 	}
 	// 刷新布局，让窗口能感应到exclude_zone变化以及设置独占表面
 	arrangelayers(l->mon);
+
+	// 按需交互layer需要像正常窗口一样抢占非独占layer的焦点
+	if (!exclusive_focus &&
+		l->layer_surface->current.keyboard_interactive ==
+			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND) {
+		focusclient(NULL, 0);
+		client_notify_enter(l->layer_surface->surface,
+							wlr_seat_get_keyboard(seat));
+	}
 }
 
 void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
