@@ -326,9 +326,14 @@ void layer_animation_next_tick(LayerSurface *l) {
 							 animation_passed * (1.0 - fadein_begin_opacity),
 						 1.0f);
 
-	if (animation_fade_in)
+	if (animation_fade_in) {
+		if (blur && !l->noblur && !blur_optimized) {
+			wlr_scene_blur_set_strength(l->blur, opacity);
+			wlr_scene_blur_set_alpha(l->blur, opacity);
+		}
 		wlr_scene_node_for_each_buffer(&l->scene->node,
 									   scene_buffer_apply_opacity, &opacity);
+	}
 
 	wlr_scene_node_set_position(&l->scene->node, x, y);
 
@@ -355,6 +360,10 @@ void layer_animation_next_tick(LayerSurface *l) {
 		.width = width,
 		.height = height,
 	};
+
+	if (blur && blur_layer && !l->noblur && l->blur)
+		wlr_scene_blur_set_size(l->blur, l->animation.current.width,
+								l->animation.current.height);
 
 	if (animation_passed >= 1.0) {
 		l->animation.running = false;
