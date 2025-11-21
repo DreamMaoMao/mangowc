@@ -245,6 +245,10 @@ void buffer_set_effect(Client *c, BufferData data) {
 		data.corner_location = CORNER_LOCATION_NONE;
 	}
 
+	if (blur && !c->noblur) {
+		wlr_scene_blur_set_corner_radius(c->blur, border_radius,
+										 data.corner_location);
+	}
 	wlr_scene_node_for_each_buffer(&c->scene_surface->node,
 								   scene_buffer_apply_effect, &data);
 }
@@ -347,6 +351,19 @@ void client_draw_shadow(Client *c) {
 	clipped_region.area.y = clipped_region.area.y - top_offset;
 
 	wlr_scene_shadow_set_clipped_region(c->shadow, clipped_region);
+}
+
+void client_draw_blur(Client *c, struct wlr_box clip_box, struct ivec2 offset) {
+	if (blur && !c->noblur) {
+		if (c->scene_surface->node.enabled && !c->blur->node.enabled)
+			wlr_scene_node_set_enabled(&c->blur->node, true);
+		wlr_scene_node_set_position(&c->blur->node, offset.x, offset.y);
+		wlr_scene_blur_set_size(c->blur, clip_box.width - c->bw,
+								clip_box.height - c->bw);
+	} else {
+		if (c->blur->node.enabled)
+			wlr_scene_node_set_enabled(&c->blur->node, false);
+	}
 }
 
 void apply_border(Client *c) {
@@ -533,12 +550,14 @@ void client_apply_clip(Client *c, float factor) {
 
 		apply_border(c);
 		client_draw_shadow(c);
+		client_draw_blur(c, clip_box, offset);
 
 		if (clip_box.width <= 0 || clip_box.height <= 0) {
 			return;
 		}
 
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
+
 		buffer_set_effect(c, (BufferData){1.0f, 1.0f, clip_box.width,
 										  clip_box.height,
 										  current_corner_location, true});
@@ -570,6 +589,7 @@ void client_apply_clip(Client *c, float factor) {
 	// 应用窗口装饰
 	apply_border(c);
 	client_draw_shadow(c);
+	client_draw_blur(c, clip_box, offset);
 
 	// 如果窗口剪切区域已经剪切到0，则不渲染窗口表面
 	if (clip_box.width <= 0 || clip_box.height <= 0) {
@@ -991,6 +1011,10 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 		apply_border(c);
 		client_get_clip(c, &clip);
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip);
+		if (blur && !c->noblur)
+			wlr_scene_blur_set_size(c->blur,
+									c->animation.current.width - 2 * c->bw,
+									c->animation.current.height - 2 * c->bw);
 		return;
 	}
 	// 如果不是工作区切换时划出去的窗口，就让动画的结束位置，就是上面的真实位置和大小
