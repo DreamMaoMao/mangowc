@@ -26,6 +26,28 @@ in {
     xdg.portal = {
       enable = lib.mkDefault true;
 
+      config = {
+        mango = {
+          default = [
+            "wlr"
+            "gtk"
+          ];
+          "org.freedesktop.impl.portal.Secret" = [
+            "gnome-keyring"
+          ];
+          "org.freedesktop.impl.portal.ScreenCast" = [
+            "gtk"
+          ];
+
+          "org.freedesktop.impl.portal.Access" = ["gtk"];
+          "org.freedesktop.impl.portal.Notification" = ["gtk"];
+        };
+      };
+      extraPortals = with pkgs; [
+        xdg-desktop-portal-wlr
+        xdg-desktop-portal-gtk
+      ];
+
       wlr.enable = lib.mkDefault true;
 
       configPackages = [cfg.package];
