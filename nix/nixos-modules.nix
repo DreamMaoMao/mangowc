@@ -29,18 +29,15 @@ in {
       config = {
         mango = {
           default = [
-            "wlr"
             "gtk"
           ];
-          "org.freedesktop.impl.portal.Secret" = [
-            "gnome-keyring"
-          ];
-          "org.freedesktop.impl.portal.ScreenCast" = [
-            "gtk"
-          ];
+          # except those
+          "org.freedesktop.impl.portal.Secret" = ["gnome-keyring"];
+          "org.freedesktop.impl.portal.ScreenCast" = ["wlr"];
+          "org.freedesktop.impl.portal.ScreenShot" = ["wlr"];
 
-          "org.freedesktop.impl.portal.Access" = ["gtk"];
-          "org.freedesktop.impl.portal.Notification" = ["gtk"];
+          # wlr does not have this interface
+          "org.freedesktop.impl.portal.Inhibit" = [];
         };
       };
       extraPortals = with pkgs; [
