@@ -2987,7 +2987,9 @@ void destroylock(SessionLock *lock, int unlock) {
 	if ((locked = !unlock))
 		goto destroy;
 
-	wlr_scene_node_set_enabled(&locked_bg->node, false);
+	if (locked_bg->node.enabled) {
+		wlr_scene_node_set_enabled(&locked_bg->node, false);
+	}
 
 	focusclient(focustop(selmon), 0);
 	motionnotify(0, NULL, 0, 0, 0, 0);
@@ -3525,7 +3527,9 @@ void pending_kill_client(Client *c) {
 void locksession(struct wl_listener *listener, void *data) {
 	struct wlr_session_lock_v1 *session_lock = data;
 	SessionLock *lock;
-	wlr_scene_node_set_enabled(&locked_bg->node, true);
+	if (!transparent_wlr_lock) {
+		wlr_scene_node_set_enabled(&locked_bg->node, true);
+	}
 	if (cur_lock) {
 		wlr_session_lock_v1_destroy(session_lock);
 		return;

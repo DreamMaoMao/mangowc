@@ -322,6 +322,7 @@ typedef struct {
 	int adaptive_sync;
 	int allow_tearing;
 	int allow_shortcuts_inhibit;
+	int transparent_wlr_lock;
 
 	struct xkb_rule_names xkb_rules;
 
@@ -1170,6 +1171,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->allow_tearing = atoi(value);
 	} else if (strcmp(key, "allow_shortcuts_inhibit") == 0) {
 		config->allow_shortcuts_inhibit = atoi(value);
+	} else if (strcmp(key, "transparent_wlr_lock") == 0) {
+		config->transparent_wlr_lock = atoi(value);
 	} else if (strcmp(key, "no_border_when_single") == 0) {
 		config->no_border_when_single = atoi(value);
 	} else if (strcmp(key, "snap_distance") == 0) {
@@ -2605,6 +2608,7 @@ void override_config(void) {
 	adaptive_sync = CLAMP_INT(config.adaptive_sync, 0, 1);
 	allow_tearing = CLAMP_INT(config.allow_tearing, 0, 2);
 	allow_shortcuts_inhibit = CLAMP_INT(config.allow_shortcuts_inhibit, 0, 1);
+	transparent_wlr_lock = CLAMP_INT(config.transparent_wlr_lock, 0, 1);
 	axis_bind_apply_timeout =
 		CLAMP_INT(config.axis_bind_apply_timeout, 0, 1000);
 	focus_on_activate = CLAMP_INT(config.focus_on_activate, 0, 1);
@@ -2764,6 +2768,7 @@ void set_value_default() {
 	config.adaptive_sync = adaptive_sync;
 	config.allow_tearing = allow_tearing;
 	config.allow_shortcuts_inhibit = allow_shortcuts_inhibit;
+	config.transparent_wlr_lock = transparent_wlr_lock;
 	config.no_border_when_single = no_border_when_single;
 	config.snap_distance = snap_distance;
 	config.drag_tile_to_tile = drag_tile_to_tile;
