@@ -2644,6 +2644,21 @@ void free_config(void) {
 
 	// 清理解析按键用的keymap
 	cleanup_config_keymap();
+
+	// Free config variables linked list
+	ConfigVariable *var = config.variables;
+	while (var) {
+		ConfigVariable *next = var->next;
+		if (var->name) {
+			free(var->name)
+		};
+		if (var->value) {
+			free(var->value);
+		}
+		free(var);
+		var = next;
+	}
+	config.variables = NULL;
 }
 
 void override_config(void) {
