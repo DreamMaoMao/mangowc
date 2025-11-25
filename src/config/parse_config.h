@@ -2963,7 +2963,7 @@ void set_default_key_bindings(Config *config) {
 
 static char *active_config_path = NULL;
 
-void parse_config(const char *cli_config_file) {
+void parse_config(const char *cli_config_path) {
 
 	char filename[1024];
 
