@@ -454,8 +454,8 @@ void dual_scroller(Monitor *m) {
 		}
 	}
 
-	// Calculate row heights (30% top, 70% bottom)
-	unsigned int top_row_height = (unsigned int)((m->w.height - 2 * cur_gappov - cur_gappiv) * 0.3);
+	// Calculate row heights using configurable split ratio
+	unsigned int top_row_height = (unsigned int)((m->w.height - 2 * cur_gappov - cur_gappiv) * dual_scroller_default_split_ratio);
 	unsigned int bottom_row_height = m->w.height - 2 * cur_gappov - cur_gappiv - top_row_height;
 	unsigned int top_row_y = m->w.y + cur_gappov;
 	unsigned int bottom_row_y = top_row_y + top_row_height + cur_gappiv;

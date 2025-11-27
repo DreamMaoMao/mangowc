@@ -330,6 +330,28 @@ int setmfact(const Arg *arg) {
 	return 0;
 }
 
+int adjust_dual_scroller_split(const Arg *arg) {
+	float new_ratio;
+
+	if (!arg || !selmon)
+		return 0;
+
+	// Check if we're in a dual-scroller layout
+	if (!is_row_layout(selmon))
+		return 0;
+
+	// Calculate new ratio: if arg->f < 1.0, treat as relative adjustment, otherwise as absolute value
+	new_ratio = arg->f < 1.0 ? dual_scroller_default_split_ratio + arg->f : arg->f - 1.0;
+
+	// Clamp the ratio between 0.1 and 0.9
+	if (new_ratio < 0.1 || new_ratio > 0.9)
+		return 0;
+
+	dual_scroller_default_split_ratio = new_ratio;
+	arrange(selmon, false);
+	return 0;
+}
+
 int killclient(const Arg *arg) {
 	Client *c = NULL;
 	c = selmon->sel;

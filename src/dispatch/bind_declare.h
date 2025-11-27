@@ -29,6 +29,7 @@ int switch_keyboard_layout(const Arg *arg);
 int setlayout(const Arg *arg);
 int switch_layout(const Arg *arg);
 int setmfact(const Arg *arg);
+int adjust_dual_scroller_split(const Arg *arg);
 int quit(const Arg *arg);
 int moveresize(const Arg *arg);
 int exchange_client(const Arg *arg);
