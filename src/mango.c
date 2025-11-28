@@ -1572,6 +1572,7 @@ void reset_exclusive_layer(Monitor *m) {
 	unsigned int layers_above_shell[] = {
 		ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
 		ZWLR_LAYER_SHELL_V1_LAYER_TOP,
+		ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM,
 	};
 
 	if (!m)
@@ -1579,6 +1580,16 @@ void reset_exclusive_layer(Monitor *m) {
 
 	for (i = 0; i < (int)LENGTH(layers_above_shell); i++) {
 		wl_list_for_each_reverse(l, &m->layers[layers_above_shell[i]], link) {
+			if (l == exclusive_focus &&
+				l->layer_surface->current.keyboard_interactive !=
+					ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE)
+				exclusive_focus = NULL;
+			if (l->layer_surface->current.keyboard_interactive ==
+					ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE &&
+				l->layer_surface->surface ==
+					seat->keyboard_state.focused_surface)
+				focusclient(focustop(selmon), 1);
+
 			if (locked ||
 				l->layer_surface->current.keyboard_interactive !=
 					ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE ||
