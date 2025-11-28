@@ -1691,6 +1691,12 @@ void apply_window_snap(Client *c) {
 	resize(c, c->geom, 0);
 }
 
+void focuslayer(LayerSurface *l) {
+	focusclient(NULL, 0);
+	dwl_im_relay_set_focus(dwl_input_method_relay, l->layer_surface->surface);
+	client_notify_enter(l->layer_surface->surface, wlr_seat_get_keyboard(seat));
+}
+
 void reset_exclusive_layer(Monitor *m) {
 	LayerSurface *l = NULL;
 	int32_t i;
@@ -1721,12 +1727,8 @@ void reset_exclusive_layer(Monitor *m) {
 				!l->mapped || l == exclusive_focus)
 				continue;
 			/* Deactivate the focused client. */
-			focusclient(NULL, 0);
 			exclusive_focus = l;
-			dwl_im_relay_set_focus(dwl_input_method_relay,
-								   l->layer_surface->surface);
-			client_notify_enter(l->layer_surface->surface,
-								wlr_seat_get_keyboard(seat));
+			focuslayer(l);
 			return;
 		}
 	}
@@ -2029,11 +2031,7 @@ buttonpress(struct wl_listener *listener, void *data) {
 			if (l && !exclusive_focus &&
 				l->layer_surface->current.keyboard_interactive ==
 					ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND) {
-				focusclient(NULL, 0);
-				dwl_im_relay_set_focus(dwl_input_method_relay,
-									   l->layer_surface->surface);
-				client_notify_enter(l->layer_surface->surface,
-									wlr_seat_get_keyboard(seat));
+				focuslayer(l);
 			}
 		}
 
@@ -2353,11 +2351,7 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 	if (!exclusive_focus &&
 		l->layer_surface->current.keyboard_interactive ==
 			ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND) {
-		focusclient(NULL, 0);
-		dwl_im_relay_set_focus(dwl_input_method_relay,
-							   l->layer_surface->surface);
-		client_notify_enter(l->layer_surface->surface,
-							wlr_seat_get_keyboard(seat));
+		focuslayer(l);
 	}
 }
 
