@@ -200,6 +200,7 @@ typedef struct {
 	int scroller_focus_center;
 	int scroller_prefer_center;
 	int edge_scroller_pointer_focus;
+	float dual_scroller_default_split_ratio;
 	int focus_cross_monitor;
 	int exchange_cross_monitor;
 	int scratchpad_cross_monitor;
@@ -815,11 +816,16 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "focusdir") == 0) {
 		func = focusdir;
 		(*arg).i = parse_direction(arg_value);
+	} else if (strcmp(func_name, "togglerow") == 0) {
+		func = togglerow;
 	} else if (strcmp(func_name, "incnmaster") == 0) {
 		func = incnmaster;
 		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "setmfact") == 0) {
 		func = setmfact;
+		(*arg).f = atof(arg_value);
+	} else if (strcmp(func_name, "adjust_dual_scroller_split") == 0) {
+		func = adjust_dual_scroller_split;
 		(*arg).f = atof(arg_value);
 	} else if (strcmp(func_name, "zoom") == 0) {
 		func = zoom;
@@ -1166,6 +1172,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->scroller_prefer_center = atoi(value);
 	} else if (strcmp(key, "edge_scroller_pointer_focus") == 0) {
 		config->edge_scroller_pointer_focus = atoi(value);
+	} else if (strcmp(key, "dual_scroller_default_split_ratio") == 0) {
+		config->dual_scroller_default_split_ratio = atof(value);
 	} else if (strcmp(key, "focus_cross_monitor") == 0) {
 		config->focus_cross_monitor = atoi(value);
 	} else if (strcmp(key, "exchange_cross_monitor") == 0) {
@@ -2653,6 +2661,8 @@ void override_config(void) {
 	edge_scroller_pointer_focus =
 		CLAMP_INT(config.edge_scroller_pointer_focus, 0, 1);
 	scroller_structs = CLAMP_INT(config.scroller_structs, 0, 1000);
+	dual_scroller_default_split_ratio =
+		CLAMP_FLOAT(config.dual_scroller_default_split_ratio, 0.1f, 0.9f);
 
 	// 主从布局设置
 	default_mfact = CLAMP_FLOAT(config.default_mfact, 0.1f, 0.9f);
@@ -2842,6 +2852,7 @@ void set_value_default() {
 	config.scroller_focus_center = scroller_focus_center;
 	config.scroller_prefer_center = scroller_prefer_center;
 	config.edge_scroller_pointer_focus = edge_scroller_pointer_focus;
+	config.dual_scroller_default_split_ratio = dual_scroller_default_split_ratio;
 	config.focus_cross_monitor = focus_cross_monitor;
 	config.exchange_cross_monitor = exchange_cross_monitor;
 	config.scratchpad_cross_monitor = scratchpad_cross_monitor;

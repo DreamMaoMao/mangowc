@@ -374,6 +374,7 @@ struct Client {
 	double old_master_mfact_per, old_master_inner_per, old_stack_innder_per;
 	double old_scroller_pproportion;
 	bool ismaster;
+	int dual_scroller_row; // 0 = top row, 1 = bottom row, -1 = not set
 	bool cursor_in_upper_half, cursor_in_left_half;
 	bool isleftstack;
 	int tearing_hint;
@@ -719,6 +720,7 @@ static struct wlr_scene_tree *
 wlr_scene_tree_snapshot(struct wlr_scene_node *node,
 						struct wlr_scene_tree *parent);
 static bool is_scroller_layout(Monitor *m);
+static bool is_row_layout(Monitor *m);
 static void create_output(struct wlr_backend *backend, void *data);
 static void get_layout_abbr(char *abbr, const char *full_name);
 static void apply_named_scratchpad(Client *target_client);
@@ -2791,6 +2793,7 @@ createnotify(struct wl_listener *listener, void *data) {
 	c = toplevel->base->data = ecalloc(1, sizeof(*c));
 	c->surface.xdg = toplevel->base;
 	c->bw = borderpx;
+	c->dual_scroller_row = -1; // Not assigned to a row yet
 
 	LISTEN(&toplevel->base->surface->events.commit, &c->commit, commitnotify);
 	LISTEN(&toplevel->base->surface->events.map, &c->map, mapnotify);
@@ -3754,6 +3757,11 @@ mapnotify(struct wl_listener *listener, void *data) {
 		}
 
 		if (at_client) {
+			// For row-based layouts, assign new client to same row as focused client
+			if (is_row_layout(selmon) && at_client->dual_scroller_row >= 0) {
+				c->dual_scroller_row = at_client->dual_scroller_row;
+			}
+
 			at_client->link.next->prev = &c->link;
 			c->link.prev = &at_client->link;
 			c->link.next = at_client->link.next;
@@ -5812,6 +5820,7 @@ void createnotifyx11(struct wl_listener *listener, void *data) {
 	c = xsurface->data = ecalloc(1, sizeof(*c));
 	c->surface.xwayland = xsurface;
 	c->type = X11;
+	c->dual_scroller_row = -1; // Not assigned to a row yet
 	/* Listen to the various events it can emit */
 	LISTEN(&xsurface->events.associate, &c->associate, associatex11);
 	LISTEN(&xsurface->events.destroy, &c->destroy, destroynotify);

@@ -125,6 +125,29 @@ int focusdir(const Arg *arg) {
 	return 0;
 }
 
+int togglerow(const Arg *arg) {
+	// Toggle between top and bottom row in dual-scroller layout
+	if (!selmon || !selmon->sel || !is_row_layout(selmon))
+		return 0;
+
+	Client *c = selmon->sel;
+
+	// Only toggle for tiled windows
+	if (c->isfloating || !ISSCROLLTILED(c) || !VISIBLEON(c, selmon))
+		return 0;
+
+	// Toggle the row (0 <-> 1)
+	if (c->dual_scroller_row == 0) {
+		c->dual_scroller_row = 1;
+	} else {
+		c->dual_scroller_row = 0;
+	}
+
+	// Trigger a relayout
+	arrange(selmon, false);
+	return 0;
+}
+
 int focuslast(const Arg *arg) {
 
 	Client *c = NULL;
@@ -303,6 +326,28 @@ int setmfact(const Arg *arg) {
 			c->master_mfact_per = f;
 		}
 	}
+	arrange(selmon, false);
+	return 0;
+}
+
+int adjust_dual_scroller_split(const Arg *arg) {
+	float new_ratio;
+
+	if (!arg || !selmon)
+		return 0;
+
+	// Check if we're in a dual-scroller layout
+	if (!is_row_layout(selmon))
+		return 0;
+
+	// Calculate new ratio: if arg->f < 1.0, treat as relative adjustment, otherwise as absolute value
+	new_ratio = arg->f < 1.0 ? dual_scroller_default_split_ratio + arg->f : arg->f - 1.0;
+
+	// Clamp the ratio between 0.1 and 0.9
+	if (new_ratio < 0.1 || new_ratio > 0.9)
+		return 0;
+
+	dual_scroller_default_split_ratio = new_ratio;
 	arrange(selmon, false);
 	return 0;
 }
