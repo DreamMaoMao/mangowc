@@ -102,10 +102,10 @@
 	 A->geom.x + A->geom.width <= A->mon->m.x + A->mon->m.width &&             \
 	 A->geom.y + A->geom.height <= A->mon->m.y + A->mon->m.height)
 #define ISTILED(A)                                                             \
-	(A && !(A)->isfloating && !(A)->isminimized && !(A)->iskilling &&             \
+	(A && !(A)->isfloating && !(A)->isminimized && !(A)->iskilling &&          \
 	 !(A)->ismaximizescreen && !(A)->isfullscreen && !(A)->isunglobal)
 #define ISSCROLLTILED(A)                                                       \
-	(A && !(A)->isfloating && !(A)->isminimized && !(A)->iskilling &&             \
+	(A && !(A)->isfloating && !(A)->isminimized && !(A)->iskilling &&          \
 	 !(A)->isunglobal)
 #define VISIBLEON(C, M)                                                        \
 	((C) && (M) && (C)->mon == (M) && ((C)->tags & (M)->tagset[(M)->seltags]))
@@ -4559,6 +4559,9 @@ void setmaximizescreen(Client *c, int maximizescreen) {
 	if (!c || !c->mon || !client_surface(c)->mapped || c->iskilling)
 		return;
 
+	if (c->mon->isoverview)
+		return;
+
 	c->ismaximizescreen = maximizescreen;
 
 	if (maximizescreen) {
@@ -4568,10 +4571,6 @@ void setmaximizescreen(Client *c, int maximizescreen) {
 
 		if (c->isfloating)
 			c->float_geom = c->geom;
-		if (selmon->isoverview) {
-			Arg arg = {0};
-			toggleoverview(&arg);
-		}
 
 		maximizescreen_box.x = c->mon->w.x + gappoh;
 		maximizescreen_box.y = c->mon->w.y + gappov;
@@ -4615,10 +4614,14 @@ void setfakefullscreen(Client *c, int fakefullscreen) {
 
 void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带全屏
 {
-	c->isfullscreen = fullscreen;
 
 	if (!c || !c->mon || !client_surface(c)->mapped || c->iskilling)
 		return;
+
+	if (c->mon->isoverview)
+		return;
+
+	c->isfullscreen = fullscreen;
 
 	client_set_fullscreen(c, fullscreen);
 
@@ -4628,10 +4631,6 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 
 		if (c->isfloating)
 			c->float_geom = c->geom;
-		if (selmon->isoverview) {
-			Arg arg = {0};
-			toggleoverview(&arg);
-		}
 
 		c->bw = 0;
 		wlr_scene_node_raise_to_top(&c->scene->node); // 将视图提升到顶层
