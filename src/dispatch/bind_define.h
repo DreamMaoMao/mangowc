@@ -134,7 +134,7 @@ int focuslast(const Arg *arg) {
 	unsigned int target = 0;
 
 	wl_list_for_each(c, &fstack, flink) {
-		if (c->iskilling || c->isminied || c->isunglobal ||
+		if (c->iskilling || c->isminimized || c->isunglobal ||
 			!client_surface(c)->mapped || client_is_unmanaged(c) ||
 			client_is_x11_popup(c))
 			continue;
@@ -472,7 +472,7 @@ int restore_minimized(const Arg *arg) {
 
 	if (selmon && selmon->sel && selmon->sel->is_in_scratchpad &&
 		selmon->sel->is_scratchpad_show) {
-		selmon->sel->isminied = 0;
+		selmon->sel->isminimized = 0;
 		selmon->sel->is_scratchpad_show = 0;
 		selmon->sel->is_in_scratchpad = 0;
 		selmon->sel->isnamedscratchpad = 0;
@@ -481,7 +481,7 @@ int restore_minimized(const Arg *arg) {
 	}
 
 	wl_list_for_each(c, &clients, link) {
-		if (c->isminied && !c->isnamedscratchpad) {
+		if (c->isminimized && !c->isnamedscratchpad) {
 			c->is_scratchpad_show = 0;
 			c->is_in_scratchpad = 0;
 			c->isnamedscratchpad = 0;
@@ -1123,7 +1123,7 @@ int toggle_scratchpad(const Arg *arg) {
 			continue;
 		}
 
-		if (single_scratchpad && c->isnamedscratchpad && !c->isminied) {
+		if (single_scratchpad && c->isnamedscratchpad && !c->isminimized) {
 			set_minimized(c);
 			continue;
 		}
@@ -1448,7 +1448,7 @@ int minimized(const Arg *arg) {
 	if (selmon && selmon->isoverview)
 		return 0;
 
-	if (selmon->sel && !selmon->sel->isminied) {
+	if (selmon->sel && !selmon->sel->isminimized) {
 		set_minimized(selmon->sel);
 	}
 	return 0;
@@ -1470,7 +1470,7 @@ int toggleoverview(const Arg *arg) {
 		wl_list_for_each(c, &clients, link) if (c && c->mon == selmon &&
 												!client_is_unmanaged(c) &&
 												!client_is_x11_popup(c) &&
-												!c->isminied &&
+												!c->isminimized &&
 												!c->isunglobal) {
 			visible_client_number++;
 		}

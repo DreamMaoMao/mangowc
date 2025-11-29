@@ -99,10 +99,10 @@
 	 A->geom.x + A->geom.width <= A->mon->m.x + A->mon->m.width &&             \
 	 A->geom.y + A->geom.height <= A->mon->m.y + A->mon->m.height)
 #define ISTILED(A)                                                             \
-	(A && !(A)->isfloating && !(A)->isminied && !(A)->iskilling &&             \
+	(A && !(A)->isfloating && !(A)->isminimized && !(A)->iskilling &&             \
 	 !(A)->ismaximizescreen && !(A)->isfullscreen && !(A)->isunglobal)
 #define ISSCROLLTILED(A)                                                       \
-	(A && !(A)->isfloating && !(A)->isminied && !(A)->iskilling &&             \
+	(A && !(A)->isfloating && !(A)->isminimized && !(A)->iskilling &&             \
 	 !(A)->isunglobal)
 #define VISIBLEON(C, M)                                                        \
 	((C) && (M) && (C)->mon == (M) && ((C)->tags & (M)->tagset[(M)->seltags]))
@@ -315,7 +315,7 @@ struct Client {
 	unsigned int configure_serial;
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
 	int isfloating, isurgent, isfullscreen, isfakefullscreen,
-		need_float_size_reduce, isminied, isoverlay, isnosizehint,
+		need_float_size_reduce, isminimized, isoverlay, isnosizehint,
 		ignore_maximize, ignore_minimize;
 	int ismaximizescreen;
 	int overview_backup_bw;
@@ -1019,7 +1019,7 @@ void swallow(Client *c, Client *w) {
 	c->isurgent = w->isurgent;
 	c->isfullscreen = w->isfullscreen;
 	c->ismaximizescreen = w->ismaximizescreen;
-	c->isminied = w->isminied;
+	c->isminimized = w->isminimized;
 	c->is_in_scratchpad = w->is_in_scratchpad;
 	c->is_scratchpad_show = w->is_scratchpad_show;
 	c->tags = w->tags;
@@ -1039,7 +1039,7 @@ void swallow(Client *c, Client *w) {
 	if (!c->foreign_toplevel && c->mon)
 		add_foreign_toplevel(c);
 
-	if (c->isminied && c->foreign_toplevel) {
+	if (c->isminimized && c->foreign_toplevel) {
 		wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel,
 													 false);
 		wlr_foreign_toplevel_handle_v1_set_minimized(c->foreign_toplevel, true);
@@ -1385,7 +1385,7 @@ void applyrules(Client *c) {
 	if (!c->noswallow && !c->isfloating && !client_is_float_type(c) &&
 		!c->surface.xdg->initial_commit) {
 		Client *p = termforwin(c);
-		if (p && !p->isminied) {
+		if (p && !p->isminimized) {
 			c->swallowedby = p;
 			p->swallowing = c;
 			wl_list_remove(&c->link);
@@ -3556,7 +3556,7 @@ void init_client_properties(Client *c) {
 	c->iskilling = 0;
 	c->istagswitching = 0;
 	c->isglobal = 0;
-	c->isminied = 0;
+	c->isminimized = 0;
 	c->isoverlay = 0;
 	c->isunglobal = 0;
 	c->is_in_scratchpad = 0;
@@ -3727,7 +3727,7 @@ void maximizenotify(struct wl_listener *listener, void *data) {
 
 void unminimize(Client *c) {
 	if (c && c->is_in_scratchpad && c->is_scratchpad_show) {
-		c->isminied = 0;
+		c->isminimized = 0;
 		c->is_scratchpad_show = 0;
 		c->is_in_scratchpad = 0;
 		c->isnamedscratchpad = 0;
@@ -3735,7 +3735,7 @@ void unminimize(Client *c) {
 		return;
 	}
 
-	if (c && c->isminied) {
+	if (c && c->isminimized) {
 		show_hide_client(c);
 		c->is_scratchpad_show = 0;
 		c->is_in_scratchpad = 0;
@@ -3755,7 +3755,7 @@ void set_minimized(Client *c) {
 	c->oldtags = c->mon->tagset[c->mon->seltags];
 	c->mini_restore_tag = c->tags;
 	c->tags = 0;
-	c->isminied = 1;
+	c->isminimized = 1;
 	c->is_in_scratchpad = 1;
 	c->is_scratchpad_show = 0;
 	focusclient(focustop(selmon), 1);
@@ -3770,15 +3770,15 @@ void minimizenotify(struct wl_listener *listener, void *data) {
 
 	Client *c = wl_container_of(listener, c, minimize);
 
-	if (!c || !c->mon || c->iskilling || c->isminied)
+	if (!c || !c->mon || c->iskilling || c->isminimized)
 		return;
 
 	if (client_request_minimize(c, data) && !c->ignore_minimize) {
-		if (!c->isminied)
+		if (!c->isminimized)
 			set_minimized(c);
 		client_set_minimized(c, true);
 	} else {
-		if (c->isminied)
+		if (c->isminimized)
 			unminimize(c);
 		client_set_minimized(c, false);
 	}
@@ -4789,7 +4789,7 @@ void show_hide_client(Client *c) {
 		c->tags = c->oldtags;
 		arrange(c->mon, false);
 	}
-	c->isminied = 0;
+	c->isminimized = 0;
 	wlr_foreign_toplevel_handle_v1_set_minimized(c->foreign_toplevel, false);
 	focusclient(c, 1);
 	wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel, true);
@@ -5282,7 +5282,7 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	Monitor *m = NULL;
 	c->iskilling = 1;
 
-	if (animations && !c->is_clip_to_hide && !c->isminied &&
+	if (animations && !c->is_clip_to_hide && !c->isminimized &&
 		(!c->mon || VISIBLEON(c, c->mon)))
 		init_fadeout_client(c);
 
@@ -5703,8 +5703,8 @@ void activatex11(struct wl_listener *listener, void *data) {
 	if (c && c->swallowing)
 		return;
 
-	if (c->isminied) {
-		c->isminied = 0;
+	if (c->isminimized) {
+		c->isminimized = 0;
 		c->tags = c->mini_restore_tag;
 		c->is_scratchpad_show = 0;
 		c->is_in_scratchpad = 0;
