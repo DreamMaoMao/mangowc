@@ -3527,7 +3527,7 @@ void pending_kill_client(Client *c) {
 void locksession(struct wl_listener *listener, void *data) {
 	struct wlr_session_lock_v1 *session_lock = data;
 	SessionLock *lock;
-	if (!transparent_wlr_lock) {
+	if (!allow_lock_transparent) {
 		wlr_scene_node_set_enabled(&locked_bg->node, true);
 	}
 	if (cur_lock) {
