@@ -9,12 +9,12 @@ void handle_foreign_activate_request(struct wl_listener *listener, void *data) {
 	if (c && c->swallowing)
 		return;
 
-	if (c && !c->isminied && c == selmon->sel) {
+	if (c && !c->isminimized && c == selmon->sel) {
 		set_minimized(c);
 		return;
 	}
 
-	if (c->isminied) {
+	if (c->isminimized) {
 		c->is_in_scratchpad = 0;
 		c->isnamedscratchpad = 0;
 		c->is_scratchpad_show = 0;
