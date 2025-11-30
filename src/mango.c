@@ -819,6 +819,9 @@ static struct wl_list mons;
 static Monitor *selmon;
 static struct wl_list touches;
 
+static bool emulating_pointer_from_touch = false;
+static int32_t emulated_pointer_touch_id;
+
 static int enablegaps = 1; /* enables gaps, used by togglegaps */
 static int axis_apply_time = 0;
 static int axis_apply_dir = 0;
@@ -5200,9 +5203,9 @@ void touchdown(struct wl_listener *listener, void *data) {
 	struct wlr_touch_down_event *event = data;
 	double lx, ly;
 	double sx, sy;
+	double dx, dy;
 	struct wlr_surface *surface;
 	Client *c = NULL;
-	uint32_t serial = 0;
 	Monitor *m;
 
 	wlr_idle_notifier_v1_notify_activity(idle_notifier, seat);
@@ -5227,48 +5230,54 @@ void touchdown(struct wl_listener *listener, void *data) {
 
 	/* Find the client under the pointer and send the event along. */
 	xytonode(lx, ly, &surface, &c, NULL, &sx, &sy);
-	if (sloppyfocus && c)
-		focusclient(c, 0);
+	if (surface != NULL && wlr_surface_accepts_touch(surface, seat)) {
+		if (sloppyfocus && c)
+			focusclient(c, 0);
 
-	if (surface != NULL) {
-		serial = wlr_seat_touch_notify_down(seat, surface, event->time_msec,
-											event->touch_id, sx, sy);
+		wlr_seat_touch_notify_down(seat, surface, event->time_msec,
+								   event->touch_id, sx, sy);
+		emulating_pointer_from_touch = false;
+		return;
 	}
 
-	if (serial && wlr_seat_touch_num_points(seat) == 1) {
-		/* Emulate a mouse click if the touch event wasn't handled */
-		struct wlr_pointer_button_event *button_event = data;
-		struct wlr_pointer_motion_absolute_event *motion_event = data;
-		double dx, dy;
+	/* Emulate a mouse click if the touch event wasn't handled */
+	if (!emulating_pointer_from_touch) {
+		emulating_pointer_from_touch = true;
+		emulated_pointer_touch_id = event->touch_id;
 
-		wlr_cursor_absolute_to_layout_coords(
-			cursor, &motion_event->pointer->base, motion_event->x,
-			motion_event->y, &lx, &ly);
-		wlr_cursor_warp_closest(cursor, &motion_event->pointer->base, lx, ly);
+		wlr_cursor_warp_closest(cursor, &event->touch->base, lx, ly);
 		dx = lx - cursor->x;
 		dy = ly - cursor->y;
-		motionnotify(motion_event->time_msec, &motion_event->pointer->base, dx,
-					 dy, dx, dy);
+		motionnotify(event->time_msec, &event->touch->base, dx, dy, dx, dy);
 
-		button_event->button = BTN_LEFT;
-		button_event->state = WL_POINTER_BUTTON_STATE_PRESSED;
-		buttonpress(listener, button_event);
+		struct wlr_pointer_button_event button_event = {
+			.pointer = (struct wlr_pointer *)event->touch,
+			.time_msec = event->time_msec,
+			.button = BTN_LEFT,
+			.state = WL_POINTER_BUTTON_STATE_PRESSED};
+		buttonpress(listener, &button_event);
 	}
 }
 
 void touchup(struct wl_listener *listener, void *data) {
 	struct wlr_touch_up_event *event = data;
 
-	if (!wlr_seat_touch_get_point(seat, event->touch_id)) {
+	if (emulating_pointer_from_touch) {
+		if (emulated_pointer_touch_id == event->touch_id) {
+			struct wlr_pointer_button_event button_event = {
+				.pointer = (struct wlr_pointer *)event->touch,
+				.time_msec = event->time_msec,
+				.button = BTN_LEFT,
+				.state = WL_POINTER_BUTTON_STATE_RELEASED};
+			buttonpress(listener, &button_event);
+
+			emulating_pointer_from_touch = false;
+		}
 		return;
 	}
 
-	if (wlr_seat_touch_num_points(seat) == 1) {
-		struct wlr_pointer_button_event *button_event = data;
-
-		button_event->button = BTN_LEFT;
-		button_event->state = WL_POINTER_BUTTON_STATE_RELEASED;
-		buttonpress(listener, button_event);
+	if (!wlr_seat_touch_get_point(seat, event->touch_id)) {
+		return;
 	}
 
 	wlr_seat_touch_notify_up(seat, event->time_msec, event->touch_id);
@@ -5276,7 +5285,11 @@ void touchup(struct wl_listener *listener, void *data) {
 }
 
 void touchframe(struct wl_listener *listener, void *data) {
-	wlr_seat_touch_notify_frame(seat);
+	if (emulating_pointer_from_touch) {
+		wlr_seat_pointer_notify_frame(seat);
+	} else {
+		wlr_seat_touch_notify_frame(seat);
+	}
 	wlr_idle_notifier_v1_notify_activity(idle_notifier, seat);
 }
 
@@ -5284,9 +5297,23 @@ void touchmotion(struct wl_listener *listener, void *data) {
 	struct wlr_touch_motion_event *event = data;
 	double lx, ly;
 	double sx, sy;
+	double dx, dy;
 	struct wlr_surface *surface;
 	Client *c = NULL;
-	struct wlr_touch_point *p = wlr_seat_touch_get_point(seat, event->touch_id);
+	struct wlr_touch_point *p = NULL;
+
+	if (emulating_pointer_from_touch) {
+		if (emulated_pointer_touch_id == event->touch_id) {
+			wlr_cursor_absolute_to_layout_coords(cursor, &event->touch->base,
+												 event->x, event->y, &lx, &ly);
+			dx = lx - cursor->x;
+			dy = ly - cursor->y;
+			motionnotify(event->time_msec, &event->touch->base, dx, dy, dx, dy);
+		}
+		return;
+	}
+
+	p = wlr_seat_touch_get_point(seat, event->touch_id);
 
 	if (!p) {
 		return;
@@ -5296,20 +5323,23 @@ void touchmotion(struct wl_listener *listener, void *data) {
 										 event->y, &lx, &ly);
 	surface = p->surface;
 	c = surface ? get_client_from_surface(surface) : NULL;
-	sx = lx - c->current.x;
-	sy = ly - c->current.y;
 
-	if (c != NULL) {
-		if (sloppyfocus)
-			focusclient(c, 0);
-		wlr_seat_touch_point_focus(seat, surface, event->time_msec,
-								   event->touch_id, sx, sy);
-	} else {
+	if (!c) {
 		if (sloppyfocus)
 			focusclient(NULL, 0);
 		wlr_seat_touch_point_clear_focus(seat, event->time_msec,
 										 event->touch_id);
+		wlr_idle_notifier_v1_notify_activity(idle_notifier, seat);
+		return;
 	}
+
+	sx = lx - c->current.x;
+	sy = ly - c->current.y;
+
+	if (sloppyfocus)
+		focusclient(c, 0);
+	wlr_seat_touch_point_focus(seat, surface, event->time_msec, event->touch_id,
+							   sx, sy);
 	wlr_seat_touch_notify_motion(seat, event->time_msec, event->touch_id, sx,
 								 sy);
 
