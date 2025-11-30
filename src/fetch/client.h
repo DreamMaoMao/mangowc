@@ -128,8 +128,9 @@ Client *center_tiled_select(Monitor *m) {
 	int dirx, diry;
 	long int distance;
 	wl_list_for_each(c, &clients, link) {
-		if (c && VISIBLEON(c, m) && ISTILED(c) && client_surface(c)->mapped &&
-			!c->isfloating && !client_is_unmanaged(c)) {
+		if (c && VISIBLEON(c, m) && ISSCROLLTILED(c) &&
+			client_surface(c)->mapped && !c->isfloating &&
+			!client_is_unmanaged(c)) {
 			dirx = c->geom.x + c->geom.width / 2 - (m->w.x + m->w.width / 2);
 			diry = c->geom.y + c->geom.height / 2 - (m->w.y + m->w.height / 2);
 			distance = dirx * dirx + diry * diry;

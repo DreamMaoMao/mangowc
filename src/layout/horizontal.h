@@ -284,7 +284,7 @@ void scroller(Monitor *m) {
 		return;
 	}
 
-	if (m->sel && !client_is_unmanaged(m->sel) && !m->sel->isfloating) {
+	if (m->sel && !client_is_unmanaged(m->sel) && ISSCROLLTILED(m->sel)) {
 		root_client = m->sel;
 	} else if (m->prevsel && ISSCROLLTILED(m->prevsel) &&
 			   VISIBLEON(m->prevsel, m) && !client_is_unmanaged(m->prevsel)) {
