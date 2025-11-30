@@ -1,7 +1,9 @@
 (define-module (mangowc)
-  #:use-module (guix packages)
   #:use-module (guix download)
   #:use-module (guix git-download)
+  #:use-module (guix gexp)
+  #:use-module (guix packages)
+  #:use-module (guix utils)
   #:use-module (gnu packages wm)
   #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages xdisorg)
@@ -16,21 +18,29 @@
   #:use-module (guix licenses))
 
 
-(define-public mangowc
+(define-public mangowc-git
   (package
     (name "mangowc")
-    (version "0.10.4")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/DreamMaoMao/mangowc")
-             (commit "0.10.4")))
-       (sha256
-        (base32 "0cayb2r69zcp5q810bqhq27xi0b5dlk81qwl6zj6aqjphh6yzpv9"))))
+    (version "git")
+    (source (local-file "." "mangowc-checkout"
+                        #:recursive? #t
+                        #:select? (or (git-predicate (current-source-directory))
+                                      (const #t))))
     (build-system meson-build-system)
+    (arguments
+     (list
+      #:configure-flags
+      #~(list (string-append "-Dsysconfdir=" #$output "/etc"))
+      #:phases
+      #~(modify-phases %standard-phases
+          (add-before 'configure 'patch-meson
+            (lambda _
+              (substitute* "meson.build"
+                (("'-DSYSCONFDIR=\\\"@0@\\\"'.format\\('/etc'\\)")
+                 "'-DSYSCONFDIR=\"@0@\"'.format(sysconfdir)")
+                (("sysconfdir = sysconfdir.substring\\(prefix.length\\(\\)\\)")
+                 "")))))))
     (inputs (list wayland
-                  wayland-protocols
                   libinput
                   libdrm
                   libxkbcommon
@@ -44,9 +54,11 @@
                   xcb-util-wm
                   wlroots
                   scenefx))
-    (native-inputs (list meson ninja pkg-config))
+    (native-inputs (list pkg-config wayland-protocols))
     (home-page "https://github.com/DreamMaoMao/mangowc")
     (synopsis "Wayland compositor based on wlroots and scenefx")
     (description "A Wayland compositor based on wlroots and scenefx,
 inspired by dwl but aiming to be more feature-rich.")
     (license gpl3)))
+
+mangowc-git
