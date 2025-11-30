@@ -46,3 +46,5 @@
     (description "A Wayland compositor based on wlroots and scenefx,
 inspired by dwl but aiming to be more feature-rich.")
     (license gpl3)))
+
+mangowc-git
