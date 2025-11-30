@@ -5227,7 +5227,7 @@ void touchdown(struct wl_listener *listener, void *data) {
 
 	/* Find the client under the pointer and send the event along. */
 	xytonode(lx, ly, &surface, &c, NULL, &sx, &sy);
-	if (sloppyfocus)
+	if (sloppyfocus && c)
 		focusclient(c, 0);
 
 	if (surface != NULL) {
