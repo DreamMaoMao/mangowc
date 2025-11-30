@@ -21,7 +21,7 @@
 (define-public mangowc-git
   (package
     (name "mangowc")
-    (version "0.10.4")
+    (version "git")
     (source (local-file "." "mangowc-checkout"
                         #:recursive? #t
                         #:select? (or (git-predicate (current-source-directory))
