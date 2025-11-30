@@ -16,18 +16,14 @@
   #:use-module (guix licenses))
 
 
-(define-public mangowc
+(define-public mangowc-git
   (package
     (name "mangowc")
     (version "0.10.4")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/DreamMaoMao/mangowc")
-             (commit "0.10.4")))
-       (sha256
-        (base32 "0cayb2r69zcp5q810bqhq27xi0b5dlk81qwl6zj6aqjphh6yzpv9"))))
+    (source (local-file "." "mangowc-checkout"
+                        #:recursive? #t
+                        #:select? (or (git-predicate (current-source-directory))
+                                      (const #t))))
     (build-system meson-build-system)
     (inputs (list wayland
                   wayland-protocols
