@@ -27,6 +27,20 @@
                         #:select? (or (git-predicate (current-source-directory))
                                       (const #t))))
     (build-system meson-build-system)
+    (arguments
+     (list
+      #:configure-flags
+      #~(list (string-append "-Dsysconfdir=" #$output "/etc"))
+      #:phases
+      #~(modify-phases %standard-phases
+          (add-before 'configure 'patch-meson
+            (lambda _
+              (substitute* "meson.build"
+                (("'-DSYSCONFDIR=\\\"@0@\\\"'.format\\('/etc'\\)")
+                 "'-DSYSCONFDIR=\"@0@\"'.format(sysconfdir)")
+
+                (("sysconfdir = sysconfdir.substring\\(prefix.length\\(\\)\\)")
+                 "")))))))
     (inputs (list wayland
                   wayland-protocols
                   libinput
