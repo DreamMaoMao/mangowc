@@ -1519,7 +1519,7 @@ int disable_monitor(const Arg *arg) {
 			wlr_output_state_set_enabled(&state, false);
 			wlr_output_commit_state(m->wlr_output, &state);
 			m->asleep = 1;
-			updatemons(NULL, NULL);
+			// updatemons(NULL, NULL);
 			break;
 		}
 	}
