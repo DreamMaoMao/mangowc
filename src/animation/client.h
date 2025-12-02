@@ -1,4 +1,4 @@
-void client_actual_size(Client *c, unsigned int *width, unsigned int *height) {
+void client_actual_size(Client *c, uint32_t *width, uint32_t *height) {
 	*width = c->animation.current.width - c->bw;
 
 	*height = c->animation.current.height - c->bw;
@@ -169,8 +169,8 @@ void scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx, int sy,
 
 	if (buffer_data->should_scale) {
 
-		unsigned int surface_width = surface->current.width;
-		unsigned int surface_height = surface->current.height;
+		uint32_t surface_width = surface->current.width;
+		uint32_t surface_height = surface->current.height;
 
 		surface_width = buffer_data->width_scale < 1
 							? surface_width
@@ -420,7 +420,7 @@ void client_apply_clip(Client *c, float factor) {
 	}
 
 	// 获取窗口动画实时位置矩形
-	unsigned int width, height;
+	uint32_t width, height;
 	client_actual_size(c, &width, &height);
 
 	// 计算出除了边框的窗口实际剪切大小
@@ -505,17 +505,16 @@ void fadeout_client_animation_next_tick(Client *c) {
 
 	int type = c->animation.action = c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
-	unsigned int width =
-		c->animation.initial.width +
-		(c->current.width - c->animation.initial.width) * factor;
-	unsigned int height =
+	uint32_t width = c->animation.initial.width +
+					 (c->current.width - c->animation.initial.width) * factor;
+	uint32_t height =
 		c->animation.initial.height +
 		(c->current.height - c->animation.initial.height) * factor;
 
-	unsigned int x = c->animation.initial.x +
-					 (c->current.x - c->animation.initial.x) * factor;
-	unsigned int y = c->animation.initial.y +
-					 (c->current.y - c->animation.initial.y) * factor;
+	uint32_t x = c->animation.initial.x +
+				 (c->current.x - c->animation.initial.x) * factor;
+	uint32_t y = c->animation.initial.y +
+				 (c->current.y - c->animation.initial.y) * factor;
 
 	wlr_scene_node_set_position(&c->scene->node, x, y);
 
@@ -571,17 +570,16 @@ void client_animation_next_tick(Client *c) {
 	double sx = 0, sy = 0;
 	struct wlr_surface *surface = NULL;
 
-	unsigned int width =
-		c->animation.initial.width +
-		(c->current.width - c->animation.initial.width) * factor;
-	unsigned int height =
+	uint32_t width = c->animation.initial.width +
+					 (c->current.width - c->animation.initial.width) * factor;
+	uint32_t height =
 		c->animation.initial.height +
 		(c->current.height - c->animation.initial.height) * factor;
 
-	unsigned int x = c->animation.initial.x +
-					 (c->current.x - c->animation.initial.x) * factor;
-	unsigned int y = c->animation.initial.y +
-					 (c->current.y - c->animation.initial.y) * factor;
+	uint32_t x = c->animation.initial.x +
+				 (c->current.x - c->animation.initial.x) * factor;
+	uint32_t y = c->animation.initial.y +
+				 (c->current.y - c->animation.initial.y) * factor;
 
 	wlr_scene_node_set_position(&c->scene->node, x, y);
 	c->animation.current = (struct wlr_box){

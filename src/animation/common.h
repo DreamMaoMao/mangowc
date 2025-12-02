@@ -33,33 +33,33 @@ void init_baked_points(void) {
 	baked_points_focus =
 		calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_focus));
 
-	for (unsigned int i = 0; i < BAKED_POINTS_COUNT; i++) {
+	for (uint32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
 		baked_points_move[i] = calculate_animation_curve_at(
 			(double)i / (BAKED_POINTS_COUNT - 1), MOVE);
 	}
-	for (unsigned int i = 0; i < BAKED_POINTS_COUNT; i++) {
+	for (uint32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
 		baked_points_open[i] = calculate_animation_curve_at(
 			(double)i / (BAKED_POINTS_COUNT - 1), OPEN);
 	}
-	for (unsigned int i = 0; i < BAKED_POINTS_COUNT; i++) {
+	for (uint32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
 		baked_points_tag[i] = calculate_animation_curve_at(
 			(double)i / (BAKED_POINTS_COUNT - 1), TAG);
 	}
-	for (unsigned int i = 0; i < BAKED_POINTS_COUNT; i++) {
+	for (uint32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
 		baked_points_close[i] = calculate_animation_curve_at(
 			(double)i / (BAKED_POINTS_COUNT - 1), CLOSE);
 	}
-	for (unsigned int i = 0; i < BAKED_POINTS_COUNT; i++) {
+	for (uint32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
 		baked_points_focus[i] = calculate_animation_curve_at(
 			(double)i / (BAKED_POINTS_COUNT - 1), FOCUS);
 	}
 }
 
 double find_animation_curve_at(double t, int type) {
-	unsigned int down = 0;
-	unsigned int up = BAKED_POINTS_COUNT - 1;
+	uint32_t down = 0;
+	uint32_t up = BAKED_POINTS_COUNT - 1;
 
-	unsigned int middle = (up + down) / 2;
+	uint32_t middle = (up + down) / 2;
 	struct dvec2 *baked_points;
 	if (type == MOVE) {
 		baked_points = baked_points_move;

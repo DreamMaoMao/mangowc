@@ -1,5 +1,5 @@
 pid_t getparentprocess(pid_t p) {
-	unsigned int v = 0;
+	uint32_t v = 0;
 
 	FILE *f;
 	char buf[256];
@@ -26,7 +26,7 @@ int isdescprocess(pid_t p, pid_t c) {
 	return (int)c;
 }
 
-char *get_autostart_path(char *autostart_path, unsigned int buf_size) {
+char *get_autostart_path(char *autostart_path, uint32_t buf_size) {
 	const char *mangoconfig = getenv("MANGOCONFIG");
 
 	if (mangoconfig && mangoconfig[0] != '\0') {
@@ -60,10 +60,10 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 	const char *open = strrchr(full_name, '(');
 	const char *close = strrchr(full_name, ')');
 	if (open && close && close > open) {
-		unsigned int len = close - open - 1;
+		uint32_t len = close - open - 1;
 		if (len > 0 && len <= 4) {
 			// 提取并转换为小写
-			for (unsigned int j = 0; j < len; j++) {
+			for (uint32_t j = 0; j < len; j++) {
 				abbr[j] = tolower(open[j + 1]);
 			}
 			abbr[len] = '\0';
@@ -72,8 +72,8 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 	}
 
 	// 3. 提取前2-3个字母并转换为小写
-	unsigned int j = 0;
-	for (unsigned int i = 0; full_name[i] != '\0' && j < 3; i++) {
+	uint32_t j = 0;
+	for (uint32_t i = 0; full_name[i] != '\0' && j < 3; i++) {
 		if (isalpha(full_name[i])) {
 			abbr[j++] = tolower(full_name[i]);
 		}

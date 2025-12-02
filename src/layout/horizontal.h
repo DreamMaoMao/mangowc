@@ -1,9 +1,9 @@
 // 网格布局窗口大小和位置计算
 void grid(Monitor *m) {
-	unsigned int i, n;
-	unsigned int cx, cy, cw, ch;
-	unsigned int dx;
-	unsigned int cols, rows, overcols;
+	uint32_t i, n;
+	uint32_t cx, cy, cw, ch;
+	uint32_t dx;
+	uint32_t cols, rows, overcols;
 	Client *c = NULL;
 	n = 0;
 	int target_gappo = enablegaps ? m->isoverview ? overviewgappo : gappoh : 0;
@@ -121,15 +121,15 @@ void grid(Monitor *m) {
 }
 
 void deck(Monitor *m) {
-	unsigned int mw, my;
+	uint32_t mw, my;
 	int i, n = 0;
 	Client *c = NULL;
 	Client *fc = NULL;
 	float mfact;
 
-	unsigned int cur_gappih = enablegaps ? m->gappih : 0;
-	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
-	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
+	uint32_t cur_gappih = enablegaps ? m->gappih : 0;
+	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+	uint32_t cur_gappov = enablegaps ? m->gappov : 0;
 
 	cur_gappih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappih;
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
@@ -192,9 +192,9 @@ void deck(Monitor *m) {
 void horizontal_scroll_adjust_fullandmax(Client *c,
 										 struct wlr_box *target_geom) {
 	Monitor *m = c->mon;
-	unsigned int cur_gappih = enablegaps ? m->gappih : 0;
-	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
-	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
+	uint32_t cur_gappih = enablegaps ? m->gappih : 0;
+	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+	uint32_t cur_gappov = enablegaps ? m->gappov : 0;
 
 	cur_gappih =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappih;
@@ -223,7 +223,7 @@ void horizontal_scroll_adjust_fullandmax(Client *c,
 
 // 滚动布局
 void scroller(Monitor *m) {
-	unsigned int i, n, j;
+	uint32_t i, n, j;
 	float single_proportion = 1.0;
 
 	Client *c = NULL, *root_client = NULL;
@@ -231,9 +231,9 @@ void scroller(Monitor *m) {
 	struct wlr_box target_geom;
 	int focus_client_index = 0;
 	bool need_scroller = false;
-	unsigned int cur_gappih = enablegaps ? m->gappih : 0;
-	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
-	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
+	uint32_t cur_gappih = enablegaps ? m->gappih : 0;
+	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+	uint32_t cur_gappov = enablegaps ? m->gappov : 0;
 
 	cur_gappih =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappih;
@@ -242,8 +242,7 @@ void scroller(Monitor *m) {
 	cur_gappov =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappov;
 
-	unsigned int max_client_width =
-		m->w.width - 2 * scroller_structs - cur_gappih;
+	uint32_t max_client_width = m->w.width - 2 * scroller_structs - cur_gappih;
 
 	n = m->visible_scroll_tiling_clients;
 
@@ -378,7 +377,7 @@ void scroller(Monitor *m) {
 }
 
 void center_tile(Monitor *m) {
-	unsigned int i, n = 0, h, r, ie = enablegaps, mw, mx, my, oty, ety, tw;
+	uint32_t i, n = 0, h, r, ie = enablegaps, mw, mx, my, oty, ety, tw;
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
@@ -399,10 +398,10 @@ void center_tile(Monitor *m) {
 	}
 
 	// 间隙参数处理
-	unsigned int cur_gappiv = enablegaps ? m->gappiv : 0; // 内部垂直间隙
-	unsigned int cur_gappih = enablegaps ? m->gappih : 0; // 内部水平间隙
-	unsigned int cur_gappov = enablegaps ? m->gappov : 0; // 外部垂直间隙
-	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0; // 外部水平间隙
+	uint32_t cur_gappiv = enablegaps ? m->gappiv : 0; // 内部垂直间隙
+	uint32_t cur_gappih = enablegaps ? m->gappih : 0; // 内部水平间隙
+	uint32_t cur_gappov = enablegaps ? m->gappov : 0; // 外部垂直间隙
+	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0; // 外部水平间隙
 
 	// 智能间隙处理
 	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
@@ -410,7 +409,7 @@ void center_tile(Monitor *m) {
 	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 
-	unsigned int nmasters = m->pertag->nmasters[m->pertag->curtag];
+	uint32_t nmasters = m->pertag->nmasters[m->pertag->curtag];
 	mfact = fc->master_mfact_per > 0.0f ? fc->master_mfact_per
 										: m->pertag->mfacts[m->pertag->curtag];
 
@@ -489,7 +488,7 @@ void center_tile(Monitor *m) {
 			my += c->geom.height + cur_gappiv * ie;
 		} else {
 			// 堆叠区域窗口
-			unsigned int stack_index = i - nmasters;
+			uint32_t stack_index = i - nmasters;
 
 			if (n - nmasters == 1) {
 				// 单个堆叠窗口
@@ -587,7 +586,7 @@ void center_tile(Monitor *m) {
 }
 
 void tile(Monitor *m) {
-	unsigned int i, n = 0, h, r, ie = enablegaps, mw, my, ty;
+	uint32_t i, n = 0, h, r, ie = enablegaps, mw, my, ty;
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
@@ -601,10 +600,10 @@ void tile(Monitor *m) {
 	if (n == 0)
 		return;
 
-	unsigned int cur_gappiv = enablegaps ? m->gappiv : 0;
-	unsigned int cur_gappih = enablegaps ? m->gappih : 0;
-	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
-	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
+	uint32_t cur_gappiv = enablegaps ? m->gappiv : 0;
+	uint32_t cur_gappih = enablegaps ? m->gappih : 0;
+	uint32_t cur_gappov = enablegaps ? m->gappov : 0;
+	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0;
 
 	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
 	cur_gappih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappih;
@@ -684,7 +683,7 @@ void tile(Monitor *m) {
 }
 
 void right_tile(Monitor *m) {
-	unsigned int i, n = 0, h, r, ie = enablegaps, mw, my, ty;
+	uint32_t i, n = 0, h, r, ie = enablegaps, mw, my, ty;
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
@@ -698,10 +697,10 @@ void right_tile(Monitor *m) {
 	if (n == 0)
 		return;
 
-	unsigned int cur_gappiv = enablegaps ? m->gappiv : 0;
-	unsigned int cur_gappih = enablegaps ? m->gappih : 0;
-	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
-	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
+	uint32_t cur_gappiv = enablegaps ? m->gappiv : 0;
+	uint32_t cur_gappih = enablegaps ? m->gappih : 0;
+	uint32_t cur_gappov = enablegaps ? m->gappov : 0;
+	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0;
 
 	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
 	cur_gappih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappih;
@@ -786,8 +785,8 @@ monocle(Monitor *m) {
 	Client *c = NULL;
 	struct wlr_box geom;
 
-	unsigned int cur_gappov = enablegaps ? m->gappov : 0;
-	unsigned int cur_gappoh = enablegaps ? m->gappoh : 0;
+	uint32_t cur_gappov = enablegaps ? m->gappov : 0;
+	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0;
 
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;

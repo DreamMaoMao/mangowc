@@ -6,5 +6,5 @@ void *ecalloc(size_t nmemb, size_t size);
 int fd_set_nonblock(int fd);
 int regex_match(const char *pattern_mb, const char *str_mb);
 void wl_list_append(struct wl_list *list, struct wl_list *object);
-unsigned int get_now_in_ms(void);
-unsigned int timespec_to_ms(struct timespec *ts);
+uint32_t get_now_in_ms(void);
+uint32_t timespec_to_ms(struct timespec *ts);

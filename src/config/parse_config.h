@@ -52,7 +52,7 @@ typedef struct {
 typedef struct {
 	const char *id;
 	const char *title;
-	unsigned int tags;
+	uint32_t tags;
 	int isfloating;
 	int isfullscreen;
 	float scroller_proportion;
@@ -123,29 +123,29 @@ KeyBinding default_key_bindings[] = {CHVT(1), CHVT(2),	CHVT(3),  CHVT(4),
 									 CHVT(9), CHVT(10), CHVT(11), CHVT(12)};
 
 typedef struct {
-	unsigned int mod;
-	unsigned int button;
+	uint32_t mod;
+	uint32_t button;
 	int (*func)(const Arg *);
 	Arg arg;
 } MouseBinding;
 
 typedef struct {
-	unsigned int mod;
-	unsigned int dir;
+	uint32_t mod;
+	uint32_t dir;
 	int (*func)(const Arg *);
 	Arg arg;
 } AxisBinding;
 
 typedef struct {
-	unsigned int fold;
+	uint32_t fold;
 	int (*func)(const Arg *);
 	Arg arg;
 } SwitchBinding;
 
 typedef struct {
-	unsigned int mod;
-	unsigned int motion;
-	unsigned int fingers_count;
+	uint32_t mod;
+	uint32_t motion;
+	uint32_t fingers_count;
 	int (*func)(const Arg *);
 	Arg arg;
 } GestureBinding;
@@ -207,7 +207,7 @@ typedef struct {
 	int snap_distance;
 	int enable_floating_snap;
 	int drag_tile_to_tile;
-	unsigned int swipe_min_threshold;
+	uint32_t swipe_min_threshold;
 	float focused_opacity;
 	float unfocused_opacity;
 	float *scroller_proportion_preset;
@@ -216,21 +216,21 @@ typedef struct {
 	char **circle_layout;
 	int circle_layout_count;
 
-	unsigned int new_is_master;
+	uint32_t new_is_master;
 	float default_mfact;
-	unsigned int default_nmaster;
+	uint32_t default_nmaster;
 	int center_master_overspread;
 	int center_when_single_stack;
 
-	unsigned int hotarea_size;
-	unsigned int enable_hotarea;
-	unsigned int ov_tab_mode;
+	uint32_t hotarea_size;
+	uint32_t enable_hotarea;
+	uint32_t ov_tab_mode;
 	int overviewgappi;
 	int overviewgappo;
-	unsigned int cursor_hide_timeout;
+	uint32_t cursor_hide_timeout;
 
-	unsigned int axis_bind_apply_timeout;
-	unsigned int focus_on_activate;
+	uint32_t axis_bind_apply_timeout;
+	uint32_t focus_on_activate;
 	int inhibit_regardless_of_visibility;
 	int sloppyfocus;
 	int warpcursor;
@@ -238,7 +238,7 @@ typedef struct {
 	/* keyboard */
 	int repeat_rate;
 	int repeat_delay;
-	unsigned int numlockon;
+	uint32_t numlockon;
 
 	/* Trackpad */
 	int disable_trackpad;
@@ -250,20 +250,20 @@ typedef struct {
 	int disable_while_typing;
 	int left_handed;
 	int middle_button_emulation;
-	unsigned int accel_profile;
+	uint32_t accel_profile;
 	double accel_speed;
-	unsigned int scroll_method;
-	unsigned int scroll_button;
-	unsigned int click_method;
-	unsigned int send_events_mode;
-	unsigned int button_map;
+	uint32_t scroll_method;
+	uint32_t scroll_button;
+	uint32_t click_method;
+	uint32_t send_events_mode;
+	uint32_t button_map;
 
 	int smartgaps;
-	unsigned int gappih;
-	unsigned int gappiv;
-	unsigned int gappoh;
-	unsigned int gappov;
-	unsigned int borderpx;
+	uint32_t gappih;
+	uint32_t gappiv;
+	uint32_t gappoh;
+	uint32_t gappov;
+	uint32_t borderpx;
 	float scratchpad_width_ratio;
 	float scratchpad_height_ratio;
 	float rootcolor[4];
@@ -314,7 +314,7 @@ typedef struct {
 	int exec_once_count;
 
 	char *cursor_theme;
-	unsigned int cursor_size;
+	uint32_t cursor_size;
 
 	int single_scratchpad;
 	int xwayland_persistence;
@@ -772,7 +772,7 @@ void convert_hex_to_rgba(float *color, unsigned long int hex) {
 	color[3] = (hex & 0xFF) / 255.0f;
 }
 
-unsigned int parse_num_type(char *str) {
+uint32_t parse_num_type(char *str) {
 	switch (str[0]) {
 	case '-':
 		return NUM_TYPE_MINUS;

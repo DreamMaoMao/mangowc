@@ -70,7 +70,7 @@ setclient_coordinate_center(Client *c, struct wlr_box geom, int offsetx,
 	int len = 0;
 	Monitor *m = c->mon ? c->mon : selmon;
 
-	unsigned int cbw = check_hit_no_border(c) ? c->bw : 0;
+	uint32_t cbw = check_hit_no_border(c) ? c->bw : 0;
 
 	if (!c->no_force_center) {
 		tempbox.x = m->w.x + (m->w.width - geom.width) / 2;

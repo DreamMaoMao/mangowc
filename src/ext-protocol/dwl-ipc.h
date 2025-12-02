@@ -1,12 +1,11 @@
 #include "dwl-ipc-unstable-v2-protocol.h"
 
 static void dwl_ipc_manager_bind(struct wl_client *client, void *data,
-								 unsigned int version, unsigned int id);
+								 uint32_t version, uint32_t id);
 static void dwl_ipc_manager_destroy(struct wl_resource *resource);
 static void dwl_ipc_manager_get_output(struct wl_client *client,
 									   struct wl_resource *resource,
-									   unsigned int id,
-									   struct wl_resource *output);
+									   uint32_t id, struct wl_resource *output);
 static void dwl_ipc_manager_release(struct wl_client *client,
 									struct wl_resource *resource);
 static void dwl_ipc_output_destroy(struct wl_resource *resource);
@@ -15,15 +14,14 @@ static void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output,
 										  uint32_t event_mask);
 static void dwl_ipc_output_set_client_tags(struct wl_client *client,
 										   struct wl_resource *resource,
-										   unsigned int and_tags,
-										   unsigned int xor_tags);
+										   uint32_t and_tags,
+										   uint32_t xor_tags);
 static void dwl_ipc_output_set_layout(struct wl_client *client,
 									  struct wl_resource *resource,
-									  unsigned int index);
+									  uint32_t index);
 static void dwl_ipc_output_set_tags(struct wl_client *client,
 									struct wl_resource *resource,
-									unsigned int tagmask,
-									unsigned int toggle_tagset);
+									uint32_t tagmask, uint32_t toggle_tagset);
 static void dwl_ipc_output_quit(struct wl_client *client,
 								struct wl_resource *resource);
 static void dwl_ipc_output_dispatch(struct wl_client *client,
@@ -47,7 +45,7 @@ static struct zdwl_ipc_output_v2_interface dwl_output_implementation = {
 	.set_client_tags = dwl_ipc_output_set_client_tags};
 
 void dwl_ipc_manager_bind(struct wl_client *client, void *data,
-						  unsigned int version, unsigned int id) {
+						  uint32_t version, uint32_t id) {
 	struct wl_resource *manager_resource =
 		wl_resource_create(client, &zdwl_ipc_manager_v2_interface, version, id);
 	if (!manager_resource) {
@@ -60,7 +58,7 @@ void dwl_ipc_manager_bind(struct wl_client *client, void *data,
 
 	zdwl_ipc_manager_v2_send_tags(manager_resource, LENGTH(tags));
 
-	for (unsigned int i = 0; i < LENGTH(layouts); i++)
+	for (uint32_t i = 0; i < LENGTH(layouts); i++)
 		zdwl_ipc_manager_v2_send_layout(manager_resource, layouts[i].symbol);
 }
 
@@ -69,7 +67,7 @@ void dwl_ipc_manager_destroy(struct wl_resource *resource) {
 }
 
 void dwl_ipc_manager_get_output(struct wl_client *client,
-								struct wl_resource *resource, unsigned int id,
+								struct wl_resource *resource, uint32_t id,
 								struct wl_resource *output) {
 	DwlIpcOutput *ipc_output;
 	struct wlr_output *op = wlr_output_from_resource(output);
@@ -292,12 +290,11 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output,
 
 void dwl_ipc_output_set_client_tags(struct wl_client *client,
 									struct wl_resource *resource,
-									unsigned int and_tags,
-									unsigned int xor_tags) {
+									uint32_t and_tags, uint32_t xor_tags) {
 	DwlIpcOutput *ipc_output;
 	Monitor *monitor = NULL;
 	Client *selected_client = NULL;
-	unsigned int newtags = 0;
+	uint32_t newtags = 0;
 
 	ipc_output = wl_resource_get_user_data(resource);
 	if (!ipc_output)
@@ -320,8 +317,7 @@ void dwl_ipc_output_set_client_tags(struct wl_client *client,
 }
 
 void dwl_ipc_output_set_layout(struct wl_client *client,
-							   struct wl_resource *resource,
-							   unsigned int index) {
+							   struct wl_resource *resource, uint32_t index) {
 	DwlIpcOutput *ipc_output;
 	Monitor *monitor = NULL;
 
@@ -340,11 +336,11 @@ void dwl_ipc_output_set_layout(struct wl_client *client,
 }
 
 void dwl_ipc_output_set_tags(struct wl_client *client,
-							 struct wl_resource *resource, unsigned int tagmask,
-							 unsigned int toggle_tagset) {
+							 struct wl_resource *resource, uint32_t tagmask,
+							 uint32_t toggle_tagset) {
 	DwlIpcOutput *ipc_output;
 	Monitor *monitor = NULL;
-	unsigned int newtags = tagmask & TAGMASK;
+	uint32_t newtags = tagmask & TAGMASK;
 
 	ipc_output = wl_resource_get_user_data(resource);
 	if (!ipc_output)

@@ -86,7 +86,7 @@ static void noop_description(void *data, struct wl_output *wl_output,
 							 const char *description) {}
 
 // 将 n 转换为 9 位二进制字符串，结果存入 buf（至少长度 10）
-void bin_str_9bits(char *buf, unsigned int n) {
+void bin_str_9bits(char *buf, uint32_t n) {
 	for (int i = 8; i >= 0; i--) {
 		*buf++ = ((n >> i) & 1) ? '1' : '0';
 	}
@@ -268,7 +268,7 @@ static void dwl_ipc_output_kb_layout(void *data,
 static void
 dwl_ipc_output_scalefactor(void *data,
 						   struct zdwl_ipc_output_v2 *dwl_ipc_output,
-						   const unsigned int scalefactor) {
+						   const uint32_t scalefactor) {
 	if (!Aflag)
 		return;
 	char *output_name = data;
