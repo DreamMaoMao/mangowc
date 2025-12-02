@@ -240,7 +240,7 @@ void buffer_set_effect(Client *c, BufferData data) {
 	if (c == grabc)
 		data.should_scale = false;
 
-	if (c->isfullscreen || (no_radius_when_single && c->mon &&
+	if (c->isfullscreen || (no_radius_when_single && !c->isfloating && c->mon &&
 							c->mon->visible_tiling_clients == 1)) {
 		data.corner_location = CORNER_LOCATION_NONE;
 	}
@@ -265,7 +265,7 @@ void client_draw_shadow(Client *c) {
 
 	bool hit_no_border = check_hit_no_border(c);
 	enum corner_location current_corner_location =
-		c->isfullscreen || (no_radius_when_single && c->mon &&
+		c->isfullscreen || (no_radius_when_single && !c->isfloating && c->mon &&
 							c->mon->visible_tiling_clients == 1)
 			? CORNER_LOCATION_NONE
 			: CORNER_LOCATION_ALL;
@@ -355,7 +355,7 @@ void apply_border(Client *c) {
 
 	bool hit_no_border = check_hit_no_border(c);
 	enum corner_location current_corner_location =
-		c->isfullscreen || (no_radius_when_single && c->mon &&
+		c->isfullscreen || (no_radius_when_single && !c->isfloating && c->mon &&
 							c->mon->visible_tiling_clients == 1)
 			? CORNER_LOCATION_NONE
 			: CORNER_LOCATION_ALL;
