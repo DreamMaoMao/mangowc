@@ -222,9 +222,6 @@ typedef struct {
 	uint32_t ui;
 	uint32_t ui2;
 } Arg;
-struct mango_print_status_manager {
-	struct wl_signal print_status;
-};
 
 typedef struct {
 	uint32_t mod;
@@ -887,6 +884,8 @@ struct Pertag {
 	const Layout
 		*ltidxs[LENGTH(tags) + 1]; /* matrix of tags and layouts indexes  */
 };
+
+static struct wl_signal mango_print_status;
 
 static struct wl_listener print_status_listener = {.notify =
 													   handle_print_status};
@@ -4110,8 +4109,7 @@ void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 
 // 修改printstatus函数，接受掩码参数
 void printstatus(uint32_t event_mask) {
-	wl_signal_emit(&print_status_manager->print_status,
-				   (void *)(uintptr_t)event_mask);
+	wl_signal_emit(&mango_print_status, (void *)(uintptr_t)event_mask);
 }
 
 void powermgrsetmode(struct wl_listener *listener, void *data) {
@@ -4835,22 +4833,8 @@ void create_output(struct wlr_backend *backend, void *data) {
 #endif
 }
 
-// 创建函数
-struct mango_print_status_manager *mango_print_status_manager_create() {
-	struct mango_print_status_manager *manager = calloc(1, sizeof(*manager));
-	if (!manager)
-		return NULL;
-
-	// 初始化 print_status 信号，不是 event_signal
-	wl_signal_init(&manager->print_status);
-
-	return manager;
-}
-
 // 修改信号处理函数，接收掩码参数
 void handle_print_status(struct wl_listener *listener, void *data) {
-	struct mango_print_status_manager *manager =
-		wl_container_of(listener, manager, print_status);
 
 	uint32_t event_mask = (uintptr_t)data;
 	// 如果传入的是NULL（旧代码）或0，使用默认的所有事件
@@ -4969,8 +4953,8 @@ void setup(void) {
 	wlr_ext_data_control_manager_v1_create(dpy, 1);
 
 	// 在 setup 函数中
-	print_status_manager = mango_print_status_manager_create();
-	wl_signal_add(&print_status_manager->print_status, &print_status_listener);
+	wl_signal_init(&mango_print_status);
+	wl_signal_add(&mango_print_status, &print_status_listener);
 
 	/* Initializes the interface used to implement urgency hints */
 	activation = wlr_xdg_activation_v1_create(dpy);
