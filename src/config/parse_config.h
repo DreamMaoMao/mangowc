@@ -3123,6 +3123,6 @@ void reset_option(void) {
 int reload_config(const Arg *arg) {
 	parse_config();
 	reset_option();
-	printstatus();
+	printstatus(PRINT_ALL);
 	return 0;
 }

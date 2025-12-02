@@ -177,6 +177,28 @@ enum seat_config_shortcuts_inhibit {
 	SHORTCUTS_INHIBIT_ENABLE,
 };
 
+// 事件掩码枚举
+enum print_event_type {
+	PRINT_ACTIVE = 1 << 0,
+	PRINT_TAG = 1 << 1,
+	PRINT_LAYOUT = 1 << 2,
+	PRINT_TITLE = 1 << 3,
+	PRINT_APPID = 1 << 4,
+	PRINT_LAYOUT_SYMBOL = 1 << 5,
+	PRINT_FULLSCREEN = 1 << 6,
+	PRINT_FLOATING = 1 << 7,
+	PRINT_X = 1 << 8,
+	PRINT_Y = 1 << 9,
+	PRINT_WIDTH = 1 << 10,
+	PRINT_HEIGHT = 1 << 11,
+	PRINT_LAST_LAYER = 1 << 12,
+	PRINT_KB_LAYOUT = 1 << 13,
+	PRINT_KEYMODE = 1 << 14,
+	PRINT_SCALEFACTOR = 1 << 15,
+	PRINT_FRAME = 1 << 16,
+	PRINT_ALL = (1 << 17) - 1 // 所有位都设为1
+};
+
 typedef struct Pertag Pertag;
 typedef struct Monitor Monitor;
 typedef struct Client Client;
@@ -618,7 +640,7 @@ static void outputmgrapplyortest(struct wlr_output_configuration_v1 *config,
 static void outputmgrtest(struct wl_listener *listener, void *data);
 static void pointerfocus(Client *c, struct wlr_surface *surface, double sx,
 						 double sy, unsigned int time);
-static void printstatus(void);
+static void printstatus(unsigned int event_mask);
 static void quitsignal(int signo);
 static void powermgrsetmode(struct wl_listener *listener, void *data);
 static void rendermon(struct wl_listener *listener, void *data);
@@ -2156,7 +2178,7 @@ void closemon(Monitor *m) {
 	}
 	if (selmon) {
 		focusclient(focustop(selmon), 1);
-		printstatus();
+		printstatus(PRINT_ALL);
 	}
 }
 
@@ -2733,7 +2755,7 @@ void createmon(struct wl_listener *listener, void *data) {
 		add_workspace_by_tag(i, m);
 	}
 
-	printstatus();
+	printstatus(PRINT_ALL);
 }
 
 void // fix for 0.5
@@ -3189,7 +3211,7 @@ void focusclient(Client *c, int lift) {
 			client_activate_surface(old_keyboard_focus_surface, 0);
 		}
 	}
-	printstatus();
+	printstatus(PRINT_ALL);
 
 	if (!c) {
 
@@ -3712,7 +3734,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 	// make sure the animation is open type
 	c->is_pending_open_animation = true;
 	resize(c, c->geom, 0);
-	printstatus();
+	printstatus(PRINT_ALL);
 }
 
 void maximizenotify(struct wl_listener *listener, void *data) {
@@ -4087,8 +4109,10 @@ void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 	wlr_seat_pointer_notify_motion(seat, time, sx, sy);
 }
 
-void printstatus(void) {
-	wl_signal_emit(&print_status_manager->print_status, NULL);
+// 修改printstatus函数，接受掩码参数
+void printstatus(unsigned int event_mask) {
+	wl_signal_emit(&print_status_manager->print_status,
+				   (void *)(uintptr_t)event_mask);
 }
 
 void powermgrsetmode(struct wl_listener *listener, void *data) {
@@ -4349,7 +4373,7 @@ run(char *startup_cmd) {
 	if (fd_set_nonblock(STDOUT_FILENO) < 0)
 		close(STDOUT_FILENO);
 
-	printstatus();
+	printstatus(PRINT_ALL);
 
 	/* At this point the outputs are initialized, choose initial selmon
 	 * based on cursor position, and set default cursor image */
@@ -4484,7 +4508,7 @@ setfloating(Client *c, int floating) {
 
 	arrange(c->mon, false);
 	setborder_color(c);
-	printstatus();
+	printstatus(PRINT_ALL);
 }
 
 void reset_maximizescreen_size(Client *c) {
@@ -4824,20 +4848,29 @@ struct mango_print_status_manager *mango_print_status_manager_create() {
 	return manager;
 }
 
+// 修改信号处理函数，接收掩码参数
 void handle_print_status(struct wl_listener *listener, void *data) {
 	struct mango_print_status_manager *manager =
 		wl_container_of(listener, manager, print_status);
-	// struct wlr_print_status *status = data;
+
+	uint32_t event_mask = (uintptr_t)data;
+	// 如果传入的是NULL（旧代码）或0，使用默认的所有事件
+	if (!event_mask) {
+		event_mask = PRINT_ALL;
+	}
+
 	Monitor *m = NULL;
 	wl_list_for_each(m, &mons, link) {
 		if (!m->wlr_output->enabled) {
 			continue;
 		}
-		// Update workspace active states
-		dwl_ext_workspace_printstatus(m);
+		// 更新workspace状态（根据掩码决定是否更新）
+		if (event_mask & PRINT_TAG || event_mask & PRINT_ACTIVE) {
+			dwl_ext_workspace_printstatus(m);
+		}
 
-		// Update IPC output status
-		dwl_ipc_output_printstatus(m);
+		// 更新IPC输出状态（传入掩码）
+		dwl_ipc_output_printstatus(m, event_mask);
 	}
 }
 
@@ -5178,7 +5211,7 @@ void tag_client(const Arg *arg, Client *target_client) {
 	}
 
 	focusclient(target_client, 1);
-	printstatus();
+	printstatus(PRINT_ALL);
 }
 
 void overview(Monitor *m) { grid(m); }
@@ -5393,7 +5426,7 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	wlr_scene_node_destroy(&c->image_capture_scene_surface->buffer->node);
 	wlr_scene_node_destroy(&c->image_capture_scene->tree.node);
 	wlr_scene_node_destroy(&c->scene->node);
-	printstatus();
+	printstatus(PRINT_ALL);
 	motionnotify(0, NULL, 0, 0, 0, 0);
 }
 
@@ -5544,7 +5577,7 @@ void updatetitle(struct wl_listener *listener, void *data) {
 			});
 	}
 	if (c == focustop(c->mon))
-		printstatus();
+		printstatus(PRINT_TITLE);
 }
 
 void // 17 fix to 0.5
@@ -5564,7 +5597,7 @@ urgent(struct wl_listener *listener, void *data) {
 		c->isurgent = 1;
 		if (client_surface(c)->mapped)
 			setborder_color(c);
-		printstatus();
+		printstatus(PRINT_ALL);
 	}
 }
 
@@ -5619,7 +5652,7 @@ toggleseltags:
 	if (changefocus)
 		focusclient(focustop(m), 1);
 	arrange(m, want_animation);
-	printstatus();
+	printstatus(PRINT_ALL);
 }
 
 void view(const Arg *arg, bool want_animation) {
@@ -5762,7 +5795,7 @@ void activatex11(struct wl_listener *listener, void *data) {
 		arrange(c->mon, false);
 	}
 
-	printstatus();
+	printstatus(PRINT_ALL);
 }
 
 void configurex11(struct wl_listener *listener, void *data) {
@@ -5834,7 +5867,7 @@ void sethints(struct wl_listener *listener, void *data) {
 		return;
 
 	c->isurgent = xcb_icccm_wm_hints_get_urgency(c->surface.xwayland->hints);
-	printstatus();
+	printstatus(PRINT_ALL);
 
 	if (c->isurgent && surface && surface->mapped)
 		setborder_color(c);

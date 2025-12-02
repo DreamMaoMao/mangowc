@@ -10,8 +10,9 @@ static void dwl_ipc_manager_get_output(struct wl_client *client,
 static void dwl_ipc_manager_release(struct wl_client *client,
 									struct wl_resource *resource);
 static void dwl_ipc_output_destroy(struct wl_resource *resource);
-static void dwl_ipc_output_printstatus(Monitor *monitor);
-static void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output);
+static void dwl_ipc_output_printstatus(Monitor *monitor, uint32_t event_mask);
+static void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output,
+										  uint32_t event_mask);
 static void dwl_ipc_output_set_client_tags(struct wl_client *client,
 										   struct wl_resource *resource,
 										   unsigned int and_tags,
@@ -87,7 +88,7 @@ void dwl_ipc_manager_get_output(struct wl_client *client,
 	wl_resource_set_implementation(output_resource, &dwl_output_implementation,
 								   ipc_output, dwl_ipc_output_destroy);
 	wl_list_insert(&monitor->dwl_ipc_outputs, &ipc_output->link);
-	dwl_ipc_output_printstatus_to(ipc_output);
+	dwl_ipc_output_printstatus_to(ipc_output, PRINT_ALL);
 }
 
 void dwl_ipc_manager_release(struct wl_client *client,
@@ -101,13 +102,16 @@ static void dwl_ipc_output_destroy(struct wl_resource *resource) {
 	free(ipc_output);
 }
 
-void dwl_ipc_output_printstatus(Monitor *monitor) {
+// 修改IPC输出函数，接受掩码参数
+void dwl_ipc_output_printstatus(Monitor *monitor, uint32_t event_mask) {
 	DwlIpcOutput *ipc_output;
 	wl_list_for_each(ipc_output, &monitor->dwl_ipc_outputs, link)
-		dwl_ipc_output_printstatus_to(ipc_output);
+		dwl_ipc_output_printstatus_to(ipc_output, event_mask);
 }
 
-void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
+// 修改主IPC输出函数，根据掩码发送相应事件
+void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output,
+								   uint32_t event_mask) {
 	Monitor *monitor = ipc_output->mon;
 	Client *c = NULL, *focused = NULL;
 	struct wlr_keyboard *keyboard;
@@ -115,105 +119,175 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	int tagmask, state, numclients, focused_client, tag;
 	const char *title, *appid, *symbol;
 	char kb_layout[32];
-	focused = focustop(monitor);
-	zdwl_ipc_output_v2_send_active(ipc_output->resource, monitor == selmon);
 
-	for (tag = 0; tag < LENGTH(tags); tag++) {
-		numclients = state = focused_client = 0;
-		tagmask = 1 << tag;
-		if ((tagmask & monitor->tagset[monitor->seltags]) != 0)
-			state |= ZDWL_IPC_OUTPUT_V2_TAG_STATE_ACTIVE;
-		wl_list_for_each(c, &clients, link) {
-			if (c->mon != monitor)
-				continue;
-			if (!(c->tags & tagmask))
-				continue;
-			if (c == focused)
-				focused_client = 1;
-			if (c->isurgent)
-				state |= ZDWL_IPC_OUTPUT_V2_TAG_STATE_URGENT;
-			numclients++;
+	// 只在需要时才获取这些数据
+	if (event_mask & (PRINT_ACTIVE | PRINT_TAG | PRINT_TITLE | PRINT_APPID |
+					  PRINT_FULLSCREEN | PRINT_FLOATING | PRINT_X | PRINT_Y |
+					  PRINT_WIDTH | PRINT_HEIGHT)) {
+		focused = focustop(monitor);
+	}
+
+	// 发送活动状态
+	if (event_mask & PRINT_ACTIVE) {
+		zdwl_ipc_output_v2_send_active(ipc_output->resource, monitor == selmon);
+	}
+
+	// 发送标签状态
+	if (event_mask & PRINT_TAG) {
+		for (tag = 0; tag < LENGTH(tags); tag++) {
+			numclients = state = focused_client = 0;
+			tagmask = 1 << tag;
+			if ((tagmask & monitor->tagset[monitor->seltags]) != 0)
+				state |= ZDWL_IPC_OUTPUT_V2_TAG_STATE_ACTIVE;
+
+			if (focused) {
+				wl_list_for_each(c, &clients, link) {
+					if (c->mon != monitor)
+						continue;
+					if (!(c->tags & tagmask))
+						continue;
+					if (c == focused)
+						focused_client = 1;
+					if (c->isurgent)
+						state |= ZDWL_IPC_OUTPUT_V2_TAG_STATE_URGENT;
+					numclients++;
+				}
+			}
+			zdwl_ipc_output_v2_send_tag(ipc_output->resource, tag, state,
+										numclients, focused_client);
 		}
-		zdwl_ipc_output_v2_send_tag(ipc_output->resource, tag, state,
-									numclients, focused_client);
 	}
 
-	title = focused ? client_get_title(focused) : "";
-	appid = focused ? client_get_appid(focused) : "";
-
-	if (monitor->pertag->curtag) {
-		symbol = monitor->pertag->ltidxs[monitor->pertag->curtag]->symbol;
-	} else if (monitor->isoverview) {
-		symbol = overviewlayout.symbol;
-	} else {
-		symbol = monitor->pertag->ltidxs[monitor->pertag->prevtag]->symbol;
+	// 只在需要时才获取标题和应用ID
+	if (event_mask & (PRINT_TITLE | PRINT_APPID)) {
+		title = focused ? client_get_title(focused) : "";
+		appid = focused ? client_get_appid(focused) : "";
 	}
 
-	keyboard = &kb_group->wlr_group->keyboard;
-	current = xkb_state_serialize_layout(keyboard->xkb_state,
-										 XKB_STATE_LAYOUT_EFFECTIVE);
-	get_layout_abbr(kb_layout,
-					xkb_keymap_layout_get_name(keyboard->keymap, current));
+	// 获取布局符号
+	if (event_mask & PRINT_LAYOUT_SYMBOL) {
+		if (monitor->isoverview) {
+			symbol = overviewlayout.symbol;
+		} else {
+			symbol = monitor->pertag->ltidxs[monitor->pertag->curtag]->symbol;
+		}
+	}
 
-	zdwl_ipc_output_v2_send_layout(
-		ipc_output->resource,
-		monitor->pertag->ltidxs[monitor->pertag->curtag] - layouts);
-	zdwl_ipc_output_v2_send_title(ipc_output->resource, title ? title : broken);
-	zdwl_ipc_output_v2_send_appid(ipc_output->resource, appid ? appid : broken);
-	zdwl_ipc_output_v2_send_layout_symbol(ipc_output->resource, symbol);
-	if (wl_resource_get_version(ipc_output->resource) >=
-		ZDWL_IPC_OUTPUT_V2_FULLSCREEN_SINCE_VERSION) {
+	// 发送布局索引
+	if (event_mask & PRINT_LAYOUT) {
+		zdwl_ipc_output_v2_send_layout(
+			ipc_output->resource,
+			monitor->pertag->ltidxs[monitor->pertag->curtag] - layouts);
+	}
+
+	// 发送标题
+	if (event_mask & PRINT_TITLE) {
+		zdwl_ipc_output_v2_send_title(ipc_output->resource,
+									  title ? title : broken);
+	}
+
+	// 发送应用ID
+	if (event_mask & PRINT_APPID) {
+		zdwl_ipc_output_v2_send_appid(ipc_output->resource,
+									  appid ? appid : broken);
+	}
+
+	// 发送布局符号
+	if (event_mask & PRINT_LAYOUT_SYMBOL) {
+		zdwl_ipc_output_v2_send_layout_symbol(ipc_output->resource, symbol);
+	}
+
+	// 发送全屏状态
+	if ((event_mask & PRINT_FULLSCREEN) &&
+		wl_resource_get_version(ipc_output->resource) >=
+			ZDWL_IPC_OUTPUT_V2_FULLSCREEN_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_fullscreen(ipc_output->resource,
 										   focused ? focused->isfullscreen : 0);
 	}
-	if (wl_resource_get_version(ipc_output->resource) >=
-		ZDWL_IPC_OUTPUT_V2_FLOATING_SINCE_VERSION) {
+
+	// 发送浮动状态
+	if ((event_mask & PRINT_FLOATING) &&
+		wl_resource_get_version(ipc_output->resource) >=
+			ZDWL_IPC_OUTPUT_V2_FLOATING_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_floating(ipc_output->resource,
 										 focused ? focused->isfloating : 0);
 	}
-	if (wl_resource_get_version(ipc_output->resource) >=
-		ZDWL_IPC_OUTPUT_V2_X_SINCE_VERSION) {
+
+	// 发送X坐标
+	if ((event_mask & PRINT_X) &&
+		wl_resource_get_version(ipc_output->resource) >=
+			ZDWL_IPC_OUTPUT_V2_X_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_x(ipc_output->resource,
 								  focused ? focused->geom.x : 0);
 	}
-	if (wl_resource_get_version(ipc_output->resource) >=
-		ZDWL_IPC_OUTPUT_V2_Y_SINCE_VERSION) {
+
+	// 发送Y坐标
+	if ((event_mask & PRINT_Y) &&
+		wl_resource_get_version(ipc_output->resource) >=
+			ZDWL_IPC_OUTPUT_V2_Y_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_y(ipc_output->resource,
 								  focused ? focused->geom.y : 0);
 	}
-	if (wl_resource_get_version(ipc_output->resource) >=
-		ZDWL_IPC_OUTPUT_V2_WIDTH_SINCE_VERSION) {
+
+	// 发送宽度
+	if ((event_mask & PRINT_WIDTH) &&
+		wl_resource_get_version(ipc_output->resource) >=
+			ZDWL_IPC_OUTPUT_V2_WIDTH_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_width(ipc_output->resource,
 									  focused ? focused->geom.width : 0);
 	}
-	if (wl_resource_get_version(ipc_output->resource) >=
-		ZDWL_IPC_OUTPUT_V2_HEIGHT_SINCE_VERSION) {
+
+	// 发送高度
+	if ((event_mask & PRINT_HEIGHT) &&
+		wl_resource_get_version(ipc_output->resource) >=
+			ZDWL_IPC_OUTPUT_V2_HEIGHT_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_height(ipc_output->resource,
 									   focused ? focused->geom.height : 0);
 	}
-	if (wl_resource_get_version(ipc_output->resource) >=
-		ZDWL_IPC_OUTPUT_V2_LAST_LAYER_SINCE_VERSION) {
+
+	// 发送最后图层
+	if ((event_mask & PRINT_LAST_LAYER) &&
+		wl_resource_get_version(ipc_output->resource) >=
+			ZDWL_IPC_OUTPUT_V2_LAST_LAYER_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_last_layer(ipc_output->resource,
 										   monitor->last_surface_ws_name);
 	}
 
-	if (wl_resource_get_version(ipc_output->resource) >=
-		ZDWL_IPC_OUTPUT_V2_KB_LAYOUT_SINCE_VERSION) {
+	// 获取键盘布局（只在需要时）
+	if (event_mask & PRINT_KB_LAYOUT) {
+		keyboard = &kb_group->wlr_group->keyboard;
+		current = xkb_state_serialize_layout(keyboard->xkb_state,
+											 XKB_STATE_LAYOUT_EFFECTIVE);
+		get_layout_abbr(kb_layout,
+						xkb_keymap_layout_get_name(keyboard->keymap, current));
+	}
+
+	// 发送键盘布局
+	if ((event_mask & PRINT_KB_LAYOUT) &&
+		wl_resource_get_version(ipc_output->resource) >=
+			ZDWL_IPC_OUTPUT_V2_KB_LAYOUT_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_kb_layout(ipc_output->resource, kb_layout);
 	}
 
-	if (wl_resource_get_version(ipc_output->resource) >=
-		ZDWL_IPC_OUTPUT_V2_KEYMODE_SINCE_VERSION) {
+	// 发送键模式
+	if ((event_mask & PRINT_KEYMODE) &&
+		wl_resource_get_version(ipc_output->resource) >=
+			ZDWL_IPC_OUTPUT_V2_KEYMODE_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_keymode(ipc_output->resource, keymode.mode);
 	}
 
-	if (wl_resource_get_version(ipc_output->resource) >=
-		ZDWL_IPC_OUTPUT_V2_SCALEFACTOR_SINCE_VERSION) {
+	// 发送缩放因子
+	if ((event_mask & PRINT_SCALEFACTOR) &&
+		wl_resource_get_version(ipc_output->resource) >=
+			ZDWL_IPC_OUTPUT_V2_SCALEFACTOR_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_scalefactor(ipc_output->resource,
 											monitor->wlr_output->scale * 100);
 	}
 
-	zdwl_ipc_output_v2_send_frame(ipc_output->resource);
+	// 发送帧结束标记
+	if (event_mask & PRINT_FRAME) {
+		zdwl_ipc_output_v2_send_frame(ipc_output->resource);
+	}
 }
 
 void dwl_ipc_output_set_client_tags(struct wl_client *client,
@@ -242,7 +316,7 @@ void dwl_ipc_output_set_client_tags(struct wl_client *client,
 	if (selmon == monitor)
 		focusclient(focustop(monitor), 1);
 	arrange(selmon, false);
-	printstatus();
+	printstatus(PRINT_ALL);
 }
 
 void dwl_ipc_output_set_layout(struct wl_client *client,
@@ -262,7 +336,7 @@ void dwl_ipc_output_set_layout(struct wl_client *client,
 	monitor->pertag->ltidxs[monitor->pertag->curtag] = &layouts[index];
 	clear_fullscreen_and_maximized_state(monitor);
 	arrange(monitor, false);
-	printstatus();
+	printstatus(PRINT_ALL);
 }
 
 void dwl_ipc_output_set_tags(struct wl_client *client,
