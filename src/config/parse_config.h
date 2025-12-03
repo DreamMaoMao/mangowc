@@ -973,7 +973,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "view") == 0) {
 		func = bind_to_view;
 
-		u_int32_t mask = 0;
+		uint32_t mask = 0;
 		char *token;
 		char *arg_copy = strdup(arg_value);
 
