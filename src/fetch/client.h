@@ -41,10 +41,21 @@ Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title) {
 			continue;
 		}
 
-		if (!(appid = client_get_appid(c)))
+		if (c->swallowedby) {
+			appid = client_get_appid(c->swallowedby);
+			title = client_get_title(c->swallowedby);
+		} else {
+			appid = client_get_appid(c);
+			title = client_get_title(c);
+		}
+
+		if (!appid) {
 			appid = broken;
-		if (!(title = client_get_title(c)))
+		}
+
+		if (!title) {
 			title = broken;
+		}
 
 		if (arg_id && strncmp(arg_id, "none", 4) == 0)
 			arg_id = NULL;
