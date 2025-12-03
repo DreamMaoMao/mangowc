@@ -3117,6 +3117,7 @@ void destroykeyboardgroup(struct wl_listener *listener, void *data) {
 void focusclient(Client *c, int lift) {
 
 	Client *last_focus_client = NULL;
+	Monitor *um = NULL;
 
 	struct wlr_surface *old_keyboard_focus_surface =
 		seat->keyboard_state.focused_surface;
@@ -3160,6 +3161,13 @@ void focusclient(Client *c, int lift) {
 		if (last_focus_client && !last_focus_client->iskilling &&
 			last_focus_client != c) {
 			client_set_unfocused_opacity_animation(last_focus_client);
+		}
+
+		wl_list_for_each(um, &mons, link) {
+			if (um->wlr_output->enabled && um != selmon && um->sel &&
+				!um->sel->iskilling) {
+				client_set_unfocused_opacity_animation(um->sel);
+			}
 		}
 
 		client_set_focused_opacity_animation(c);

@@ -172,7 +172,7 @@ int toggle_trackpad_enable(const Arg *arg) {
 }
 
 int focusmon(const Arg *arg) {
-	Client *c = NULL, *old_selmon_sel = NULL;
+	Client *c = NULL;
 	Monitor *m = NULL;
 
 	if (arg->i != UNDIR) {
@@ -193,7 +193,6 @@ int focusmon(const Arg *arg) {
 	if (!m || !m->wlr_output->enabled || m == selmon)
 		return 0;
 
-	old_selmon_sel = selmon->sel;
 	selmon = m;
 	if (warpcursor) {
 		warp_cursor_to_selmon(selmon);
@@ -206,9 +205,6 @@ int focusmon(const Arg *arg) {
 	} else
 		focusclient(c, 1);
 
-	if (old_selmon_sel) {
-		client_set_unfocused_opacity_animation(old_selmon_sel);
-	}
 	return 0;
 }
 
