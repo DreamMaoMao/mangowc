@@ -2241,17 +2241,12 @@ void parse_config_file(Config *config, const char *file_path) {
 	if (file_path[0] == '.' && file_path[1] == '/') {
 		// Relative path
 
-		const char *mangoconfig = getenv("MANGOCONFIG");
-
 		if (cli_config_path) {
 			char *config_path = strdup(cli_config_path);
 			char *config_dir = dirname(config_path);
 			snprintf(full_path, sizeof(full_path), "%s/%s", config_dir,
 					 file_path + 1);
 			free(config_path);
-		} else if (mangoconfig && mangoconfig[0] != '\0') {
-			snprintf(full_path, sizeof(full_path), "%s/%s", mangoconfig,
-					 file_path + 1);
 		} else {
 			const char *home = getenv("HOME");
 			if (!home) {
@@ -2940,13 +2935,9 @@ void parse_config(void) {
 
 	create_config_keymap();
 
-	// 获取 MANGOCONFIG 环境变量
-	const char *mangoconfig = getenv("MANGOCONFIG");
-
-	// 如果 MANGOCONFIG 环境变量不存在或为空，则使用 HOME 环境变量
 	if (cli_config_path) {
 		snprintf(filename, sizeof(filename), "%s", cli_config_path);
-	} else if (!mangoconfig || mangoconfig[0] == '\0') {
+	} else {
 		// 获取当前用户家目录
 		const char *homedir = getenv("HOME");
 		if (!homedir) {
@@ -2963,9 +2954,6 @@ void parse_config(void) {
 			snprintf(filename, sizeof(filename), "%s/mango/config.conf",
 					 SYSCONFDIR);
 		}
-	} else {
-		// 使用 MANGOCONFIG 环境变量作为配置文件夹路径
-		snprintf(filename, sizeof(filename), "%s/config.conf", mangoconfig);
 	}
 
 	set_value_default();
