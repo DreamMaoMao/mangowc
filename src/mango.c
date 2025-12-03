@@ -402,6 +402,7 @@ struct Client {
 	int force_tearing;
 	int allow_shortcuts_inhibit;
 	float scroller_proportion_single;
+	bool isfocusing;
 };
 
 typedef struct {
@@ -3157,15 +3158,18 @@ void focusclient(Client *c, int lift) {
 		selmon = c->mon;
 		selmon->prevsel = selmon->sel;
 		selmon->sel = c;
+		c->isfocusing = true;
 
 		if (last_focus_client && !last_focus_client->iskilling &&
 			last_focus_client != c) {
+			last_focus_client->isfocusing = false;
 			client_set_unfocused_opacity_animation(last_focus_client);
 		}
 
 		wl_list_for_each(um, &mons, link) {
 			if (um->wlr_output->enabled && um != selmon && um->sel &&
-				!um->sel->iskilling) {
+				!um->sel->iskilling && um->sel->isfocusing) {
+				um->sel->isfocusing = false;
 				client_set_unfocused_opacity_animation(um->sel);
 			}
 		}
@@ -3586,6 +3590,7 @@ void locksession(struct wl_listener *listener, void *data) {
 }
 
 void init_client_properties(Client *c) {
+	c->isfocusing = false;
 	c->ismaximizescreen = 0;
 	c->isfullscreen = 0;
 	c->need_float_size_reduce = 0;
