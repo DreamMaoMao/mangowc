@@ -38,11 +38,9 @@
               (substitute* "meson.build"
                 (("'-DSYSCONFDIR=\\\"@0@\\\"'.format\\('/etc'\\)")
                  "'-DSYSCONFDIR=\"@0@\"'.format(sysconfdir)")
-
                 (("sysconfdir = sysconfdir.substring\\(prefix.length\\(\\)\\)")
                  "")))))))
     (inputs (list wayland
-                  wayland-protocols
                   libinput
                   libdrm
                   libxkbcommon
@@ -56,7 +54,7 @@
                   xcb-util-wm
                   wlroots
                   scenefx))
-    (native-inputs (list meson ninja pkg-config))
+    (native-inputs (list pkg-config wayland-protocols))
     (home-page "https://github.com/DreamMaoMao/mangowc")
     (synopsis "Wayland compositor based on wlroots and scenefx")
     (description "A Wayland compositor based on wlroots and scenefx,
