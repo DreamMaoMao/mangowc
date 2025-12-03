@@ -504,7 +504,7 @@ int setlayout(const Arg *arg) {
 			selmon->pertag->ltidxs[selmon->pertag->curtag] = &layouts[jk];
 			clear_fullscreen_and_maximized_state(selmon);
 			arrange(selmon, false);
-			printstatus(PRINT_ALL);
+			printstatus();
 			return 0;
 		}
 	}
@@ -518,7 +518,7 @@ int setkeymode(const Arg *arg) {
 	} else {
 		keymode.isdefault = false;
 	}
-	printstatus(PRINT_KEYMODE);
+	printstatus();
 	return 1;
 }
 
@@ -867,7 +867,7 @@ int switch_keyboard_layout(const Arg *arg) {
 		wlr_seat_keyboard_notify_modifiers(seat, &tkb->modifiers);
 	}
 
-	printstatus(PRINT_KB_LAYOUT);
+	printstatus();
 	return 0;
 }
 
@@ -908,7 +908,7 @@ int switch_layout(const Arg *arg) {
 		}
 		clear_fullscreen_and_maximized_state(selmon);
 		arrange(selmon, false);
-		printstatus(PRINT_ALL);
+		printstatus();
 		return 0;
 	}
 
@@ -919,7 +919,7 @@ int switch_layout(const Arg *arg) {
 				jk == LENGTH(layouts) - 1 ? &layouts[0] : &layouts[jk + 1];
 			clear_fullscreen_and_maximized_state(selmon);
 			arrange(selmon, false);
-			printstatus(PRINT_ALL);
+			printstatus();
 			return 0;
 		}
 	}
@@ -1261,7 +1261,7 @@ int toggletag(const Arg *arg) {
 		focusclient(focustop(selmon), 1);
 		arrange(selmon, false);
 	}
-	printstatus(PRINT_ALL);
+	printstatus();
 	return 0;
 }
 
@@ -1279,7 +1279,7 @@ int toggleview(const Arg *arg) {
 		focusclient(focustop(selmon), 1);
 		arrange(selmon, false);
 	}
-	printstatus(PRINT_ALL);
+	printstatus();
 	return 0;
 }
 
@@ -1397,7 +1397,7 @@ int comboview(const Arg *arg) {
 		view(&(Arg){.ui = newtags}, false);
 	}
 
-	printstatus(PRINT_ALL);
+	printstatus();
 	return 0;
 }
 

@@ -635,7 +635,7 @@ static void outputmgrapplyortest(struct wlr_output_configuration_v1 *config,
 static void outputmgrtest(struct wl_listener *listener, void *data);
 static void pointerfocus(Client *c, struct wlr_surface *surface, double sx,
 						 double sy, uint32_t time);
-static void printstatus(uint32_t event_mask);
+static void printstatus(void);
 static void quitsignal(int signo);
 static void powermgrsetmode(struct wl_listener *listener, void *data);
 static void rendermon(struct wl_listener *listener, void *data);
@@ -2176,7 +2176,7 @@ void closemon(Monitor *m) {
 	}
 	if (selmon) {
 		focusclient(focustop(selmon), 1);
-		printstatus(PRINT_ALL);
+		printstatus();
 	}
 }
 
@@ -2753,7 +2753,7 @@ void createmon(struct wl_listener *listener, void *data) {
 		add_workspace_by_tag(i, m);
 	}
 
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void // fix for 0.5
@@ -3209,7 +3209,7 @@ void focusclient(Client *c, int lift) {
 			client_activate_surface(old_keyboard_focus_surface, 0);
 		}
 	}
-	printstatus(PRINT_ALL);
+	printstatus();
 
 	if (!c) {
 
@@ -3732,7 +3732,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 	// make sure the animation is open type
 	c->is_pending_open_animation = true;
 	resize(c, c->geom, 0);
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void maximizenotify(struct wl_listener *listener, void *data) {
@@ -4091,9 +4091,7 @@ void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 }
 
 // 修改printstatus函数，接受掩码参数
-void printstatus(uint32_t event_mask) {
-	wl_signal_emit(&mango_print_status, (void *)(uintptr_t)event_mask);
-}
+void printstatus(void) { wl_signal_emit(&mango_print_status, NULL); }
 
 void powermgrsetmode(struct wl_listener *listener, void *data) {
 	struct wlr_output_power_v1_set_mode_event *event = data;
@@ -4350,7 +4348,7 @@ run(char *startup_cmd) {
 	if (fd_set_nonblock(STDOUT_FILENO) < 0)
 		close(STDOUT_FILENO);
 
-	printstatus(PRINT_ALL);
+	printstatus();
 
 	/* At this point the outputs are initialized, choose initial selmon
 	 * based on cursor position, and set default cursor image */
@@ -4485,7 +4483,7 @@ setfloating(Client *c, int floating) {
 
 	arrange(c->mon, false);
 	setborder_color(c);
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void reset_maximizescreen_size(Client *c) {
@@ -4816,24 +4814,14 @@ void create_output(struct wlr_backend *backend, void *data) {
 // 修改信号处理函数，接收掩码参数
 void handle_print_status(struct wl_listener *listener, void *data) {
 
-	uint32_t event_mask = (uintptr_t)data;
-	// 如果传入的是NULL（旧代码）或0，使用默认的所有事件
-	if (!event_mask) {
-		event_mask = PRINT_ALL;
-	}
-
 	Monitor *m = NULL;
 	wl_list_for_each(m, &mons, link) {
 		if (!m->wlr_output->enabled) {
 			continue;
 		}
-		// 更新workspace状态（根据掩码决定是否更新）
-		if (event_mask & PRINT_TAG || event_mask & PRINT_ACTIVE) {
-			dwl_ext_workspace_printstatus(m);
-		}
+		dwl_ext_workspace_printstatus(m);
 
-		// 更新IPC输出状态（传入掩码）
-		dwl_ipc_output_printstatus(m, event_mask);
+		dwl_ipc_output_printstatus(m);
 	}
 }
 
@@ -5174,7 +5162,7 @@ void tag_client(const Arg *arg, Client *target_client) {
 	}
 
 	focusclient(target_client, 1);
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void overview(Monitor *m) { grid(m); }
@@ -5389,7 +5377,7 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	wlr_scene_node_destroy(&c->image_capture_scene_surface->buffer->node);
 	wlr_scene_node_destroy(&c->image_capture_scene->tree.node);
 	wlr_scene_node_destroy(&c->scene->node);
-	printstatus(PRINT_ALL);
+	printstatus();
 	motionnotify(0, NULL, 0, 0, 0, 0);
 }
 
@@ -5540,7 +5528,7 @@ void updatetitle(struct wl_listener *listener, void *data) {
 			});
 	}
 	if (c == focustop(c->mon))
-		printstatus(PRINT_TITLE);
+		printstatus();
 }
 
 void // 17 fix to 0.5
@@ -5560,7 +5548,7 @@ urgent(struct wl_listener *listener, void *data) {
 		c->isurgent = 1;
 		if (client_surface(c)->mapped)
 			setborder_color(c);
-		printstatus(PRINT_ALL);
+		printstatus();
 	}
 }
 
@@ -5615,7 +5603,7 @@ toggleseltags:
 	if (changefocus)
 		focusclient(focustop(m), 1);
 	arrange(m, want_animation);
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void view(const Arg *arg, bool want_animation) {
@@ -5758,7 +5746,7 @@ void activatex11(struct wl_listener *listener, void *data) {
 		arrange(c->mon, false);
 	}
 
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void configurex11(struct wl_listener *listener, void *data) {
@@ -5830,7 +5818,7 @@ void sethints(struct wl_listener *listener, void *data) {
 		return;
 
 	c->isurgent = xcb_icccm_wm_hints_get_urgency(c->surface.xwayland->hints);
-	printstatus(PRINT_ALL);
+	printstatus();
 
 	if (c->isurgent && surface && surface->mapped)
 		setborder_color(c);
