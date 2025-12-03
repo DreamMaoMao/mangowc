@@ -5597,9 +5597,9 @@ void view_in_mon(const Arg *arg, bool want_animation, Monitor *m,
 	}
 
 	if (arg->ui == UINT32_MAX) {
-		m->pertag->prevtag = m->tagset[m->seltags];
+		m->pertag->prevtag = get_tags_first_tag_num(m->tagset[m->seltags]);
 		m->seltags ^= 1; /* toggle sel tagset */
-		m->pertag->curtag = m->tagset[m->seltags];
+		m->pertag->curtag = get_tags_first_tag_num(m->tagset[m->seltags]);
 		goto toggleseltags;
 	}
 
