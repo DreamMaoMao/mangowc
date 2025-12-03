@@ -971,7 +971,31 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		(*arg).i = atoi(arg_value2);
 	} else if (strcmp(func_name, "view") == 0) {
 		func = bind_to_view;
-		(*arg).ui = 1 << (atoi(arg_value) - 1);
+
+		u_int32_t mask = 0;
+		char *token;
+		char *arg_copy = strdup(arg_value);
+
+		if (arg_copy != NULL) {
+			char *saveptr = NULL;
+			token = strtok_r(arg_copy, "|", &saveptr);
+
+			while (token != NULL) {
+				int num = atoi(token);
+				if (num > 0 && num <= LENGTH(tags)) {
+					mask |= (1 << (num - 1));
+				}
+				token = strtok_r(NULL, "|", &saveptr);
+			}
+
+			free(arg_copy);
+		}
+
+		if (mask) {
+			(*arg).ui = mask;
+		} else {
+			(*arg).ui = atoi(arg_value);
+		}
 		(*arg).i = atoi(arg_value2);
 	} else if (strcmp(func_name, "viewcrossmon") == 0) {
 		func = viewcrossmon;
