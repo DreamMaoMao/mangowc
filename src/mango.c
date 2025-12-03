@@ -3932,35 +3932,18 @@ void motionnotify(uint32_t time, struct wlr_input_device *device, double dx,
 	if (!surface && !seat->drag && !cursor_hidden)
 		wlr_cursor_set_xcursor(cursor, cursor_mgr, "default");
 
-	if (c && c->mon && !c->animation.running &&
-		(!(c->geom.x + c->geom.width > c->mon->m.x + c->mon->m.width ||
-		   c->geom.x < c->mon->m.x ||
-		   c->geom.y + c->geom.height > c->mon->m.y + c->mon->m.height ||
-		   c->geom.y < c->mon->m.y) ||
-		 !ISTILED(c))) {
+	if (c && c->mon && !c->animation.running && (INSIDEMON(c) || !ISTILED(c))) {
 		scroller_focus_lock = 0;
 	}
 
 	should_lock = false;
-	if (!scroller_focus_lock ||
-		!(c && c->mon &&
-		  (c->geom.x + c->geom.width > c->mon->m.x + c->mon->m.width ||
-		   c->geom.x < c->mon->m.x ||
-		   c->geom.y + c->geom.height > c->mon->m.y + c->mon->m.height ||
-		   c->geom.y < c->mon->m.y))) {
-		if (c && c->mon && is_scroller_layout(c->mon) &&
-			(c->geom.x + c->geom.width > c->mon->m.x + c->mon->m.width ||
-			 c->geom.x < c->mon->m.x ||
-			 c->geom.y + c->geom.height > c->mon->m.y + c->mon->m.height ||
-			 c->geom.y < c->mon->m.y)) {
+	if (!scroller_focus_lock || !(c && c->mon && !INSIDEMON(c))) {
+		if (c && c->mon && is_scroller_layout(c->mon) && !INSIDEMON(c)) {
 			should_lock = true;
 		}
 
 		if (!(!edge_scroller_pointer_focus && c && c->mon &&
-			  is_scroller_layout(c->mon) &&
-			  (c->geom.x < c->mon->m.x || c->geom.y < c->mon->m.y ||
-			   c->geom.x + c->geom.width > c->mon->m.x + c->mon->m.width ||
-			   c->geom.y + c->geom.height > c->mon->m.y + c->mon->m.height)))
+			  is_scroller_layout(c->mon) && !INSIDEMON(c)))
 			pointerfocus(c, surface, sx, sy, time);
 
 		if (should_lock && c && c->mon && ISTILED(c) && c == c->mon->sel) {
