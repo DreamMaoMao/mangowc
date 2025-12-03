@@ -5877,5 +5877,5 @@ int main(int argc, char *argv[]) {
 	return EXIT_SUCCESS;
 
 usage:
-	die("Usage: %s [-v] [-d] [-s startup command]", argv[0]);
+	die("Usage: %s [-v] [-d] [-c config file] [-s startup command]", argv[0]);
 }
