@@ -29,7 +29,12 @@ int isdescprocess(pid_t p, pid_t c) {
 char *get_autostart_path(char *autostart_path, uint32_t buf_size) {
 	const char *mangoconfig = getenv("MANGOCONFIG");
 
-	if (mangoconfig && mangoconfig[0] != '\0') {
+	if (cli_config_path) {
+		char *config_path = strdup(cli_config_path);
+		char *config_dir = dirname(config_path);
+		snprintf(autostart_path, buf_size, "%s/autostart.sh", config_dir);
+		free(config_path);
+	} else if (mangoconfig && mangoconfig[0] != '\0') {
 		snprintf(autostart_path, buf_size, "%s/autostart.sh", mangoconfig);
 	} else {
 		const char *homedir = getenv("HOME");

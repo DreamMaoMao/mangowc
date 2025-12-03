@@ -862,6 +862,7 @@ struct dvec2 *baked_points_focus;
 static struct wl_event_source *hide_source;
 static bool cursor_hidden = false;
 static bool tag_combo = false;
+static const char *cli_config_path = NULL;
 static KeyMode keymode = {
 	.mode = {'d', 'e', 'f', 'a', 'u', 'l', 't', '\0'},
 	.isdefault = true,
@@ -5866,13 +5867,15 @@ int main(int argc, char *argv[]) {
 	char *startup_cmd = NULL;
 	int c;
 
-	while ((c = getopt(argc, argv, "s:hdv")) != -1) {
+	while ((c = getopt(argc, argv, "s:c:hdv")) != -1) {
 		if (c == 's')
 			startup_cmd = optarg;
 		else if (c == 'd')
 			log_level = WLR_DEBUG;
 		else if (c == 'v')
 			die("mango " VERSION);
+		else if (c == 'c')
+			cli_config_path = optarg;
 		else
 			goto usage;
 	}
