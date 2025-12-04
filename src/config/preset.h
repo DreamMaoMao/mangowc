@@ -63,6 +63,7 @@ float scroller_default_proportion_single = 1.0;
 int scroller_ignore_proportion_single = 0;
 int scroller_focus_center = 0;
 int scroller_prefer_center = 0;
+float dual_scroller_default_split_ratio = 0.3;
 int focus_cross_monitor = 0;
 int focus_cross_tag = 0;
 int exchange_cross_monitor = 0;
