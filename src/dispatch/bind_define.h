@@ -202,6 +202,7 @@ int focusmon(const Arg *arg) {
 		selmon->sel = NULL;
 		wlr_seat_pointer_notify_clear_focus(seat);
 		wlr_seat_keyboard_notify_clear_focus(seat);
+		focusclient(NULL, 0);
 	} else
 		focusclient(c, 1);
 
