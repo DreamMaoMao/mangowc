@@ -19,7 +19,7 @@ void set_size_per(Monitor *m, Client *c) {
 }
 
 void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
-								   int offsety, unsigned int time, int type) {
+								   int offsety, uint32_t time, int type) {
 	Client *tc = NULL;
 	float delta_x, delta_y;
 	Client *next = NULL;
@@ -213,7 +213,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 }
 
 void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
-								 int offsety, unsigned int time, int type) {
+								 int offsety, uint32_t time, int type) {
 	Client *tc = NULL;
 	float delta_x, delta_y;
 	Client *next = NULL;
@@ -370,7 +370,7 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 }
 
 void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
-						  unsigned int time, bool isvertical) {
+						  uint32_t time, bool isvertical) {
 	float delta_x, delta_y;
 	float new_scroller_proportion;
 
@@ -474,7 +474,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
 }
 
 void resize_tile_client(Client *grabc, bool isdrag, int offsetx, int offsety,
-						unsigned int time) {
+						uint32_t time) {
 
 	if (!grabc || grabc->isfullscreen || grabc->ismaximizescreen)
 		return;
@@ -511,8 +511,8 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 						int stack_num) {
 	Client *c = NULL;
 	int i = 0;
-	unsigned int stack_index = 0;
-	unsigned int nmasters = m->pertag->nmasters[m->pertag->curtag];
+	uint32_t stack_index = 0;
+	uint32_t nmasters = m->pertag->nmasters[m->pertag->curtag];
 
 	if (m->pertag->ltidxs[m->pertag->curtag]->id != CENTER_TILE) {
 

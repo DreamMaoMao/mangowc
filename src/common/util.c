@@ -82,14 +82,13 @@ void wl_list_append(struct wl_list *list, struct wl_list *object) {
 	wl_list_insert(list->prev, object);
 }
 
-unsigned int get_now_in_ms(void) {
+uint32_t get_now_in_ms(void) {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
 	return timespec_to_ms(&now);
 }
 
-unsigned int timespec_to_ms(struct timespec *ts) {
-	return (unsigned int)ts->tv_sec * 1000 +
-		   (unsigned int)ts->tv_nsec / 1000000;
+uint32_t timespec_to_ms(struct timespec *ts) {
+	return (uint32_t)ts->tv_sec * 1000 + (uint32_t)ts->tv_nsec / 1000000;
 }

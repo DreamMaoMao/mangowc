@@ -71,6 +71,8 @@ https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
 - hwdata
 - seatd
 - pcre2
+- xorg-xwayland
+- libxcb
 
 ## Arch Linux
 The package is in the Arch User Repository and is availble for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper like yay:
@@ -247,14 +249,6 @@ Here's an example of using the modules in a flake:
     };
 }
 ```
-
-
-# Sponsor
-
-My current device is a bit outdated and doesn't support certain features like HDR or VRR. If you'd like to support this project, here's how you can help. Thanks!
-
-![Screenshot_2025-10-13-20-06-49-26_ee1cec40dcf6eb3](https://github.com/user-attachments/assets/240a0727-9eb5-4212-a84c-10fa9f093147)
-
 
 # Packaging mango
 
