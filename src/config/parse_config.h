@@ -325,6 +325,8 @@ typedef struct {
 	ConfigEnv **env;
 	int env_count;
 
+	ConfigVariables *variables;
+
 	char **exec;
 	int exec_count;
 
@@ -2286,6 +2288,42 @@ void parse_option(Config *config, char *key, char *value) {
 	}
 }
 
+void parse_config_store_variable(Config *config, const char *key, const char *value) {
+	ConfigVariable *var = config->variables;
+
+	while (var) {
+		if (strcmp(var->name, key) == 0) {
+			free(var->value);
+			var->value = strdup(value);
+			return ;
+		}
+		var = var->next;
+	}
+
+	ConfigVariable *new_var = malloc(sizeof(ConfigVariable));
+	new_var->name = strdup(key);
+	new_var->value = strdup(value);
+	new_var->next = config->variables;
+	config->variables = new_var;
+}
+
+char *parse_config_expand_variable(Config *config, const char *value) {
+	if (value[0] != '$') {
+		return strdup(value);
+	}
+	const char *var_name = value + 1;
+
+	ConfigVariable *var = config->variables;
+	while (var) {
+		if (strcmp(var->name, var_name) == 0) {
+			return strdup(var->value);
+		}
+		var = var->next;
+	}
+	return strdup(value);
+
+}
+
 void parse_config_line(Config *config, const char *line) {
 	char key[256], value[256];
 	if (sscanf(line, "%255[^=]=%255[^\n]", key, value) != 2) {
@@ -2297,7 +2335,13 @@ void parse_config_line(Config *config, const char *line) {
 	trim_whitespace(key);
 	trim_whitespace(value);
 
-	parse_option(config, key, value);
+	if (key[0] == '$') {
+		parse_config_store_variable(config, key + 1, value);
+	} else {
+		char *expanded_value = parse_config_expand_variable(config, value);
+		parse_option(config, key, expanded_value);
+		free(expanded_value);
+	}
 }
 
 void parse_config_file(Config *config, const char *file_path) {
@@ -2630,6 +2674,21 @@ void free_config(void) {
 
 	// 清理解析按键用的keymap
 	cleanup_config_keymap();
+
+	// Free config variables linked list
+	ConfigVariable *var = config.variables;
+	while (var) {
+		ConfigVariable *next = var->next;
+		if (var->name) {
+			free(var->name)
+		};
+		if (var->value) {
+			free(var->value);
+		}
+		free(var);
+		var = next;
+	}
+	config.variables = NULL;
 }
 
 void override_config(void) {
