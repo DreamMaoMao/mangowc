@@ -193,7 +193,9 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	int sel_x = tc->geom.x;
 	int sel_y = tc->geom.y;
 	long long int distance = LLONG_MAX;
+	long long int same_monitor_distance = LLONG_MAX;
 	Client *tempFocusClients = NULL;
+	Client *tempSameMonitorFocusClients = NULL;
 
 	switch (arg->i) {
 	case UP:
@@ -223,6 +225,11 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
 						tempFocusClients = tempClients[_i];
+					}
+					if (tempClients[_i]->mon == tc->mon &&
+						tmp_distance < same_monitor_distance) {
+						same_monitor_distance = tmp_distance;
+						tempSameMonitorFocusClients = tempClients[_i];
 					}
 				}
 			}
@@ -256,6 +263,11 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 						distance = tmp_distance;
 						tempFocusClients = tempClients[_i];
 					}
+					if (tempClients[_i]->mon == tc->mon &&
+						tmp_distance < same_monitor_distance) {
+						same_monitor_distance = tmp_distance;
+						tempSameMonitorFocusClients = tempClients[_i];
+					}
 				}
 			}
 		}
@@ -287,6 +299,11 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
 						tempFocusClients = tempClients[_i];
+					}
+					if (tempClients[_i]->mon == tc->mon &&
+						tmp_distance < same_monitor_distance) {
+						same_monitor_distance = tmp_distance;
+						tempSameMonitorFocusClients = tempClients[_i];
 					}
 				}
 			}
@@ -320,6 +337,11 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 						distance = tmp_distance;
 						tempFocusClients = tempClients[_i];
 					}
+					if (tempClients[_i]->mon == tc->mon &&
+						tmp_distance < same_monitor_distance) {
+						same_monitor_distance = tmp_distance;
+						tempSameMonitorFocusClients = tempClients[_i];
+					}
 				}
 			}
 		}
@@ -327,7 +349,11 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	}
 
 	free(tempClients); // 释放内存
-	return tempFocusClients;
+	if(tempSameMonitorFocusClients) {
+		return tempSameMonitorFocusClients;
+	} else {
+		return tempFocusClients;
+	}
 }
 
 Client *direction_select(const Arg *arg) {
