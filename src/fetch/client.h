@@ -10,7 +10,7 @@ bool check_hit_no_border(Client *c) {
 		}
 	}
 
-	if (no_border_when_single && c && !c->isfloating &&
+	if (no_border_when_single && c && !c->isfloating && !c->ismaximizescreen &&
         c->mon && c->mon->visible_tiling_clients == 1) {
 		return true;
 	}
