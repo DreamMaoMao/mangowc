@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <libgen.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -988,7 +989,31 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		(*arg).i = atoi(arg_value2);
 	} else if (strcmp(func_name, "view") == 0) {
 		func = bind_to_view;
-		(*arg).ui = 1 << (atoi(arg_value) - 1);
+
+		uint32_t mask = 0;
+		char *token;
+		char *arg_copy = strdup(arg_value);
+
+		if (arg_copy != NULL) {
+			char *saveptr = NULL;
+			token = strtok_r(arg_copy, "|", &saveptr);
+
+			while (token != NULL) {
+				int num = atoi(token);
+				if (num > 0 && num <= LENGTH(tags)) {
+					mask |= (1 << (num - 1));
+				}
+				token = strtok_r(NULL, "|", &saveptr);
+			}
+
+			free(arg_copy);
+		}
+
+		if (mask) {
+			(*arg).ui = mask;
+		} else {
+			(*arg).ui = atoi(arg_value);
+		}
 		(*arg).i = atoi(arg_value2);
 	} else if (strcmp(func_name, "viewcrossmon") == 0) {
 		func = viewcrossmon;
@@ -2282,10 +2307,12 @@ void parse_config_file(Config *config, const char *file_path) {
 	if (file_path[0] == '.' && file_path[1] == '/') {
 		// Relative path
 
-		const char *mangoconfig = getenv("MANGOCONFIG");
-		if (mangoconfig && mangoconfig[0] != '\0') {
-			snprintf(full_path, sizeof(full_path), "%s/%s", mangoconfig,
+		if (cli_config_path) {
+			char *config_path = strdup(cli_config_path);
+			char *config_dir = dirname(config_path);
+			snprintf(full_path, sizeof(full_path), "%s/%s", config_dir,
 					 file_path + 1);
+			free(config_path);
 		} else {
 			const char *home = getenv("HOME");
 			if (!home) {
@@ -3012,11 +3039,9 @@ void parse_config(void) {
 
 	create_config_keymap();
 
-	// 获取 MANGOCONFIG 环境变量
-	const char *mangoconfig = getenv("MANGOCONFIG");
-
-	// 如果 MANGOCONFIG 环境变量不存在或为空，则使用 HOME 环境变量
-	if (!mangoconfig || mangoconfig[0] == '\0') {
+	if (cli_config_path) {
+		snprintf(filename, sizeof(filename), "%s", cli_config_path);
+	} else {
 		// 获取当前用户家目录
 		const char *homedir = getenv("HOME");
 		if (!homedir) {
@@ -3033,9 +3058,6 @@ void parse_config(void) {
 			snprintf(filename, sizeof(filename), "%s/mango/config.conf",
 					 SYSCONFDIR);
 		}
-	} else {
-		// 使用 MANGOCONFIG 环境变量作为配置文件夹路径
-		snprintf(filename, sizeof(filename), "%s/config.conf", mangoconfig);
 	}
 
 	set_value_default();
@@ -3255,6 +3277,6 @@ void reset_option(void) {
 int reload_config(const Arg *arg) {
 	parse_config();
 	reset_option();
-	printstatus(PRINT_ALL);
+	printstatus();
 	return 0;
 }

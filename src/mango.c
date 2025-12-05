@@ -402,6 +402,7 @@ struct Client {
 	int force_tearing;
 	int allow_shortcuts_inhibit;
 	float scroller_proportion_single;
+	bool isfocusing;
 };
 
 typedef struct {
@@ -536,7 +537,6 @@ arrange(Monitor *m,
 static void arrangelayer(Monitor *m, struct wl_list *list,
 						 struct wlr_box *usable_area, int exclusive);
 static void arrangelayers(Monitor *m);
-static char *get_autostart_path(char *, uint32_t); // 自启动命令执行
 static void handle_print_status(struct wl_listener *listener, void *data);
 static void axisnotify(struct wl_listener *listener,
 					   void *data); // 滚轮事件处理
@@ -630,7 +630,7 @@ static void outputmgrapplyortest(struct wlr_output_configuration_v1 *config,
 static void outputmgrtest(struct wl_listener *listener, void *data);
 static void pointerfocus(Client *c, struct wlr_surface *surface, double sx,
 						 double sy, uint32_t time);
-static void printstatus(uint32_t event_mask);
+static void printstatus(void);
 static void quitsignal(int signo);
 static void powermgrsetmode(struct wl_listener *listener, void *data);
 static void rendermon(struct wl_listener *listener, void *data);
@@ -852,6 +852,7 @@ struct dvec2 *baked_points_focus;
 static struct wl_event_source *hide_source;
 static bool cursor_hidden = false;
 static bool tag_combo = false;
+static const char *cli_config_path = NULL;
 static KeyMode keymode = {
 	.mode = {'d', 'e', 'f', 'a', 'u', 'l', 't', '\0'},
 	.isdefault = true,
@@ -2168,7 +2169,7 @@ void closemon(Monitor *m) {
 	}
 	if (selmon) {
 		focusclient(focustop(selmon), 1);
-		printstatus(PRINT_ALL);
+		printstatus();
 	}
 }
 
@@ -2802,7 +2803,7 @@ void createmon(struct wl_listener *listener, void *data) {
 		add_workspace_by_tag(i, m);
 	}
 
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void // fix for 0.5
@@ -3166,6 +3167,7 @@ void destroykeyboardgroup(struct wl_listener *listener, void *data) {
 void focusclient(Client *c, int lift) {
 
 	Client *last_focus_client = NULL;
+	Monitor *um = NULL;
 
 	struct wlr_surface *old_keyboard_focus_surface =
 		seat->keyboard_state.focused_surface;
@@ -3205,9 +3207,11 @@ void focusclient(Client *c, int lift) {
 		selmon = c->mon;
 		selmon->prevsel = selmon->sel;
 		selmon->sel = c;
+		c->isfocusing = true;
 
 		if (last_focus_client && !last_focus_client->iskilling &&
 			last_focus_client != c) {
+			last_focus_client->isfocusing = false;
 			client_set_unfocused_opacity_animation(last_focus_client);
 		}
 
@@ -3228,6 +3232,15 @@ void focusclient(Client *c, int lift) {
 
 		// change border color
 		c->isurgent = 0;
+	}
+
+	// update other monitor focus disappear
+	wl_list_for_each(um, &mons, link) {
+		if (um->wlr_output->enabled && um != selmon && um->sel &&
+			!um->sel->iskilling && um->sel->isfocusing) {
+			um->sel->isfocusing = false;
+			client_set_unfocused_opacity_animation(um->sel);
+		}
 	}
 
 	if (c && !c->iskilling && c->foreign_toplevel)
@@ -3258,7 +3271,7 @@ void focusclient(Client *c, int lift) {
 			client_activate_surface(old_keyboard_focus_surface, 0);
 		}
 	}
-	printstatus(PRINT_ALL);
+	printstatus();
 
 	if (!c) {
 
@@ -3655,6 +3668,7 @@ static void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
 }
 
 void init_client_properties(Client *c) {
+	c->isfocusing = false;
 	c->ismaximizescreen = 0;
 	c->isfullscreen = 0;
 	c->need_float_size_reduce = 0;
@@ -3808,7 +3822,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 	// make sure the animation is open type
 	c->is_pending_open_animation = true;
 	resize(c, c->geom, 0);
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void maximizenotify(struct wl_listener *listener, void *data) {
@@ -4008,35 +4022,18 @@ void motionnotify(uint32_t time, struct wlr_input_device *device, double dx,
 	if (!surface && !seat->drag && !cursor_hidden)
 		wlr_cursor_set_xcursor(cursor, cursor_mgr, "default");
 
-	if (c && c->mon && !c->animation.running &&
-		(!(c->geom.x + c->geom.width > c->mon->m.x + c->mon->m.width ||
-		   c->geom.x < c->mon->m.x ||
-		   c->geom.y + c->geom.height > c->mon->m.y + c->mon->m.height ||
-		   c->geom.y < c->mon->m.y) ||
-		 !ISTILED(c))) {
+	if (c && c->mon && !c->animation.running && (INSIDEMON(c) || !ISTILED(c))) {
 		scroller_focus_lock = 0;
 	}
 
 	should_lock = false;
-	if (!scroller_focus_lock ||
-		!(c && c->mon &&
-		  (c->geom.x + c->geom.width > c->mon->m.x + c->mon->m.width ||
-		   c->geom.x < c->mon->m.x ||
-		   c->geom.y + c->geom.height > c->mon->m.y + c->mon->m.height ||
-		   c->geom.y < c->mon->m.y))) {
-		if (c && c->mon && is_scroller_layout(c->mon) &&
-			(c->geom.x + c->geom.width > c->mon->m.x + c->mon->m.width ||
-			 c->geom.x < c->mon->m.x ||
-			 c->geom.y + c->geom.height > c->mon->m.y + c->mon->m.height ||
-			 c->geom.y < c->mon->m.y)) {
+	if (!scroller_focus_lock || !(c && c->mon && !INSIDEMON(c))) {
+		if (c && c->mon && is_scroller_layout(c->mon) && !INSIDEMON(c)) {
 			should_lock = true;
 		}
 
 		if (!(!edge_scroller_pointer_focus && c && c->mon &&
-			  is_scroller_layout(c->mon) &&
-			  (c->geom.x < c->mon->m.x || c->geom.y < c->mon->m.y ||
-			   c->geom.x + c->geom.width > c->mon->m.x + c->mon->m.width ||
-			   c->geom.y + c->geom.height > c->mon->m.y + c->mon->m.height)))
+			  is_scroller_layout(c->mon) && !INSIDEMON(c)))
 			pointerfocus(c, surface, sx, sy, time);
 
 		if (should_lock && c && c->mon && ISTILED(c) && c == c->mon->sel) {
@@ -4164,9 +4161,7 @@ void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 }
 
 // 修改printstatus函数，接受掩码参数
-void printstatus(uint32_t event_mask) {
-	wl_signal_emit(&mango_print_status, (void *)(uintptr_t)event_mask);
-}
+void printstatus(void) { wl_signal_emit(&mango_print_status, NULL); }
 
 void powermgrsetmode(struct wl_listener *listener, void *data) {
 	struct wlr_output_power_v1_set_mode_event *event = data;
@@ -4385,7 +4380,6 @@ run(char *startup_cmd) {
 
 	set_env();
 
-	char autostart_temp_path[1024];
 	/* Add a Unix socket to the Wayland display. */
 	const char *socket = wl_display_add_socket_auto(dpy);
 	if (!socket)
@@ -4399,9 +4393,7 @@ run(char *startup_cmd) {
 
 	/* Now that the socket exists and the backend is started, run the
 	 * startup command */
-	if (!startup_cmd)
-		startup_cmd = get_autostart_path(autostart_temp_path,
-										 sizeof(autostart_temp_path));
+
 	if (startup_cmd) {
 		int piperw[2];
 		if (pipe(piperw) < 0)
@@ -4426,7 +4418,7 @@ run(char *startup_cmd) {
 	if (fd_set_nonblock(STDOUT_FILENO) < 0)
 		close(STDOUT_FILENO);
 
-	printstatus(PRINT_ALL);
+	printstatus();
 
 	/* At this point the outputs are initialized, choose initial selmon
 	 * based on cursor position, and set default cursor image */
@@ -4561,7 +4553,7 @@ setfloating(Client *c, int floating) {
 
 	arrange(c->mon, false);
 	setborder_color(c);
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void reset_maximizescreen_size(Client *c) {
@@ -4892,24 +4884,14 @@ void create_output(struct wlr_backend *backend, void *data) {
 // 修改信号处理函数，接收掩码参数
 void handle_print_status(struct wl_listener *listener, void *data) {
 
-	uint32_t event_mask = (uintptr_t)data;
-	// 如果传入的是NULL（旧代码）或0，使用默认的所有事件
-	if (!event_mask) {
-		event_mask = PRINT_ALL;
-	}
-
 	Monitor *m = NULL;
 	wl_list_for_each(m, &mons, link) {
 		if (!m->wlr_output->enabled) {
 			continue;
 		}
-		// 更新workspace状态（根据掩码决定是否更新）
-		if (event_mask & PRINT_TAG || event_mask & PRINT_ACTIVE) {
-			dwl_ext_workspace_printstatus(m);
-		}
+		dwl_ext_workspace_printstatus(m);
 
-		// 更新IPC输出状态（传入掩码）
-		dwl_ipc_output_printstatus(m, event_mask);
+		dwl_ipc_output_printstatus(m);
 	}
 }
 
@@ -5246,7 +5228,7 @@ void tag_client(const Arg *arg, Client *target_client) {
 	}
 
 	focusclient(target_client, 1);
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void overview(Monitor *m) { grid(m); }
@@ -5454,7 +5436,7 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	}
 
 	wlr_scene_node_destroy(&c->scene->node);
-	printstatus(PRINT_ALL);
+	printstatus();
 	motionnotify(0, NULL, 0, 0, 0, 0);
 }
 
@@ -5602,7 +5584,7 @@ void updatetitle(struct wl_listener *listener, void *data) {
 	if (title && c->foreign_toplevel)
 		wlr_foreign_toplevel_handle_v1_set_title(c->foreign_toplevel, title);
 	if (c == focustop(c->mon))
-		printstatus(PRINT_TITLE);
+		printstatus();
 }
 
 void // 17 fix to 0.5
@@ -5622,7 +5604,7 @@ urgent(struct wl_listener *listener, void *data) {
 		c->isurgent = 1;
 		if (client_surface(c)->mapped)
 			setborder_color(c);
-		printstatus(PRINT_ALL);
+		printstatus();
 	}
 }
 
@@ -5639,9 +5621,9 @@ void view_in_mon(const Arg *arg, bool want_animation, Monitor *m,
 	}
 
 	if (arg->ui == UINT32_MAX) {
-		m->pertag->prevtag = m->tagset[m->seltags];
+		m->pertag->prevtag = get_tags_first_tag_num(m->tagset[m->seltags]);
 		m->seltags ^= 1; /* toggle sel tagset */
-		m->pertag->curtag = m->tagset[m->seltags];
+		m->pertag->curtag = get_tags_first_tag_num(m->tagset[m->seltags]);
 		goto toggleseltags;
 	}
 
@@ -5677,7 +5659,7 @@ toggleseltags:
 	if (changefocus)
 		focusclient(focustop(m), 1);
 	arrange(m, want_animation);
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void view(const Arg *arg, bool want_animation) {
@@ -5820,7 +5802,7 @@ void activatex11(struct wl_listener *listener, void *data) {
 		arrange(c->mon, false);
 	}
 
-	printstatus(PRINT_ALL);
+	printstatus();
 }
 
 void configurex11(struct wl_listener *listener, void *data) {
@@ -5892,7 +5874,7 @@ void sethints(struct wl_listener *listener, void *data) {
 		return;
 
 	c->isurgent = xcb_icccm_wm_hints_get_urgency(c->surface.xwayland->hints);
-	printstatus(PRINT_ALL);
+	printstatus();
 
 	if (c->isurgent && surface && surface->mapped)
 		setborder_color(c);
@@ -5925,13 +5907,15 @@ int main(int argc, char *argv[]) {
 	char *startup_cmd = NULL;
 	int c;
 
-	while ((c = getopt(argc, argv, "s:hdv")) != -1) {
+	while ((c = getopt(argc, argv, "s:c:hdv")) != -1) {
 		if (c == 's')
 			startup_cmd = optarg;
 		else if (c == 'd')
 			log_level = WLR_DEBUG;
 		else if (c == 'v')
 			die("mango " VERSION);
+		else if (c == 'c')
+			cli_config_path = optarg;
 		else
 			goto usage;
 	}
@@ -5949,5 +5933,5 @@ int main(int argc, char *argv[]) {
 	return EXIT_SUCCESS;
 
 usage:
-	die("Usage: %s [-v] [-d] [-s startup command]", argv[0]);
+	die("Usage: %s [-v] [-d] [-c config file] [-s startup command]", argv[0]);
 }

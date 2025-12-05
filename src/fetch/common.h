@@ -26,24 +26,6 @@ int isdescprocess(pid_t p, pid_t c) {
 	return (int)c;
 }
 
-char *get_autostart_path(char *autostart_path, uint32_t buf_size) {
-	const char *mangoconfig = getenv("MANGOCONFIG");
-
-	if (mangoconfig && mangoconfig[0] != '\0') {
-		snprintf(autostart_path, buf_size, "%s/autostart.sh", mangoconfig);
-	} else {
-		const char *homedir = getenv("HOME");
-		if (!homedir) {
-			fprintf(stderr, "Error: HOME environment variable not set.\n");
-			return NULL;
-		}
-		snprintf(autostart_path, buf_size, "%s/.config/mango/autostart.sh",
-				 homedir);
-	}
-
-	return autostart_path;
-}
-
 void get_layout_abbr(char *abbr, const char *full_name) {
 	// 清空输出缓冲区
 	abbr[0] = '\0';
