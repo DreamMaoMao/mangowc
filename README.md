@@ -82,7 +82,6 @@ yay -S mangowc-git
 ```
 
 ## Gentoo Linux
-
 The package is in the community-maintained repository called GURU.
 First, add GURU repository:
 
@@ -98,6 +97,16 @@ Finally, install the package:
 
 ```bash
 emerge --ask --verbose gui-wm/mangowc
+```
+
+## Fedora Linux
+The package is in the third-party Terra repository.
+First, add the [Terra Repository](https://terra.fyralabs.com/).
+
+Then, install the package:
+
+```bash
+dnf install mangowc
 ```
 
 ## Other
