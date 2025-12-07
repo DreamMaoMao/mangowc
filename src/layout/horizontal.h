@@ -386,6 +386,8 @@ void center_tile(Monitor *m) {
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
+	master_num = n > master_num ? master_num : n;
+
 	stack_num = n - master_num;
 
 	if (n == 0)
@@ -595,6 +597,7 @@ void tile(Monitor *m) {
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
+	master_num = n > master_num ? master_num : n;
 	stack_num = n - master_num;
 
 	if (n == 0)
@@ -692,6 +695,7 @@ void right_tile(Monitor *m) {
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
+	master_num = n > master_num ? master_num : n;
 	stack_num = n - master_num;
 
 	if (n == 0)

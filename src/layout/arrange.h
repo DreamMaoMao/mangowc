@@ -516,17 +516,15 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 
 		wl_list_for_each(c, &clients, link) {
 			if (VISIBLEON(c, m) && ISTILED(c)) {
-
-				if (total_master_inner_percent <= 0.0)
-					return;
-				if (i < m->pertag->nmasters[m->pertag->curtag]) {
+				if (total_master_inner_percent > 0.0 && i < nmasters) {
 					c->ismaster = true;
 					c->stack_innder_per = stack_num ? 1.0f / stack_num : 1.0f;
 					c->master_inner_per =
 						c->master_inner_per / total_master_inner_percent;
 				} else {
 					c->ismaster = false;
-					c->master_inner_per = 1.0f / master_num;
+					c->master_inner_per =
+						master_num > 0 ? 1.0f / master_num : 1.0f;
 					c->stack_innder_per =
 						total_stack_hight_percent
 							? c->stack_innder_per / total_stack_hight_percent
@@ -538,10 +536,7 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 	} else {
 		wl_list_for_each(c, &clients, link) {
 			if (VISIBLEON(c, m) && ISTILED(c)) {
-
-				if (total_master_inner_percent <= 0.0)
-					return;
-				if (i < m->pertag->nmasters[m->pertag->curtag]) {
+				if (total_master_inner_percent > 0.0 && i < nmasters) {
 					c->ismaster = true;
 					if ((stack_index % 2) ^ (tile_cilent_num % 2 == 0)) {
 						c->stack_innder_per =
@@ -558,7 +553,8 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 					stack_index = i - nmasters;
 
 					c->ismaster = false;
-					c->master_inner_per = 1.0f / master_num;
+					c->master_inner_per =
+						master_num > 0 ? 1.0f / master_num : 1.0f;
 					if ((stack_index % 2) ^ (tile_cilent_num % 2 == 0)) {
 						c->stack_innder_per =
 							total_right_stack_hight_percent
@@ -637,7 +633,7 @@ arrange(Monitor *m, bool want_animation) {
 			if (VISIBLEON(c, m)) {
 				if (ISTILED(c)) {
 
-					if (i < m->pertag->nmasters[m->pertag->curtag]) {
+					if (i < nmasters) {
 						master_num++;
 						total_master_inner_percent += c->master_inner_per;
 					} else {
