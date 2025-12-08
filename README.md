@@ -181,7 +181,9 @@ git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 
 ## Config Documentation
 
-Refer to the [wiki](https://github.com/DreamMaoMao/mango/wiki/)
+Refer to the repo wiki [wiki](https://github.com/DreamMaoMao/mango/wiki/)
+
+or the website docs [docs](https://mangowc.vercel.app/docs)
 
 # NixOS + Home-manager
 
