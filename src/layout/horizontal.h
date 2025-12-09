@@ -23,10 +23,6 @@ void grid(Monitor *m) {
 			if (c->mon != m)
 				continue;
 
-			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
-							smartgaps
-						? 0
-						: borderpx;
 			if (VISIBLEON(c, m) && !c->isunglobal &&
 				((m->isoverview && !client_is_x11_popup(c)) || ISTILED(c))) {
 				cw = (m->w.width - 2 * target_gappo) * single_width_ratio;
@@ -49,10 +45,6 @@ void grid(Monitor *m) {
 			if (c->mon != m)
 				continue;
 
-			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
-							smartgaps
-						? 0
-						: borderpx;
 			if (VISIBLEON(c, m) && !c->isunglobal &&
 				((m->isoverview && !client_is_x11_popup(c)) || ISTILED(c))) {
 				if (i == 0) {
@@ -99,10 +91,7 @@ void grid(Monitor *m) {
 
 		if (c->mon != m)
 			continue;
-		c->bw =
-			m->visible_tiling_clients == 1 && no_border_when_single && smartgaps
-				? 0
-				: borderpx;
+
 		if (VISIBLEON(c, m) && !c->isunglobal &&
 			((m->isoverview && !client_is_x11_popup(c)) || ISTILED(c))) {
 			cx = m->w.x + (i % cols) * (cw + target_gappi);
