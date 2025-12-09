@@ -41,15 +41,26 @@ void vertical_tile(Monitor *m) {
 
 	i = 0;
 	mx = tx = cur_gapih;
+
+	uint32_t master_surplus_width =
+		(m->w.width - 2 * cur_gapih - cur_gapih * ie * (master_num - 1));
+	float master_surplus_ratio = 1.0;
+
+	uint32_t slave_surplus_width =
+		(m->w.width - 2 * cur_gapih - cur_gapih * ie * (stack_num - 1));
+	float slave_surplus_ratio = 1.0;
+
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
 		if (i < m->pertag->nmasters[m->pertag->curtag]) {
 			r = MIN(n, m->pertag->nmasters[m->pertag->curtag]) - i;
 			if (c->master_inner_per > 0.0f) {
-				w = (m->w.width - 2 * cur_gapih -
-					 cur_gapih * ie * (master_num - 1)) *
-					c->master_inner_per;
+				w = master_surplus_width * c->master_inner_per /
+					master_surplus_ratio;
+				master_surplus_width = master_surplus_width - w;
+				master_surplus_ratio =
+					master_surplus_ratio - c->master_inner_per;
 				c->master_mfact_per = mfact;
 			} else {
 				w = (m->w.width - mx - cur_gapih - cur_gapih * ie * (r - 1)) /
@@ -68,9 +79,10 @@ void vertical_tile(Monitor *m) {
 		} else {
 			r = n - i;
 			if (c->stack_innder_per > 0.0f) {
-				w = (m->w.width - 2 * cur_gapih -
-					 cur_gapih * ie * (stack_num - 1)) *
-					c->stack_innder_per;
+				w = slave_surplus_width * c->stack_innder_per /
+					slave_surplus_ratio;
+				slave_surplus_width = slave_surplus_width - w;
+				slave_surplus_ratio = slave_surplus_ratio - c->stack_innder_per;
 				c->master_mfact_per = mfact;
 			} else {
 				w = (m->w.width - tx - cur_gapih - cur_gapih * ie * (r - 1)) /
