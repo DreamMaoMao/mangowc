@@ -3385,7 +3385,11 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 			k->func) {
 
 			isbreak = k->func(&k->arg);
-			handled = 1;
+
+			if (!k->ispassapply)
+				handled = 1;
+			else
+				handled = 0;
 
 			if (isbreak)
 				break;
