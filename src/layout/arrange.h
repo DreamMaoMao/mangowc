@@ -682,4 +682,6 @@ arrange(Monitor *m, bool want_animation) {
 		motionnotify(0, NULL, 0, 0, 0, 0);
 		checkidleinhibitor(NULL);
 	}
+
+	printstatus();
 }
