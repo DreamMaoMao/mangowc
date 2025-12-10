@@ -5658,8 +5658,15 @@ void handle_keyboard_shortcuts_inhibit_new_inhibitor(
 	}
 
 	// per-view, seat-agnostic config via criteria
-	Client *c = get_client_from_surface(inhibitor->surface);
-	if (c && !c->allow_shortcuts_inhibit) {
+	Client *c = NULL;
+	LayerSurface *l = NULL;
+
+	int type = toplevel_from_wlr_surface(inhibitor->surface, &c, &l);
+
+	if (type < 0)
+		return;
+
+	if (type != LayerShell && c && !c->allow_shortcuts_inhibit) {
 		return;
 	}
 
