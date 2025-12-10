@@ -414,18 +414,16 @@ void center_tile(Monitor *m) {
 	int should_overspread = center_master_overspread && (n <= nmasters);
 
 	uint32_t master_surplus_height =
-		(m->w.height - 2 * cur_gappov -
-					 cur_gappiv * ie * (master_num - 1));
+		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (master_num - 1));
 	float master_surplus_ratio = 1.0;
 
 	uint32_t slave_left_surplus_height =
-		(m->w.height - 2 * cur_gappov -
-							 cur_gappiv * ie * (stack_num / 2 - 1));
+		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (stack_num / 2 - 1));
 	float slave_left_surplus_ratio = 1.0;
 
 	uint32_t slave_right_surplus_height =
-		 (m->w.height - 2 * cur_gappov -
-							 cur_gappiv * ie * ((stack_num + 1) / 2 - 1));
+		(m->w.height - 2 * cur_gappov -
+		 cur_gappiv * ie * ((stack_num + 1) / 2 - 1));
 	float slave_right_surplus_ratio = 1.0;
 
 	if (n > nmasters || !should_overspread) {
@@ -472,9 +470,11 @@ void center_tile(Monitor *m) {
 			// 主区域窗口
 			r = MIN(n, nmasters) - i;
 			if (c->master_inner_per > 0.0f) {
-				h =  master_surplus_height * c->master_inner_per / master_surplus_ratio;
+				h = master_surplus_height * c->master_inner_per /
+					master_surplus_ratio;
 				master_surplus_height = master_surplus_height - h;
-				master_surplus_ratio = master_surplus_ratio - c->master_inner_per;
+				master_surplus_ratio =
+					master_surplus_ratio - c->master_inner_per;
 				c->master_mfact_per = mfact;
 			} else {
 				h = (m->w.height - my - cur_gappov -
@@ -536,9 +536,12 @@ void center_tile(Monitor *m) {
 				if ((stack_index % 2) ^ (n % 2 == 0)) {
 					// 右侧堆叠窗口
 					if (c->stack_innder_per > 0.0f) {
-						h = slave_right_surplus_height * c->stack_innder_per / slave_right_surplus_ratio;
-						slave_right_surplus_height = slave_right_surplus_height - h;
-						slave_right_surplus_ratio = slave_right_surplus_ratio - c->stack_innder_per;
+						h = slave_right_surplus_height * c->stack_innder_per /
+							slave_right_surplus_ratio;
+						slave_right_surplus_height =
+							slave_right_surplus_height - h;
+						slave_right_surplus_ratio =
+							slave_right_surplus_ratio - c->stack_innder_per;
 						c->master_mfact_per = mfact;
 					} else {
 						h = (m->w.height - ety - cur_gappov -
@@ -562,9 +565,12 @@ void center_tile(Monitor *m) {
 				} else {
 					// 左侧堆叠窗口
 					if (c->stack_innder_per > 0.0f) {
-						h =  slave_left_surplus_height * c->stack_innder_per / slave_left_surplus_ratio;
-						slave_left_surplus_height = slave_left_surplus_height - h;
-						slave_left_surplus_ratio = slave_left_surplus_ratio - c->stack_innder_per;
+						h = slave_left_surplus_height * c->stack_innder_per /
+							slave_left_surplus_ratio;
+						slave_left_surplus_height =
+							slave_left_surplus_height - h;
+						slave_left_surplus_ratio =
+							slave_left_surplus_ratio - c->stack_innder_per;
 						c->master_mfact_per = mfact;
 					} else {
 						h = (m->w.height - oty - cur_gappov -
