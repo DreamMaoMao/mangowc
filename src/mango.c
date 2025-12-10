@@ -351,6 +351,8 @@ struct Client {
 	struct wl_listener foreign_fullscreen_request;
 	struct wl_listener foreign_close_request;
 	struct wl_listener foreign_destroy;
+	struct wl_listener foreign_minimize_request;
+	struct wl_listener foreign_maximize_request;
 	struct wl_listener set_decoration_mode;
 	struct wl_listener destroy_decoration;
 

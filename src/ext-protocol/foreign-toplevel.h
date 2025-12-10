@@ -9,11 +9,6 @@ void handle_foreign_activate_request(struct wl_listener *listener, void *data) {
 	if (c && c->swallowing)
 		return;
 
-	if (c && !c->isminimized && c == selmon->sel) {
-		set_minimized(c);
-		return;
-	}
-
 	if (c->isminimized) {
 		c->is_in_scratchpad = 0;
 		c->isnamedscratchpad = 0;
@@ -28,6 +23,36 @@ void handle_foreign_activate_request(struct wl_listener *listener, void *data) {
 	view_in_mon(&(Arg){.ui = target}, true, c->mon, true);
 	focusclient(c, 1);
 	wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel, true);
+}
+
+void handle_foreign_maximize_request(struct wl_listener *listener, void *data) {
+	Client *c = wl_container_of(listener, c, foreign_maximize_request);
+	if (c->ismaximizescreen) {
+		setmaximizescreen(c, 0);
+	} else {
+		setmaximizescreen(c, 1);
+	}
+}
+
+void handle_foreign_minimize_request(struct wl_listener *listener, void *data) {
+	Client *c = wl_container_of(listener, c, foreign_minimize_request);
+	if (c && c->swallowing)
+		return;
+
+	if (c && !c->isminimized && c == selmon->sel) {
+		set_minimized(c);
+		return;
+	}
+
+	if (c->isminimized) {
+		c->is_in_scratchpad = 0;
+		c->isnamedscratchpad = 0;
+		c->is_scratchpad_show = 0;
+		setborder_color(c);
+		show_hide_client(c);
+		arrange(c->mon, true);
+		return;
+	}
 }
 
 void handle_foreign_fullscreen_request(struct wl_listener *listener,
@@ -46,6 +71,8 @@ void handle_foreign_destroy(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, foreign_destroy);
 	if (c) {
 		wl_list_remove(&c->foreign_activate_request.link);
+		wl_list_remove(&c->foreign_minimize_request.link);
+		wl_list_remove(&c->foreign_maximize_request.link);
 		wl_list_remove(&c->foreign_fullscreen_request.link);
 		wl_list_remove(&c->foreign_close_request.link);
 		wl_list_remove(&c->foreign_destroy.link);
@@ -67,6 +94,10 @@ void add_foreign_toplevel(Client *c) {
 	if (c->foreign_toplevel) {
 		LISTEN(&(c->foreign_toplevel->events.request_activate),
 			   &c->foreign_activate_request, handle_foreign_activate_request);
+		LISTEN(&(c->foreign_toplevel->events.request_minimize),
+			   &c->foreign_minimize_request, handle_foreign_minimize_request);
+		LISTEN(&(c->foreign_toplevel->events.request_maximize),
+			   &c->foreign_maximize_request, handle_foreign_maximize_request);
 		LISTEN(&(c->foreign_toplevel->events.request_fullscreen),
 			   &c->foreign_fullscreen_request,
 			   handle_foreign_fullscreen_request);
