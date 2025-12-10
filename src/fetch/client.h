@@ -350,7 +350,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	}
 
 	free(tempClients); // 释放内存
-	if(tempSameMonitorFocusClients) {
+	if (tempSameMonitorFocusClients) {
 		return tempSameMonitorFocusClients;
 	} else {
 		return tempFocusClients;

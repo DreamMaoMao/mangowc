@@ -43,6 +43,7 @@ typedef struct {
 	bool isdefaultmode;
 	bool islockapply;
 	bool isreleaseapply;
+	bool ispassapply;
 } KeyBinding;
 
 typedef struct {
@@ -443,6 +444,9 @@ void parse_bind_flags(const char *str, KeyBinding *kb) {
 			break;
 		case 'r':
 			kb->isreleaseapply = true;
+			break;
+		case 'p':
+			kb->ispassapply = true;
 			break;
 		default:
 			// 忽略其他字符或可根据需要处理错误
@@ -1964,7 +1968,7 @@ void parse_option(Config *config, char *key, char *value) {
 
 		config->exec_once_count++;
 
-	} else if (regex_match("^bind[s|l|r]*$", key)) {
+	} else if (regex_match("^bind[s|l|r|p]*$", key)) {
 		config->key_bindings =
 			realloc(config->key_bindings,
 					(config->key_bindings_count + 1) * sizeof(KeyBinding));

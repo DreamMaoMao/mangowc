@@ -351,6 +351,8 @@ struct Client {
 	struct wl_listener foreign_fullscreen_request;
 	struct wl_listener foreign_close_request;
 	struct wl_listener foreign_destroy;
+	struct wl_listener foreign_minimize_request;
+	struct wl_listener foreign_maximize_request;
 	struct wl_listener set_decoration_mode;
 	struct wl_listener destroy_decoration;
 
@@ -3435,7 +3437,11 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 			k->func) {
 
 			isbreak = k->func(&k->arg);
-			handled = 1;
+
+			if (!k->ispassapply)
+				handled = 1;
+			else
+				handled = 0;
 
 			if (isbreak)
 				break;
@@ -5708,8 +5714,15 @@ void handle_keyboard_shortcuts_inhibit_new_inhibitor(
 	}
 
 	// per-view, seat-agnostic config via criteria
-	Client *c = get_client_from_surface(inhibitor->surface);
-	if (c && !c->allow_shortcuts_inhibit) {
+	Client *c = NULL;
+	LayerSurface *l = NULL;
+
+	int type = toplevel_from_wlr_surface(inhibitor->surface, &c, &l);
+
+	if (type < 0)
+		return;
+
+	if (type != LayerShell && c && !c->allow_shortcuts_inhibit) {
 		return;
 	}
 

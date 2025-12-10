@@ -13,7 +13,10 @@ static void handle_controller_set_hint(struct wl_listener *listener,
 									   void *data) {
 	struct tearing_controller *controller =
 		wl_container_of(listener, controller, set_hint);
-	Client *c = get_client_from_surface(controller->tearing_control->surface);
+	Client *c = NULL;
+
+	toplevel_from_wlr_surface(controller->tearing_control->surface, &c, NULL);
+
 	if (c) {
 		/*
 		 * tearing_control->current is actually an enum:

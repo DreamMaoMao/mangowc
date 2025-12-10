@@ -758,14 +758,26 @@ int centerwin(const Arg *arg) {
 	Client *c = NULL;
 	c = selmon->sel;
 
-	if (!c || c->isfullscreen)
+	if (!c || c->isfullscreen || c->ismaximizescreen)
 		return 0;
-	if (!c->isfloating)
-		setfloating(c, true);
 
-	c->float_geom = setclient_coordinate_center(c, c->geom, 0, 0);
-	c->iscustomsize = 1;
-	resize(c, c->float_geom, 1);
+	if (c->isfloating) {
+		c->float_geom = setclient_coordinate_center(c, c->geom, 0, 0);
+		c->iscustomsize = 1;
+		resize(c, c->float_geom, 1);
+		return 0;
+	}
+
+	if (!is_scroller_layout(selmon))
+		return 0;
+
+	if (selmon->pertag->ltidxs[selmon->pertag->curtag]->id == SCROLLER) {
+		c->geom.x = selmon->w.x + (selmon->w.width - c->geom.width) / 2;
+	} else {
+		c->geom.y = selmon->w.y + (selmon->w.height - c->geom.height) / 2;
+	}
+
+	arrange(selmon, false);
 	return 0;
 }
 

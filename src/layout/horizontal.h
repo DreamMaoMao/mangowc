@@ -23,10 +23,6 @@ void grid(Monitor *m) {
 			if (c->mon != m)
 				continue;
 
-			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
-							smartgaps
-						? 0
-						: borderpx;
 			if (VISIBLEON(c, m) && !c->isunglobal &&
 				((m->isoverview && !client_is_x11_popup(c)) || ISTILED(c))) {
 				cw = (m->w.width - 2 * target_gappo) * single_width_ratio;
@@ -49,10 +45,6 @@ void grid(Monitor *m) {
 			if (c->mon != m)
 				continue;
 
-			c->bw = m->visible_tiling_clients == 1 && no_border_when_single &&
-							smartgaps
-						? 0
-						: borderpx;
 			if (VISIBLEON(c, m) && !c->isunglobal &&
 				((m->isoverview && !client_is_x11_popup(c)) || ISTILED(c))) {
 				if (i == 0) {
@@ -99,10 +91,7 @@ void grid(Monitor *m) {
 
 		if (c->mon != m)
 			continue;
-		c->bw =
-			m->visible_tiling_clients == 1 && no_border_when_single && smartgaps
-				? 0
-				: borderpx;
+
 		if (VISIBLEON(c, m) && !c->isunglobal &&
 			((m->isoverview && !client_is_x11_popup(c)) || ISTILED(c))) {
 			cx = m->w.x + (i % cols) * (cw + target_gappi);
@@ -592,6 +581,8 @@ void center_tile(Monitor *m) {
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
+	master_num = n > master_num ? master_num : n;
+
 	stack_num = n - master_num;
 
 	if (n == 0)
@@ -627,6 +618,19 @@ void center_tile(Monitor *m) {
 
 	// 判断是否需要主区域铺满
 	int should_overspread = center_master_overspread && (n <= nmasters);
+
+	uint32_t master_surplus_height =
+		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (master_num - 1));
+	float master_surplus_ratio = 1.0;
+
+	uint32_t slave_left_surplus_height =
+		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (stack_num / 2 - 1));
+	float slave_left_surplus_ratio = 1.0;
+
+	uint32_t slave_right_surplus_height =
+		(m->w.height - 2 * cur_gappov -
+		 cur_gappiv * ie * ((stack_num + 1) / 2 - 1));
+	float slave_right_surplus_ratio = 1.0;
 
 	if (n > nmasters || !should_overspread) {
 		// 计算主区域宽度（居中模式）
@@ -672,9 +676,11 @@ void center_tile(Monitor *m) {
 			// 主区域窗口
 			r = MIN(n, nmasters) - i;
 			if (c->master_inner_per > 0.0f) {
-				h = (m->w.height - 2 * cur_gappov -
-					 cur_gappiv * ie * (master_num - 1)) *
-					c->master_inner_per;
+				h = master_surplus_height * c->master_inner_per /
+					master_surplus_ratio;
+				master_surplus_height = master_surplus_height - h;
+				master_surplus_ratio =
+					master_surplus_ratio - c->master_inner_per;
 				c->master_mfact_per = mfact;
 			} else {
 				h = (m->w.height - my - cur_gappov -
@@ -736,9 +742,12 @@ void center_tile(Monitor *m) {
 				if ((stack_index % 2) ^ (n % 2 == 0)) {
 					// 右侧堆叠窗口
 					if (c->stack_innder_per > 0.0f) {
-						h = (m->w.height - 2 * cur_gappov -
-							 cur_gappiv * ie * ((stack_num + 1) / 2 - 1)) *
-							c->stack_innder_per;
+						h = slave_right_surplus_height * c->stack_innder_per /
+							slave_right_surplus_ratio;
+						slave_right_surplus_height =
+							slave_right_surplus_height - h;
+						slave_right_surplus_ratio =
+							slave_right_surplus_ratio - c->stack_innder_per;
 						c->master_mfact_per = mfact;
 					} else {
 						h = (m->w.height - ety - cur_gappov -
@@ -762,9 +771,12 @@ void center_tile(Monitor *m) {
 				} else {
 					// 左侧堆叠窗口
 					if (c->stack_innder_per > 0.0f) {
-						h = (m->w.height - 2 * cur_gappov -
-							 cur_gappiv * ie * (stack_num / 2 - 1)) *
-							c->stack_innder_per;
+						h = slave_left_surplus_height * c->stack_innder_per /
+							slave_left_surplus_ratio;
+						slave_left_surplus_height =
+							slave_left_surplus_height - h;
+						slave_left_surplus_ratio =
+							slave_left_surplus_ratio - c->stack_innder_per;
 						c->master_mfact_per = mfact;
 					} else {
 						h = (m->w.height - oty - cur_gappov -
@@ -801,6 +813,7 @@ void tile(Monitor *m) {
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
+	master_num = n > master_num ? master_num : n;
 	stack_num = n - master_num;
 
 	if (n == 0)
@@ -833,15 +846,26 @@ void tile(Monitor *m) {
 		mw = m->w.width - 2 * cur_gappoh + cur_gappih * ie;
 	i = 0;
 	my = ty = cur_gappov;
+
+	uint32_t master_surplus_height =
+		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (master_num - 1));
+	float master_surplus_ratio = 1.0;
+
+	uint32_t slave_surplus_height =
+		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (stack_num - 1));
+	float slave_surplus_ratio = 1.0;
+
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
 		if (i < m->pertag->nmasters[m->pertag->curtag]) {
 			r = MIN(n, m->pertag->nmasters[m->pertag->curtag]) - i;
 			if (c->master_inner_per > 0.0f) {
-				h = (m->w.height - 2 * cur_gappov -
-					 cur_gappiv * ie * (master_num - 1)) *
-					c->master_inner_per;
+				h = master_surplus_height * c->master_inner_per /
+					master_surplus_ratio;
+				master_surplus_height = master_surplus_height - h;
+				master_surplus_ratio =
+					master_surplus_ratio - c->master_inner_per;
 				c->master_mfact_per = mfact;
 			} else {
 				h = (m->w.height - my - cur_gappov -
@@ -861,9 +885,10 @@ void tile(Monitor *m) {
 		} else {
 			r = n - i;
 			if (c->stack_innder_per > 0.0f) {
-				h = (m->w.height - 2 * cur_gappov -
-					 cur_gappiv * ie * (stack_num - 1)) *
-					c->stack_innder_per;
+				h = slave_surplus_height * c->stack_innder_per /
+					slave_surplus_ratio;
+				slave_surplus_height = slave_surplus_height - h;
+				slave_surplus_ratio = slave_surplus_ratio - c->stack_innder_per;
 				c->master_mfact_per = mfact;
 			} else {
 				h = (m->w.height - ty - cur_gappov -
@@ -898,6 +923,7 @@ void right_tile(Monitor *m) {
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
+	master_num = n > master_num ? master_num : n;
 	stack_num = n - master_num;
 
 	if (n == 0)
@@ -930,15 +956,26 @@ void right_tile(Monitor *m) {
 		mw = m->w.width - 2 * cur_gappoh + cur_gappih * ie;
 	i = 0;
 	my = ty = cur_gappov;
+
+	uint32_t master_surplus_height =
+		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (master_num - 1));
+	float master_surplus_ratio = 1.0;
+
+	uint32_t slave_surplus_height =
+		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (stack_num - 1));
+	float slave_surplus_ratio = 1.0;
+
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
 		if (i < m->pertag->nmasters[m->pertag->curtag]) {
 			r = MIN(n, m->pertag->nmasters[m->pertag->curtag]) - i;
 			if (c->master_inner_per > 0.0f) {
-				h = (m->w.height - 2 * cur_gappov -
-					 cur_gappiv * ie * (master_num - 1)) *
-					c->master_inner_per;
+				h = master_surplus_height * c->master_inner_per /
+					master_surplus_ratio;
+				master_surplus_height = master_surplus_height - h;
+				master_surplus_ratio =
+					master_surplus_ratio - c->master_inner_per;
 				c->master_mfact_per = mfact;
 			} else {
 				h = (m->w.height - my - cur_gappov -
@@ -959,9 +996,10 @@ void right_tile(Monitor *m) {
 		} else {
 			r = n - i;
 			if (c->stack_innder_per > 0.0f) {
-				h = (m->w.height - 2 * cur_gappov -
-					 cur_gappiv * ie * (stack_num - 1)) *
-					c->stack_innder_per;
+				h = slave_surplus_height * c->stack_innder_per /
+					slave_surplus_ratio;
+				slave_surplus_height = slave_surplus_height - h;
+				slave_surplus_ratio = slave_surplus_ratio - c->stack_innder_per;
 				c->master_mfact_per = mfact;
 			} else {
 				h = (m->w.height - ty - cur_gappov -
