@@ -78,17 +78,17 @@ void vertical_tile(Monitor *m) {
 			mx += c->geom.width + cur_gapih * ie;
 		} else {
 			r = n - i;
-			if (c->stack_innder_per > 0.0f) {
-				w = slave_surplus_width * c->stack_innder_per /
+			if (c->stack_inner_per > 0.0f) {
+				w = slave_surplus_width * c->stack_inner_per /
 					slave_surplus_ratio;
 				slave_surplus_width = slave_surplus_width - w;
-				slave_surplus_ratio = slave_surplus_ratio - c->stack_innder_per;
+				slave_surplus_ratio = slave_surplus_ratio - c->stack_inner_per;
 				c->master_mfact_per = mfact;
 			} else {
 				w = (m->w.width - tx - cur_gapih - cur_gapih * ie * (r - 1)) /
 					r;
-				c->stack_innder_per = w / (m->w.width - tx - cur_gapih -
-										   cur_gapih * ie * (r - 1));
+				c->stack_inner_per = w / (m->w.width - tx - cur_gapih -
+										  cur_gapih * ie * (r - 1));
 				c->master_mfact_per = mfact;
 			}
 
