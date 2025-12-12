@@ -3386,12 +3386,13 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 			   keycode == k->keysymcode.keycode.keycode3))) &&
 			k->func) {
 
-			isbreak = k->func(&k->arg);
-
 			if (!k->ispassapply)
 				handled = 1;
 			else
 				handled = 0;
+
+			isbreak = k->func(&k->arg);
+
 
 			if (isbreak)
 				break;
