@@ -227,7 +227,13 @@ void fadeout_layer_animation_next_tick(LayerSurface *l) {
 		.height = height,
 	};
 
-	double opacity = MAX(fadeout_begin_opacity - animation_passed, 0.0f);
+	double opacity_eased_progress =
+		find_animation_curve_at(animation_passed, OPAFADEOUT);
+
+	double percent = fadeout_begin_opacity -
+					 (opacity_eased_progress * fadeout_begin_opacity);
+
+	double opacity = MAX(percent, 0.0f);
 
 	if (animation_fade_out)
 		wlr_scene_node_for_each_buffer(&l->scene->node,
@@ -269,9 +275,13 @@ void layer_animation_next_tick(LayerSurface *l) {
 	uint32_t y = l->animation.initial.y +
 				 (l->current.y - l->animation.initial.y) * factor;
 
-	double opacity = MIN(fadein_begin_opacity +
-							 animation_passed * (1.0 - fadein_begin_opacity),
-						 1.0f);
+	double opacity_eased_progress =
+		find_animation_curve_at(animation_passed, OPAFADEIN);
+
+	double opacity =
+		MIN(fadein_begin_opacity +
+				opacity_eased_progress * (1.0 - fadein_begin_opacity),
+			1.0f);
 
 	if (animation_fade_in)
 		wlr_scene_node_for_each_buffer(&l->scene->node,

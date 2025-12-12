@@ -161,7 +161,7 @@ enum {
 }; /* EWMH atoms */
 #endif
 enum { UP, DOWN, LEFT, RIGHT, UNDIR }; /* smartmovewin */
-enum { NONE, OPEN, MOVE, CLOSE, TAG, FOCUS };
+enum { NONE, OPEN, MOVE, CLOSE, TAG, FOCUS, OPAFADEIN, OPAFADEOUT };
 enum { UNFOLD, FOLD, INVALIDFOLD };
 enum { PREV, NEXT };
 enum { STATE_UNSPECIFIED = 0, STATE_ENABLED, STATE_DISABLED };
@@ -860,6 +860,8 @@ struct dvec2 *baked_points_open;
 struct dvec2 *baked_points_tag;
 struct dvec2 *baked_points_close;
 struct dvec2 *baked_points_focus;
+struct dvec2 *baked_points_opafadein;
+struct dvec2 *baked_points_opafadeout;
 
 static struct wl_event_source *hide_source;
 static bool cursor_hidden = false;

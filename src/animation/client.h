@@ -505,6 +505,7 @@ void fadeout_client_animation_next_tick(Client *c) {
 
 	int type = c->animation.action = c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
+
 	uint32_t width = c->animation.initial.width +
 					 (c->current.width - c->animation.initial.width) * factor;
 	uint32_t height =
@@ -525,7 +526,13 @@ void fadeout_client_animation_next_tick(Client *c) {
 		.height = height,
 	};
 
-	double opacity = MAX(fadeout_begin_opacity - animation_passed, 0);
+	double opacity_eased_progress =
+		find_animation_curve_at(animation_passed, OPAFADEOUT);
+
+	double percent = fadeout_begin_opacity -
+					 (opacity_eased_progress * fadeout_begin_opacity);
+
+	double opacity = MAX(percent, 0);
 
 	if (animation_fade_out && !c->nofadeout)
 		wlr_scene_node_for_each_buffer(&c->scene->node,
@@ -983,8 +990,11 @@ bool client_apply_focus_opacity(Client *c) {
 				? (double)passed_time / (double)c->animation.duration
 				: 1.0;
 
+		double opacity_eased_progress =
+			find_animation_curve_at(linear_progress, OPAFADEIN);
+
 		float percent =
-			animation_fade_in && !c->nofadein ? linear_progress : 1.0;
+			animation_fade_in && !c->nofadein ? opacity_eased_progress : 1.0;
 		float opacity =
 			c == selmon->sel ? c->focused_opacity : c->unfocused_opacity;
 
