@@ -3063,9 +3063,37 @@ void reapply_monitor_rules(void) {
 }
 
 void reapply_cursor_style(void) {
-	if (cursor_mgr)
+	if (hide_source) {
+		wl_event_source_timer_update(hide_source, 0);
+		wl_event_source_remove(hide_source);
+		hide_source = NULL;
+	}
+
+	wlr_cursor_unset_image(cursor);
+
+	wlr_cursor_set_surface(cursor, NULL, 0, 0);
+
+	if (cursor_mgr) {
 		wlr_xcursor_manager_destroy(cursor_mgr);
+		cursor_mgr = NULL;
+	}
+
 	cursor_mgr = wlr_xcursor_manager_create(config.cursor_theme, cursor_size);
+
+	Monitor *m = NULL;
+	wl_list_for_each(m, &mons, link) {
+		wlr_xcursor_manager_load(cursor_mgr, m->wlr_output->scale);
+	}
+
+	wlr_cursor_set_xcursor(cursor, cursor_mgr, "left_ptr");
+
+	hide_source = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
+										  hidecursor, cursor);
+	if (cursor_hidden) {
+		wlr_cursor_unset_image(cursor);
+	} else {
+		wl_event_source_timer_update(hide_source, cursor_hide_timeout * 1000);
+	}
 }
 
 void reapply_border(void) {
