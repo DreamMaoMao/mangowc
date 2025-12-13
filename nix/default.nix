@@ -19,6 +19,7 @@
   wlroots_0_19,
   libGL,
   enableXWayland ? true,
+  debug ? false,
 }:
 stdenv.mkDerivation {
   pname = "mango";
@@ -31,6 +32,7 @@ stdenv.mkDerivation {
 
   mesonFlags = [
     (lib.mesonEnable "xwayland" enableXWayland)
+    (lib.mesonBool "asan" debug)
   ];
 
   nativeBuildInputs = [
