@@ -31,6 +31,10 @@ in
       name = "source";
     };
 
+    mesonFlags = [
+      (lib.mesonEnable "xwayland" enableXWayland)
+    ];
+
     nativeBuildInputs = [
       meson
       ninja
