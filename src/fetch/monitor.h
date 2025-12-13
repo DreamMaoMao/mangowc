@@ -23,6 +23,19 @@ bool is_scroller_layout(Monitor *m) {
 	if (m->pertag->ltidxs[m->pertag->curtag]->id == VERTICAL_SCROLLER)
 		return true;
 
+	if (m->pertag->ltidxs[m->pertag->curtag]->id == DUAL_SCROLLER)
+		return true;
+
+	return false;
+}
+
+bool is_row_layout(Monitor *m) {
+	// Layout has independent horizontal rows where navigation should be constrained
+	// LEFT/RIGHT: stay within same row (same Y)
+	// UP/DOWN: move between rows
+	if (m->pertag->ltidxs[m->pertag->curtag]->id == DUAL_SCROLLER)
+		return true;
+
 	return false;
 }
 
