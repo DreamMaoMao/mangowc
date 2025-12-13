@@ -301,7 +301,7 @@ struct Client {
 	/* Must keep these three elements in this order */
 	uint32_t type; /* XDGShell or X11* */
 	struct wlr_box geom, pending, float_geom, animainit_geom,
-		overview_backup_geom, current,
+		overview_backup_geom, current, scroller_geom,
 		drag_begin_geom; /* layout-relative, includes border */
 	Monitor *mon;
 	struct wlr_scene_tree *scene;
@@ -4632,6 +4632,7 @@ void setfakefullscreen(Client *c, int fakefullscreen) {
 
 void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带全屏
 {
+	int was_fullscreen = c->isfullscreen;
 
 	if (!c || !c->mon || !client_surface(c)->mapped || c->iskilling)
 		return;
@@ -4650,6 +4651,10 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 		if (c->isfloating)
 			c->float_geom = c->geom;
 
+		if (!was_fullscreen && is_scroller_layout(c->mon)) {
+			c->scroller_geom = c->geom;
+		}
+
 		c->bw = 0;
 		wlr_scene_node_raise_to_top(&c->scene->node); // 将视图提升到顶层
 		if (!is_scroller_layout(c->mon) || c->isfloating)
@@ -4661,6 +4666,9 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 		c->isfakefullscreen = 0;
 		if (c->isfloating)
 			setfloating(c, 1);
+
+		if (was_fullscreen && is_scroller_layout(c->mon))
+			c->geom = c->scroller_geom;
 	}
 
 	if (c->isoverlay) {
