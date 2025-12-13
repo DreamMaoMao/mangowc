@@ -841,3 +841,14 @@ monocle(Monitor *m) {
 	if ((c = focustop(m)))
 		wlr_scene_node_raise_to_top(&c->scene->node);
 }
+
+void tgmix(Monitor *m) {
+	uint32_t n = m->visible_tiling_clients;
+	if (n <= 3) {
+		tile(m);
+		return;
+	} else {
+		grid(m);
+		return;
+	}
+}
