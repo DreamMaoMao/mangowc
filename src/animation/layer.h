@@ -362,6 +362,10 @@ void layer_animation_next_tick(LayerSurface *l) {
 		.height = height,
 	};
 
+	if (blur && blur_layer && !l->noblur && l->blur)
+		wlr_scene_blur_set_size(l->blur, l->animation.current.width,
+								l->animation.current.height);
+
 	if (animation_passed >= 1.0) {
 		l->animation.running = false;
 		l->need_output_flush = false;
