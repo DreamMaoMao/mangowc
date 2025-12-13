@@ -1,8 +1,8 @@
 #include "wlr_ext_workspace_v1.h"
 
 #define EXT_WORKSPACE_ENABLE_CAPS                                              \
-	WLR_EXT_WORKSPACE_HANDLE_V1_CAP_ACTIVATE |                                 \
-		WLR_EXT_WORKSPACE_HANDLE_V1_CAP_DEACTIVATE
+	EXT_WORKSPACE_HANDLE_V1_WORKSPACE_CAPABILITIES_ACTIVATE |                  \
+		EXT_WORKSPACE_HANDLE_V1_WORKSPACE_CAPABILITIES_DEACTIVATE
 
 typedef struct Monitor Monitor;
 

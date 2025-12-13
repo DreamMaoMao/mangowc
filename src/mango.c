@@ -3393,7 +3393,6 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 
 			isbreak = k->func(&k->arg);
 
-
 			if (isbreak)
 				break;
 		}
