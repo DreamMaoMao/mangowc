@@ -4378,6 +4378,12 @@ void exchange_two_client(Client *c1, Client *c2) {
 		arrange(c2->mon, false);
 		focusclient(c1, 0);
 	} else {
+		// For scroller layouts, swap geometry to maintain visual positions
+		if (is_scroller_layout(c1->mon)) {
+			struct wlr_box tmp_geom = c1->geom;
+			c1->geom = c2->geom;
+			c2->geom = tmp_geom;
+		}
 		arrange(c1->mon, false);
 		focusclient(c1, 0);
 	}
