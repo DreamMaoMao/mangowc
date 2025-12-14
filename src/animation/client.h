@@ -583,10 +583,10 @@ void client_animation_next_tick(Client *c) {
 		c->animation.initial.height +
 		(c->current.height - c->animation.initial.height) * factor;
 
-	uint32_t x = c->animation.initial.x +
-				 (c->current.x - c->animation.initial.x) * factor;
-	uint32_t y = c->animation.initial.y +
-				 (c->current.y - c->animation.initial.y) * factor;
+	int32_t x = c->animation.initial.x +
+				(c->current.x - c->animation.initial.x) * factor;
+	int32_t y = c->animation.initial.y +
+				(c->current.y - c->animation.initial.y) * factor;
 
 	wlr_scene_node_set_position(&c->scene->node, x, y);
 	c->animation.current = (struct wlr_box){
