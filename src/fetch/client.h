@@ -388,7 +388,7 @@ Client *focustop(Monitor *m) {
 
 Client *get_next_stack_client(Client *c, bool reverse) {
 	if (!c || !c->mon)
-		return NULL; // 添加输入检查
+		return NULL;
 
 	Client *next = NULL;
 	if (reverse) {
@@ -396,11 +396,6 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 			if (&next->link == &clients)
 				continue; /* wrap past the sentinel node */
 
-			if (c->mon->has_visible_fullscreen_client && !next->isfloating &&
-				!next->isfullscreen)
-				continue;
-
-			// 添加更安全的 VISIBLEON 检查
 			if (next != c && next->mon && VISIBLEON(next, c->mon))
 				return next;
 		}
@@ -408,10 +403,6 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 		wl_list_for_each(next, &c->link, link) {
 			if (&next->link == &clients)
 				continue; /* wrap past the sentinel node */
-
-			if (c->mon->has_visible_fullscreen_client && !next->isfloating &&
-				!next->isfullscreen)
-				continue;
 
 			if (next != c && next->mon && VISIBLEON(next, c->mon))
 				return next;
