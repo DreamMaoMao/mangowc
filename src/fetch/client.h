@@ -393,8 +393,8 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 	Client *next = NULL;
 	if (reverse) {
 		wl_list_for_each_reverse(next, &c->link, link) {
-			if (!next)
-				continue; // 安全检查
+			if (&next->link == &clients)
+				continue; /* wrap past the sentinel node */
 
 			if (c->mon->has_visible_fullscreen_client && !next->isfloating &&
 				!next->isfullscreen)
@@ -406,8 +406,8 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 		}
 	} else {
 		wl_list_for_each(next, &c->link, link) {
-			if (!next)
-				continue; // 安全检查
+			if (&next->link == &clients)
+				continue; /* wrap past the sentinel node */
 
 			if (c->mon->has_visible_fullscreen_client && !next->isfloating &&
 				!next->isfullscreen)
