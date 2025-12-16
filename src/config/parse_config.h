@@ -833,9 +833,11 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "exchange_client") == 0) {
 		func = exchange_client;
 		(*arg).i = parse_direction(arg_value);
+		(*arg).ui = arg_value2 && arg_value2[0] != '\0' ? atoi(arg_value2) : 0;
 	} else if (strcmp(func_name, "exchange_stack_client") == 0) {
 		func = exchange_stack_client;
 		(*arg).i = parse_circle_direction(arg_value);
+		(*arg).ui = arg_value2 && arg_value2[0] != '\0' ? atoi(arg_value2) : 0;
 	} else if (strcmp(func_name, "toggleglobal") == 0) {
 		func = toggleglobal;
 	} else if (strcmp(func_name, "toggleoverview") == 0) {
