@@ -42,6 +42,7 @@ static int eflag;
 static int kflag;
 static int bflag;
 static int Aflag;
+static int Wflag;
 
 static uint32_t occ, seltags, total_clients, urg;
 
@@ -288,6 +289,19 @@ static void dwl_ipc_output_keymode(void *data,
 	printf("keymode %s\n", keymode);
 }
 
+static void dwl_ipc_output_window_info(void *data,
+									   struct zdwl_ipc_output_v2 *dwl_ipc_output,
+									   const char *title, const char *appid,
+									   int32_t x, int32_t y,
+									   int32_t width, int32_t height,
+									   uint32_t floating, uint32_t fullscreen,
+									   uint32_t tags) {
+	if (!Wflag)
+		return;
+	printf("window: title=\"%s\" appid=\"%s\" x=%d y=%d width=%d height=%d floating=%u fullscreen=%u tags=%u\n",
+		   title, appid, x, y, width, height, floating, fullscreen, tags);
+}
+
 static void dwl_ipc_output_fullscreen(void *data,
 									  struct zdwl_ipc_output_v2 *dwl_ipc_output,
 									  uint32_t is_fullscreen) {
@@ -427,6 +441,7 @@ static const struct zdwl_ipc_output_v2_listener dwl_ipc_output_listener = {
 	.kb_layout = dwl_ipc_output_kb_layout,
 	.keymode = dwl_ipc_output_keymode,
 	.scalefactor = dwl_ipc_output_scalefactor,
+	.window_info = dwl_ipc_output_window_info,
 	.frame = dwl_ipc_output_frame,
 };
 
@@ -447,6 +462,9 @@ static void wl_output_name(void *data, struct wl_output *output,
 		zdwl_ipc_manager_v2_get_output(dwl_ipc_manager, output);
 	zdwl_ipc_output_v2_add_listener(dwl_ipc_output, &dwl_ipc_output_listener,
 									output_name ? NULL : strdup(name));
+	if (Wflag && mode & GET) {
+		zdwl_ipc_output_v2_list_windows(dwl_ipc_output);
+	}
 }
 
 static const struct wl_output_listener output_listener = {
@@ -504,7 +522,7 @@ static void usage(void) {
 			"\t%s [-OTLq]\n"
 			"\t%s [-o <output>] -s [-t <tags>] [-l <layout>] [-c <tags>] [-d "
 			"<cmd>,<arg1>,<arg2>,<arg3>,<arg4>,<arg5>]\n"
-			"\t%s [-o <output>] (-g | -w) [-OotlcvmfxekbA]\n",
+			"\t%s [-o <output>] (-g | -w) [-OotlcvmfxekbAW]\n",
 			argv0, argv0, argv0);
 	exit(2);
 }
@@ -752,6 +770,12 @@ int main(int argc, char *argv[]) {
 			usage();
 		mode |= GET;
 		break;
+	case 'W':
+		Wflag = 1;
+		if (mode == SET)
+			usage();
+		mode |= GET;
+		break;
 	default:
 		fprintf(stderr, "bad option %c\n", ARGC());
 		usage();
@@ -762,7 +786,7 @@ int main(int argc, char *argv[]) {
 	if (mode & GET && !output_name &&
 		!(oflag || tflag || lflag || Oflag || Tflag || Lflag || cflag ||
 		  vflag || mflag || fflag || xflag || eflag || kflag || bflag ||
-		  Aflag || dflag))
+		  Aflag || Wflag || dflag))
 		oflag = tflag = lflag = cflag = vflag = mflag = fflag = xflag = eflag =
 			kflag = bflag = Aflag = 1;
 
