@@ -2011,16 +2011,24 @@ buttonpress(struct wl_listener *listener, void *data) {
 }
 
 void checkidleinhibitor(struct wlr_surface *exclude) {
-	int inhibited = 0, unused_lx, unused_ly;
+	int inhibited = 0;
 	struct wlr_idle_inhibitor_v1 *inhibitor;
+
 	wl_list_for_each(inhibitor, &idle_inhibit_mgr->inhibitors, link) {
 		struct wlr_surface *surface =
 			wlr_surface_get_root_surface(inhibitor->surface);
+
+		if (exclude == surface) {
+			continue;
+		}
+
+		if (inhibit_regardless_of_visibility) {
+			inhibited = 1;
+			break;
+		}
+
 		struct wlr_scene_tree *tree = surface->data;
-		if (exclude != surface &&
-			(inhibit_regardless_of_visibility ||
-			 (!tree ||
-			  wlr_scene_node_coords(&tree->node, &unused_lx, &unused_ly)))) {
+		if (!tree || tree->node.enabled) {
 			inhibited = 1;
 			break;
 		}
