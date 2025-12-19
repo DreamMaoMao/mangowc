@@ -679,7 +679,7 @@ static Client *termforwin(Client *w);
 static void swallow(Client *c, Client *w);
 
 static void warp_cursor_to_selmon(Monitor *m);
-uint32_t want_restore_fullscreen(Client *target_client);
+static bool want_restore_fullscreen(Client *target_client);
 static void overview_restore(Client *c, const Arg *arg);
 static void overview_backup(Client *c);
 static int applyrulesgeom(Client *c);
@@ -1134,9 +1134,8 @@ void apply_named_scratchpad(Client *target_client) {
 
 	if (!target_client->is_in_scratchpad) {
 		set_minimized(target_client);
-		switch_scratchpad_client_state(target_client);
-	} else
-		switch_scratchpad_client_state(target_client);
+	}
+	switch_scratchpad_client_state(target_client);
 }
 
 void gpureset(struct wl_listener *listener, void *data) {
@@ -2201,11 +2200,7 @@ static void iter_layer_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
 
 	wlr_scene_buffer_set_backdrop_blur(buffer, true);
 	wlr_scene_buffer_set_backdrop_blur_ignore_transparent(buffer, true);
-	if (blur_optimized) {
-		wlr_scene_buffer_set_backdrop_blur_optimized(buffer, true);
-	} else {
-		wlr_scene_buffer_set_backdrop_blur_optimized(buffer, false);
-	}
+	wlr_scene_buffer_set_backdrop_blur_optimized(buffer, blur_optimized);
 }
 
 void maplayersurfacenotify(struct wl_listener *listener, void *data) {
@@ -3679,11 +3674,7 @@ static void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
 	if (blur && c && !c->noblur) {
 		wlr_scene_buffer_set_backdrop_blur(buffer, true);
 		wlr_scene_buffer_set_backdrop_blur_ignore_transparent(buffer, false);
-		if (blur_optimized) {
-			wlr_scene_buffer_set_backdrop_blur_optimized(buffer, true);
-		} else {
-			wlr_scene_buffer_set_backdrop_blur_optimized(buffer, false);
-		}
+		wlr_scene_buffer_set_backdrop_blur_optimized(buffer, blur_optimized);
 	} else {
 		wlr_scene_buffer_set_backdrop_blur(buffer, false);
 	}
@@ -4268,10 +4259,8 @@ void rendermon(struct wl_listener *listener, void *data) {
 skip:
 	// 发送帧完成通知
 	clock_gettime(CLOCK_MONOTONIC, &now);
-	if (allow_tearing && frame_allow_tearing) {
-		wlr_scene_output_send_frame_done(m->scene_output, &now);
-	} else {
-		wlr_scene_output_send_frame_done(m->scene_output, &now);
+	wlr_scene_output_send_frame_done(m->scene_output, &now);
+	if (!allow_tearing || !frame_allow_tearing) {
 		wlr_output_state_finish(&pending);
 	}
 
@@ -5264,7 +5253,7 @@ void tag_client(const Arg *arg, Client *target_client) {
 void overview(Monitor *m) { grid(m); }
 
 // 目标窗口有其他窗口和它同个tag就返回0
-uint32_t want_restore_fullscreen(Client *target_client) {
+bool want_restore_fullscreen(Client *target_client) {
 	Client *c = NULL;
 	wl_list_for_each(c, &clients, link) {
 		if (c && c != target_client && c->tags == target_client->tags &&
@@ -5273,11 +5262,11 @@ uint32_t want_restore_fullscreen(Client *target_client) {
 				SCROLLER &&
 			c->mon->pertag->ltidxs[get_tags_first_tag_num(c->tags)]->id !=
 				VERTICAL_SCROLLER) {
-			return 0;
+			return false;
 		}
 	}
 
-	return 1;
+	return true;
 }
 
 // 普通视图切换到overview时保存窗口的旧状态
@@ -5694,16 +5683,14 @@ toggleseltags:
 
 void view(const Arg *arg, bool want_animation) {
 	Monitor *m = NULL;
+	view_in_mon(arg, want_animation, selmon, true);
 	if (arg->i) {
-		view_in_mon(arg, want_animation, selmon, true);
 		wl_list_for_each(m, &mons, link) {
 			if (!m->wlr_output->enabled || m == selmon)
 				continue;
 			// only arrange, not change monitor focus
 			view_in_mon(arg, want_animation, m, false);
 		}
-	} else {
-		view_in_mon(arg, want_animation, selmon, true);
 	}
 }
 
