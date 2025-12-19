@@ -3653,6 +3653,10 @@ void init_client_properties(Client *c) {
 	c->force_tearing = 0;
 	c->allow_shortcuts_inhibit = SHORTCUTS_INHIBIT_ENABLE;
 	c->scroller_proportion_single = 0.0f;
+	c->float_geom.width = 0;
+	c->float_geom.height = 0;
+	c->float_geom.x = 0;
+	c->float_geom.y = 0;
 }
 
 void // old fix to 0.5
