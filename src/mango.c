@@ -2025,7 +2025,7 @@ void checkidleinhibitor(struct wlr_surface *exclude) {
 
 		toplevel_from_wlr_surface(inhibitor->surface, &c, NULL);
 
-		if (inhibit_regardless_of_visibility) {
+		if (idleinhibit_ignore_visible) {
 			inhibited = 1;
 			break;
 		}

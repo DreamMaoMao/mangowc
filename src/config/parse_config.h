@@ -235,7 +235,7 @@ typedef struct {
 
 	uint32_t axis_bind_apply_timeout;
 	uint32_t focus_on_activate;
-	int inhibit_regardless_of_visibility;
+	int idleinhibit_ignore_visible;
 	int sloppyfocus;
 	int warpcursor;
 
@@ -1403,8 +1403,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->focus_on_activate = atoi(value);
 	} else if (strcmp(key, "numlockon") == 0) {
 		config->numlockon = atoi(value);
-	} else if (strcmp(key, "inhibit_regardless_of_visibility") == 0) {
-		config->inhibit_regardless_of_visibility = atoi(value);
+	} else if (strcmp(key, "idleinhibit_ignore_visible") == 0) {
+		config->idleinhibit_ignore_visible = atoi(value);
 	} else if (strcmp(key, "sloppyfocus") == 0) {
 		config->sloppyfocus = atoi(value);
 	} else if (strcmp(key, "warpcursor") == 0) {
@@ -2669,8 +2669,8 @@ void override_config(void) {
 	axis_bind_apply_timeout =
 		CLAMP_INT(config.axis_bind_apply_timeout, 0, 1000);
 	focus_on_activate = CLAMP_INT(config.focus_on_activate, 0, 1);
-	inhibit_regardless_of_visibility =
-		CLAMP_INT(config.inhibit_regardless_of_visibility, 0, 1);
+	idleinhibit_ignore_visible =
+		CLAMP_INT(config.idleinhibit_ignore_visible, 0, 1);
 	sloppyfocus = CLAMP_INT(config.sloppyfocus, 0, 1);
 	warpcursor = CLAMP_INT(config.warpcursor, 0, 1);
 	focus_cross_monitor = CLAMP_INT(config.focus_cross_monitor, 0, 1);
@@ -2836,8 +2836,8 @@ void set_value_default() {
 	config.enable_floating_snap = enable_floating_snap;
 	config.swipe_min_threshold = swipe_min_threshold;
 
-	config.inhibit_regardless_of_visibility =
-		inhibit_regardless_of_visibility; /* 1 means idle inhibitors will
+	config.idleinhibit_ignore_visible =
+		idleinhibit_ignore_visible; /* 1 means idle inhibitors will
 									  disable idle tracking even if it's
 									  surface isn't visible
 									*/
