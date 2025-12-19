@@ -178,6 +178,8 @@ LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER
 enum libinput_config_click_method click_method =
 	LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
 
+double axis_scroll_factor = 1.0;
+
 /* You can choose between:
 LIBINPUT_CONFIG_SEND_EVENTS_ENABLED
 LIBINPUT_CONFIG_SEND_EVENTS_DISABLED

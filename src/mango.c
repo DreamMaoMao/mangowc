@@ -1718,10 +1718,11 @@ axisnotify(struct wl_listener *listener, void *data) {
 	 * implemented checking the event's orientation and the delta of the event
 	 */
 	/* Notify the client with pointer focus of the axis event. */
-	wlr_seat_pointer_notify_axis(seat, // 滚轮事件发送给客户端也就是窗口
-								 event->time_msec, event->orientation,
-								 event->delta, event->delta_discrete,
-								 event->source, event->relative_direction);
+	wlr_seat_pointer_notify_axis(
+		seat, // 滚轮事件发送给客户端也就是窗口
+		event->time_msec, event->orientation, event->delta * axis_scroll_factor,
+		roundf(event->delta_discrete * axis_scroll_factor), event->source,
+		event->relative_direction);
 }
 
 int ongesture(struct wlr_pointer_swipe_end_event *event) {

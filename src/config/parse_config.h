@@ -261,7 +261,7 @@ typedef struct {
 	uint32_t click_method;
 	uint32_t send_events_mode;
 	uint32_t button_map;
-
+	double axis_scroll_factor;
 	int smartgaps;
 	uint32_t gappih;
 	uint32_t gappiv;
@@ -1451,6 +1451,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->send_events_mode = atoi(value);
 	} else if (strcmp(key, "button_map") == 0) {
 		config->button_map = atoi(value);
+	} else if (strcmp(key, "axis_scroll_factor") == 0) {
+		config->axis_scroll_factor = atof(value);
 	} else if (strcmp(key, "gappih") == 0) {
 		config->gappih = atoi(value);
 	} else if (strcmp(key, "gappiv") == 0) {
@@ -2713,6 +2715,7 @@ void override_config(void) {
 	click_method = CLAMP_INT(config.click_method, 0, 2);
 	send_events_mode = CLAMP_INT(config.send_events_mode, 0, 2);
 	button_map = CLAMP_INT(config.button_map, 0, 1);
+	axis_scroll_factor = CLAMP_FLOAT(config.axis_scroll_factor, 0.1f, 10.0f);
 
 	// 外观设置
 	gappih = CLAMP_INT(config.gappih, 0, 1000);
@@ -2822,6 +2825,7 @@ void set_value_default() {
 	config.exchange_cross_monitor = exchange_cross_monitor;
 	config.scratchpad_cross_monitor = scratchpad_cross_monitor;
 	config.focus_cross_tag = focus_cross_tag;
+	config.axis_scroll_factor = axis_scroll_factor;
 	config.view_current_to_back = view_current_to_back;
 	config.single_scratchpad = single_scratchpad;
 	config.xwayland_persistence = xwayland_persistence;
