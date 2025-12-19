@@ -2012,15 +2012,18 @@ buttonpress(struct wl_listener *listener, void *data) {
 
 void checkidleinhibitor(struct wlr_surface *exclude) {
 	int inhibited = 0;
+	Client *c = NULL;
+	struct wlr_surface *surface = NULL;
 	struct wlr_idle_inhibitor_v1 *inhibitor;
 
 	wl_list_for_each(inhibitor, &idle_inhibit_mgr->inhibitors, link) {
-		struct wlr_surface *surface =
-			wlr_surface_get_root_surface(inhibitor->surface);
+		surface = wlr_surface_get_root_surface(inhibitor->surface);
 
 		if (exclude == surface) {
 			continue;
 		}
+
+		toplevel_from_wlr_surface(inhibitor->surface, &c, NULL);
 
 		if (inhibit_regardless_of_visibility) {
 			inhibited = 1;
@@ -2028,7 +2031,7 @@ void checkidleinhibitor(struct wlr_surface *exclude) {
 		}
 
 		struct wlr_scene_tree *tree = surface->data;
-		if (!tree || tree->node.enabled) {
+		if (!tree || (tree->node.enabled && (!c || !c->animation.tagouting))) {
 			inhibited = 1;
 			break;
 		}
