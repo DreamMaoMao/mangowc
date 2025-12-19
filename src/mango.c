@@ -3959,7 +3959,11 @@ void motionnotify(uint32_t time, struct wlr_input_device *device, double dx,
 				.y = grabc->geom.y,
 				.width = (int)round(cursor->x) - grabc->geom.x,
 				.height = (int)round(cursor->y) - grabc->geom.y};
-			resize(grabc, grabc->float_geom, 1);
+			if (last_apply_drap_time == 0 ||
+				time - last_apply_drap_time > drag_refresh_interval) {
+				resize(grabc, grabc->float_geom, 1);
+				last_apply_drap_time = time;
+			}
 			return;
 		} else {
 			resize_tile_client(grabc, true, 0, 0, time);
