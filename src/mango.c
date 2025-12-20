@@ -165,7 +165,7 @@ enum {
 }; /* EWMH atoms */
 #endif
 enum { UP, DOWN, LEFT, RIGHT, UNDIR }; /* smartmovewin */
-enum { NONE, OPEN, MOVE, CLOSE, TAG, FOCUS };
+enum { NONE, OPEN, MOVE, CLOSE, TAG, FOCUS, OPAFADEIN, OPAFADEOUT };
 enum { UNFOLD, FOLD, INVALIDFOLD };
 enum { PREV, NEXT };
 enum { STATE_UNSPECIFIED = 0, STATE_ENABLED, STATE_DISABLED };
@@ -351,6 +351,8 @@ struct Client {
 	struct wl_listener foreign_fullscreen_request;
 	struct wl_listener foreign_close_request;
 	struct wl_listener foreign_destroy;
+	struct wl_listener foreign_minimize_request;
+	struct wl_listener foreign_maximize_request;
 	struct wl_listener set_decoration_mode;
 	struct wl_listener destroy_decoration;
 
@@ -362,6 +364,7 @@ struct Client {
 	int isglobal;
 	int isnoborder;
 	int isnoshadow;
+	int isnoradius;
 	int isnoanimation;
 	int isopensilent;
 	int istagsilent;
@@ -392,8 +395,8 @@ struct Client {
 	float unfocused_opacity;
 	char oldmonname[128];
 	int noblur;
-	double master_mfact_per, master_inner_per, stack_innder_per;
-	double old_master_mfact_per, old_master_inner_per, old_stack_innder_per;
+	double master_mfact_per, master_inner_per, stack_inner_per;
+	double old_master_mfact_per, old_master_inner_per, old_stack_inner_per;
 	double old_scroller_pproportion;
 	bool ismaster;
 	bool cursor_in_upper_half, cursor_in_left_half;
@@ -506,7 +509,6 @@ struct Monitor {
 	uint32_t visible_clients;
 	uint32_t visible_tiling_clients;
 	uint32_t visible_scroll_tiling_clients;
-	bool has_visible_fullscreen_client;
 	struct wlr_scene_optimized_blur *blur;
 	char last_surface_ws_name[256];
 	struct wlr_ext_workspace_group_handle_v1 *ext_group;
@@ -848,6 +850,8 @@ struct dvec2 *baked_points_open;
 struct dvec2 *baked_points_tag;
 struct dvec2 *baked_points_close;
 struct dvec2 *baked_points_focus;
+struct dvec2 *baked_points_opafadein;
+struct dvec2 *baked_points_opafadeout;
 
 static struct wl_event_source *hide_source;
 static bool cursor_hidden = false;
@@ -1211,6 +1215,7 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isfullscreen);
 	APPLY_INT_PROP(c, r, isnoborder);
 	APPLY_INT_PROP(c, r, isnoshadow);
+	APPLY_INT_PROP(c, r, isnoradius);
 	APPLY_INT_PROP(c, r, isnoanimation);
 	APPLY_INT_PROP(c, r, isopensilent);
 	APPLY_INT_PROP(c, r, istagsilent);
@@ -1389,8 +1394,11 @@ void applyrules(Client *c) {
 
 	// if no geom rule hit and is normal winodw, use the center pos and record
 	// the hit size
-	if (!hit_rule_pos && (!client_is_x11(c) || !client_is_x11_popup(c))) {
+	if (!hit_rule_pos &&
+		(!client_is_x11(c) || (c->geom.x == 0 && c->geom.y == 0))) {
 		c->float_geom = c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
+	} else {
+		c->float_geom = c->geom;
 	}
 
 	/*-----------------------apply rule action-------------------------*/
@@ -1708,10 +1716,11 @@ axisnotify(struct wl_listener *listener, void *data) {
 	 * implemented checking the event's orientation and the delta of the event
 	 */
 	/* Notify the client with pointer focus of the axis event. */
-	wlr_seat_pointer_notify_axis(seat, // 滚轮事件发送给客户端也就是窗口
-								 event->time_msec, event->orientation,
-								 event->delta, event->delta_discrete,
-								 event->source, event->relative_direction);
+	wlr_seat_pointer_notify_axis(
+		seat, // 滚轮事件发送给客户端也就是窗口
+		event->time_msec, event->orientation, event->delta * axis_scroll_factor,
+		roundf(event->delta_discrete * axis_scroll_factor), event->source,
+		event->relative_direction);
 }
 
 int ongesture(struct wlr_pointer_swipe_end_event *event) {
@@ -1997,16 +2006,27 @@ buttonpress(struct wl_listener *listener, void *data) {
 }
 
 void checkidleinhibitor(struct wlr_surface *exclude) {
-	int inhibited = 0, unused_lx, unused_ly;
+	int inhibited = 0;
+	Client *c = NULL;
+	struct wlr_surface *surface = NULL;
 	struct wlr_idle_inhibitor_v1 *inhibitor;
+
 	wl_list_for_each(inhibitor, &idle_inhibit_mgr->inhibitors, link) {
-		struct wlr_surface *surface =
-			wlr_surface_get_root_surface(inhibitor->surface);
+		surface = wlr_surface_get_root_surface(inhibitor->surface);
+
+		if (exclude == surface) {
+			continue;
+		}
+
+		toplevel_from_wlr_surface(inhibitor->surface, &c, NULL);
+
+		if (idleinhibit_ignore_visible) {
+			inhibited = 1;
+			break;
+		}
+
 		struct wlr_scene_tree *tree = surface->data;
-		if (exclude != surface &&
-			(inhibit_regardless_of_visibility ||
-			 (!tree ||
-			  wlr_scene_node_coords(&tree->node, &unused_lx, &unused_ly)))) {
+		if (!tree || (tree->node.enabled && (!c || !c->animation.tagouting))) {
 			inhibited = 1;
 			break;
 		}
@@ -3431,8 +3451,12 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 			   keycode == k->keysymcode.keycode.keycode3))) &&
 			k->func) {
 
+			if (!k->ispassapply)
+				handled = 1;
+			else
+				handled = 0;
+
 			isbreak = k->func(&k->arg);
-			handled = 1;
 
 			if (isbreak)
 				break;
@@ -3699,18 +3723,24 @@ void init_client_properties(Client *c) {
 	c->no_force_center = 0;
 	c->isnoborder = 0;
 	c->isnosizehint = 0;
+	c->isnoradius = 0;
+	c->isnoshadow = 0;
 	c->ignore_maximize = 1;
 	c->ignore_minimize = 1;
 	c->iscustomsize = 0;
 	c->master_mfact_per = 0.0f;
 	c->master_inner_per = 0.0f;
-	c->stack_innder_per = 0.0f;
+	c->stack_inner_per = 0.0f;
 	c->isterm = 0;
 	c->allow_csd = 0;
 	c->force_maximize = 0;
 	c->force_tearing = 0;
 	c->allow_shortcuts_inhibit = SHORTCUTS_INHIBIT_ENABLE;
 	c->scroller_proportion_single = 0.0f;
+	c->float_geom.width = 0;
+	c->float_geom.height = 0;
+	c->float_geom.x = 0;
+	c->float_geom.y = 0;
 }
 
 void // old fix to 0.5
@@ -4009,7 +4039,11 @@ void motionnotify(uint32_t time, struct wlr_input_device *device, double dx,
 				.y = grabc->geom.y,
 				.width = (int)round(cursor->x) - grabc->geom.x,
 				.height = (int)round(cursor->y) - grabc->geom.y};
-			resize(grabc, grabc->float_geom, 1);
+			if (last_apply_drap_time == 0 ||
+				time - last_apply_drap_time > drag_refresh_interval) {
+				resize(grabc, grabc->float_geom, 1);
+				last_apply_drap_time = time;
+			}
 			return;
 		} else {
 			resize_tile_client(grabc, true, 0, 0, time);
@@ -4305,7 +4339,7 @@ void exchange_two_client(Client *c1, Client *c2) {
 	uint32_t tmp_tags;
 	double master_inner_per = 0.0f;
 	double master_mfact_per = 0.0f;
-	double stack_innder_per = 0.0f;
+	double stack_inner_per = 0.0f;
 
 	if (c1 == NULL || c2 == NULL ||
 		(!exchange_cross_monitor && c1->mon != c2->mon)) {
@@ -4314,15 +4348,15 @@ void exchange_two_client(Client *c1, Client *c2) {
 
 	master_inner_per = c1->master_inner_per;
 	master_mfact_per = c1->master_mfact_per;
-	stack_innder_per = c1->stack_innder_per;
+	stack_inner_per = c1->stack_inner_per;
 
 	c1->master_inner_per = c2->master_inner_per;
 	c1->master_mfact_per = c2->master_mfact_per;
-	c1->stack_innder_per = c2->stack_innder_per;
+	c1->stack_inner_per = c2->stack_inner_per;
 
 	c2->master_inner_per = master_inner_per;
 	c2->master_mfact_per = master_mfact_per;
-	c2->stack_innder_per = stack_innder_per;
+	c2->stack_inner_per = stack_inner_per;
 
 	struct wl_list *tmp1_prev = c1->link.prev;
 	struct wl_list *tmp2_prev = c2->link.prev;
@@ -4493,7 +4527,7 @@ setfloating(Client *c, int floating) {
 		}
 
 		// 重新计算居中的坐标
-		if (!client_is_x11(c) || !client_is_x11_popup(c))
+		if (!client_is_x11(c) || (c->geom.x == 0 && c->geom.y == 0))
 			target_box = setclient_coordinate_center(c, target_box, 0, 0);
 		backup_box = c->geom;
 		hit = applyrulesgeom(c);
@@ -5700,8 +5734,15 @@ void handle_keyboard_shortcuts_inhibit_new_inhibitor(
 	}
 
 	// per-view, seat-agnostic config via criteria
-	Client *c = get_client_from_surface(inhibitor->surface);
-	if (c && !c->allow_shortcuts_inhibit) {
+	Client *c = NULL;
+	LayerSurface *l = NULL;
+
+	int type = toplevel_from_wlr_surface(inhibitor->surface, &c, &l);
+
+	if (type < 0)
+		return;
+
+	if (type != LayerShell && c && !c->allow_shortcuts_inhibit) {
 		return;
 	}
 

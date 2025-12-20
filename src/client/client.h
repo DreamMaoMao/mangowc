@@ -153,20 +153,6 @@ static inline void client_get_geometry(Client *c, struct wlr_box *geom) {
 	*geom = c->surface.xdg->geometry;
 }
 
-static inline Client *get_client_from_surface(struct wlr_surface *surface) {
-	if (!surface)
-		return NULL;
-
-	// 从 surface 的 data 指针获取 scene tree
-	struct wlr_scene_tree *scene_tree = surface->data;
-	if (!scene_tree)
-		return NULL;
-
-	// 从 scene tree 的 node data 获取 Client
-	Client *c = scene_tree->node.data;
-	return c;
-}
-
 static inline Client *client_get_parent(Client *c) {
 	Client *p = NULL;
 #ifdef XWAYLAND

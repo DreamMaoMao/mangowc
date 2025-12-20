@@ -173,15 +173,17 @@ int toggle_trackpad_enable(const Arg *arg) {
 int focusmon(const Arg *arg) {
 	Client *c = NULL;
 	Monitor *m = NULL;
+	Monitor *tm = NULL;
 
 	if (arg->i != UNDIR) {
-		m = dirtomon(arg->i);
+		tm = dirtomon(arg->i);
 	} else if (arg->v) {
 		wl_list_for_each(m, &mons, link) {
 			if (!m->wlr_output->enabled) {
 				continue;
 			}
 			if (regex_match(arg->v, m->wlr_output->name)) {
+				tm = m;
 				break;
 			}
 		}
@@ -189,10 +191,10 @@ int focusmon(const Arg *arg) {
 		return 0;
 	}
 
-	if (!m || !m->wlr_output->enabled || m == selmon)
+	if (!tm || !tm->wlr_output->enabled || tm == selmon)
 		return 0;
 
-	selmon = m;
+	selmon = tm;
 	if (warpcursor) {
 		warp_cursor_to_selmon(selmon);
 	}
@@ -713,14 +715,26 @@ int centerwin(const Arg *arg) {
 	Client *c = NULL;
 	c = selmon->sel;
 
-	if (!c || c->isfullscreen)
+	if (!c || c->isfullscreen || c->ismaximizescreen)
 		return 0;
-	if (!c->isfloating)
-		setfloating(c, true);
 
-	c->float_geom = setclient_coordinate_center(c, c->geom, 0, 0);
-	c->iscustomsize = 1;
-	resize(c, c->float_geom, 1);
+	if (c->isfloating) {
+		c->float_geom = setclient_coordinate_center(c, c->geom, 0, 0);
+		c->iscustomsize = 1;
+		resize(c, c->float_geom, 1);
+		return 0;
+	}
+
+	if (!is_scroller_layout(selmon))
+		return 0;
+
+	if (selmon->pertag->ltidxs[selmon->pertag->curtag]->id == SCROLLER) {
+		c->geom.x = selmon->w.x + (selmon->w.width - c->geom.width) / 2;
+	} else {
+		c->geom.y = selmon->w.y + (selmon->w.height - c->geom.height) / 2;
+	}
+
+	arrange(selmon, false);
 	return 0;
 }
 

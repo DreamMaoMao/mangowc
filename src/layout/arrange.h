@@ -5,7 +5,7 @@ void set_size_per(Monitor *m, Client *c) {
 		if (VISIBLEON(fc, m) && ISTILED(fc) && fc != c) {
 			c->master_mfact_per = fc->master_mfact_per;
 			c->master_inner_per = fc->master_inner_per;
-			c->stack_innder_per = fc->stack_innder_per;
+			c->stack_inner_per = fc->stack_inner_per;
 			found = true;
 			break;
 		}
@@ -14,7 +14,7 @@ void set_size_per(Monitor *m, Client *c) {
 	if (!found) {
 		c->master_mfact_per = m->pertag->mfacts[m->pertag->curtag];
 		c->master_inner_per = 1.0f;
-		c->stack_innder_per = 1.0f;
+		c->stack_inner_per = 1.0f;
 	}
 }
 
@@ -70,7 +70,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 		// 记录初始状态
 		grabc->old_master_mfact_per = grabc->master_mfact_per;
 		grabc->old_master_inner_per = grabc->master_inner_per;
-		grabc->old_stack_innder_per = grabc->stack_innder_per;
+		grabc->old_stack_inner_per = grabc->stack_inner_per;
 		grabc->cursor_in_upper_half =
 			cursor->y < grabc->geom.y + grabc->geom.height / 2;
 		grabc->cursor_in_left_half =
@@ -86,7 +86,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 		} else {
 			grabc->old_master_mfact_per = grabc->master_mfact_per;
 			grabc->old_master_inner_per = grabc->master_inner_per;
-			grabc->old_stack_innder_per = grabc->stack_innder_per;
+			grabc->old_stack_inner_per = grabc->stack_inner_per;
 			grabc->drag_begin_geom = grabc->geom;
 			grabc->cursor_in_upper_half = true;
 			grabc->cursor_in_left_half = false;
@@ -100,7 +100,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 		} else {
 			delta_x = (float)(offsetx) * (1 - grabc->old_master_mfact_per) /
 					  grabc->drag_begin_geom.width;
-			delta_y = (float)(offsety) * (grabc->old_stack_innder_per) /
+			delta_y = (float)(offsety) * (grabc->old_stack_inner_per) /
 					  grabc->drag_begin_geom.height;
 		}
 		bool moving_up;
@@ -182,12 +182,12 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 		// 直接设置新的比例，基于初始值 + 变化量
 		float new_master_mfact_per = grabc->old_master_mfact_per + delta_x;
 		float new_master_inner_per = grabc->old_master_inner_per + delta_y;
-		float new_stack_innder_per = grabc->old_stack_innder_per + delta_y;
+		float new_stack_inner_per = grabc->old_stack_inner_per + delta_y;
 
 		// 应用限制，确保比例在合理范围内
 		new_master_mfact_per = fmaxf(0.1f, fminf(0.9f, new_master_mfact_per));
 		new_master_inner_per = fmaxf(0.1f, fminf(0.9f, new_master_inner_per));
-		new_stack_innder_per = fmaxf(0.1f, fminf(0.9f, new_stack_innder_per));
+		new_stack_inner_per = fmaxf(0.1f, fminf(0.9f, new_stack_inner_per));
 
 		// 应用到所有平铺窗口
 		wl_list_for_each(tc, &clients, link) {
@@ -197,7 +197,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 		}
 
 		grabc->master_inner_per = new_master_inner_per;
-		grabc->stack_innder_per = new_stack_innder_per;
+		grabc->stack_inner_per = new_stack_inner_per;
 
 		if (!isdrag) {
 			arrange(grabc->mon, false);
@@ -250,7 +250,7 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 		// 记录初始状态
 		grabc->old_master_mfact_per = grabc->master_mfact_per;
 		grabc->old_master_inner_per = grabc->master_inner_per;
-		grabc->old_stack_innder_per = grabc->stack_innder_per;
+		grabc->old_stack_inner_per = grabc->stack_inner_per;
 		grabc->cursor_in_upper_half =
 			cursor->y < grabc->geom.y + grabc->geom.height / 2;
 		grabc->cursor_in_left_half =
@@ -267,7 +267,7 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 		} else {
 			grabc->old_master_mfact_per = grabc->master_mfact_per;
 			grabc->old_master_inner_per = grabc->master_inner_per;
-			grabc->old_stack_innder_per = grabc->stack_innder_per;
+			grabc->old_stack_inner_per = grabc->stack_inner_per;
 			grabc->drag_begin_geom = grabc->geom;
 			grabc->cursor_in_upper_half = true;
 			grabc->cursor_in_left_half = false;
@@ -280,7 +280,7 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 			delta_y = (float)(offsety) * (grabc->old_master_mfact_per) /
 					  grabc->drag_begin_geom.height;
 		} else {
-			delta_x = (float)(offsetx) * (grabc->old_stack_innder_per) /
+			delta_x = (float)(offsetx) * (grabc->old_stack_inner_per) /
 					  grabc->drag_begin_geom.width;
 			delta_y = (float)(offsety) * (1 - grabc->old_master_mfact_per) /
 					  grabc->drag_begin_geom.height;
@@ -338,13 +338,13 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 									 delta_y; // 垂直：delta_y调整主区域高度
 		float new_master_inner_per = grabc->old_master_inner_per +
 									 delta_x; // 垂直：delta_x调整主区域内部宽度
-		float new_stack_innder_per = grabc->old_stack_innder_per +
-									 delta_x; // 垂直：delta_x调整栈区域内部宽度
+		float new_stack_inner_per = grabc->old_stack_inner_per +
+									delta_x; // 垂直：delta_x调整栈区域内部宽度
 
 		// 应用限制，确保比例在合理范围内
 		new_master_mfact_per = fmaxf(0.1f, fminf(0.9f, new_master_mfact_per));
 		new_master_inner_per = fmaxf(0.1f, fminf(0.9f, new_master_inner_per));
-		new_stack_innder_per = fmaxf(0.1f, fminf(0.9f, new_stack_innder_per));
+		new_stack_inner_per = fmaxf(0.1f, fminf(0.9f, new_stack_inner_per));
 
 		// 应用到所有平铺窗口
 		wl_list_for_each(tc, &clients, link) {
@@ -354,7 +354,7 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 		}
 
 		grabc->master_inner_per = new_master_inner_per;
-		grabc->stack_innder_per = new_stack_innder_per;
+		grabc->stack_inner_per = new_stack_inner_per;
 
 		if (!isdrag) {
 			arrange(grabc->mon, false);
@@ -402,7 +402,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
 		} else {
 			grabc->old_master_mfact_per = grabc->master_mfact_per;
 			grabc->old_master_inner_per = grabc->master_inner_per;
-			grabc->old_stack_innder_per = grabc->stack_innder_per;
+			grabc->old_stack_inner_per = grabc->stack_inner_per;
 			grabc->drag_begin_geom = grabc->geom;
 			grabc->old_scroller_pproportion = grabc->scroller_proportion;
 			grabc->cursor_in_upper_half = false;
@@ -485,7 +485,8 @@ void resize_tile_client(Client *grabc, bool isdrag, int offsetx, int offsety,
 	const Layout *current_layout =
 		grabc->mon->pertag->ltidxs[grabc->mon->pertag->curtag];
 	if (current_layout->id == TILE || current_layout->id == DECK ||
-		current_layout->id == CENTER_TILE || current_layout->id == RIGHT_TILE
+		current_layout->id == CENTER_TILE || current_layout->id == RIGHT_TILE ||
+		(current_layout->id == TGMIX && grabc->mon->visible_tiling_clients <= 3)
 
 	) {
 		resize_tile_master_horizontal(grabc, isdrag, offsetx, offsety, time,
@@ -516,20 +517,18 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 
 		wl_list_for_each(c, &clients, link) {
 			if (VISIBLEON(c, m) && ISTILED(c)) {
-
-				if (total_master_inner_percent <= 0.0)
-					return;
-				if (i < m->pertag->nmasters[m->pertag->curtag]) {
+				if (total_master_inner_percent > 0.0 && i < nmasters) {
 					c->ismaster = true;
-					c->stack_innder_per = stack_num ? 1.0f / stack_num : 1.0f;
+					c->stack_inner_per = stack_num ? 1.0f / stack_num : 1.0f;
 					c->master_inner_per =
 						c->master_inner_per / total_master_inner_percent;
 				} else {
 					c->ismaster = false;
-					c->master_inner_per = 1.0f / master_num;
-					c->stack_innder_per =
+					c->master_inner_per =
+						master_num > 0 ? 1.0f / master_num : 1.0f;
+					c->stack_inner_per =
 						total_stack_hight_percent
-							? c->stack_innder_per / total_stack_hight_percent
+							? c->stack_inner_per / total_stack_hight_percent
 							: 1.0f;
 				}
 				i++;
@@ -538,17 +537,14 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 	} else {
 		wl_list_for_each(c, &clients, link) {
 			if (VISIBLEON(c, m) && ISTILED(c)) {
-
-				if (total_master_inner_percent <= 0.0)
-					return;
-				if (i < m->pertag->nmasters[m->pertag->curtag]) {
+				if (total_master_inner_percent > 0.0 && i < nmasters) {
 					c->ismaster = true;
 					if ((stack_index % 2) ^ (tile_cilent_num % 2 == 0)) {
-						c->stack_innder_per =
+						c->stack_inner_per =
 							stack_num > 1 ? 1.0f / ((stack_num - 1) / 2) : 1.0f;
 
 					} else {
-						c->stack_innder_per =
+						c->stack_inner_per =
 							stack_num > 1 ? 2.0f / stack_num : 1.0f;
 					}
 
@@ -558,17 +554,18 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 					stack_index = i - nmasters;
 
 					c->ismaster = false;
-					c->master_inner_per = 1.0f / master_num;
+					c->master_inner_per =
+						master_num > 0 ? 1.0f / master_num : 1.0f;
 					if ((stack_index % 2) ^ (tile_cilent_num % 2 == 0)) {
-						c->stack_innder_per =
+						c->stack_inner_per =
 							total_right_stack_hight_percent
-								? c->stack_innder_per /
+								? c->stack_inner_per /
 									  total_right_stack_hight_percent
 								: 1.0f;
 					} else {
-						c->stack_innder_per =
+						c->stack_inner_per =
 							total_left_stack_hight_percent
-								? c->stack_innder_per /
+								? c->stack_inner_per /
 									  total_left_stack_hight_percent
 								: 1.0f;
 					}
@@ -582,7 +579,7 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 void // 17
 arrange(Monitor *m, bool want_animation) {
 	Client *c = NULL;
-	double total_stack_innder_percent = 0;
+	double total_stack_inner_percent = 0;
 	double total_master_inner_percent = 0;
 	double total_right_stack_hight_percent = 0;
 	double total_left_stack_hight_percent = 0;
@@ -600,7 +597,6 @@ arrange(Monitor *m, bool want_animation) {
 	m->visible_clients = 0;
 	m->visible_tiling_clients = 0;
 	m->visible_scroll_tiling_clients = 0;
-	m->has_visible_fullscreen_client = false;
 
 	wl_list_for_each(c, &clients, link) {
 
@@ -613,9 +609,6 @@ arrange(Monitor *m, bool want_animation) {
 		if (VISIBLEON(c, m)) {
 			if (!c->isunglobal)
 				m->visible_clients++;
-
-			if (c->isfullscreen)
-				m->has_visible_fullscreen_client = true;
 
 			if (ISTILED(c)) {
 				m->visible_tiling_clients++;
@@ -637,22 +630,22 @@ arrange(Monitor *m, bool want_animation) {
 			if (VISIBLEON(c, m)) {
 				if (ISTILED(c)) {
 
-					if (i < m->pertag->nmasters[m->pertag->curtag]) {
+					if (i < nmasters) {
 						master_num++;
 						total_master_inner_percent += c->master_inner_per;
 					} else {
 						stack_num++;
-						total_stack_innder_percent += c->stack_innder_per;
+						total_stack_inner_percent += c->stack_inner_per;
 						stack_index = i - nmasters;
 						if ((stack_index % 2) ^
 							(m->visible_tiling_clients % 2 == 0)) {
 							c->isleftstack = false;
 							total_right_stack_hight_percent +=
-								c->stack_innder_per;
+								c->stack_inner_per;
 						} else {
 							c->isleftstack = true;
 							total_left_stack_hight_percent +=
-								c->stack_innder_per;
+								c->stack_inner_per;
 						}
 					}
 
@@ -673,7 +666,7 @@ arrange(Monitor *m, bool want_animation) {
 
 	reset_size_per_mon(
 		m, m->visible_tiling_clients, total_left_stack_hight_percent,
-		total_right_stack_hight_percent, total_stack_innder_percent,
+		total_right_stack_hight_percent, total_stack_inner_percent,
 		total_master_inner_percent, master_num, stack_num);
 
 	if (m->isoverview) {
@@ -686,4 +679,6 @@ arrange(Monitor *m, bool want_animation) {
 		motionnotify(0, NULL, 0, 0, 0, 0);
 		checkidleinhibitor(NULL);
 	}
+
+	printstatus();
 }
