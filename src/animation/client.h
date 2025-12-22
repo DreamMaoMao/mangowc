@@ -240,8 +240,9 @@ void buffer_set_effect(Client *c, BufferData data) {
 	if (c == grabc)
 		data.should_scale = false;
 
-	if (c->isfullscreen || (no_radius_when_single && c->mon &&
-							c->mon->visible_tiling_clients == 1)) {
+	if (c->isnoradius || c->isfullscreen ||
+		(no_radius_when_single && c->mon &&
+		 c->mon->visible_tiling_clients == 1)) {
 		data.corner_location = CORNER_LOCATION_NONE;
 	}
 
@@ -354,11 +355,13 @@ void apply_border(Client *c) {
 		return;
 
 	bool hit_no_border = check_hit_no_border(c);
-	enum corner_location current_corner_location =
-		c->isfullscreen || (no_radius_when_single && c->mon &&
-							c->mon->visible_tiling_clients == 1)
-			? CORNER_LOCATION_NONE
-			: CORNER_LOCATION_ALL;
+	enum corner_location current_corner_location;
+	if (c->isfullscreen || (no_radius_when_single && c->mon &&
+							c->mon->visible_tiling_clients == 1)) {
+		current_corner_location = CORNER_LOCATION_NONE;
+	} else {
+		current_corner_location = set_client_corner_location(c);
+	}
 
 	// Handle no-border cases
 	if (hit_no_border && smartgaps) {
@@ -630,6 +633,7 @@ void fadeout_client_animation_next_tick(Client *c) {
 
 	int type = c->animation.action = c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
+
 	uint32_t width = c->animation.initial.width +
 					 (c->current.width - c->animation.initial.width) * factor;
 	uint32_t height =
@@ -650,7 +654,13 @@ void fadeout_client_animation_next_tick(Client *c) {
 		.height = height,
 	};
 
-	double opacity = MAX(fadeout_begin_opacity - animation_passed, 0);
+	double opacity_eased_progress =
+		find_animation_curve_at(animation_passed, OPAFADEOUT);
+
+	double percent = fadeout_begin_opacity -
+					 (opacity_eased_progress * fadeout_begin_opacity);
+
+	double opacity = MAX(percent, 0);
 
 	if (animation_fade_out && !c->nofadeout)
 		wlr_scene_node_for_each_buffer(&c->scene->node,
@@ -701,10 +711,10 @@ void client_animation_next_tick(Client *c) {
 		c->animation.initial.height +
 		(c->current.height - c->animation.initial.height) * factor;
 
-	uint32_t x = c->animation.initial.x +
-				 (c->current.x - c->animation.initial.x) * factor;
-	uint32_t y = c->animation.initial.y +
-				 (c->current.y - c->animation.initial.y) * factor;
+	int32_t x = c->animation.initial.x +
+				(c->current.x - c->animation.initial.x) * factor;
+	int32_t y = c->animation.initial.y +
+				(c->current.y - c->animation.initial.y) * factor;
 
 	wlr_scene_node_set_position(&c->scene->node, x, y);
 	c->animation.current = (struct wlr_box){
@@ -1109,8 +1119,11 @@ bool client_apply_focus_opacity(Client *c) {
 				? (double)passed_time / (double)c->animation.duration
 				: 1.0;
 
+		double opacity_eased_progress =
+			find_animation_curve_at(linear_progress, OPAFADEIN);
+
 		float percent =
-			animation_fade_in && !c->nofadein ? linear_progress : 1.0;
+			animation_fade_in && !c->nofadein ? opacity_eased_progress : 1.0;
 		float opacity =
 			c == selmon->sel ? c->focused_opacity : c->unfocused_opacity;
 

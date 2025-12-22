@@ -64,6 +64,7 @@ typedef struct {
 	const char *layer_animation_type_close;
 	int isnoborder;
 	int isnoshadow;
+	int isnoradius;
 	int isnoanimation;
 	int isopensilent;
 	int istagsilent;
@@ -194,6 +195,8 @@ typedef struct {
 	double animation_curve_tag[4];
 	double animation_curve_close[4];
 	double animation_curve_focus[4];
+	double animation_curve_opafadein[4];
+	double animation_curve_opafadeout[4];
 
 	int scroller_structs;
 	float scroller_default_proportion;
@@ -237,7 +240,7 @@ typedef struct {
 
 	uint32_t axis_bind_apply_timeout;
 	uint32_t focus_on_activate;
-	int inhibit_regardless_of_visibility;
+	int idleinhibit_ignore_visible;
 	int sloppyfocus;
 	int warpcursor;
 
@@ -263,6 +266,8 @@ typedef struct {
 	uint32_t click_method;
 	uint32_t send_events_mode;
 	uint32_t button_map;
+
+	double axis_scroll_factor;
 
 	int blur;
 	int blur_layer;
@@ -1187,6 +1192,22 @@ void parse_option(Config *config, char *key, char *value) {
 					"Error: Failed to parse animation_curve_focus: %s\n",
 					value);
 		}
+	} else if (strcmp(key, "animation_curve_opafadein") == 0) {
+		int num =
+			parse_double_array(value, config->animation_curve_opafadein, 4);
+		if (num != 4) {
+			fprintf(stderr,
+					"Error: Failed to parse animation_curve_opafadein: %s\n",
+					value);
+		}
+	} else if (strcmp(key, "animation_curve_opafadeout") == 0) {
+		int num =
+			parse_double_array(value, config->animation_curve_opafadeout, 4);
+		if (num != 4) {
+			fprintf(stderr,
+					"Error: Failed to parse animation_curve_opafadeout: %s\n",
+					value);
+		}
 	} else if (strcmp(key, "scroller_structs") == 0) {
 		config->scroller_structs = atoi(value);
 	} else if (strcmp(key, "scroller_default_proportion") == 0) {
@@ -1446,8 +1467,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->focus_on_activate = atoi(value);
 	} else if (strcmp(key, "numlockon") == 0) {
 		config->numlockon = atoi(value);
-	} else if (strcmp(key, "inhibit_regardless_of_visibility") == 0) {
-		config->inhibit_regardless_of_visibility = atoi(value);
+	} else if (strcmp(key, "idleinhibit_ignore_visible") == 0) {
+		config->idleinhibit_ignore_visible = atoi(value);
 	} else if (strcmp(key, "sloppyfocus") == 0) {
 		config->sloppyfocus = atoi(value);
 	} else if (strcmp(key, "warpcursor") == 0) {
@@ -1494,6 +1515,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->send_events_mode = atoi(value);
 	} else if (strcmp(key, "button_map") == 0) {
 		config->button_map = atoi(value);
+	} else if (strcmp(key, "axis_scroll_factor") == 0) {
+		config->axis_scroll_factor = atof(value);
 	} else if (strcmp(key, "gappih") == 0) {
 		config->gappih = atoi(value);
 	} else if (strcmp(key, "gappiv") == 0) {
@@ -1691,6 +1714,7 @@ void parse_option(Config *config, char *key, char *value) {
 		rule->isfullscreen = -1;
 		rule->isnoborder = -1;
 		rule->isnoshadow = -1;
+		rule->isnoradius = -1;
 		rule->isnoanimation = -1;
 		rule->isopensilent = -1;
 		rule->istagsilent = -1;
@@ -1780,6 +1804,8 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->isnoborder = atoi(val);
 				} else if (strcmp(key, "isnoshadow") == 0) {
 					rule->isnoshadow = atoi(val);
+				} else if (strcmp(key, "isnoradius") == 0) {
+					rule->isnoradius = atoi(val);
 				} else if (strcmp(key, "isnoanimation") == 0) {
 					rule->isnoanimation = atoi(val);
 				} else if (strcmp(key, "isopensilent") == 0) {
@@ -2406,6 +2432,14 @@ void free_baked_points(void) {
 		free(baked_points_focus);
 		baked_points_focus = NULL;
 	}
+	if (baked_points_opafadein) {
+		free(baked_points_opafadein);
+		baked_points_opafadein = NULL;
+	}
+	if (baked_points_opafadeout) {
+		free(baked_points_opafadeout);
+		baked_points_opafadeout = NULL;
+	}
 }
 
 void free_config(void) {
@@ -2719,8 +2753,8 @@ void override_config(void) {
 	axis_bind_apply_timeout =
 		CLAMP_INT(config.axis_bind_apply_timeout, 0, 1000);
 	focus_on_activate = CLAMP_INT(config.focus_on_activate, 0, 1);
-	inhibit_regardless_of_visibility =
-		CLAMP_INT(config.inhibit_regardless_of_visibility, 0, 1);
+	idleinhibit_ignore_visible =
+		CLAMP_INT(config.idleinhibit_ignore_visible, 0, 1);
 	sloppyfocus = CLAMP_INT(config.sloppyfocus, 0, 1);
 	warpcursor = CLAMP_INT(config.warpcursor, 0, 1);
 	focus_cross_monitor = CLAMP_INT(config.focus_cross_monitor, 0, 1);
@@ -2764,6 +2798,7 @@ void override_config(void) {
 	click_method = CLAMP_INT(config.click_method, 0, 2);
 	send_events_mode = CLAMP_INT(config.send_events_mode, 0, 2);
 	button_map = CLAMP_INT(config.button_map, 0, 1);
+	axis_scroll_factor = CLAMP_FLOAT(config.axis_scroll_factor, 0.1f, 10.0f);
 
 	// 外观设置
 	gappih = CLAMP_INT(config.gappih, 0, 1000);
@@ -2820,6 +2855,10 @@ void override_config(void) {
 		   sizeof(animation_curve_close));
 	memcpy(animation_curve_focus, config.animation_curve_focus,
 		   sizeof(animation_curve_focus));
+	memcpy(animation_curve_opafadein, config.animation_curve_opafadein,
+		   sizeof(animation_curve_opafadein));
+	memcpy(animation_curve_opafadeout, config.animation_curve_opafadeout,
+		   sizeof(animation_curve_opafadeout));
 }
 
 void set_value_default() {
@@ -2888,6 +2927,7 @@ void set_value_default() {
 	config.exchange_cross_monitor = exchange_cross_monitor;
 	config.scratchpad_cross_monitor = scratchpad_cross_monitor;
 	config.focus_cross_tag = focus_cross_tag;
+	config.axis_scroll_factor = axis_scroll_factor;
 	config.view_current_to_back = view_current_to_back;
 	config.single_scratchpad = single_scratchpad;
 	config.xwayland_persistence = xwayland_persistence;
@@ -2903,8 +2943,8 @@ void set_value_default() {
 	config.enable_floating_snap = enable_floating_snap;
 	config.swipe_min_threshold = swipe_min_threshold;
 
-	config.inhibit_regardless_of_visibility =
-		inhibit_regardless_of_visibility; /* 1 means idle inhibitors will
+	config.idleinhibit_ignore_visible =
+		idleinhibit_ignore_visible; /* 1 means idle inhibitors will
 									  disable idle tracking even if it's
 									  surface isn't visible
 									*/
@@ -2969,6 +3009,10 @@ void set_value_default() {
 		   sizeof(animation_curve_close));
 	memcpy(config.animation_curve_focus, animation_curve_focus,
 		   sizeof(animation_curve_focus));
+	memcpy(config.animation_curve_opafadein, animation_curve_opafadein,
+		   sizeof(animation_curve_opafadein));
+	memcpy(config.animation_curve_opafadeout, animation_curve_opafadeout,
+		   sizeof(animation_curve_opafadeout));
 
 	memcpy(config.rootcolor, rootcolor, sizeof(rootcolor));
 	memcpy(config.bordercolor, bordercolor, sizeof(bordercolor));
@@ -3171,9 +3215,37 @@ void reapply_monitor_rules(void) {
 }
 
 void reapply_cursor_style(void) {
-	if (cursor_mgr)
+	if (hide_source) {
+		wl_event_source_timer_update(hide_source, 0);
+		wl_event_source_remove(hide_source);
+		hide_source = NULL;
+	}
+
+	wlr_cursor_unset_image(cursor);
+
+	wlr_cursor_set_surface(cursor, NULL, 0, 0);
+
+	if (cursor_mgr) {
 		wlr_xcursor_manager_destroy(cursor_mgr);
+		cursor_mgr = NULL;
+	}
+
 	cursor_mgr = wlr_xcursor_manager_create(config.cursor_theme, cursor_size);
+
+	Monitor *m = NULL;
+	wl_list_for_each(m, &mons, link) {
+		wlr_xcursor_manager_load(cursor_mgr, m->wlr_output->scale);
+	}
+
+	wlr_cursor_set_xcursor(cursor, cursor_mgr, "left_ptr");
+
+	hide_source = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
+										  hidecursor, cursor);
+	if (cursor_hidden) {
+		wlr_cursor_unset_image(cursor);
+	} else {
+		wl_event_source_timer_update(hide_source, cursor_hide_timeout * 1000);
+	}
 }
 
 void reapply_border(void) {
@@ -3293,5 +3365,5 @@ int reload_config(const Arg *arg) {
 	parse_config();
 	reset_option();
 	printstatus();
-	return 0;
+	return 1;
 }

@@ -26,11 +26,13 @@ uint32_t animation_duration_open = 400;	 // Animation open speed
 uint32_t animation_duration_tag = 300;	 // Animation tag speed
 uint32_t animation_duration_close = 300; // Animation close speed
 uint32_t animation_duration_focus = 0;	 // Animation focus opacity speed
-double animation_curve_move[4] = {0.46, 1.0, 0.29, 0.99};  // 动画曲线
-double animation_curve_open[4] = {0.46, 1.0, 0.29, 0.99};  // 动画曲线
-double animation_curve_tag[4] = {0.46, 1.0, 0.29, 0.99};   // 动画曲线
-double animation_curve_close[4] = {0.46, 1.0, 0.29, 0.99}; // 动画曲线
-double animation_curve_focus[4] = {0.46, 1.0, 0.29, 0.99}; // 动画曲线
+double animation_curve_move[4] = {0.46, 1.0, 0.29, 0.99};	   // 动画曲线
+double animation_curve_open[4] = {0.46, 1.0, 0.29, 0.99};	   // 动画曲线
+double animation_curve_tag[4] = {0.46, 1.0, 0.29, 0.99};	   // 动画曲线
+double animation_curve_close[4] = {0.46, 1.0, 0.29, 0.99};	   // 动画曲线
+double animation_curve_focus[4] = {0.46, 1.0, 0.29, 0.99};	   // 动画曲线
+double animation_curve_opafadein[4] = {0.46, 1.0, 0.29, 0.99}; // 动画曲线
+double animation_curve_opafadeout[4] = {0.5, 0.5, 0.5, 0.5};   // 动画曲线
 
 /* appearance */
 uint32_t axis_bind_apply_timeout = 100; // 滚轮绑定动作的触发的时间间隔
@@ -79,7 +81,7 @@ uint32_t cursor_hide_timeout = 0;
 
 uint32_t swipe_min_threshold = 1;
 
-int inhibit_regardless_of_visibility =
+int idleinhibit_ignore_visible =
 	0; /* 1 means idle inhibitors will disable idle tracking even if it's
 		  surface isn't visible  */
 uint32_t borderpx = 4; /* border pixel of windows */
@@ -105,7 +107,7 @@ int xwayland_persistence = 1; /* xwayland persistence */
 int syncobj_enable = 0;
 int adaptive_sync = 0;
 int allow_lock_transparent = 0;
-double drag_refresh_interval = 30.0;
+double drag_refresh_interval = 16.0;
 int allow_tearing = TEARING_DISABLED;
 int allow_shortcuts_inhibit = SHORTCUTS_INHIBIT_ENABLE;
 
@@ -176,6 +178,8 @@ LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER
 */
 enum libinput_config_click_method click_method =
 	LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
+
+double axis_scroll_factor = 1.0;
 
 /* You can choose between:
 LIBINPUT_CONFIG_SEND_EVENTS_ENABLED

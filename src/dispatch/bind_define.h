@@ -196,15 +196,17 @@ int toggle_trackpad_enable(const Arg *arg) {
 int focusmon(const Arg *arg) {
 	Client *c = NULL;
 	Monitor *m = NULL;
+	Monitor *tm = NULL;
 
 	if (arg->i != UNDIR) {
-		m = dirtomon(arg->i);
+		tm = dirtomon(arg->i);
 	} else if (arg->v) {
 		wl_list_for_each(m, &mons, link) {
 			if (!m->wlr_output->enabled) {
 				continue;
 			}
 			if (regex_match(arg->v, m->wlr_output->name)) {
+				tm = m;
 				break;
 			}
 		}
@@ -212,10 +214,10 @@ int focusmon(const Arg *arg) {
 		return 0;
 	}
 
-	if (!m || !m->wlr_output->enabled || m == selmon)
+	if (!tm || !tm->wlr_output->enabled || tm == selmon)
 		return 0;
 
-	selmon = m;
+	selmon = tm;
 	if (warpcursor) {
 		warp_cursor_to_selmon(selmon);
 	}

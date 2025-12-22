@@ -705,17 +705,17 @@ void center_tile(Monitor *m) {
 			if (n - nmasters == 1) {
 				// 单个堆叠窗口
 				r = n - i;
-				if (c->stack_innder_per > 0.0f) {
+				if (c->stack_inner_per > 0.0f) {
 					h = (m->w.height - 2 * cur_gappov -
 						 cur_gappiv * ie * (stack_num - 1)) *
-						c->stack_innder_per;
+						c->stack_inner_per;
 					c->master_mfact_per = mfact;
 				} else {
 					h = (m->w.height - ety - cur_gappov -
 						 cur_gappiv * ie * (r - 1)) /
 						r;
-					c->stack_innder_per = h / (m->w.height - ety - cur_gappov -
-											   cur_gappiv * ie * (r - 1));
+					c->stack_inner_per = h / (m->w.height - ety - cur_gappov -
+											  cur_gappiv * ie * (r - 1));
 					c->master_mfact_per = mfact;
 				}
 
@@ -741,19 +741,19 @@ void center_tile(Monitor *m) {
 
 				if ((stack_index % 2) ^ (n % 2 == 0)) {
 					// 右侧堆叠窗口
-					if (c->stack_innder_per > 0.0f) {
-						h = slave_right_surplus_height * c->stack_innder_per /
+					if (c->stack_inner_per > 0.0f) {
+						h = slave_right_surplus_height * c->stack_inner_per /
 							slave_right_surplus_ratio;
 						slave_right_surplus_height =
 							slave_right_surplus_height - h;
 						slave_right_surplus_ratio =
-							slave_right_surplus_ratio - c->stack_innder_per;
+							slave_right_surplus_ratio - c->stack_inner_per;
 						c->master_mfact_per = mfact;
 					} else {
 						h = (m->w.height - ety - cur_gappov -
 							 cur_gappiv * ie * (r - 1)) /
 							r;
-						c->stack_innder_per =
+						c->stack_inner_per =
 							h / (m->w.height - ety - cur_gappov -
 								 cur_gappiv * ie * (r - 1));
 						c->master_mfact_per = mfact;
@@ -770,19 +770,19 @@ void center_tile(Monitor *m) {
 					ety += c->geom.height + cur_gappiv * ie;
 				} else {
 					// 左侧堆叠窗口
-					if (c->stack_innder_per > 0.0f) {
-						h = slave_left_surplus_height * c->stack_innder_per /
+					if (c->stack_inner_per > 0.0f) {
+						h = slave_left_surplus_height * c->stack_inner_per /
 							slave_left_surplus_ratio;
 						slave_left_surplus_height =
 							slave_left_surplus_height - h;
 						slave_left_surplus_ratio =
-							slave_left_surplus_ratio - c->stack_innder_per;
+							slave_left_surplus_ratio - c->stack_inner_per;
 						c->master_mfact_per = mfact;
 					} else {
 						h = (m->w.height - oty - cur_gappov -
 							 cur_gappiv * ie * (r - 1)) /
 							r;
-						c->stack_innder_per =
+						c->stack_inner_per =
 							h / (m->w.height - oty - cur_gappov -
 								 cur_gappiv * ie * (r - 1));
 						c->master_mfact_per = mfact;
@@ -884,22 +884,22 @@ void tile(Monitor *m) {
 			my += c->geom.height + cur_gappiv * ie;
 		} else {
 			r = n - i;
-			if (c->stack_innder_per > 0.0f) {
-				h = slave_surplus_height * c->stack_innder_per /
+			if (c->stack_inner_per > 0.0f) {
+				h = slave_surplus_height * c->stack_inner_per /
 					slave_surplus_ratio;
 				slave_surplus_height = slave_surplus_height - h;
-				slave_surplus_ratio = slave_surplus_ratio - c->stack_innder_per;
+				slave_surplus_ratio = slave_surplus_ratio - c->stack_inner_per;
 				c->master_mfact_per = mfact;
 			} else {
 				h = (m->w.height - ty - cur_gappov -
 					 cur_gappiv * ie * (r - 1)) /
 					r;
-				c->stack_innder_per = h / (m->w.height - ty - cur_gappov -
-										   cur_gappiv * ie * (r - 1));
+				c->stack_inner_per = h / (m->w.height - ty - cur_gappov -
+										  cur_gappiv * ie * (r - 1));
 				c->master_mfact_per = mfact;
 			}
 
-			// wlr_log(WLR_ERROR, "stack_innder_per: %f", c->stack_innder_per);
+			// wlr_log(WLR_ERROR, "stack_inner_per: %f", c->stack_inner_per);
 
 			resize(c,
 				   (struct wlr_box){.x = m->w.x + mw + cur_gappoh,
@@ -995,22 +995,22 @@ void right_tile(Monitor *m) {
 			my += c->geom.height + cur_gappiv * ie;
 		} else {
 			r = n - i;
-			if (c->stack_innder_per > 0.0f) {
-				h = slave_surplus_height * c->stack_innder_per /
+			if (c->stack_inner_per > 0.0f) {
+				h = slave_surplus_height * c->stack_inner_per /
 					slave_surplus_ratio;
 				slave_surplus_height = slave_surplus_height - h;
-				slave_surplus_ratio = slave_surplus_ratio - c->stack_innder_per;
+				slave_surplus_ratio = slave_surplus_ratio - c->stack_inner_per;
 				c->master_mfact_per = mfact;
 			} else {
 				h = (m->w.height - ty - cur_gappov -
 					 cur_gappiv * ie * (r - 1)) /
 					r;
-				c->stack_innder_per = h / (m->w.height - ty - cur_gappov -
-										   cur_gappiv * ie * (r - 1));
+				c->stack_inner_per = h / (m->w.height - ty - cur_gappov -
+										  cur_gappiv * ie * (r - 1));
 				c->master_mfact_per = mfact;
 			}
 
-			// wlr_log(WLR_ERROR, "stack_innder_per: %f", c->stack_innder_per);
+			// wlr_log(WLR_ERROR, "stack_inner_per: %f", c->stack_inner_per);
 
 			resize(c,
 				   (struct wlr_box){.x = m->w.x + cur_gappoh,
@@ -1046,4 +1046,15 @@ monocle(Monitor *m) {
 	}
 	if ((c = focustop(m)))
 		wlr_scene_node_raise_to_top(&c->scene->node);
+}
+
+void tgmix(Monitor *m) {
+	uint32_t n = m->visible_tiling_clients;
+	if (n <= 3) {
+		tile(m);
+		return;
+	} else {
+		grid(m);
+		return;
+	}
 }
