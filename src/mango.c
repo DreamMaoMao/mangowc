@@ -978,11 +978,7 @@ void clear_fullscreen_and_maximized_state(Monitor *m) {
 /*清除全屏标志,还原全屏时清0的border*/
 void clear_fullscreen_flag(Client *c) {
 
-	if ((c->mon->pertag->ltidxs[get_tags_first_tag_num(c->tags)]->id ==
-			 SCROLLER ||
-		 c->mon->pertag->ltidxs[get_tags_first_tag_num(c->tags)]->id ==
-			 VERTICAL_SCROLLER) &&
-		!c->isfloating) {
+	if (is_scroller_layout(c->mon) && !c->isfloating) {
 		return;
 	}
 
@@ -5257,11 +5253,7 @@ bool want_restore_fullscreen(Client *target_client) {
 	Client *c = NULL;
 	wl_list_for_each(c, &clients, link) {
 		if (c && c != target_client && c->tags == target_client->tags &&
-			c == selmon->sel &&
-			c->mon->pertag->ltidxs[get_tags_first_tag_num(c->tags)]->id !=
-				SCROLLER &&
-			c->mon->pertag->ltidxs[get_tags_first_tag_num(c->tags)]->id !=
-				VERTICAL_SCROLLER) {
+			c == selmon->sel && !is_scroller_layout(c->mon)) {
 			return false;
 		}
 	}
