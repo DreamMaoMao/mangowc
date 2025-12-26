@@ -40,14 +40,14 @@ void vertical_tile(Monitor *m) {
 		mh = m->w.height - 2 * cur_gapov + cur_gapiv * ie;
 
 	i = 0;
-	mx = tx = cur_gapih;
+	mx = tx = cur_gapoh;
 
 	uint32_t master_surplus_width =
-		(m->w.width - 2 * cur_gapih - cur_gapih * ie * (master_num - 1));
+		(m->w.width - 2 * cur_gapoh - cur_gapih * ie * (master_num - 1));
 	float master_surplus_ratio = 1.0;
 
 	uint32_t slave_surplus_width =
-		(m->w.width - 2 * cur_gapih - cur_gapih * ie * (stack_num - 1));
+		(m->w.width - 2 * cur_gapoh - cur_gapih * ie * (stack_num - 1));
 	float slave_surplus_ratio = 1.0;
 
 	wl_list_for_each(c, &clients, link) {
