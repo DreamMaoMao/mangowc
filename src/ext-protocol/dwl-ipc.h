@@ -28,6 +28,8 @@ static void dwl_ipc_output_dispatch(struct wl_client *client,
 									const char *dispatch, const char *arg1,
 									const char *arg2, const char *arg3,
 									const char *arg4, const char *arg5);
+static void dwl_ipc_output_list_windows(struct wl_client *client,
+										struct wl_resource *resource);
 static void dwl_ipc_output_release(struct wl_client *client,
 								   struct wl_resource *resource);
 
@@ -41,7 +43,8 @@ static struct zdwl_ipc_output_v2_interface dwl_output_implementation = {
 	.quit = dwl_ipc_output_quit,
 	.dispatch = dwl_ipc_output_dispatch,
 	.set_layout = dwl_ipc_output_set_layout,
-	.set_client_tags = dwl_ipc_output_set_client_tags};
+	.set_client_tags = dwl_ipc_output_set_client_tags,
+	.list_windows = dwl_ipc_output_list_windows};
 
 void dwl_ipc_manager_bind(struct wl_client *client, void *data,
 						  uint32_t version, uint32_t id) {
@@ -301,6 +304,33 @@ void dwl_ipc_output_dispatch(struct wl_client *client,
 		free(arg.v2);
 	if (arg.v3)
 		free(arg.v3);
+}
+
+void dwl_ipc_output_list_windows(struct wl_client *client,
+								 struct wl_resource *resource) {
+	Client *c = NULL;
+	const char *title, *appid;
+
+	wl_list_for_each(c, &clients, link) {
+		if (!client_surface(c)->mapped || client_is_unmanaged(c))
+			continue;
+
+		title = client_get_title(c);
+		appid = client_get_appid(c);
+
+		zdwl_ipc_output_v2_send_window_info(
+			resource,
+			title ? title : "",
+			appid ? appid : "",
+			c->geom.x,
+			c->geom.y,
+			c->geom.width,
+			c->geom.height,
+			c->isfloating,
+			c->isfullscreen,
+			c->tags);
+	}
+	wl_resource_post_event(resource, ZDWL_IPC_OUTPUT_V2_FRAME);
 }
 
 void dwl_ipc_output_release(struct wl_client *client,

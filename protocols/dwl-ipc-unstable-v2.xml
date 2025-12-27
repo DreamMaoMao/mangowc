@@ -248,6 +248,27 @@ I would probably just submit raphi's patchset but I don't think that would be po
       <arg name="scalefactor" type="uint" summary="scale factor of monitor."/>
     </event>
 
+    <event name="window_info" since="2">
+      <description summary="Information about a window.">
+        Sent for each window when listing all windows.
+      </description>
+      <arg name="title" type="string" summary="Window title."/>
+      <arg name="appid" type="string" summary="Window app id."/>
+      <arg name="x" type="int" summary="X coordinate."/>
+      <arg name="y" type="int" summary="Y coordinate."/>
+      <arg name="width" type="int" summary="Width."/>
+      <arg name="height" type="int" summary="Height."/>
+      <arg name="floating" type="uint" summary="Is floating (1) or tiled (0)."/>
+      <arg name="fullscreen" type="uint" summary="Is fullscreen (1) or not (0)."/>
+      <arg name="tags" type="uint" summary="Tags bitmask."/>
+    </event>
+
+    <request name="list_windows" since="2">
+      <description summary="Request list of all windows">
+        Request the compositor to send window_info events for all windows.
+      </description>
+    </request>
+
   </interface>
 
 </protocol>
