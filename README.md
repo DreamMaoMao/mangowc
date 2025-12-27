@@ -1,7 +1,7 @@
-# MangoWC
-
-<img width="255" height="256" alt="mango-transparency-256" src="https://github.com/user-attachments/assets/54caff2c-932f-4998-a090-2a5292ebbfa4" />
-
+# Mango Wayland Compositor
+<div>
+  <img src="https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png" alt="MangoWC Logo" width="120"/>
+</div>
 
 This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
@@ -117,7 +117,7 @@ cd wlroots
 meson build -Dprefix=/usr
 sudo ninja -C build install
 
-git clone https://github.com/wlrfx/scenefx.git
+git clone -b 0.4.1 https://github.com/wlrfx/scenefx.git
 cd scenefx
 meson build -Dprefix=/usr
 sudo ninja -C build install
@@ -138,7 +138,7 @@ sudo ninja -C build install
 - Terminal emulator (foot, wezterm, alacritty, kitty, ghostty)
 - Status bar (waybar, eww, quickshell, ags), waybar is preferred
 - Wallpaper setup (swww, swaybg)
-- Notification daemon (swaync, dunst)
+- Notification daemon (swaync, dunst,mako)
 - Desktop portal (xdg-desktop-portal, xdg-desktop-portal-wlr, xdg-desktop-portal-gtk)
 - Clipboard (wl-clipboard, wl-clip-persist, cliphist)
 - Gamma control/night light (wlsunset, gammastep)
