@@ -93,6 +93,9 @@ void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
 		if (!(node = wlr_scene_node_at(&layers[layer]->node, x, y, nx, ny)))
 			continue;
 
+		if (!node->enabled)
+			continue;
+
 		if (node->type == WLR_SCENE_NODE_BUFFER)
 			surface = wlr_scene_surface_try_from_buffer(
 						  wlr_scene_buffer_from_node(node))
