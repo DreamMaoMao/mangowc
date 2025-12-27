@@ -625,7 +625,7 @@ static void motionrelative(struct wl_listener *listener, void *data);
 static void reset_foreign_tolevel(Client *c);
 static void remove_foreign_topleve(Client *c);
 static void add_foreign_topleve(Client *c);
-static void exchange_two_client(Client *c1, Client *c2);
+static void exchange_two_client(Client *c1, Client *c2, uint8_t mode);
 static void outputmgrapply(struct wl_listener *listener, void *data);
 static void outputmgrapplyortest(struct wlr_output_configuration_v1 *config,
 								 int test);
@@ -1867,7 +1867,7 @@ void place_drag_tile_client(Client *c) {
 		closest_client->link.prev->next = &c->link;
 		closest_client->link.prev = &c->link;
 	} else if (closest_client) {
-		exchange_two_client(c, closest_client);
+		exchange_two_client(c, closest_client, 0);
 	}
 	setfloating(c, 0);
 }
@@ -4333,7 +4333,7 @@ void setborder_color(Client *c) {
 	client_set_border_color(c, border_color);
 }
 
-void exchange_two_client(Client *c1, Client *c2) {
+void exchange_two_client(Client *c1, Client *c2, uint8_t mode) {
 
 	Monitor *tmp_mon = NULL;
 	uint32_t tmp_tags;
@@ -4404,6 +4404,12 @@ void exchange_two_client(Client *c1, Client *c2) {
 		arrange(c2->mon, false);
 		focusclient(c1, 0);
 	} else {
+		// For scroller layouts, swap geometry to maintain visual positions
+		if (mode && is_scroller_layout(c1->mon)) {
+			struct wlr_box tmp_geom = c1->geom;
+			c1->geom = c2->geom;
+			c2->geom = tmp_geom;
+		}
 		arrange(c1->mon, false);
 		focusclient(c1, 0);
 	}
