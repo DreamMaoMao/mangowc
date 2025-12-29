@@ -5647,6 +5647,7 @@ toggleseltags:
 
 	if (changefocus)
 		focusclient(focustop(m), 1);
+	reset_multi_tag_client_per(m);
 	arrange(m, want_animation);
 	printstatus();
 }

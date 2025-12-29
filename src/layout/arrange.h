@@ -576,6 +576,23 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 	}
 }
 
+void reset_multi_tag_client_per(Monitor *m) {
+	Client *c = NULL;
+	wl_list_for_each(c, &clients, link) {
+
+		if (c->isglobal || c->isunglobal) {
+			set_size_per(m, c);
+		}
+
+		if (!VISIBLEON(c, m))
+			continue;
+
+		if (!client_only_in_one_tag(c)) {
+			set_size_per(m, c);
+		}
+	}
+}
+
 void // 17
 arrange(Monitor *m, bool want_animation) {
 	Client *c = NULL;

@@ -431,3 +431,14 @@ float *get_border_color(Client *c) {
 		return bordercolor;
 	}
 }
+
+int is_single_bit_set(uint32_t x) { return x && !(x & (x - 1)); }
+
+bool client_only_in_one_tag(Client *c) {
+	uint32_t masked = c->tags & TAGMASK;
+	if (is_single_bit_set(masked)) {
+		return true;
+	} else {
+		return false;
+	}
+}
