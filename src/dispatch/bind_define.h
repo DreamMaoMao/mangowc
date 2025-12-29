@@ -31,8 +31,14 @@ int bind_to_view(const Arg *arg) {
 }
 
 int chvt(const Arg *arg) {
+
+	if (selmon) {
+		chvt_backup_tag = selmon->pertag->curtag;
+		strncpy(chvt_backup_selmon, selmon->wlr_output->name,
+				sizeof(chvt_backup_selmon) - 1);
+	}
 	wlr_session_change_vt(session, arg->ui);
-	return 0;
+	return 1;
 }
 
 int create_virtual_output(const Arg *arg) {

@@ -854,6 +854,9 @@ static double swipe_dy = 0;
 
 bool render_border = true;
 
+uint32_t chvt_backup_tag = 0;
+char chvt_backup_selmon[32] = {0};
+
 struct dvec2 *baked_points_move;
 struct dvec2 *baked_points_open;
 struct dvec2 *baked_points_tag;
@@ -2661,7 +2664,6 @@ void createmon(struct wl_listener *listener, void *data) {
 	m->isoverview = 0;
 	m->sel = NULL;
 	m->is_in_hotarea = 0;
-	m->tagset[0] = m->tagset[1] = 1;
 	float scale = 1;
 	m->mfact = default_mfact;
 	m->nmaster = default_nmaster;
@@ -2733,7 +2735,16 @@ void createmon(struct wl_listener *listener, void *data) {
 
 	wl_list_insert(&mons, &m->link);
 	m->pertag = calloc(1, sizeof(Pertag));
-	m->pertag->curtag = m->pertag->prevtag = 1;
+	if (chvt_backup_tag &&
+		regex_match(chvt_backup_selmon, m->wlr_output->name)) {
+		m->tagset[0] = m->tagset[1] = (1 << (chvt_backup_tag - 1)) & TAGMASK;
+		m->pertag->curtag = m->pertag->prevtag = chvt_backup_tag;
+		chvt_backup_tag = 0;
+		memset(chvt_backup_selmon, 0, sizeof(chvt_backup_selmon));
+	} else {
+		m->tagset[0] = m->tagset[1] = 1;
+		m->pertag->curtag = m->pertag->prevtag = 1;
+	}
 
 	for (i = 0; i <= LENGTH(tags); i++) {
 		m->pertag->nmasters[i] = m->nmaster;
@@ -4172,10 +4183,18 @@ void rendermon(struct wl_listener *listener, void *data) {
 	LayerSurface *l = NULL, *tmpl = NULL;
 	int i;
 	struct wl_list *layer_list;
-
+	bool frame_allow_tearing = false;
 	struct timespec now;
 	bool need_more_frames = false;
-	bool frame_allow_tearing = check_tearing_frame_allow(m);
+
+	if (session && !session->active) {
+		return;
+	}
+
+	if (!m->wlr_output->enabled)
+		return;
+
+	frame_allow_tearing = check_tearing_frame_allow(m);
 
 	// 绘制层和淡出效果
 	for (i = 0; i < LENGTH(m->layers); i++) {
