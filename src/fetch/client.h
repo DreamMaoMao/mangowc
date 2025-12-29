@@ -1,21 +1,20 @@
 bool check_hit_no_border(Client *c) {
-	int i;
-	bool hit_no_border = false;
 	if (!render_border) {
-		hit_no_border = true;
+		return true;
 	}
 
-	for (i = 0; i < config.tag_rules_count; i++) {
+	for (int i = 0; i < config.tag_rules_count; i++) {
 		if (c->tags & (1 << (config.tag_rules[i].id - 1)) &&
 			config.tag_rules[i].no_render_border) {
-			hit_no_border = true;
+			return true;
 		}
 	}
 
-	if (no_border_when_single && c && c->mon && c->mon->visible_clients == 1) {
-		hit_no_border = true;
+	if (no_border_when_single && c && !c->isfloating && !c->ismaximizescreen &&
+		c->mon && c->mon->visible_tiling_clients == 1) {
+		return true;
 	}
-	return hit_no_border;
+	return false;
 }
 Client *termforwin(Client *w) {
 	Client *c = NULL;
