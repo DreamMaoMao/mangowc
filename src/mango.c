@@ -3293,9 +3293,31 @@ fullscreennotify(struct wl_listener *listener, void *data) {
 }
 
 void requestmonstate(struct wl_listener *listener, void *data) {
-	struct wlr_output_event_request_state *event = data;
-	wlr_output_commit_state(event->output, event->state);
-	updatemons(NULL, NULL);
+	/* This ensures nested backends can be resized */
+	Monitor *m = wl_container_of(listener, m, request_state);
+	const struct wlr_output_event_request_state *event = data;
+
+	if (event->state->committed == WLR_OUTPUT_STATE_MODE) {
+		switch (event->state->mode_type) {
+		case WLR_OUTPUT_STATE_MODE_FIXED:
+			wlr_output_state_set_mode(&m->pending, event->state->mode);
+			break;
+		case WLR_OUTPUT_STATE_MODE_CUSTOM:
+			wlr_output_state_set_custom_mode(&m->pending,
+											 event->state->custom_mode.width,
+											 event->state->custom_mode.height,
+											 event->state->custom_mode.refresh);
+			break;
+		}
+		updatemons(NULL, NULL);
+		wlr_output_schedule_frame(m->wlr_output);
+		return;
+	}
+
+	if (!wlr_output_commit_state(m->wlr_output, event->state)) {
+		wlr_log(WLR_ERROR,
+				"Backend requested a new state that could not be applied");
+	}
 }
 
 void inputdevice(struct wl_listener *listener, void *data) {
