@@ -127,8 +127,8 @@ static inline void client_get_clip(Client *c, struct wlr_box *clip) {
 	*clip = (struct wlr_box){
 		.x = 0,
 		.y = 0,
-		.width = c->geom.width - c->bw,
-		.height = c->geom.height - c->bw,
+		.width = c->geom.width - 2 * c->bw,
+		.height = c->geom.height - 2 * c->bw,
 	};
 
 #ifdef XWAYLAND

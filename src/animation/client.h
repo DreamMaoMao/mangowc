@@ -1,7 +1,7 @@
 void client_actual_size(Client *c, uint32_t *width, uint32_t *height) {
-	*width = c->animation.current.width - c->bw;
+	*width = c->animation.current.width - 2 * c->bw;
 
-	*height = c->animation.current.height - c->bw;
+	*height = c->animation.current.height - 2 * c->bw;
 }
 
 void set_rect_size(struct wlr_scene_rect *rect, int width, int height) {
@@ -394,8 +394,6 @@ void client_apply_clip(Client *c, float factor) {
 	struct ivec2 offset;
 	BufferData buffer_data;
 
-	int bw = (int)c->bw;
-
 	if (!animations) {
 		c->animation.running = false;
 		c->need_output_flush = false;
@@ -429,8 +427,8 @@ void client_apply_clip(Client *c, float factor) {
 	clip_box = (struct wlr_box){
 		.x = geometry.x,
 		.y = geometry.y,
-		.width = width - bw,
-		.height = height - bw,
+		.width = width,
+		.height = height,
 	};
 
 	if (client_is_x11(c)) {
