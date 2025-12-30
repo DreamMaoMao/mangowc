@@ -764,7 +764,6 @@ static void resize_tile_client(Client *grabc, bool isdrag, int offsetx,
 static void refresh_monitors_workspaces_status(Monitor *m);
 static void init_client_properties(Client *c);
 static float *get_border_color(Client *c);
-static void request_fresh_all_monitors(void);
 static void clear_fullscreen_and_maximized_state(Monitor *m);
 
 #include "data/static_keymap.h"
@@ -4234,6 +4233,11 @@ void rendermon(struct wl_listener *listener, void *data) {
 		need_more_frames = layer_draw_fadeout_frame(l) || need_more_frames;
 	}
 
+	// 如果需要更多帧，确保安排下一帧
+	if (need_more_frames) {
+		wlr_output_schedule_frame(m->wlr_output);
+	}
+
 	// 绘制客户端
 	wl_list_for_each(c, &clients, link) {
 		need_more_frames = client_draw_frame(c) || need_more_frames;
@@ -4259,11 +4263,6 @@ skip:
 	} else {
 		wlr_scene_output_send_frame_done(m->scene_output, &now);
 		wlr_output_state_finish(&pending);
-	}
-
-	// 如果需要更多帧，确保安排下一帧
-	if (need_more_frames) {
-		request_fresh_all_monitors();
 	}
 }
 

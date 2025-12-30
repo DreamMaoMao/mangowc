@@ -204,13 +204,3 @@ struct wlr_scene_tree *wlr_scene_tree_snapshot(struct wlr_scene_node *node,
 
 	return snapshot;
 }
-
-void request_fresh_all_monitors(void) {
-	Monitor *m = NULL;
-	wl_list_for_each(m, &mons, link) {
-		if (!m->wlr_output->enabled) {
-			continue;
-		}
-		wlr_output_schedule_frame(m->wlr_output);
-	}
-}

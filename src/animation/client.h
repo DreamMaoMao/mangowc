@@ -712,7 +712,8 @@ void init_fadeout_client(Client *c) {
 	wl_list_insert(&fadeout_clients, &fadeout_cient->fadeout_link);
 
 	// 请求刷新屏幕
-	request_fresh_all_monitors();
+	if (c->mon)
+		wlr_output_schedule_frame(c->mon->wlr_output);
 }
 
 void client_commit(Client *c) {
@@ -731,7 +732,8 @@ void client_commit(Client *c) {
 		c->animation.should_animate = false;
 	}
 	// 请求刷新屏幕
-	request_fresh_all_monitors();
+	if (c->mon)
+		wlr_output_schedule_frame(c->mon->wlr_output);
 }
 
 void client_set_pending_state(Client *c) {

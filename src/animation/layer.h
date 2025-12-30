@@ -418,7 +418,8 @@ void init_fadeout_layers(LayerSurface *l) {
 	wl_list_insert(&fadeout_layers, &fadeout_layer->fadeout_link);
 
 	// 请求刷新屏幕
-	wlr_output_schedule_frame(l->mon->wlr_output);
+	if (l->mon)
+		wlr_output_schedule_frame(l->mon->wlr_output);
 }
 
 void layer_set_pending_state(LayerSurface *l) {
@@ -501,7 +502,8 @@ void layer_commit(LayerSurface *l) {
 		l->animation.should_animate = false;
 	}
 	// 请求刷新屏幕
-	wlr_output_schedule_frame(l->mon->wlr_output);
+	if (l->mon)
+		wlr_output_schedule_frame(l->mon->wlr_output);
 }
 
 bool layer_draw_frame(LayerSurface *l) {
