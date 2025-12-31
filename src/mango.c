@@ -360,6 +360,7 @@ struct Client {
 	const char *animation_type_close;
 	int is_in_scratchpad;
 	int iscustomsize;
+	int iscustompos;
 	int is_scratchpad_show;
 	int isglobal;
 	int isnoborder;
@@ -688,7 +689,6 @@ static void warp_cursor_to_selmon(Monitor *m);
 uint32_t want_restore_fullscreen(Client *target_client);
 static void overview_restore(Client *c, const Arg *arg);
 static void overview_backup(Client *c);
-static int applyrulesgeom(Client *c);
 static void set_minimized(Client *c);
 
 static void show_scratchpad(Client *c);
@@ -1247,46 +1247,6 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_STRING_PROP(c, r, animation_type_close);
 }
 
-int applyrulesgeom(Client *c) {
-	/* rule matching */
-	const char *appid, *title;
-	ConfigWinRule *r;
-	int hit = 0;
-	int ji;
-
-	if (!(appid = client_get_appid(c)))
-		appid = broken;
-	if (!(title = client_get_title(c)))
-		title = broken;
-
-	for (ji = 0; ji < config.window_rules_count; ji++) {
-		if (config.window_rules_count < 1)
-			break;
-		r = &config.window_rules[ji];
-
-		if (!is_window_rule_matches(r, appid, title))
-			continue;
-
-		c->geom.width = r->width > 0 ? r->width : c->geom.width;
-		c->geom.height = r->height > 0 ? r->height : c->geom.height;
-
-		if (!c->isnosizehint)
-			client_set_size_bound(c);
-
-		// 重新计算居中的坐标
-		if (r->offsetx != 0 || r->offsety != 0 || r->width > 0 || r->height > 0)
-			c->geom =
-				setclient_coordinate_center(c, c->geom, r->offsetx, r->offsety);
-		if (r->height > 0 || r->width > 0 || r->offsetx != 0 ||
-			r->offsety != 0) {
-			hit = 1;
-		} else {
-			hit = 0;
-		}
-	}
-	return hit;
-}
-
 void set_float_malposition(Client *tc) {
 	Client *c = NULL;
 	int x, y, offset, xreverse, yreverse;
@@ -1384,11 +1344,14 @@ void applyrules(Client *c) {
 		if (r->height > 0)
 			c->float_geom.height = r->height;
 
-		if (r->offsetx || r->offsety || r->width > 0 || r->height > 0) {
-			hit_rule_pos = r->offsetx || r->offsety ? true : false;
+		if (r->width > 0 || r->height > 0) {
 			c->iscustomsize = 1;
-			c->float_geom =  c->geom = setclient_coordinate_center(c, c->float_geom,
-														r->offsetx, r->offsety);
+		}
+
+		if (r->offsetx || r->offsety) {
+			c->iscustompos = 1;
+			c->float_geom = c->geom = setclient_coordinate_center(
+				c, c->float_geom, r->offsetx, r->offsety);
 		}
 		if (c->isfloating) {
 			c->geom = c->float_geom.width > 0 && c->float_geom.height > 0
@@ -1403,7 +1366,7 @@ void applyrules(Client *c) {
 
 	// if no geom rule hit and is normal winodw, use the center pos and record
 	// the hit size
-	if (!hit_rule_pos &&
+	if (!c->iscustompos &&
 		(!client_is_x11(c) || (c->geom.x == 0 && c->geom.y == 0))) {
 		c->float_geom = c->geom = setclient_coordinate_center(c, c->geom, 0, 0);
 	} else {
@@ -3680,6 +3643,7 @@ void init_client_properties(Client *c) {
 	c->ignore_maximize = 1;
 	c->ignore_minimize = 1;
 	c->iscustomsize = 0;
+	c->iscustompos = 0;
 	c->master_mfact_per = 0.0f;
 	c->master_inner_per = 0.0f;
 	c->stack_inner_per = 0.0f;
@@ -4489,8 +4453,7 @@ void // 0.5
 setfloating(Client *c, int floating) {
 
 	Client *fc = NULL;
-	int hit;
-	struct wlr_box target_box, backup_box;
+	struct wlr_box target_box;
 	c->isfloating = floating;
 	bool window_size_outofrange = false;
 
@@ -4508,12 +4471,10 @@ setfloating(Client *c, int floating) {
 		}
 
 		// 重新计算居中的坐标
-		if (!client_is_x11(c) || (c->geom.x == 0 && c->geom.y == 0))
+		if (!client_is_x11(c) && !c->iscustompos)
 			target_box = setclient_coordinate_center(c, target_box, 0, 0);
-		backup_box = c->geom;
-		hit = applyrulesgeom(c);
-		target_box = hit == 1 ? c->geom : target_box;
-		c->geom = backup_box;
+		else
+			target_box = c->geom;
 
 		// restore to the memeroy geom
 		if (c->float_geom.width > 0 && c->float_geom.height > 0) {
