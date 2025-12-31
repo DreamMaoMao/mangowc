@@ -396,6 +396,9 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 			if (&next->link == &clients)
 				continue; /* wrap past the sentinel node */
 
+			if (next->isunglobal)
+				continue;
+
 			if (next != c && next->mon && VISIBLEON(next, c->mon))
 				return next;
 		}
@@ -403,6 +406,9 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 		wl_list_for_each(next, &c->link, link) {
 			if (&next->link == &clients)
 				continue; /* wrap past the sentinel node */
+
+			if (next->isunglobal)
+				continue;
 
 			if (next != c && next->mon && VISIBLEON(next, c->mon))
 				return next;
