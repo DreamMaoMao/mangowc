@@ -1438,8 +1438,8 @@ void applyrules(Client *c) {
 
 	// apply overlay rule
 	if (c->isoverlay) {
-		wlr_scene_node_reparent(&selmon->sel->scene->node, layers[LyrOverlay]);
-		wlr_scene_node_raise_to_top(&selmon->sel->scene->node);
+		wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
+		wlr_scene_node_raise_to_top(&c->scene->node);
 	}
 }
 
