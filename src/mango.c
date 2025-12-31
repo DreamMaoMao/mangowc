@@ -1387,7 +1387,7 @@ void applyrules(Client *c) {
 		if (r->offsetx || r->offsety || r->width > 0 || r->height > 0) {
 			hit_rule_pos = r->offsetx || r->offsety ? true : false;
 			c->iscustomsize = 1;
-			c->float_geom = setclient_coordinate_center(c, c->float_geom,
+			c->float_geom =  c->geom = setclient_coordinate_center(c, c->float_geom,
 														r->offsetx, r->offsety);
 		}
 		if (c->isfloating) {
