@@ -1360,7 +1360,8 @@ void applyrules(Client *c) {
 		}
 	}
 
-	set_size_per(mon, c);
+	if (mon)
+		set_size_per(mon, c);
 
 	// if no geom rule hit and is normal winodw, use the center pos and record
 	// the hit size

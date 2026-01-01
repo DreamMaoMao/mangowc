@@ -1,6 +1,10 @@
 void set_size_per(Monitor *m, Client *c) {
 	Client *fc = NULL;
 	bool found = false;
+
+	if (!m || !c)
+		return;
+
 	wl_list_for_each(fc, &clients, link) {
 		if (VISIBLEON(fc, m) && ISTILED(fc) && fc != c) {
 			c->master_mfact_per = fc->master_mfact_per;
