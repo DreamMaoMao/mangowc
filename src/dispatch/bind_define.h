@@ -831,6 +831,40 @@ int spawn_on_empty(const Arg *arg) {
 	return 0;
 }
 
+int comboview_spawn_on_empty(const Arg *arg) {
+	unsigned int newtags = arg->ui & TAGMASK;
+	bool is_empty = true;
+	Client *c = NULL;
+
+	if (!newtags || !selmon)
+		return 0;
+
+	wl_list_for_each(c, &clients, link) {
+		if (arg->ui & c->tags && c->mon == selmon) {
+			is_empty = false;
+			break;
+		}
+	}
+
+	if (tag_combo) {
+		selmon->tagset[selmon->seltags] |= newtags;
+		focusclient(focustop(selmon), 1);
+		arrange(selmon, false);
+	} else {
+		tag_combo = true;
+		view(&(Arg){.ui = newtags}, false);
+	}
+  if (is_empty) {
+    unsigned int old = selmon->tagset[selmon->seltags];
+    selmon->tagset[selmon->seltags] = newtags;
+    spawn(arg);
+    selmon->tagset[selmon->seltags] = old;
+  }
+
+	printstatus();
+	return 0;
+}
+
 int switch_keyboard_layout(const Arg *arg) {
 	if (!kb_group || !kb_group->wlr_group || !seat) {
 		wlr_log(WLR_ERROR, "Invalid keyboard group or seat");

@@ -307,6 +307,7 @@ struct Client {
 	struct wlr_scene_tree *scene;
 	struct wlr_scene_rect *border; /* top, bottom, left, right */
 	struct wlr_scene_shadow *shadow;
+	struct wlr_scene_blur *blur;
 	struct wlr_scene_tree *scene_surface;
 	struct wl_list link;
 	struct wl_list flink;
@@ -450,6 +451,7 @@ typedef struct {
 	struct wlr_scene_tree *scene;
 	struct wlr_scene_tree *popups;
 	struct wlr_scene_shadow *shadow;
+	struct wlr_scene_blur *blur;
 	struct wlr_scene_layer_surface_v1 *scene_layer;
 	struct wl_list link;
 	struct wl_list fadeout_link;
@@ -2166,12 +2168,16 @@ static void iter_layer_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
 		return;
 	}
 
-	wlr_scene_buffer_set_backdrop_blur(buffer, true);
-	wlr_scene_buffer_set_backdrop_blur_ignore_transparent(buffer, true);
+	LayerSurface *l = (LayerSurface *)user_data;
+
+	wlr_scene_node_set_enabled(&l->blur->node, true);
+	wlr_scene_blur_set_transparency_mask_source(l->blur, buffer);
+	wlr_scene_blur_set_size(l->blur, l->geom.width, l->geom.height);
+
 	if (blur_optimized) {
-		wlr_scene_buffer_set_backdrop_blur_optimized(buffer, true);
+		wlr_scene_blur_set_should_only_blur_bottom_layer(l->blur, true);
 	} else {
-		wlr_scene_buffer_set_backdrop_blur_optimized(buffer, false);
+		wlr_scene_blur_set_should_only_blur_bottom_layer(l->blur, false);
 	}
 }
 
@@ -2216,13 +2222,17 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 	}
 
 	// 初始化阴影
-	if (layer_surface->current.exclusive_zone == 0 &&
-		layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM &&
+	if (layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM &&
 		layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND) {
-		l->shadow = wlr_scene_shadow_create(l->scene, 0, 0, border_radius,
-											shadows_blur, shadowscolor);
-		wlr_scene_node_lower_to_bottom(&l->shadow->node);
-		wlr_scene_node_set_enabled(&l->shadow->node, true);
+		if (layer_surface->current.exclusive_zone == 0) {
+			l->shadow = wlr_scene_shadow_create(l->scene, 0, 0, border_radius,
+												shadows_blur, shadowscolor);
+			wlr_scene_node_lower_to_bottom(&l->shadow->node);
+			wlr_scene_node_set_enabled(&l->shadow->node, true);
+		}
+
+		l->blur = wlr_scene_blur_create(l->scene, 0, 0);
+		wlr_scene_node_lower_to_bottom(&l->blur->node);
 	}
 
 	// 初始化动画
@@ -2286,7 +2296,8 @@ void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
 		if (!l->noblur &&
 			layer_surface->current.layer != ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM &&
 			layer_surface->current.layer !=
-				ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND) {
+				ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND &&
+			l->blur) {
 
 			wlr_scene_node_for_each_buffer(&l->scene->node,
 										   iter_layer_scene_buffers, l);
@@ -3674,15 +3685,15 @@ static void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
 		return;
 
 	if (blur && c && !c->noblur) {
-		wlr_scene_buffer_set_backdrop_blur(buffer, true);
-		wlr_scene_buffer_set_backdrop_blur_ignore_transparent(buffer, false);
+		wlr_scene_node_set_enabled(&c->blur->node, true);
+		// wlr_scene_blur_set_transparency_mask_source(c->blur, buffer);
 		if (blur_optimized) {
-			wlr_scene_buffer_set_backdrop_blur_optimized(buffer, true);
+			wlr_scene_blur_set_should_only_blur_bottom_layer(c->blur, true);
 		} else {
-			wlr_scene_buffer_set_backdrop_blur_optimized(buffer, false);
+			wlr_scene_blur_set_should_only_blur_bottom_layer(c->blur, false);
 		}
 	} else {
-		wlr_scene_buffer_set_backdrop_blur(buffer, false);
+		wlr_scene_node_set_enabled(&c->blur->node, false);
 	}
 }
 
@@ -3804,6 +3815,9 @@ mapnotify(struct wl_listener *listener, void *data) {
 
 	c->shadow = wlr_scene_shadow_create(c->scene, 0, 0, border_radius,
 										shadows_blur, shadowscolor);
+
+	c->blur = wlr_scene_blur_create(c->scene_surface, 0, 0);
+	wlr_scene_node_lower_to_bottom(&c->blur->node);
 
 	wlr_scene_node_lower_to_bottom(&c->shadow->node);
 	wlr_scene_node_set_enabled(&c->shadow->node, true);
