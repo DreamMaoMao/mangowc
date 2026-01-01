@@ -245,7 +245,7 @@ int incnmaster(const Arg *arg) {
 		return 0;
 	selmon->pertag->nmasters[selmon->pertag->curtag] =
 		MAX(selmon->pertag->nmasters[selmon->pertag->curtag] + arg->i, 0);
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 	return 0;
 }
 
@@ -309,7 +309,7 @@ int setmfact(const Arg *arg) {
 			c->master_mfact_per = f;
 		}
 	}
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 	return 0;
 }
 
@@ -492,7 +492,7 @@ int restore_minimized(const Arg *arg) {
 			c->isnamedscratchpad = 0;
 			show_hide_client(c);
 			setborder_color(c);
-			arrange(c->mon, false);
+			arrange(c->mon, false, false);
 			focusclient(c, 0);
 			warp_cursor(c);
 			return 0;
@@ -508,7 +508,7 @@ int setlayout(const Arg *arg) {
 		if (strcmp(layouts[jk].name, arg->v) == 0) {
 			selmon->pertag->ltidxs[selmon->pertag->curtag] = &layouts[jk];
 			clear_fullscreen_and_maximized_state(selmon);
-			arrange(selmon, false);
+			arrange(selmon, false, false);
 			printstatus();
 			return 0;
 		}
@@ -542,7 +542,7 @@ int set_proportion(const Arg *arg) {
 		selmon->sel->scroller_proportion = arg->f;
 		selmon->sel->geom.width = max_client_width * arg->f;
 		// resize(selmon->sel, selmon->sel->geom, 0);
-		arrange(selmon, false);
+		arrange(selmon, false, false);
 	}
 	return 0;
 }
@@ -741,7 +741,7 @@ int centerwin(const Arg *arg) {
 		c->geom.y = selmon->w.y + (selmon->w.height - c->geom.height) / 2;
 	}
 
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 	return 0;
 }
 
@@ -924,7 +924,7 @@ int switch_layout(const Arg *arg) {
 			}
 		}
 		clear_fullscreen_and_maximized_state(selmon);
-		arrange(selmon, false);
+		arrange(selmon, false, false);
 		printstatus();
 		return 0;
 	}
@@ -935,7 +935,7 @@ int switch_layout(const Arg *arg) {
 			selmon->pertag->ltidxs[target_tag] =
 				jk == LENGTH(layouts) - 1 ? &layouts[0] : &layouts[jk + 1];
 			clear_fullscreen_and_maximized_state(selmon);
-			arrange(selmon, false);
+			arrange(selmon, false, false);
 			printstatus();
 			return 0;
 		}
@@ -982,7 +982,7 @@ int switch_proportion_preset(const Arg *arg) {
 		selmon->sel->scroller_proportion = target_proportion;
 		selmon->sel->geom.width = max_client_width * target_proportion;
 		// resize(selmon->sel, selmon->sel->geom, 0);
-		arrange(selmon, false);
+		arrange(selmon, false, false);
 	}
 	return 0;
 }
@@ -1056,7 +1056,7 @@ int tagmon(const Arg *arg) {
 		target = get_tags_first_tag(c->tags);
 		view(&(Arg){.ui = target}, true);
 		focusclient(c, 1);
-		arrange(selmon, false);
+		arrange(selmon, false, false);
 	}
 	if (warpcursor) {
 		warp_cursor_to_selmon(c->mon);
@@ -1080,7 +1080,7 @@ int tagsilent(const Arg *arg) {
 		}
 	}
 	focusclient(focustop(selmon), 1);
-	arrange(target_client->mon, false);
+	arrange(target_client->mon, false, false);
 	return 0;
 }
 
@@ -1123,7 +1123,7 @@ int toggle_named_scratchpad(const Arg *arg) {
 
 int toggle_render_border(const Arg *arg) {
 	render_border = !render_border;
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 	return 0;
 }
 
@@ -1216,7 +1216,7 @@ int toggleglobal(const Arg *arg) {
 
 int togglegaps(const Arg *arg) {
 	enablegaps ^= 1;
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 	return 0;
 }
 
@@ -1276,7 +1276,7 @@ int toggletag(const Arg *arg) {
 	if (newtags) {
 		sel->tags = newtags;
 		focusclient(focustop(selmon), 1);
-		arrange(selmon, false);
+		arrange(selmon, false, false);
 	}
 	printstatus();
 	return 0;
@@ -1294,7 +1294,7 @@ int toggleview(const Arg *arg) {
 	if (newtagset) {
 		selmon->tagset[selmon->seltags] = newtagset;
 		focusclient(focustop(selmon), 1);
-		arrange(selmon, false);
+		arrange(selmon, false, false);
 	}
 	printstatus();
 	return 0;
@@ -1408,7 +1408,7 @@ int comboview(const Arg *arg) {
 	if (tag_combo) {
 		selmon->tagset[selmon->seltags] |= newtags;
 		focusclient(focustop(selmon), 1);
-		arrange(selmon, false);
+		arrange(selmon, false, false);
 	} else {
 		tag_combo = true;
 		view(&(Arg){.ui = newtags}, false);
@@ -1447,7 +1447,7 @@ int zoom(const Arg *arg) {
 	wl_list_insert(&clients, &sel->link);
 
 	focusclient(sel, 1);
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 	return 0;
 }
 

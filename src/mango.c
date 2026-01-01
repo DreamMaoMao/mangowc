@@ -539,9 +539,8 @@ static void applybounds(
 	Client *c,
 	struct wlr_box *bbox); // 设置边界规则,能让一些窗口拥有比较适合的大小
 static void applyrules(Client *c); // 窗口规则应用,应用config.h中定义的窗口规则
-static void
-arrange(Monitor *m,
-		bool want_animation); // 布局函数,让窗口俺平铺规则移动和重置大小
+static void arrange(Monitor *m, bool want_animation,
+					bool from_view); // 布局函数,让窗口俺平铺规则移动和重置大小
 static void arrangelayer(Monitor *m, struct wl_list *list,
 						 struct wlr_box *usable_area, int exclusive);
 static void arrangelayers(Monitor *m);
@@ -1102,7 +1101,7 @@ bool switch_scratchpad_client_state(Client *c) {
 		if (c->is_scratchpad_show) {
 			c->tags = get_tags_first_tag(selmon->tagset[selmon->seltags]);
 			resize(c, c->float_geom, 0);
-			arrange(selmon, false);
+			arrange(selmon, false, false);
 			focusclient(c, true);
 			c->scratchpad_switching_mon = false;
 			return true;
@@ -1115,7 +1114,7 @@ bool switch_scratchpad_client_state(Client *c) {
 	if (c->is_in_scratchpad && c->is_scratchpad_show &&
 		(c->mon->tagset[c->mon->seltags] & c->tags) == 0) {
 		c->tags = c->mon->tagset[c->mon->seltags];
-		arrange(c->mon, false);
+		arrange(c->mon, false, false);
 		focusclient(c, true);
 		return true;
 	} else if (c->is_in_scratchpad && c->is_scratchpad_show &&
@@ -1422,7 +1421,7 @@ void applyrules(Client *c) {
 							   VISIBLEON(fc, c->mon) && ISFULLSCREEN(fc) &&
 							   !c->isfloating) {
 		clear_fullscreen_flag(fc);
-		arrange(c->mon, false);
+		arrange(c->mon, false, false);
 	}
 
 	if (c->isfloating && !hit_rule_pos && !c->isnamedscratchpad) {
@@ -1619,7 +1618,7 @@ void arrangelayers(Monitor *m) {
 
 	if (!wlr_box_equal(&usable_area, &m->w)) {
 		m->w = usable_area;
-		arrange(m, false);
+		arrange(m, false, false);
 	}
 
 	/* Arrange non-exlusive surfaces from top->bottom */
@@ -3166,7 +3165,7 @@ void focusclient(Client *c, int lift) {
 			(selmon->prevsel->tags & selmon->tagset[selmon->seltags]) &&
 			(c->tags & selmon->tagset[selmon->seltags]) && !c->isfloating &&
 			is_scroller_layout(selmon)) {
-			arrange(selmon, false);
+			arrange(selmon, false, false);
 		}
 
 		// change focus link position
@@ -3806,7 +3805,7 @@ void unminimize(Client *c) {
 		c->is_in_scratchpad = 0;
 		c->isnamedscratchpad = 0;
 		setborder_color(c);
-		arrange(c->mon, false);
+		arrange(c->mon, false, false);
 		return;
 	}
 }
@@ -3824,7 +3823,7 @@ void set_minimized(Client *c) {
 	c->is_in_scratchpad = 1;
 	c->is_scratchpad_show = 0;
 	focusclient(focustop(selmon), 1);
-	arrange(c->mon, false);
+	arrange(c->mon, false, false);
 	wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel, false);
 	wlr_foreign_toplevel_handle_v1_set_minimized(c->foreign_toplevel, true);
 	wl_list_remove(&c->link);				// 从原来位置移除
@@ -4345,11 +4344,11 @@ void exchange_two_client(Client *c1, Client *c2) {
 		tmp_tags = c2->tags;
 		setmon(c2, c1->mon, c1->tags, false);
 		setmon(c1, tmp_mon, tmp_tags, false);
-		arrange(c1->mon, false);
-		arrange(c2->mon, false);
+		arrange(c1->mon, false, false);
+		arrange(c2->mon, false, false);
 		focusclient(c1, 0);
 	} else {
-		arrange(c1->mon, false);
+		arrange(c1->mon, false, false);
 		focusclient(c1, 0);
 	}
 }
@@ -4527,7 +4526,7 @@ setfloating(Client *c, int floating) {
 	if (!c->force_maximize)
 		client_set_maximized(c, false);
 
-	arrange(c->mon, false);
+	arrange(c->mon, false, false);
 	setborder_color(c);
 	printstatus();
 }
@@ -4585,7 +4584,7 @@ void setmaximizescreen(Client *c, int maximizescreen) {
 		client_set_maximized(c, true);
 	}
 
-	arrange(c->mon, false);
+	arrange(c->mon, false, false);
 }
 
 void setfakefullscreen(Client *c, int fakefullscreen) {
@@ -4645,7 +4644,7 @@ void setfullscreen(Client *c, int fullscreen) // 用自定义全屏代理自带�
 		set_size_per(c->mon, c);
 	}
 
-	arrange(c->mon, false);
+	arrange(c->mon, false, false);
 }
 
 void setgaps(int oh, int ov, int ih, int iv) {
@@ -4653,7 +4652,7 @@ void setgaps(int oh, int ov, int ih, int iv) {
 	selmon->gappov = MAX(ov, 0);
 	selmon->gappih = MAX(ih, 0);
 	selmon->gappiv = MAX(iv, 0);
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 }
 
 void reset_keyboard_layout(void) {
@@ -4767,7 +4766,7 @@ void setmon(Client *c, Monitor *m, uint32_t newtags, bool focus) {
 
 	/* Scene graph sends surface leave/enter events on move and resize */
 	if (oldmon)
-		arrange(oldmon, false);
+		arrange(oldmon, false, false);
 	if (m) {
 		/* Make sure window actually overlaps with the monitor */
 		resize(c, c->geom, 0);
@@ -4828,7 +4827,7 @@ void show_hide_client(Client *c) {
 		tag_client(&(Arg){.ui = target}, c);
 	} else {
 		c->tags = c->oldtags;
-		arrange(c->mon, false);
+		arrange(c->mon, false, false);
 	}
 	c->isminimized = 0;
 	wlr_foreign_toplevel_handle_v1_set_minimized(c->foreign_toplevel, false);
@@ -5519,7 +5518,7 @@ void updatemons(struct wl_listener *listener, void *data) {
 		/* Calculate the effective monitor geometry to use for clients */
 		arrangelayers(m);
 		/* Don't move clients to the left output when plugging monitors */
-		arrange(m, false);
+		arrange(m, false, false);
 		/* make sure fullscreen clients have the right size */
 		if ((c = focustop(m)) && c->isfullscreen)
 			resize(c, m->m, 0);
@@ -5648,8 +5647,7 @@ toggleseltags:
 
 	if (changefocus)
 		focusclient(focustop(m), 1);
-	reset_multi_tag_client_per(m);
-	arrange(m, want_animation);
+	arrange(m, want_animation, true);
 	printstatus();
 }
 
@@ -5797,7 +5795,7 @@ void activatex11(struct wl_listener *listener, void *data) {
 	}
 
 	if (need_arrange) {
-		arrange(c->mon, false);
+		arrange(c->mon, false, false);
 	}
 
 	printstatus();
@@ -5826,7 +5824,7 @@ void configurex11(struct wl_listener *listener, void *data) {
 								.height = event->height + c->bw * 2},
 			   0);
 	} else {
-		arrange(c->mon, false);
+		arrange(c->mon, false, false);
 	}
 }
 

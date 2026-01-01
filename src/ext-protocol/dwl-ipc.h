@@ -238,7 +238,7 @@ void dwl_ipc_output_set_client_tags(struct wl_client *client,
 	selected_client->tags = newtags;
 	if (selmon == monitor)
 		focusclient(focustop(monitor), 1);
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 	printstatus();
 }
 
@@ -257,7 +257,7 @@ void dwl_ipc_output_set_layout(struct wl_client *client,
 
 	monitor->pertag->ltidxs[monitor->pertag->curtag] = &layouts[index];
 	clear_fullscreen_and_maximized_state(monitor);
-	arrange(monitor, false);
+	arrange(monitor, false, false);
 	printstatus();
 }
 

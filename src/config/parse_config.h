@@ -3209,7 +3209,7 @@ void reset_option(void) {
 	reapply_tagrule();
 	reapply_monitor_rules();
 
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 }
 
 int reload_config(const Arg *arg) {

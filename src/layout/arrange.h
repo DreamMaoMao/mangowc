@@ -200,13 +200,13 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 		grabc->stack_inner_per = new_stack_inner_per;
 
 		if (!isdrag) {
-			arrange(grabc->mon, false);
+			arrange(grabc->mon, false, false);
 			return;
 		}
 
 		if (last_apply_drap_time == 0 ||
 			time - last_apply_drap_time > drag_refresh_interval) {
-			arrange(grabc->mon, false);
+			arrange(grabc->mon, false, false);
 			last_apply_drap_time = time;
 		}
 	}
@@ -357,13 +357,13 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 		grabc->stack_inner_per = new_stack_inner_per;
 
 		if (!isdrag) {
-			arrange(grabc->mon, false);
+			arrange(grabc->mon, false, false);
 			return;
 		}
 
 		if (last_apply_drap_time == 0 ||
 			time - last_apply_drap_time > drag_refresh_interval) {
-			arrange(grabc->mon, false);
+			arrange(grabc->mon, false, false);
 			last_apply_drap_time = time;
 		}
 	}
@@ -461,13 +461,13 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
 		grabc->scroller_proportion = new_scroller_proportion;
 
 		if (!isdrag) {
-			arrange(grabc->mon, false);
+			arrange(grabc->mon, false, false);
 			return;
 		}
 
 		if (last_apply_drap_time == 0 ||
 			time - last_apply_drap_time > drag_refresh_interval) {
-			arrange(grabc->mon, false);
+			arrange(grabc->mon, false, false);
 			last_apply_drap_time = time;
 		}
 	}
@@ -576,25 +576,8 @@ void reset_size_per_mon(Monitor *m, int tile_cilent_num,
 	}
 }
 
-void reset_multi_tag_client_per(Monitor *m) {
-	Client *c = NULL;
-	wl_list_for_each(c, &clients, link) {
-
-		if (c->isglobal || c->isunglobal) {
-			set_size_per(m, c);
-		}
-
-		if (!VISIBLEON(c, m))
-			continue;
-
-		if (!client_only_in_one_tag(c)) {
-			set_size_per(m, c);
-		}
-	}
-}
-
 void // 17
-arrange(Monitor *m, bool want_animation) {
+arrange(Monitor *m, bool want_animation, bool from_view) {
 	Client *c = NULL;
 	double total_stack_inner_percent = 0;
 	double total_master_inner_percent = 0;
@@ -617,6 +600,10 @@ arrange(Monitor *m, bool want_animation) {
 
 	wl_list_for_each(c, &clients, link) {
 
+		if (from_view && (c->isglobal || c->isunglobal)) {
+			set_size_per(m, c);
+		}
+
 		if (c->mon == m && (c->isglobal || c->isunglobal)) {
 			c->tags = m->tagset[m->seltags];
 			if (c->mon->sel == NULL)
@@ -624,6 +611,10 @@ arrange(Monitor *m, bool want_animation) {
 		}
 
 		if (VISIBLEON(c, m)) {
+			if (from_view && !client_only_in_one_tag(c)) {
+				set_size_per(m, c);
+			}
+
 			if (!c->isunglobal)
 				m->visible_clients++;
 
