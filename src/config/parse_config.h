@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <libgen.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -9,8 +10,9 @@
 
 // 整数版本 - 截断小数部分
 #define CLAMP_INT(x, min, max)                                                 \
-	((int)(x) < (int)(min) ? (int)(min)                                        \
-						   : ((int)(x) > (int)(max) ? (int)(max) : (int)(x)))
+	((int32_t)(x) < (int32_t)(min)                                             \
+		 ? (int32_t)(min)                                                      \
+		 : ((int32_t)(x) > (int32_t)(max) ? (int32_t)(max) : (int32_t)(x)))
 
 // 浮点数版本 - 保留小数部分
 #define CLAMP_FLOAT(x, min, max)                                               \
@@ -18,70 +20,96 @@
 
 enum { NUM_TYPE_MINUS, NUM_TYPE_PLUS, NUM_TYPE_DEFAULT };
 
-enum { KEY_TYPE_SYM, KEY_TYPE_CODE };
+enum { KEY_TYPE_CODE, KEY_TYPE_SYM };
+
+typedef struct {
+	uint32_t keycode1;
+	uint32_t keycode2;
+	uint32_t keycode3;
+} MultiKeycode;
 
 typedef struct {
 	xkb_keysym_t keysym;
-	uint32_t keycode;
-	int type;
+	MultiKeycode keycode;
+	int32_t type;
 } KeySymCode;
 
 typedef struct {
 	uint32_t mod;
 	KeySymCode keysymcode;
-	void (*func)(const Arg *);
+	int32_t (*func)(const Arg *);
 	Arg arg;
+	char mode[28];
+	bool iscommonmode;
+	bool isdefaultmode;
+	bool islockapply;
+	bool isreleaseapply;
+	bool ispassapply;
 } KeyBinding;
+
+typedef struct {
+	char *type;
+	char *value;
+} ConfigEnv;
 
 typedef struct {
 	const char *id;
 	const char *title;
-	unsigned int tags;
-	int isfloating;
-	int isfullscreen;
+	uint32_t tags;
+	int32_t isfloating;
+	int32_t isfullscreen;
 	float scroller_proportion;
 	const char *animation_type_open;
 	const char *animation_type_close;
 	const char *layer_animation_type_open;
 	const char *layer_animation_type_close;
-	int isnoborder;
-	int isopensilent;
-	int isnamedscratchpad;
-	int isunglobal;
-	int isglobal;
-	int isoverlay;
-	int ignore_maximize;
-	int isnosizehint;
+	int32_t isnoborder;
+	int32_t isnoshadow;
+	int32_t isnoradius;
+	int32_t isnoanimation;
+	int32_t isopensilent;
+	int32_t istagsilent;
+	int32_t isnamedscratchpad;
+	int32_t isunglobal;
+	int32_t isglobal;
+	int32_t isoverlay;
+	int32_t allow_shortcuts_inhibit;
+	int32_t ignore_maximize;
+	int32_t ignore_minimize;
+	int32_t isnosizehint;
 	const char *monitor;
-	int offsetx;
-	int offsety;
-	int width;
-	int height;
-	int nofadein;
-	int nofadeout;
-	int no_force_center;
-	int isterm;
-	int noswallow;
-	int noblur;
-	int scratchpad_width;
-	int scratchpad_height;
+	int32_t offsetx;
+	int32_t offsety;
+	int32_t width;
+	int32_t height;
+	int32_t nofocus;
+	int32_t nofadein;
+	int32_t nofadeout;
+	int32_t no_force_center;
+	int32_t isterm;
+	int32_t allow_csd;
+	int32_t force_maximize;
+	int32_t force_tearing;
+	int32_t noswallow;
+	int32_t noblur;
 	float focused_opacity;
 	float unfocused_opacity;
+	float scroller_proportion_single;
 	uint32_t passmod;
 	xkb_keysym_t keysym;
 	KeyBinding globalkeybinding;
 } ConfigWinRule;
 
 typedef struct {
-	const char *name;	// 显示器名称
-	float mfact;		// 主区域比例
-	int nmaster;		// 主区域窗口数量
-	const char *layout; // 布局名称（字符串）
-	int rr;				// 旋转和翻转（假设为整数）
-	float scale;		// 显示器缩放比例
-	int x, y;			// 显示器位置
-	int width, height;	// 显示器分辨率
-	float refresh;		// 刷新率
+	const char *name;	   // 显示器名称
+	float mfact;		   // 主区域比例
+	int32_t nmaster;	   // 主区域窗口数量
+	const char *layout;	   // 布局名称（字符串）
+	int32_t rr;			   // 旋转和翻转（假设为整数）
+	float scale;		   // 显示器缩放比例
+	int32_t x, y;		   // 显示器位置
+	int32_t width, height; // 显示器分辨率
+	float refresh;		   // 刷新率
 } ConfigMonitorRule;
 
 // 修改后的宏定义
@@ -100,53 +128,60 @@ KeyBinding default_key_bindings[] = {CHVT(1), CHVT(2),	CHVT(3),  CHVT(4),
 									 CHVT(9), CHVT(10), CHVT(11), CHVT(12)};
 
 typedef struct {
-	unsigned int mod;
-	unsigned int button;
-	void (*func)(const Arg *);
+	uint32_t mod;
+	uint32_t button;
+	int32_t (*func)(const Arg *);
 	Arg arg;
 } MouseBinding;
 
 typedef struct {
-	unsigned int mod;
-	unsigned int dir;
-	void (*func)(const Arg *);
+	uint32_t mod;
+	uint32_t dir;
+	int32_t (*func)(const Arg *);
 	Arg arg;
 } AxisBinding;
 
 typedef struct {
-	unsigned int mod;
-	unsigned int motion;
-	unsigned int fingers_count;
-	void (*func)(const Arg *);
+	uint32_t fold;
+	int32_t (*func)(const Arg *);
+	Arg arg;
+} SwitchBinding;
+
+typedef struct {
+	uint32_t mod;
+	uint32_t motion;
+	uint32_t fingers_count;
+	int32_t (*func)(const Arg *);
 	Arg arg;
 } GestureBinding;
 
 typedef struct {
-	int id;			   // 标签ID (1-9)
+	int32_t id;		   // 标签ID (1-9)
 	char *layout_name; // 布局名称
 	char *monitor_name;
-	int no_render_border;
+	int32_t no_render_border;
+	int32_t no_hide;
 } ConfigTagRule;
 
 typedef struct {
 	char *layer_name; // 布局名称
 	char *animation_type_open;
 	char *animation_type_close;
-	int noblur;
-	int noanim;
-	int noshadow;
+	int32_t noblur;
+	int32_t noanim;
+	int32_t noshadow;
 } ConfigLayerRule;
 
 typedef struct {
-	int animations;
-	int layer_animations;
+	int32_t animations;
+	int32_t layer_animations;
 	char animation_type_open[10];
 	char animation_type_close[10];
 	char layer_animation_type_open[10];
 	char layer_animation_type_close[10];
-	int animation_fade_in;
-	int animation_fade_out;
-	int tag_animation_direction;
+	int32_t animation_fade_in;
+	int32_t animation_fade_out;
+	int32_t tag_animation_direction;
 	float zoom_initial_ratio;
 	float zoom_end_ratio;
 	float fadein_begin_opacity;
@@ -155,99 +190,111 @@ typedef struct {
 	uint32_t animation_duration_open;
 	uint32_t animation_duration_tag;
 	uint32_t animation_duration_close;
+	uint32_t animation_duration_focus;
 	double animation_curve_move[4];
 	double animation_curve_open[4];
 	double animation_curve_tag[4];
 	double animation_curve_close[4];
+	double animation_curve_focus[4];
+	double animation_curve_opafadein[4];
+	double animation_curve_opafadeout[4];
 
-	int scroller_structs;
+	int32_t scroller_structs;
 	float scroller_default_proportion;
 	float scroller_default_proportion_single;
-	int scroller_focus_center;
-	int scroller_prefer_center;
-	int focus_cross_monitor;
-	int focus_cross_tag;
-	int no_border_when_single;
-	int no_radius_when_single;
-	int snap_distance;
-	int enable_floating_snap;
-	int drag_tile_to_tile;
-	unsigned int swipe_min_threshold;
+	int32_t scroller_ignore_proportion_single;
+	int32_t scroller_focus_center;
+	int32_t scroller_prefer_center;
+	int32_t edge_scroller_pointer_focus;
+	int32_t focus_cross_monitor;
+	int32_t exchange_cross_monitor;
+	int32_t scratchpad_cross_monitor;
+	int32_t focus_cross_tag;
+	int32_t view_current_to_back;
+	int32_t no_border_when_single;
+	int32_t no_radius_when_single;
+	int32_t snap_distance;
+	int32_t enable_floating_snap;
+	int32_t drag_tile_to_tile;
+	uint32_t swipe_min_threshold;
 	float focused_opacity;
 	float unfocused_opacity;
 	float *scroller_proportion_preset;
-	int scroller_proportion_preset_count;
+	int32_t scroller_proportion_preset_count;
 
 	char **circle_layout;
-	int circle_layout_count;
+	int32_t circle_layout_count;
 
-	unsigned int new_is_master;
+	uint32_t new_is_master;
 	float default_mfact;
-	float default_smfact;
-	unsigned int default_nmaster;
+	uint32_t default_nmaster;
+	int32_t center_master_overspread;
+	int32_t center_when_single_stack;
 
-	unsigned int hotarea_size;
-	unsigned int enable_hotarea;
-	unsigned int ov_tab_mode;
-	int overviewgappi;
-	int overviewgappo;
-	unsigned int cursor_hide_timeout;
+	uint32_t hotarea_size;
+	uint32_t enable_hotarea;
+	uint32_t ov_tab_mode;
+	int32_t overviewgappi;
+	int32_t overviewgappo;
+	uint32_t cursor_hide_timeout;
 
-	unsigned int axis_bind_apply_timeout;
-	unsigned int focus_on_activate;
-	int inhibit_regardless_of_visibility;
-	int sloppyfocus;
-	int warpcursor;
+	uint32_t axis_bind_apply_timeout;
+	uint32_t focus_on_activate;
+	int32_t idleinhibit_ignore_visible;
+	int32_t sloppyfocus;
+	int32_t warpcursor;
 
 	/* keyboard */
-	int repeat_rate;
-	int repeat_delay;
-	unsigned int numlockon;
+	int32_t repeat_rate;
+	int32_t repeat_delay;
+	uint32_t numlockon;
 
 	/* Trackpad */
-	int disable_trackpad;
-	int tap_to_click;
-	int tap_and_drag;
-	int drag_lock;
-	int mouse_natural_scrolling;
-	int trackpad_natural_scrolling;
-	int disable_while_typing;
-	int left_handed;
-	int middle_button_emulation;
-	unsigned int accel_profile;
+	int32_t disable_trackpad;
+	int32_t tap_to_click;
+	int32_t tap_and_drag;
+	int32_t drag_lock;
+	int32_t mouse_natural_scrolling;
+	int32_t trackpad_natural_scrolling;
+	int32_t disable_while_typing;
+	int32_t left_handed;
+	int32_t middle_button_emulation;
+	uint32_t accel_profile;
 	double accel_speed;
-	unsigned int scroll_method;
-	unsigned int scroll_button;
-	unsigned int click_method;
-	unsigned int send_events_mode;
-	unsigned int button_map;
+	uint32_t scroll_method;
+	uint32_t scroll_button;
+	uint32_t click_method;
+	uint32_t send_events_mode;
+	uint32_t button_map;
 
-	int blur;
-	int blur_layer;
-	int blur_optimized;
-	int border_radius;
+	double axis_scroll_factor;
+
+	int32_t blur;
+	int32_t blur_layer;
+	int32_t blur_optimized;
+	int32_t border_radius;
 	struct blur_data blur_params;
-	int shadows;
-	int shadow_only_floating;
-	int layer_shadows;
-	unsigned int shadows_size;
+	int32_t shadows;
+	int32_t shadow_only_floating;
+	int32_t layer_shadows;
+	uint32_t shadows_size;
 	float shadows_blur;
-	int shadows_position_x;
-	int shadows_position_y;
+	int32_t shadows_position_x;
+	int32_t shadows_position_y;
 	float shadowscolor[4];
 
-	int smartgaps;
-	unsigned int gappih;
-	unsigned int gappiv;
-	unsigned int gappoh;
-	unsigned int gappov;
-	unsigned int borderpx;
+	int32_t smartgaps;
+	uint32_t gappih;
+	uint32_t gappiv;
+	uint32_t gappoh;
+	uint32_t gappov;
+	uint32_t borderpx;
 	float scratchpad_width_ratio;
 	float scratchpad_height_ratio;
 	float rootcolor[4];
 	float bordercolor[4];
 	float focuscolor[4];
-	float maxmizescreencolor[4];
+	float maximizescreencolor[4];
 	float urgentcolor[4];
 	float scratchpadcolor[4];
 	float globalcolor[4];
@@ -256,46 +303,61 @@ typedef struct {
 	char autostart[3][256];
 
 	ConfigTagRule *tag_rules; // 动态数组
-	int tag_rules_count;	  // 数量
+	int32_t tag_rules_count;  // 数量
 
 	ConfigLayerRule *layer_rules; // 动态数组
-	int layer_rules_count;		  // 数量
+	int32_t layer_rules_count;	  // 数量
 
 	ConfigWinRule *window_rules;
-	int window_rules_count;
+	int32_t window_rules_count;
 
 	ConfigMonitorRule *monitor_rules; // 动态数组
-	int monitor_rules_count;		  // 条数
+	int32_t monitor_rules_count;	  // 条数
 
 	KeyBinding *key_bindings;
-	int key_bindings_count;
+	int32_t key_bindings_count;
 
 	MouseBinding *mouse_bindings;
-	int mouse_bindings_count;
+	int32_t mouse_bindings_count;
 
 	AxisBinding *axis_bindings;
-	int axis_bindings_count;
+	int32_t axis_bindings_count;
+
+	SwitchBinding *switch_bindings;
+	int32_t switch_bindings_count;
 
 	GestureBinding *gesture_bindings;
-	int gesture_bindings_count;
+	int32_t gesture_bindings_count;
+
+	ConfigEnv **env;
+	int32_t env_count;
 
 	char **exec;
-	int exec_count;
+	int32_t exec_count;
 
 	char **exec_once;
-	int exec_once_count;
+	int32_t exec_once_count;
 
 	char *cursor_theme;
-	unsigned int cursor_size;
+	uint32_t cursor_size;
 
-	int single_scratchpad;
-	int xwayland_persistence;
-	int syncobj_enable;
+	int32_t single_scratchpad;
+	int32_t xwayland_persistence;
+	int32_t syncobj_enable;
+	int32_t adaptive_sync;
+	int32_t allow_tearing;
+	int32_t allow_shortcuts_inhibit;
+	int32_t allow_lock_transparent;
 
 	struct xkb_rule_names xkb_rules;
+
+	char keymode[28];
+
+	struct xkb_context *ctx;
+	struct xkb_keymap *keymap;
 } Config;
 
-typedef void (*FuncType)(const Arg *);
+typedef int32_t (*FuncType)(const Arg *);
 Config config;
 
 void parse_config_file(Config *config, const char *file_path);
@@ -326,22 +388,27 @@ void trim_whitespace(char *str) {
 	}
 }
 
-int parse_double_array(const char *input, double *output, int max_count) {
-	char *dup = strdup(input); // 复制一份用于修改
+int32_t parse_double_array(const char *input, double *output,
+						   int32_t max_count) {
+	char *dup = strdup(input);
 	char *token;
-	int count = 0;
+	int32_t count = 0;
+
+	// 先清空整个数组
+	memset(output, 0, max_count * sizeof(double));
 
 	token = strtok(dup, ",");
 	while (token != NULL && count < max_count) {
-		trim_whitespace(token); // 对每一个分割后的 token 去除前后空格
+		trim_whitespace(token);
 		char *endptr;
 		double val = strtod(token, &endptr);
 		if (endptr == token || *endptr != '\0') {
 			fprintf(stderr, "Error: Invalid number in array: %s\n", token);
 			free(dup);
-			return -1; // 解析失败
+			return -1;
 		}
-		output[count++] = val;
+		output[count] = val; // 赋值到当前count位置
+		count++;			 // 然后才自增
 		token = strtok(NULL, ",");
 	}
 
@@ -362,10 +429,42 @@ char *sanitize_string(char *str) {
 	return str;
 }
 
-int parse_circle_direction(const char *str) {
+// 解析bind组合字符串
+void parse_bind_flags(const char *str, KeyBinding *kb) {
+
+	// 检查是否以"bind"开头
+	if (strncmp(str, "bind", 4) != 0) {
+		return;
+	}
+
+	const char *suffix = str + 4; // 跳过"bind"
+
+	// 遍历后缀字符
+	for (int32_t i = 0; suffix[i] != '\0'; i++) {
+		switch (suffix[i]) {
+		case 's':
+			kb->keysymcode.type = KEY_TYPE_SYM;
+			break;
+		case 'l':
+			kb->islockapply = true;
+			break;
+		case 'r':
+			kb->isreleaseapply = true;
+			break;
+		case 'p':
+			kb->ispassapply = true;
+			break;
+		default:
+			// 忽略其他字符或可根据需要处理错误
+			break;
+		}
+	}
+}
+
+int32_t parse_circle_direction(const char *str) {
 	// 将输入字符串转换为小写
 	char lowerStr[10];
-	int i = 0;
+	int32_t i = 0;
 	while (str[i] && i < 9) {
 		lowerStr[i] = tolower(str[i]);
 		i++;
@@ -374,16 +473,16 @@ int parse_circle_direction(const char *str) {
 
 	// 根据转换后的小写字符串返回对应的枚举值
 	if (strcmp(lowerStr, "next") == 0) {
-		return 1;
+		return NEXT;
 	} else {
-		return -1;
+		return PREV;
 	}
 }
 
-int parse_direction(const char *str) {
+int32_t parse_direction(const char *str) {
 	// 将输入字符串转换为小写
 	char lowerStr[10];
-	int i = 0;
+	int32_t i = 0;
 	while (str[i] && i < 9) {
 		lowerStr[i] = tolower(str[i]);
 		i++;
@@ -404,68 +503,32 @@ int parse_direction(const char *str) {
 	}
 }
 
-long int parse_color(const char *hex_str) {
+int32_t parse_fold_state(const char *str) {
+	// 将输入字符串转换为小写
+	char lowerStr[10];
+	int32_t i = 0;
+	while (str[i] && i < 9) {
+		lowerStr[i] = tolower(str[i]);
+		i++;
+	}
+	lowerStr[i] = '\0';
+
+	// 根据转换后的小写字符串返回对应的枚举值
+	if (strcmp(lowerStr, "fold") == 0) {
+		return FOLD;
+	} else if (strcmp(lowerStr, "unfold") == 0) {
+		return UNFOLD;
+	} else {
+		return INVALIDFOLD;
+	}
+}
+int64_t parse_color(const char *hex_str) {
 	char *endptr;
-	long int hex_num = strtol(hex_str, &endptr, 16);
+	int64_t hex_num = strtol(hex_str, &endptr, 16);
 	if (*endptr != '\0') {
 		return -1;
 	}
 	return hex_num;
-}
-
-xkb_keysym_t normalize_keysym(xkb_keysym_t sym) {
-	// 首先转换为小写（主要影响字母键）
-	sym = xkb_keysym_to_lower(sym);
-
-	// 将数字小键盘键转换为普通数字键
-	switch (sym) {
-	// 小键盘数字转换
-	case XKB_KEY_KP_0:
-		return XKB_KEY_0;
-	case XKB_KEY_KP_1:
-		return XKB_KEY_1;
-	case XKB_KEY_KP_2:
-		return XKB_KEY_2;
-	case XKB_KEY_KP_3:
-		return XKB_KEY_3;
-	case XKB_KEY_KP_4:
-		return XKB_KEY_4;
-	case XKB_KEY_KP_5:
-		return XKB_KEY_5;
-	case XKB_KEY_KP_6:
-		return XKB_KEY_6;
-	case XKB_KEY_KP_7:
-		return XKB_KEY_7;
-	case XKB_KEY_KP_8:
-		return XKB_KEY_8;
-	case XKB_KEY_KP_9:
-		return XKB_KEY_9;
-
-	// 将 Shift+数字 的符号转换回基础数字
-	case XKB_KEY_exclam:
-		return XKB_KEY_1; // !
-	case XKB_KEY_at:
-		return XKB_KEY_2; // @
-	case XKB_KEY_numbersign:
-		return XKB_KEY_3; // #
-	case XKB_KEY_dollar:
-		return XKB_KEY_4; // $
-	case XKB_KEY_percent:
-		return XKB_KEY_5; // %
-	case XKB_KEY_asciicircum:
-		return XKB_KEY_6; // ^
-	case XKB_KEY_ampersand:
-		return XKB_KEY_7; // &
-	case XKB_KEY_asterisk:
-		return XKB_KEY_8; // *
-	case XKB_KEY_parenleft:
-		return XKB_KEY_9; // (
-	case XKB_KEY_parenright:
-		return XKB_KEY_0; // )
-
-	default:
-		return sym;
-	}
 }
 
 // 辅助函数：检查字符串是否以指定的前缀开头（忽略大小写）
@@ -558,30 +621,128 @@ uint32_t parse_mod(const char *mod_str) {
 	return mod;
 }
 
-KeySymCode parse_key(const char *key_str) {
-	KeySymCode kc;
+// 定义辅助函数：在 keymap 中查找 keysym 对应的多个 keycode
+static int32_t find_keycodes_for_keysym(struct xkb_keymap *keymap,
+										xkb_keysym_t sym,
+										MultiKeycode *multi_kc) {
+	xkb_keycode_t min_keycode = xkb_keymap_min_keycode(keymap);
+	xkb_keycode_t max_keycode = xkb_keymap_max_keycode(keymap);
+
+	multi_kc->keycode1 = 0;
+	multi_kc->keycode2 = 0;
+	multi_kc->keycode3 = 0;
+
+	int32_t found_count = 0;
+
+	for (xkb_keycode_t keycode = min_keycode;
+		 keycode <= max_keycode && found_count < 3; keycode++) {
+		// 使用布局0和层级0
+		const xkb_keysym_t *syms;
+		int32_t num_syms =
+			xkb_keymap_key_get_syms_by_level(keymap, keycode, 0, 0, &syms);
+
+		for (int32_t i = 0; i < num_syms; i++) {
+			if (syms[i] == sym) {
+				switch (found_count) {
+				case 0:
+					multi_kc->keycode1 = keycode;
+					break;
+				case 1:
+					multi_kc->keycode2 = keycode;
+					break;
+				case 2:
+					multi_kc->keycode3 = keycode;
+					break;
+				}
+				found_count++;
+				break;
+			}
+		}
+	}
+
+	return found_count;
+}
+
+void cleanup_config_keymap(void) {
+	if (config.keymap != NULL) {
+		xkb_keymap_unref(config.keymap);
+		config.keymap = NULL;
+	}
+	if (config.ctx != NULL) {
+		xkb_context_unref(config.ctx);
+		config.ctx = NULL;
+	}
+}
+
+void create_config_keymap(void) {
+	// 初始化 xkb 上下文和 keymap
+
+	if (config.ctx == NULL) {
+		config.ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	}
+
+	if (config.keymap == NULL) {
+		config.keymap = xkb_keymap_new_from_names(
+			config.ctx, &xkb_fallback_rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+	}
+}
+
+KeySymCode parse_key(const char *key_str, bool isbindsym) {
+	KeySymCode kc = {0}; // 初始化为0
+
+	if (config.keymap == NULL || config.ctx == NULL) {
+		// 处理错误
+		kc.type = KEY_TYPE_SYM;
+		kc.keysym = XKB_KEY_NoSymbol;
+		return kc;
+	}
 
 	// 处理 code: 前缀的情况
 	if (strncmp(key_str, "code:", 5) == 0) {
 		char *endptr;
 		xkb_keycode_t keycode = (xkb_keycode_t)strtol(key_str + 5, &endptr, 10);
 		kc.type = KEY_TYPE_CODE;
-		kc.keycode = keycode;
+		kc.keycode.keycode1 = keycode; // 只设置第一个
+		kc.keycode.keycode2 = 0;
+		kc.keycode.keycode3 = 0;
 		return kc;
 	}
 
 	// 普通键名直接转换
 	xkb_keysym_t sym = xkb_keysym_from_name(key_str, XKB_KEYSYM_NO_FLAGS);
-	kc.type = KEY_TYPE_SYM;
-	kc.keycode = 0;
-	kc.keysym = sym;
+
+	if (isbindsym) {
+		kc.type = KEY_TYPE_SYM;
+		kc.keysym = sym;
+		return kc;
+	}
+
+	if (sym != XKB_KEY_NoSymbol) {
+		// 尝试找到对应的多个 keycode
+		int32_t found_count =
+			find_keycodes_for_keysym(config.keymap, sym, &kc.keycode);
+		if (found_count > 0) {
+			kc.type = KEY_TYPE_CODE;
+			kc.keysym = sym; // 仍然保存 keysym 供参考
+		} else {
+			kc.type = KEY_TYPE_SYM;
+			kc.keysym = sym;
+			// keycode 字段保持为0
+		}
+	} else {
+		// 无法解析的键名
+		kc.type = KEY_TYPE_SYM;
+		kc.keysym = XKB_KEY_NoSymbol;
+		// keycode 字段保持为0
+	}
+
 	return kc;
 }
 
-int parse_button(const char *str) {
+int32_t parse_button(const char *str) {
 	// 将输入字符串转换为小写
 	char lowerStr[20];
-	int i = 0;
+	int32_t i = 0;
 	while (str[i] && i < 19) {
 		lowerStr[i] = tolower(str[i]);
 		i++;
@@ -610,10 +771,10 @@ int parse_button(const char *str) {
 	}
 }
 
-int parse_mouse_action(const char *str) {
+int32_t parse_mouse_action(const char *str) {
 	// 将输入字符串转换为小写
 	char lowerStr[20];
-	int i = 0;
+	int32_t i = 0;
 	while (str[i] && i < 19) {
 		lowerStr[i] = tolower(str[i]);
 		i++;
@@ -634,14 +795,14 @@ int parse_mouse_action(const char *str) {
 	}
 }
 
-void convert_hex_to_rgba(float *color, unsigned long int hex) {
+void convert_hex_to_rgba(float *color, uint32_t hex) {
 	color[0] = ((hex >> 24) & 0xFF) / 255.0f;
 	color[1] = ((hex >> 16) & 0xFF) / 255.0f;
 	color[2] = ((hex >> 8) & 0xFF) / 255.0f;
 	color[3] = (hex & 0xFF) / 255.0f;
 }
 
-unsigned int parse_num_type(char *str) {
+uint32_t parse_num_type(char *str) {
 	switch (str[0]) {
 	case '-':
 		return NUM_TYPE_MINUS;
@@ -673,48 +834,101 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "setmfact") == 0) {
 		func = setmfact;
 		(*arg).f = atof(arg_value);
-	} else if (strcmp(func_name, "setsmfact") == 0) {
-		func = setsmfact;
-		(*arg).f = atof(arg_value);
 	} else if (strcmp(func_name, "zoom") == 0) {
 		func = zoom;
 	} else if (strcmp(func_name, "exchange_client") == 0) {
 		func = exchange_client;
 		(*arg).i = parse_direction(arg_value);
+	} else if (strcmp(func_name, "exchange_stack_client") == 0) {
+		func = exchange_stack_client;
+		(*arg).i = parse_circle_direction(arg_value);
 	} else if (strcmp(func_name, "toggleglobal") == 0) {
 		func = toggleglobal;
 	} else if (strcmp(func_name, "toggleoverview") == 0) {
 		func = toggleoverview;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "set_proportion") == 0) {
 		func = set_proportion;
-		(*arg).f = atof(arg_value);
-	} else if (strcmp(func_name, "increase_proportion") == 0) {
-		func = increase_proportion;
 		(*arg).f = atof(arg_value);
 	} else if (strcmp(func_name, "switch_proportion_preset") == 0) {
 		func = switch_proportion_preset;
 	} else if (strcmp(func_name, "viewtoleft") == 0) {
 		func = viewtoleft;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "viewtoright") == 0) {
 		func = viewtoright;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "tagsilent") == 0) {
 		func = tagsilent;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);
 	} else if (strcmp(func_name, "tagtoleft") == 0) {
 		func = tagtoleft;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "tagtoright") == 0) {
 		func = tagtoright;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "killclient") == 0) {
 		func = killclient;
+	} else if (strcmp(func_name, "centerwin") == 0) {
+		func = centerwin;
 	} else if (strcmp(func_name, "focuslast") == 0) {
 		func = focuslast;
+	} else if (strcmp(func_name, "toggle_trackpad_enable") == 0) {
+		func = toggle_trackpad_enable;
+	} else if (strcmp(func_name, "setoption") == 0) {
+		func = setoption;
+
+		(*arg).v = strdup(arg_value);
+
+		// 收集需要拼接的参数
+		const char *non_empty_params[4] = {NULL};
+		int32_t param_index = 0;
+
+		if (arg_value2 && arg_value2[0] != '\0')
+			non_empty_params[param_index++] = arg_value2;
+		if (arg_value3 && arg_value3[0] != '\0')
+			non_empty_params[param_index++] = arg_value3;
+		if (arg_value4 && arg_value4[0] != '\0')
+			non_empty_params[param_index++] = arg_value4;
+		if (arg_value5 && arg_value5[0] != '\0')
+			non_empty_params[param_index++] = arg_value5;
+
+		// 处理拼接
+		if (param_index == 0) {
+			(*arg).v2 = strdup("");
+		} else {
+			// 计算总长度
+			size_t len = 0;
+			for (int32_t i = 0; i < param_index; i++) {
+				len += strlen(non_empty_params[i]);
+			}
+			len += (param_index - 1) + 1; // 逗号数 + null终止符
+
+			char *temp = malloc(len);
+			if (temp) {
+				char *cursor = temp;
+				for (int32_t i = 0; i < param_index; i++) {
+					if (i > 0) {
+						*cursor++ = ',';
+					}
+					size_t param_len = strlen(non_empty_params[i]);
+					memcpy(cursor, non_empty_params[i], param_len);
+					cursor += param_len;
+				}
+				*cursor = '\0';
+				(*arg).v2 = temp;
+			}
+		}
+	} else if (strcmp(func_name, "setkeymode") == 0) {
+		func = setkeymode;
+		(*arg).v = strdup(arg_value);
+	} else if (strcmp(func_name, "switch_keyboard_layout") == 0) {
+		func = switch_keyboard_layout;
 	} else if (strcmp(func_name, "setlayout") == 0) {
 		func = setlayout;
 		(*arg).v = strdup(arg_value);
 	} else if (strcmp(func_name, "switch_layout") == 0) {
 		func = switch_layout;
-	} else if (strcmp(func_name, "switch_keyboard_layout") == 0) {
-		func = switch_keyboard_layout;
 	} else if (strcmp(func_name, "togglefloating") == 0) {
 		func = togglefloating;
 	} else if (strcmp(func_name, "togglefullscreen") == 0) {
@@ -723,10 +937,10 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = togglefakefullscreen;
 	} else if (strcmp(func_name, "toggleoverlay") == 0) {
 		func = toggleoverlay;
-	} else if (strcmp(func_name, "minized") == 0) {
-		func = minized;
-	} else if (strcmp(func_name, "restore_minized") == 0) {
-		func = restore_minized;
+	} else if (strcmp(func_name, "minimized") == 0) {
+		func = minimized;
+	} else if (strcmp(func_name, "restore_minimized") == 0) {
+		func = restore_minimized;
 	} else if (strcmp(func_name, "toggle_scratchpad") == 0) {
 		func = toggle_scratchpad;
 	} else if (strcmp(func_name, "toggle_render_border") == 0) {
@@ -740,6 +954,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "tagmon") == 0) {
 		func = tagmon;
 		(*arg).i = parse_direction(arg_value);
+		(*arg).i2 = atoi(arg_value2);
 		if ((*arg).i == UNDIR) {
 			(*arg).v = strdup(arg_value);
 		};
@@ -754,6 +969,9 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "spawn") == 0) {
 		func = spawn;
 		(*arg).v = strdup(arg_value);
+	} else if (strcmp(func_name, "spawn_shell") == 0) {
+		func = spawn_shell;
+		(*arg).v = strdup(arg_value);
 	} else if (strcmp(func_name, "spawn_on_empty") == 0) {
 		func = spawn_on_empty;
 		(*arg).v = strdup(arg_value); // 注意：之后需要释放这个内存
@@ -767,25 +985,64 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "moveresize") == 0) {
 		func = moveresize;
 		(*arg).ui = parse_mouse_action(arg_value);
-	} else if (strcmp(func_name, "togglemaxmizescreen") == 0) {
-		func = togglemaxmizescreen;
+	} else if (strcmp(func_name, "togglemaximizescreen") == 0) {
+		func = togglemaximizescreen;
 	} else if (strcmp(func_name, "viewtoleft_have_client") == 0) {
 		func = viewtoleft_have_client;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "viewtoright_have_client") == 0) {
 		func = viewtoright_have_client;
+		(*arg).i = atoi(arg_value);
 	} else if (strcmp(func_name, "reload_config") == 0) {
 		func = reload_config;
 	} else if (strcmp(func_name, "tag") == 0) {
 		func = tag;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);
+		(*arg).i = atoi(arg_value2);
 	} else if (strcmp(func_name, "view") == 0) {
 		func = bind_to_view;
+
+		uint32_t mask = 0;
+		char *token;
+		char *arg_copy = strdup(arg_value);
+
+		if (arg_copy != NULL) {
+			char *saveptr = NULL;
+			token = strtok_r(arg_copy, "|", &saveptr);
+
+			while (token != NULL) {
+				int32_t num = atoi(token);
+				if (num > 0 && num <= LENGTH(tags)) {
+					mask |= (1 << (num - 1));
+				}
+				token = strtok_r(NULL, "|", &saveptr);
+			}
+
+			free(arg_copy);
+		}
+
+		if (mask) {
+			(*arg).ui = mask;
+		} else {
+			(*arg).ui = atoi(arg_value);
+		}
+		(*arg).i = atoi(arg_value2);
+	} else if (strcmp(func_name, "viewcrossmon") == 0) {
+		func = viewcrossmon;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);
+		(*arg).v = strdup(arg_value2);
+	} else if (strcmp(func_name, "tagcrossmon") == 0) {
+		func = tagcrossmon;
+		(*arg).ui = 1 << (atoi(arg_value) - 1);
+		(*arg).v = strdup(arg_value2);
 	} else if (strcmp(func_name, "toggletag") == 0) {
 		func = toggletag;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);
 	} else if (strcmp(func_name, "toggleview") == 0) {
 		func = toggleview;
+		(*arg).ui = 1 << (atoi(arg_value) - 1);
+	} else if (strcmp(func_name, "comboview") == 0) {
+		func = comboview;
 		(*arg).ui = 1 << (atoi(arg_value) - 1);
 	} else if (strcmp(func_name, "smartmovewin") == 0) {
 		func = smartmovewin;
@@ -813,45 +1070,50 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		func = toggle_named_scratchpad;
 		(*arg).v = strdup(arg_value);
 		(*arg).v2 = strdup(arg_value2);
-		(*arg).v3 = strdup(arg_value5);
-		(*arg).ui = arg_value3 ? atoi(arg_value3) : 0;
-		(*arg).ui2 = arg_value4 ? atoi(arg_value4) : 0;
+		(*arg).v3 = strdup(arg_value3);
+	} else if (strcmp(func_name, "disable_monitor") == 0) {
+		func = disable_monitor;
+		(*arg).v = strdup(arg_value);
+	} else if (strcmp(func_name, "enable_monitor") == 0) {
+		func = enable_monitor;
+		(*arg).v = strdup(arg_value);
+	} else if (strcmp(func_name, "toggle_monitor") == 0) {
+		func = toggle_monitor;
+		(*arg).v = strdup(arg_value);
 	} else {
 		return NULL;
 	}
 	return func;
 }
 
+void set_env() {
+	for (int32_t i = 0; i < config.env_count; i++) {
+		setenv(config.env[i]->type, config.env[i]->value, 1);
+	}
+}
+
 void run_exec() {
 	Arg arg;
 
-	for (int i = 0; i < config.exec_count; i++) {
+	for (int32_t i = 0; i < config.exec_count; i++) {
 		arg.v = config.exec[i];
-		spawn(&arg);
+		spawn_shell(&arg);
 	}
 }
 
 void run_exec_once() {
 	Arg arg;
 
-	for (int i = 0; i < config.exec_once_count; i++) {
+	for (int32_t i = 0; i < config.exec_once_count; i++) {
 		arg.v = config.exec_once[i];
-		spawn(&arg);
+		spawn_shell(&arg);
 	}
 }
 
-void parse_config_line(Config *config, const char *line) {
-	char key[256], value[256];
-	if (sscanf(line, "%[^=]=%[^\n]", key, value) != 2) {
-		// fprintf(stderr, "Error: Invalid line format: %s\n", line);
-		return;
-	}
-
-	// Then trim each part separately
-	trim_whitespace(key);
-	trim_whitespace(value);
-
-	if (strcmp(key, "animations") == 0) {
+void parse_option(Config *config, char *key, char *value) {
+	if (strcmp(key, "keymode") == 0) {
+		snprintf(config->keymode, sizeof(config->keymode), "%.27s", value);
+	} else if (strcmp(key, "animations") == 0) {
 		config->animations = atoi(value);
 	} else if (strcmp(key, "layer_animations") == 0) {
 		config->layer_animations = atoi(value);
@@ -893,29 +1155,58 @@ void parse_config_line(Config *config, const char *line) {
 		config->animation_duration_tag = atoi(value);
 	} else if (strcmp(key, "animation_duration_close") == 0) {
 		config->animation_duration_close = atoi(value);
+	} else if (strcmp(key, "animation_duration_focus") == 0) {
+		config->animation_duration_focus = atoi(value);
 	} else if (strcmp(key, "animation_curve_move") == 0) {
-		int num = parse_double_array(value, config->animation_curve_move, 4);
+		int32_t num =
+			parse_double_array(value, config->animation_curve_move, 4);
 		if (num != 4) {
 			fprintf(stderr, "Error: Failed to parse animation_curve_move: %s\n",
 					value);
 		}
 	} else if (strcmp(key, "animation_curve_open") == 0) {
-		int num = parse_double_array(value, config->animation_curve_open, 4);
+		int32_t num =
+			parse_double_array(value, config->animation_curve_open, 4);
 		if (num != 4) {
 			fprintf(stderr, "Error: Failed to parse animation_curve_open: %s\n",
 					value);
 		}
 	} else if (strcmp(key, "animation_curve_tag") == 0) {
-		int num = parse_double_array(value, config->animation_curve_tag, 4);
+		int32_t num = parse_double_array(value, config->animation_curve_tag, 4);
 		if (num != 4) {
 			fprintf(stderr, "Error: Failed to parse animation_curve_tag: %s\n",
 					value);
 		}
 	} else if (strcmp(key, "animation_curve_close") == 0) {
-		int num = parse_double_array(value, config->animation_curve_close, 4);
+		int32_t num =
+			parse_double_array(value, config->animation_curve_close, 4);
 		if (num != 4) {
 			fprintf(stderr,
 					"Error: Failed to parse animation_curve_close: %s\n",
+					value);
+		}
+	} else if (strcmp(key, "animation_curve_focus") == 0) {
+		int32_t num =
+			parse_double_array(value, config->animation_curve_focus, 4);
+		if (num != 4) {
+			fprintf(stderr,
+					"Error: Failed to parse animation_curve_focus: %s\n",
+					value);
+		}
+	} else if (strcmp(key, "animation_curve_opafadein") == 0) {
+		int32_t num =
+			parse_double_array(value, config->animation_curve_opafadein, 4);
+		if (num != 4) {
+			fprintf(stderr,
+					"Error: Failed to parse animation_curve_opafadein: %s\n",
+					value);
+		}
+	} else if (strcmp(key, "animation_curve_opafadeout") == 0) {
+		int32_t num =
+			parse_double_array(value, config->animation_curve_opafadeout, 4);
+		if (num != 4) {
+			fprintf(stderr,
+					"Error: Failed to parse animation_curve_opafadeout: %s\n",
 					value);
 		}
 	} else if (strcmp(key, "scroller_structs") == 0) {
@@ -924,16 +1215,24 @@ void parse_config_line(Config *config, const char *line) {
 		config->scroller_default_proportion = atof(value);
 	} else if (strcmp(key, "scroller_default_proportion_single") == 0) {
 		config->scroller_default_proportion_single = atof(value);
+	} else if (strcmp(key, "scroller_ignore_proportion_single") == 0) {
+		config->scroller_ignore_proportion_single = atoi(value);
 	} else if (strcmp(key, "scroller_focus_center") == 0) {
 		config->scroller_focus_center = atoi(value);
 	} else if (strcmp(key, "scroller_prefer_center") == 0) {
 		config->scroller_prefer_center = atoi(value);
+	} else if (strcmp(key, "edge_scroller_pointer_focus") == 0) {
+		config->edge_scroller_pointer_focus = atoi(value);
 	} else if (strcmp(key, "focus_cross_monitor") == 0) {
 		config->focus_cross_monitor = atoi(value);
+	} else if (strcmp(key, "exchange_cross_monitor") == 0) {
+		config->exchange_cross_monitor = atoi(value);
+	} else if (strcmp(key, "scratchpad_cross_monitor") == 0) {
+		config->scratchpad_cross_monitor = atoi(value);
 	} else if (strcmp(key, "focus_cross_tag") == 0) {
 		config->focus_cross_tag = atoi(value);
-	} else if (strcmp(key, "focus_cross_tag") == 0) {
-		config->focus_cross_tag = atoi(value);
+	} else if (strcmp(key, "view_current_to_back") == 0) {
+		config->view_current_to_back = atoi(value);
 	} else if (strcmp(key, "blur") == 0) {
 		config->blur = atoi(value);
 	} else if (strcmp(key, "blur_layer") == 0) {
@@ -974,6 +1273,14 @@ void parse_config_line(Config *config, const char *line) {
 		config->xwayland_persistence = atoi(value);
 	} else if (strcmp(key, "syncobj_enable") == 0) {
 		config->syncobj_enable = atoi(value);
+	} else if (strcmp(key, "adaptive_sync") == 0) {
+		config->adaptive_sync = atoi(value);
+	} else if (strcmp(key, "allow_tearing") == 0) {
+		config->allow_tearing = atoi(value);
+	} else if (strcmp(key, "allow_shortcuts_inhibit") == 0) {
+		config->allow_shortcuts_inhibit = atoi(value);
+	} else if (strcmp(key, "allow_lock_transparent") == 0) {
+		config->allow_lock_transparent = atoi(value);
 	} else if (strcmp(key, "no_border_when_single") == 0) {
 		config->no_border_when_single = atoi(value);
 	} else if (strcmp(key, "no_radius_when_single") == 0) {
@@ -1012,12 +1319,12 @@ void parse_config_line(Config *config, const char *line) {
 			'\0'; // 确保字符串以 null 结尾
 	} else if (strcmp(key, "scroller_proportion_preset") == 0) {
 		// 1. 统计 value 中有多少个逗号，确定需要解析的浮点数个数
-		int count = 0; // 初始化为 0
+		int32_t count = 0; // 初始化为 0
 		for (const char *p = value; *p; p++) {
 			if (*p == ',')
 				count++;
 		}
-		int float_count = count + 1; // 浮点数的数量是逗号数量加 1
+		int32_t float_count = count + 1; // 浮点数的数量是逗号数量加 1
 
 		// 2. 动态分配内存，存储浮点数
 		config->scroller_proportion_preset =
@@ -1031,7 +1338,7 @@ void parse_config_line(Config *config, const char *line) {
 		char *value_copy =
 			strdup(value); // 复制 value，因为 strtok 会修改原字符串
 		char *token = strtok(value_copy, ",");
-		int i = 0;
+		int32_t i = 0;
 		float value_set;
 
 		while (token != NULL && i < float_count) {
@@ -1071,12 +1378,12 @@ void parse_config_line(Config *config, const char *line) {
 		free(value_copy);
 	} else if (strcmp(key, "circle_layout") == 0) {
 		// 1. 统计 value 中有多少个逗号，确定需要解析的字符串个数
-		int count = 0; // 初始化为 0
+		int32_t count = 0; // 初始化为 0
 		for (const char *p = value; *p; p++) {
 			if (*p == ',')
 				count++;
 		}
-		int string_count = count + 1; // 字符串的数量是逗号数量加 1
+		int32_t string_count = count + 1; // 字符串的数量是逗号数量加 1
 
 		// 2. 动态分配内存，存储字符串指针
 		config->circle_layout = (char **)malloc(string_count * sizeof(char *));
@@ -1090,7 +1397,7 @@ void parse_config_line(Config *config, const char *line) {
 		char *value_copy =
 			strdup(value); // 复制 value，因为 strtok 会修改原字符串
 		char *token = strtok(value_copy, ",");
-		int i = 0;
+		int32_t i = 0;
 		char *cleaned_token;
 		while (token != NULL && i < string_count) {
 			// 为每个字符串分配内存并复制内容
@@ -1101,7 +1408,7 @@ void parse_config_line(Config *config, const char *line) {
 						"Error: Memory allocation failed for string: %s\n",
 						token);
 				// 释放之前分配的内存
-				for (int j = 0; j < i; j++) {
+				for (int32_t j = 0; j < i; j++) {
 					free(config->circle_layout[j]);
 				}
 				free(config->circle_layout);
@@ -1118,7 +1425,7 @@ void parse_config_line(Config *config, const char *line) {
 		if (i != string_count) {
 			fprintf(stderr, "Error: Invalid circle_layout format: %s\n", value);
 			// 释放之前分配的内存
-			for (int j = 0; j < i; j++) {
+			for (int32_t j = 0; j < i; j++) {
 				free(config->circle_layout[j]);
 			}
 			free(config->circle_layout);
@@ -1135,10 +1442,12 @@ void parse_config_line(Config *config, const char *line) {
 		config->new_is_master = atoi(value);
 	} else if (strcmp(key, "default_mfact") == 0) {
 		config->default_mfact = atof(value);
-	} else if (strcmp(key, "default_smfact") == 0) {
-		config->default_smfact = atof(value);
 	} else if (strcmp(key, "default_nmaster") == 0) {
 		config->default_nmaster = atoi(value);
+	} else if (strcmp(key, "center_master_overspread") == 0) {
+		config->center_master_overspread = atoi(value);
+	} else if (strcmp(key, "center_when_single_stack") == 0) {
+		config->center_when_single_stack = atoi(value);
 	} else if (strcmp(key, "hotarea_size") == 0) {
 		config->hotarea_size = atoi(value);
 	} else if (strcmp(key, "enable_hotarea") == 0) {
@@ -1157,8 +1466,8 @@ void parse_config_line(Config *config, const char *line) {
 		config->focus_on_activate = atoi(value);
 	} else if (strcmp(key, "numlockon") == 0) {
 		config->numlockon = atoi(value);
-	} else if (strcmp(key, "inhibit_regardless_of_visibility") == 0) {
-		config->inhibit_regardless_of_visibility = atoi(value);
+	} else if (strcmp(key, "idleinhibit_ignore_visible") == 0) {
+		config->idleinhibit_ignore_visible = atoi(value);
 	} else if (strcmp(key, "sloppyfocus") == 0) {
 		config->sloppyfocus = atoi(value);
 	} else if (strcmp(key, "warpcursor") == 0) {
@@ -1205,6 +1514,8 @@ void parse_config_line(Config *config, const char *line) {
 		config->send_events_mode = atoi(value);
 	} else if (strcmp(key, "button_map") == 0) {
 		config->button_map = atoi(value);
+	} else if (strcmp(key, "axis_scroll_factor") == 0) {
+		config->axis_scroll_factor = atof(value);
 	} else if (strcmp(key, "gappih") == 0) {
 		config->gappih = atoi(value);
 	} else if (strcmp(key, "gappiv") == 0) {
@@ -1220,7 +1531,7 @@ void parse_config_line(Config *config, const char *line) {
 	} else if (strcmp(key, "borderpx") == 0) {
 		config->borderpx = atoi(value);
 	} else if (strcmp(key, "rootcolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid rootcolor format: %s\n", value);
 		} else {
@@ -1228,43 +1539,43 @@ void parse_config_line(Config *config, const char *line) {
 		}
 
 	} else if (strcmp(key, "shadowscolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid shadowscolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->shadowscolor, color);
 		}
 	} else if (strcmp(key, "bordercolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid bordercolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->bordercolor, color);
 		}
 	} else if (strcmp(key, "focuscolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid focuscolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->focuscolor, color);
 		}
-	} else if (strcmp(key, "maxmizescreencolor") == 0) {
-		long int color = parse_color(value);
+	} else if (strcmp(key, "maximizescreencolor") == 0) {
+		int64_t color = parse_color(value);
 		if (color == -1) {
-			fprintf(stderr, "Error: Invalid maxmizescreencolor format: %s\n",
+			fprintf(stderr, "Error: Invalid maximizescreencolor format: %s\n",
 					value);
 		} else {
-			convert_hex_to_rgba(config->maxmizescreencolor, color);
+			convert_hex_to_rgba(config->maximizescreencolor, color);
 		}
 	} else if (strcmp(key, "urgentcolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid urgentcolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->urgentcolor, color);
 		}
 	} else if (strcmp(key, "scratchpadcolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid scratchpadcolor format: %s\n",
 					value);
@@ -1272,27 +1583,19 @@ void parse_config_line(Config *config, const char *line) {
 			convert_hex_to_rgba(config->scratchpadcolor, color);
 		}
 	} else if (strcmp(key, "globalcolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid globalcolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->globalcolor, color);
 		}
 	} else if (strcmp(key, "overlaycolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid overlaycolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->overlaycolor, color);
 		}
-	} else if (strcmp(key, "autostart") == 0) {
-		if (sscanf(value, "%[^,],%[^,],%[^,]", config->autostart[0],
-				   config->autostart[1], config->autostart[2]) != 3) {
-			fprintf(stderr, "Error: Invalid autostart format: %s\n", value);
-		}
-		trim_whitespace(config->autostart[0]);
-		trim_whitespace(config->autostart[1]);
-		trim_whitespace(config->autostart[2]);
 	} else if (strcmp(key, "tagrule") == 0) {
 		config->tag_rules =
 			realloc(config->tag_rules,
@@ -1322,13 +1625,15 @@ void parse_config_line(Config *config, const char *line) {
 				trim_whitespace(val);
 
 				if (strcmp(key, "id") == 0) {
-					rule->id = CLAMP_INT(atoi(val), 1, LENGTH(tags));
+					rule->id = CLAMP_INT(atoi(val), 0, LENGTH(tags));
 				} else if (strcmp(key, "layout_name") == 0) {
 					rule->layout_name = strdup(val);
 				} else if (strcmp(key, "monitor_name") == 0) {
 					rule->monitor_name = strdup(val);
 				} else if (strcmp(key, "no_render_border") == 0) {
 					rule->no_render_border = CLAMP_INT(atoi(val), 0, 1);
+				} else if (strcmp(key, "no_hide") == 0) {
+					rule->no_hide = CLAMP_INT(atoi(val), 0, 1);
 				}
 			}
 			token = strtok(NULL, ",");
@@ -1403,37 +1708,54 @@ void parse_config_line(Config *config, const char *line) {
 		ConfigWinRule *rule = &config->window_rules[config->window_rules_count];
 		memset(rule, 0, sizeof(ConfigWinRule));
 
+		// int32_t rule value, relay to a client property
 		rule->isfloating = -1;
 		rule->isfullscreen = -1;
 		rule->isnoborder = -1;
+		rule->isnoshadow = -1;
+		rule->isnoradius = -1;
+		rule->isnoanimation = -1;
 		rule->isopensilent = -1;
+		rule->istagsilent = -1;
 		rule->isnamedscratchpad = -1;
 		rule->isunglobal = -1;
 		rule->isglobal = -1;
 		rule->isoverlay = -1;
+		rule->allow_shortcuts_inhibit = -1;
 		rule->ignore_maximize = -1;
+		rule->ignore_minimize = -1;
 		rule->isnosizehint = -1;
 		rule->isterm = -1;
+		rule->allow_csd = -1;
+		rule->force_maximize = -1;
+		rule->force_tearing = -1;
 		rule->noswallow = -1;
 		rule->noblur = -1;
-		rule->monitor = NULL;
-		rule->offsetx = 0;
-		rule->offsety = 0;
+		rule->nofocus = -1;
 		rule->nofadein = -1;
 		rule->nofadeout = -1;
 		rule->no_force_center = -1;
-		rule->scratchpad_width = 0;
-		rule->scratchpad_height = 0;
-		rule->focused_opacity = 0;
-		rule->unfocused_opacity = 0;
-		rule->width = 0;
-		rule->height = 0;
+
+		// string rule value, relay to a client property
 		rule->animation_type_open = NULL;
 		rule->animation_type_close = NULL;
+
+		// float rule value, relay to a client property
+		rule->focused_opacity = 0;
+		rule->unfocused_opacity = 0;
+		rule->scroller_proportion_single = 0.0f;
 		rule->scroller_proportion = 0;
+
+		// special rule value,not directly set to client property
+		rule->tags = 0;
+		rule->offsetx = 0;
+		rule->offsety = 0;
+		rule->width = 0;
+		rule->height = 0;
+		rule->monitor = NULL;
 		rule->id = NULL;
 		rule->title = NULL;
-		rule->tags = 0;
+
 		rule->globalkeybinding = (KeyBinding){0};
 
 		char *token = strtok(value, ",");
@@ -1465,42 +1787,60 @@ void parse_config_line(Config *config, const char *line) {
 					rule->offsetx = atoi(val);
 				} else if (strcmp(key, "offsety") == 0) {
 					rule->offsety = atoi(val);
+				} else if (strcmp(key, "nofocus") == 0) {
+					rule->nofocus = atoi(val);
 				} else if (strcmp(key, "nofadein") == 0) {
 					rule->nofadein = atoi(val);
 				} else if (strcmp(key, "nofadeout") == 0) {
 					rule->nofadeout = atoi(val);
 				} else if (strcmp(key, "no_force_center") == 0) {
 					rule->no_force_center = atoi(val);
-				} else if (strcmp(key, "scratchpad_width") == 0) {
-					rule->scratchpad_width = atoi(val);
-				} else if (strcmp(key, "scratchpad_height") == 0) {
-					rule->scratchpad_height = atoi(val);
 				} else if (strcmp(key, "width") == 0) {
 					rule->width = atoi(val);
 				} else if (strcmp(key, "height") == 0) {
 					rule->height = atoi(val);
 				} else if (strcmp(key, "isnoborder") == 0) {
 					rule->isnoborder = atoi(val);
+				} else if (strcmp(key, "isnoshadow") == 0) {
+					rule->isnoshadow = atoi(val);
+				} else if (strcmp(key, "isnoradius") == 0) {
+					rule->isnoradius = atoi(val);
+				} else if (strcmp(key, "isnoanimation") == 0) {
+					rule->isnoanimation = atoi(val);
 				} else if (strcmp(key, "isopensilent") == 0) {
 					rule->isopensilent = atoi(val);
+				} else if (strcmp(key, "istagsilent") == 0) {
+					rule->istagsilent = atoi(val);
 				} else if (strcmp(key, "isnamedscratchpad") == 0) {
 					rule->isnamedscratchpad = atoi(val);
 				} else if (strcmp(key, "isunglobal") == 0) {
 					rule->isunglobal = atoi(val);
 				} else if (strcmp(key, "isglobal") == 0) {
 					rule->isglobal = atoi(val);
+				} else if (strcmp(key, "scroller_proportion_single") == 0) {
+					rule->scroller_proportion_single = atof(val);
 				} else if (strcmp(key, "unfocused_opacity") == 0) {
 					rule->unfocused_opacity = atof(val);
 				} else if (strcmp(key, "focused_opacity") == 0) {
 					rule->focused_opacity = atof(val);
 				} else if (strcmp(key, "isoverlay") == 0) {
 					rule->isoverlay = atoi(val);
+				} else if (strcmp(key, "allow_shortcuts_inhibit") == 0) {
+					rule->allow_shortcuts_inhibit = atoi(val);
 				} else if (strcmp(key, "ignore_maximize") == 0) {
 					rule->ignore_maximize = atoi(val);
+				} else if (strcmp(key, "ignore_minimize") == 0) {
+					rule->ignore_minimize = atoi(val);
 				} else if (strcmp(key, "isnosizehint") == 0) {
 					rule->isnosizehint = atoi(val);
 				} else if (strcmp(key, "isterm") == 0) {
 					rule->isterm = atoi(val);
+				} else if (strcmp(key, "allow_csd") == 0) {
+					rule->allow_csd = atoi(val);
+				} else if (strcmp(key, "force_maximize") == 0) {
+					rule->force_maximize = atoi(val);
+				} else if (strcmp(key, "force_tearing") == 0) {
+					rule->force_tearing = atoi(val);
 				} else if (strcmp(key, "noswallow") == 0) {
 					rule->noswallow = atoi(val);
 				} else if (strcmp(key, "noblur") == 0) {
@@ -1511,11 +1851,12 @@ void parse_config_line(Config *config, const char *line) {
 					rule->isfullscreen = atoi(val);
 				} else if (strcmp(key, "globalkeybinding") == 0) {
 					char mod_str[256], keysym_str[256];
-					sscanf(val, "%[^-]-%[a-zA-Z]", mod_str, keysym_str);
+					sscanf(val, "%255[^-]-%255[a-zA-Z]", mod_str, keysym_str);
 					trim_whitespace(mod_str);
 					trim_whitespace(keysym_str);
 					rule->globalkeybinding.mod = parse_mod(mod_str);
-					rule->globalkeybinding.keysymcode = parse_key(keysym_str);
+					rule->globalkeybinding.keysymcode =
+						parse_key(keysym_str, false);
 				}
 			}
 			token = strtok(NULL, ",");
@@ -1542,7 +1883,7 @@ void parse_config_line(Config *config, const char *line) {
 			raw_height[256], raw_refresh[256];
 
 		// 先读取所有字段为字符串
-		int parsed =
+		int32_t parsed =
 			sscanf(value,
 				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
 				   "^,],%255[^,],%255[^,],%255[^,],%255[^,],%255s",
@@ -1593,13 +1934,29 @@ void parse_config_line(Config *config, const char *line) {
 	} else if (strncmp(key, "env", 3) == 0) {
 
 		char env_type[256], env_value[256];
-		if (sscanf(value, "%[^,],%[^\n]", env_type, env_value) < 2) {
+		if (sscanf(value, "%255[^,],%255[^\n]", env_type, env_value) < 2) {
 			fprintf(stderr, "Error: Invalid bind format: %s\n", value);
 			return;
 		}
 		trim_whitespace(env_type);
 		trim_whitespace(env_value);
-		setenv(env_type, env_value, 1);
+
+		ConfigEnv *env = calloc(1, sizeof(ConfigEnv));
+		env->type = strdup(env_type);
+		env->value = strdup(env_value);
+
+		config->env =
+			realloc(config->env, (config->env_count + 1) * sizeof(ConfigEnv));
+		if (!config->env) {
+			free(env->type);
+			free(env->value);
+			free(env);
+			fprintf(stderr, "Error: Failed to allocate memory for env\n");
+			return;
+		}
+
+		config->env[config->env_count] = env;
+		config->env_count++;
 
 	} else if (strncmp(key, "exec", 9) == 0) {
 		char **new_exec =
@@ -1636,7 +1993,7 @@ void parse_config_line(Config *config, const char *line) {
 
 		config->exec_once_count++;
 
-	} else if (strncmp(key, "bind", 4) == 0) {
+	} else if (regex_match("^bind[s|l|r|p]*$", key)) {
 		config->key_bindings =
 			realloc(config->key_bindings,
 					(config->key_bindings_count + 1) * sizeof(KeyBinding));
@@ -1650,10 +2007,12 @@ void parse_config_line(Config *config, const char *line) {
 		memset(binding, 0, sizeof(KeyBinding));
 
 		char mod_str[256], keysym_str[256], func_name[256],
-			arg_value[256] = "none", arg_value2[256] = "none",
-			arg_value3[256] = "none", arg_value4[256] = "none",
-			arg_value5[256] = "none";
-		if (sscanf(value, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
+			arg_value[256] = "0\0", arg_value2[256] = "0\0",
+			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
+			arg_value5[256] = "0\0";
+		if (sscanf(value,
+				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
+				   "^,],%255[^\n]",
 				   mod_str, keysym_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
 			fprintf(stderr, "Error: Invalid bind format: %s\n", value);
@@ -1668,8 +2027,22 @@ void parse_config_line(Config *config, const char *line) {
 		trim_whitespace(arg_value4);
 		trim_whitespace(arg_value5);
 
+		strcpy(binding->mode, config->keymode);
+		if (strcmp(binding->mode, "common") == 0) {
+			binding->iscommonmode = true;
+			binding->isdefaultmode = false;
+		} else if (strcmp(binding->mode, "default") == 0) {
+			binding->isdefaultmode = true;
+			binding->iscommonmode = false;
+		} else {
+			binding->isdefaultmode = false;
+			binding->iscommonmode = false;
+		}
+
+		parse_bind_flags(key, binding);
+		binding->keysymcode =
+			parse_key(keysym_str, binding->keysymcode.type == KEY_TYPE_SYM);
 		binding->mod = parse_mod(mod_str);
-		binding->keysymcode = parse_key(keysym_str);
 		binding->arg.v = NULL;
 		binding->arg.v2 = NULL;
 		binding->arg.v3 = NULL;
@@ -1709,10 +2082,12 @@ void parse_config_line(Config *config, const char *line) {
 		memset(binding, 0, sizeof(MouseBinding));
 
 		char mod_str[256], button_str[256], func_name[256],
-			arg_value[256] = "none", arg_value2[256] = "none",
-			arg_value3[256] = "none", arg_value4[256] = "none",
-			arg_value5[256] = "none";
-		if (sscanf(value, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
+			arg_value[256] = "0\0", arg_value2[256] = "0\0",
+			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
+			arg_value5[256] = "0\0";
+		if (sscanf(value,
+				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
+				   "^,],%255[^\n]",
 				   mod_str, button_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
 			fprintf(stderr, "Error: Invalid mousebind format: %s\n", value);
@@ -1768,10 +2143,12 @@ void parse_config_line(Config *config, const char *line) {
 		memset(binding, 0, sizeof(AxisBinding));
 
 		char mod_str[256], dir_str[256], func_name[256],
-			arg_value[256] = "none", arg_value2[256] = "none",
-			arg_value3[256] = "none", arg_value4[256] = "none",
-			arg_value5[256] = "none";
-		if (sscanf(value, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
+			arg_value[256] = "0\0", arg_value2[256] = "0\0",
+			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
+			arg_value5[256] = "0\0";
+		if (sscanf(value,
+				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
+				   "^,],%255[^\n]",
 				   mod_str, dir_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
 			fprintf(stderr, "Error: Invalid axisbind format: %s\n", value);
@@ -1815,6 +2192,64 @@ void parse_config_line(Config *config, const char *line) {
 			config->axis_bindings_count++;
 		}
 
+	} else if (strncmp(key, "switchbind", 10) == 0) {
+		config->switch_bindings = realloc(config->switch_bindings,
+										  (config->switch_bindings_count + 1) *
+											  sizeof(SwitchBinding));
+		if (!config->switch_bindings) {
+			fprintf(stderr,
+					"Error: Failed to allocate memory for switch bindings\n");
+			return;
+		}
+
+		SwitchBinding *binding =
+			&config->switch_bindings[config->switch_bindings_count];
+		memset(binding, 0, sizeof(SwitchBinding));
+
+		char fold_str[256], func_name[256],
+			arg_value[256] = "0\0", arg_value2[256] = "0\0",
+			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
+			arg_value5[256] = "0\0";
+		if (sscanf(value,
+				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
+				   "^\n]",
+				   fold_str, func_name, arg_value, arg_value2, arg_value3,
+				   arg_value4, arg_value5) < 3) {
+			fprintf(stderr, "Error: Invalid switchbind format: %s\n", value);
+			return;
+		}
+		trim_whitespace(fold_str);
+		trim_whitespace(func_name);
+		trim_whitespace(arg_value);
+		trim_whitespace(arg_value2);
+		trim_whitespace(arg_value3);
+		trim_whitespace(arg_value4);
+		trim_whitespace(arg_value5);
+
+		binding->fold = parse_fold_state(fold_str);
+		binding->func =
+			parse_func_name(func_name, &binding->arg, arg_value, arg_value2,
+							arg_value3, arg_value4, arg_value5);
+
+		if (!binding->func) {
+			if (binding->arg.v) {
+				free(binding->arg.v);
+				binding->arg.v = NULL;
+			}
+			if (binding->arg.v2) {
+				free(binding->arg.v2);
+				binding->arg.v2 = NULL;
+			}
+			if (binding->arg.v3) {
+				free(binding->arg.v3);
+				binding->arg.v3 = NULL;
+			}
+			fprintf(stderr, "Error: Unknown function in switchbind: %s\n",
+					func_name);
+		} else {
+			config->switch_bindings_count++;
+		}
+
 	} else if (strncmp(key, "gesturebind", 11) == 0) {
 		config->gesture_bindings = realloc(
 			config->gesture_bindings,
@@ -1830,11 +2265,12 @@ void parse_config_line(Config *config, const char *line) {
 		memset(binding, 0, sizeof(GestureBinding));
 
 		char mod_str[256], motion_str[256], fingers_count_str[256],
-			func_name[256], arg_value[256] = "none", arg_value2[256] = "none",
-							arg_value3[256] = "none", arg_value4[256] = "none",
-							arg_value5[256] = "none";
+			func_name[256], arg_value[256] = "0\0", arg_value2[256] = "0\0",
+							arg_value3[256] = "0\0", arg_value4[256] = "0\0",
+							arg_value5[256] = "0\0";
 		if (sscanf(value,
-				   "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^\n]",
+				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
+				   "^,],%255[^,],%255[^\n]",
 				   mod_str, motion_str, fingers_count_str, func_name, arg_value,
 				   arg_value2, arg_value3, arg_value4, arg_value5) < 4) {
 			fprintf(stderr, "Error: Invalid gesturebind format: %s\n", value);
@@ -1887,37 +2323,71 @@ void parse_config_line(Config *config, const char *line) {
 	}
 }
 
+void parse_config_line(Config *config, const char *line) {
+	char key[256], value[256];
+	if (sscanf(line, "%255[^=]=%255[^\n]", key, value) != 2) {
+		// fprintf(stderr, "Error: Invalid line format: %s\n", line);
+		return;
+	}
+
+	// Then trim each part separately
+	trim_whitespace(key);
+	trim_whitespace(value);
+
+	parse_option(config, key, value);
+}
+
 void parse_config_file(Config *config, const char *file_path) {
 	FILE *file;
-	// 检查路径是否以 ~/ 开头
-	if (file_path[0] == '~' && (file_path[1] == '/' || file_path[1] == '\0')) {
+	char full_path[1024];
+
+	if (file_path[0] == '.' && file_path[1] == '/') {
+		// Relative path
+
+		if (cli_config_path) {
+			char *config_path = strdup(cli_config_path);
+			char *config_dir = dirname(config_path);
+			snprintf(full_path, sizeof(full_path), "%s/%s", config_dir,
+					 file_path + 1);
+			free(config_path);
+		} else {
+			const char *home = getenv("HOME");
+			if (!home) {
+				fprintf(stderr, "Error: HOME environment variable not set.\n");
+				return;
+			}
+			snprintf(full_path, sizeof(full_path), "%s/.config/mango/%s", home,
+					 file_path + 1);
+		}
+		file = fopen(full_path, "r");
+
+	} else if (file_path[0] == '~' &&
+			   (file_path[1] == '/' || file_path[1] == '\0')) {
+		// Home directory
+
 		const char *home = getenv("HOME");
 		if (!home) {
 			fprintf(stderr, "Error: HOME environment variable not set.\n");
 			return;
 		}
-
-		// 构建完整路径（家目录 + / + 原路径去掉 ~）
-		char full_path[1024];
 		snprintf(full_path, sizeof(full_path), "%s%s", home, file_path + 1);
-
 		file = fopen(full_path, "r");
-		if (!file) {
-			perror("Error opening file");
-			return;
-		}
+
 	} else {
+		// Absolute path
 		file = fopen(file_path, "r");
-		if (!file) {
-			perror("Error opening file");
-			return;
-		}
+	}
+
+	if (!file) {
+		perror("Error opening file");
+		return;
 	}
 
 	char line[512];
 	while (fgets(line, sizeof(line), file)) {
-		if (line[0] == '#' || line[0] == '\n')
+		if (line[0] == '#' || line[0] == '\n') {
 			continue;
+		}
 		parse_config_line(config, line);
 	}
 
@@ -1927,7 +2397,7 @@ void parse_config_file(Config *config, const char *file_path) {
 void free_circle_layout(Config *config) {
 	if (config->circle_layout) {
 		// 释放每个字符串
-		for (int i = 0; i < config->circle_layout_count; i++) {
+		for (int32_t i = 0; i < config->circle_layout_count; i++) {
 			if (config->circle_layout[i]) {
 				free(config->circle_layout[i]);	 // 释放单个字符串
 				config->circle_layout[i] = NULL; // 防止野指针
@@ -1957,15 +2427,27 @@ void free_baked_points(void) {
 		free(baked_points_tag);
 		baked_points_tag = NULL;
 	}
+	if (baked_points_focus) {
+		free(baked_points_focus);
+		baked_points_focus = NULL;
+	}
+	if (baked_points_opafadein) {
+		free(baked_points_opafadein);
+		baked_points_opafadein = NULL;
+	}
+	if (baked_points_opafadeout) {
+		free(baked_points_opafadeout);
+		baked_points_opafadeout = NULL;
+	}
 }
 
 void free_config(void) {
 	// 释放内存
-	int i;
+	int32_t i;
 
 	// 释放 window_rules
 	if (config.window_rules) {
-		for (int i = 0; i < config.window_rules_count; i++) {
+		for (int32_t i = 0; i < config.window_rules_count; i++) {
 			ConfigWinRule *rule = &config.window_rules[i];
 			if (rule->id)
 				free((void *)rule->id);
@@ -1994,7 +2476,7 @@ void free_config(void) {
 
 	// 释放 monitor_rules
 	if (config.monitor_rules) {
-		for (int i = 0; i < config.monitor_rules_count; i++) {
+		for (int32_t i = 0; i < config.monitor_rules_count; i++) {
 			ConfigMonitorRule *rule = &config.monitor_rules[i];
 			free((void *)rule->name);
 			free((void *)rule->layout);
@@ -2067,6 +2549,27 @@ void free_config(void) {
 		config.axis_bindings_count = 0;
 	}
 
+	// 释放 switch_bindings
+	if (config.switch_bindings) {
+		for (i = 0; i < config.switch_bindings_count; i++) {
+			if (config.switch_bindings[i].arg.v) {
+				free((void *)config.switch_bindings[i].arg.v);
+				config.switch_bindings[i].arg.v = NULL;
+			}
+			if (config.switch_bindings[i].arg.v2) {
+				free((void *)config.switch_bindings[i].arg.v2);
+				config.switch_bindings[i].arg.v2 = NULL;
+			}
+			if (config.switch_bindings[i].arg.v3) {
+				free((void *)config.switch_bindings[i].arg.v3);
+				config.switch_bindings[i].arg.v3 = NULL;
+			}
+		}
+		free(config.switch_bindings);
+		config.switch_bindings = NULL;
+		config.switch_bindings_count = 0;
+	}
+
 	// 释放 gesture_bindings
 	if (config.gesture_bindings) {
 		for (i = 0; i < config.gesture_bindings_count; i++) {
@@ -2090,7 +2593,7 @@ void free_config(void) {
 
 	// 释放 tag_rules
 	if (config.tag_rules) {
-		for (int i = 0; i < config.tag_rules_count; i++) {
+		for (int32_t i = 0; i < config.tag_rules_count; i++) {
 			if (config.tag_rules[i].layout_name)
 				free((void *)config.tag_rules[i].layout_name);
 			if (config.tag_rules[i].monitor_name)
@@ -2103,7 +2606,7 @@ void free_config(void) {
 
 	// 释放 layer_rules
 	if (config.layer_rules) {
-		for (int i = 0; i < config.layer_rules_count; i++) {
+		for (int32_t i = 0; i < config.layer_rules_count; i++) {
 			if (config.layer_rules[i].layer_name)
 				free((void *)config.layer_rules[i].layer_name);
 			if (config.layer_rules[i].animation_type_open)
@@ -2114,6 +2617,22 @@ void free_config(void) {
 		free(config.layer_rules);
 		config.layer_rules = NULL;
 		config.layer_rules_count = 0;
+	}
+
+	// 释放 env
+	if (config.env) {
+		for (int32_t i = 0; i < config.env_count; i++) {
+			if (config.env[i]->type) {
+				free((void *)config.env[i]->type);
+			}
+			if (config.env[i]->value) {
+				free((void *)config.env[i]->value);
+			}
+			free(config.env[i]);
+		}
+		free(config.env);
+		config.env = NULL;
+		config.env_count = 0;
 	}
 
 	// 释放 exec
@@ -2153,6 +2672,9 @@ void free_config(void) {
 
 	// 释放动画资源
 	free_baked_points();
+
+	// 清理解析按键用的keymap
+	cleanup_config_keymap();
 }
 
 void override_config(void) {
@@ -2188,20 +2710,27 @@ void override_config(void) {
 	animation_duration_tag = CLAMP_INT(config.animation_duration_tag, 1, 50000);
 	animation_duration_close =
 		CLAMP_INT(config.animation_duration_close, 1, 50000);
+	animation_duration_focus =
+		CLAMP_INT(config.animation_duration_focus, 1, 50000);
 
 	// 滚动布局设置
 	scroller_default_proportion =
 		CLAMP_FLOAT(config.scroller_default_proportion, 0.1f, 1.0f);
 	scroller_default_proportion_single =
 		CLAMP_FLOAT(config.scroller_default_proportion_single, 0.1f, 1.0f);
+	scroller_ignore_proportion_single =
+		CLAMP_INT(config.scroller_ignore_proportion_single, 0, 1);
 	scroller_focus_center = CLAMP_INT(config.scroller_focus_center, 0, 1);
 	scroller_prefer_center = CLAMP_INT(config.scroller_prefer_center, 0, 1);
+	edge_scroller_pointer_focus =
+		CLAMP_INT(config.edge_scroller_pointer_focus, 0, 1);
 	scroller_structs = CLAMP_INT(config.scroller_structs, 0, 1000);
 
 	// 主从布局设置
 	default_mfact = CLAMP_FLOAT(config.default_mfact, 0.1f, 0.9f);
-	default_smfact = CLAMP_FLOAT(config.default_smfact, 0.1f, 0.9f);
 	default_nmaster = CLAMP_INT(config.default_nmaster, 1, 1000);
+	center_master_overspread = CLAMP_INT(config.center_master_overspread, 0, 1);
+	center_when_single_stack = CLAMP_INT(config.center_when_single_stack, 0, 1);
 	new_is_master = CLAMP_INT(config.new_is_master, 0, 1);
 
 	// 概述模式设置
@@ -2214,15 +2743,22 @@ void override_config(void) {
 	// 杂项设置
 	xwayland_persistence = CLAMP_INT(config.xwayland_persistence, 0, 1);
 	syncobj_enable = CLAMP_INT(config.syncobj_enable, 0, 1);
+	adaptive_sync = CLAMP_INT(config.adaptive_sync, 0, 1);
+	allow_tearing = CLAMP_INT(config.allow_tearing, 0, 2);
+	allow_shortcuts_inhibit = CLAMP_INT(config.allow_shortcuts_inhibit, 0, 1);
+	allow_lock_transparent = CLAMP_INT(config.allow_lock_transparent, 0, 1);
 	axis_bind_apply_timeout =
 		CLAMP_INT(config.axis_bind_apply_timeout, 0, 1000);
 	focus_on_activate = CLAMP_INT(config.focus_on_activate, 0, 1);
-	inhibit_regardless_of_visibility =
-		CLAMP_INT(config.inhibit_regardless_of_visibility, 0, 1);
+	idleinhibit_ignore_visible =
+		CLAMP_INT(config.idleinhibit_ignore_visible, 0, 1);
 	sloppyfocus = CLAMP_INT(config.sloppyfocus, 0, 1);
 	warpcursor = CLAMP_INT(config.warpcursor, 0, 1);
 	focus_cross_monitor = CLAMP_INT(config.focus_cross_monitor, 0, 1);
+	exchange_cross_monitor = CLAMP_INT(config.exchange_cross_monitor, 0, 1);
+	scratchpad_cross_monitor = CLAMP_INT(config.scratchpad_cross_monitor, 0, 1);
 	focus_cross_tag = CLAMP_INT(config.focus_cross_tag, 0, 1);
+	view_current_to_back = CLAMP_INT(config.view_current_to_back, 0, 1);
 	enable_floating_snap = CLAMP_INT(config.enable_floating_snap, 0, 1);
 	snap_distance = CLAMP_INT(config.snap_distance, 0, 99999);
 	cursor_size = CLAMP_INT(config.cursor_size, 4, 512);
@@ -2259,6 +2795,7 @@ void override_config(void) {
 	click_method = CLAMP_INT(config.click_method, 0, 2);
 	send_events_mode = CLAMP_INT(config.send_events_mode, 0, 2);
 	button_map = CLAMP_INT(config.button_map, 0, 1);
+	axis_scroll_factor = CLAMP_FLOAT(config.axis_scroll_factor, 0.1f, 10.0f);
 
 	// 外观设置
 	gappih = CLAMP_INT(config.gappih, 0, 1000);
@@ -2297,8 +2834,8 @@ void override_config(void) {
 	memcpy(rootcolor, config.rootcolor, sizeof(rootcolor));
 	memcpy(bordercolor, config.bordercolor, sizeof(bordercolor));
 	memcpy(focuscolor, config.focuscolor, sizeof(focuscolor));
-	memcpy(maxmizescreencolor, config.maxmizescreencolor,
-		   sizeof(maxmizescreencolor));
+	memcpy(maximizescreencolor, config.maximizescreencolor,
+		   sizeof(maximizescreencolor));
 	memcpy(urgentcolor, config.urgentcolor, sizeof(urgentcolor));
 	memcpy(scratchpadcolor, config.scratchpadcolor, sizeof(scratchpadcolor));
 	memcpy(globalcolor, config.globalcolor, sizeof(globalcolor));
@@ -2313,6 +2850,12 @@ void override_config(void) {
 		   sizeof(animation_curve_tag));
 	memcpy(animation_curve_close, config.animation_curve_close,
 		   sizeof(animation_curve_close));
+	memcpy(animation_curve_focus, config.animation_curve_focus,
+		   sizeof(animation_curve_focus));
+	memcpy(animation_curve_opafadein, config.animation_curve_opafadein,
+		   sizeof(animation_curve_opafadein));
+	memcpy(animation_curve_opafadeout, config.animation_curve_opafadeout,
+		   sizeof(animation_curve_opafadeout));
 }
 
 void set_value_default() {
@@ -2335,16 +2878,21 @@ void set_value_default() {
 		animation_duration_tag; // Animation tag speed
 	config.animation_duration_close =
 		animation_duration_close; // Animation tag speed
+	config.animation_duration_focus =
+		animation_duration_focus; // Animation focus opacity speed
 
 	/* appearance */
 	config.axis_bind_apply_timeout =
 		axis_bind_apply_timeout; // 滚轮绑定动作的触发的时间间隔
 	config.focus_on_activate =
-		focus_on_activate;					// 收到窗口激活请求是否自动跳转聚焦
-	config.new_is_master = new_is_master;	// 新窗口是否插在头部
-	config.default_mfact = default_mfact;	// master 窗口比例
-	config.default_smfact = default_smfact; // 第一个stack比例
+		focus_on_activate;				  // 收到窗口激活请求是否自动跳转聚焦
+	config.new_is_master = new_is_master; // 新窗口是否插在头部
+	config.default_mfact = default_mfact; // master 窗口比例
 	config.default_nmaster = default_nmaster; // 默认master数量
+	config.center_master_overspread =
+		center_master_overspread; // 中心master时是否铺满
+	config.center_when_single_stack =
+		center_when_single_stack; // 单个stack时是否居中
 
 	config.numlockon = numlockon; // 是否打开右边小键盘
 
@@ -2366,13 +2914,24 @@ void set_value_default() {
 	config.scroller_default_proportion = scroller_default_proportion;
 	config.scroller_default_proportion_single =
 		scroller_default_proportion_single;
+	config.scroller_ignore_proportion_single =
+		scroller_ignore_proportion_single;
 	config.scroller_focus_center = scroller_focus_center;
 	config.scroller_prefer_center = scroller_prefer_center;
+	config.edge_scroller_pointer_focus = edge_scroller_pointer_focus;
 	config.focus_cross_monitor = focus_cross_monitor;
+	config.exchange_cross_monitor = exchange_cross_monitor;
+	config.scratchpad_cross_monitor = scratchpad_cross_monitor;
 	config.focus_cross_tag = focus_cross_tag;
+	config.axis_scroll_factor = axis_scroll_factor;
+	config.view_current_to_back = view_current_to_back;
 	config.single_scratchpad = single_scratchpad;
 	config.xwayland_persistence = xwayland_persistence;
 	config.syncobj_enable = syncobj_enable;
+	config.adaptive_sync = adaptive_sync;
+	config.allow_tearing = allow_tearing;
+	config.allow_shortcuts_inhibit = allow_shortcuts_inhibit;
+	config.allow_lock_transparent = allow_lock_transparent;
 	config.no_border_when_single = no_border_when_single;
 	config.no_radius_when_single = no_radius_when_single;
 	config.snap_distance = snap_distance;
@@ -2380,10 +2939,10 @@ void set_value_default() {
 	config.enable_floating_snap = enable_floating_snap;
 	config.swipe_min_threshold = swipe_min_threshold;
 
-	config.inhibit_regardless_of_visibility =
-		inhibit_regardless_of_visibility; /* 1 means idle inhibitors will
-									  disable idle tracking even if it's surface
-									  isn't visible
+	config.idleinhibit_ignore_visible =
+		idleinhibit_ignore_visible; /* 1 means idle inhibitors will
+									  disable idle tracking even if it's
+									  surface isn't visible
 									*/
 
 	config.borderpx = borderpx;
@@ -2444,12 +3003,18 @@ void set_value_default() {
 		   sizeof(animation_curve_tag));
 	memcpy(config.animation_curve_close, animation_curve_close,
 		   sizeof(animation_curve_close));
+	memcpy(config.animation_curve_focus, animation_curve_focus,
+		   sizeof(animation_curve_focus));
+	memcpy(config.animation_curve_opafadein, animation_curve_opafadein,
+		   sizeof(animation_curve_opafadein));
+	memcpy(config.animation_curve_opafadeout, animation_curve_opafadeout,
+		   sizeof(animation_curve_opafadeout));
 
 	memcpy(config.rootcolor, rootcolor, sizeof(rootcolor));
 	memcpy(config.bordercolor, bordercolor, sizeof(bordercolor));
 	memcpy(config.focuscolor, focuscolor, sizeof(focuscolor));
-	memcpy(config.maxmizescreencolor, maxmizescreencolor,
-		   sizeof(maxmizescreencolor));
+	memcpy(config.maximizescreencolor, maximizescreencolor,
+		   sizeof(maximizescreencolor));
 	memcpy(config.urgentcolor, urgentcolor, sizeof(urgentcolor));
 	memcpy(config.scratchpadcolor, scratchpadcolor, sizeof(scratchpadcolor));
 	memcpy(config.globalcolor, globalcolor, sizeof(globalcolor));
@@ -2474,6 +3039,9 @@ void set_default_key_bindings(Config *config) {
 	for (size_t i = 0; i < default_key_bindings_count; i++) {
 		config->key_bindings[config->key_bindings_count + i] =
 			default_key_bindings[i];
+		config->key_bindings[config->key_bindings_count + i].iscommonmode =
+			true;
+		config->key_bindings[config->key_bindings_count + i].islockapply = true;
 	}
 
 	// 更新按键绑定的总数
@@ -2488,6 +3056,11 @@ void parse_config(void) {
 
 	// 重置config结构体，确保所有指针初始化为NULL
 	memset(&config, 0, sizeof(config));
+	memset(&xkb_rules_rules, 0, sizeof(xkb_rules_rules));
+	memset(&xkb_rules_model, 0, sizeof(xkb_rules_model));
+	memset(&xkb_rules_layout, 0, sizeof(xkb_rules_layout));
+	memset(&xkb_rules_variant, 0, sizeof(xkb_rules_variant));
+	memset(&xkb_rules_options, 0, sizeof(xkb_rules_options));
 
 	// 初始化动态数组的指针为NULL，避免野指针
 	config.window_rules = NULL;
@@ -2500,8 +3073,12 @@ void parse_config(void) {
 	config.mouse_bindings_count = 0;
 	config.axis_bindings = NULL;
 	config.axis_bindings_count = 0;
+	config.switch_bindings = NULL;
+	config.switch_bindings_count = 0;
 	config.gesture_bindings = NULL;
 	config.gesture_bindings_count = 0;
+	config.env = NULL;
+	config.env_count = 0;
 	config.exec = NULL;
 	config.exec_count = 0;
 	config.exec_once = NULL;
@@ -2513,12 +3090,13 @@ void parse_config(void) {
 	config.tag_rules = NULL;
 	config.tag_rules_count = 0;
 	config.cursor_theme = NULL;
+	strcpy(config.keymode, "default");
 
-	// 获取 MANGOCONFIG 环境变量
-	const char *mangoconfig = getenv("MANGOCONFIG");
+	create_config_keymap();
 
-	// 如果 MANGOCONFIG 环境变量不存在或为空，则使用 HOME 环境变量
-	if (!mangoconfig || mangoconfig[0] == '\0') {
+	if (cli_config_path) {
+		snprintf(filename, sizeof(filename), "%s", cli_config_path);
+	} else {
 		// 获取当前用户家目录
 		const char *homedir = getenv("HOME");
 		if (!homedir) {
@@ -2535,9 +3113,6 @@ void parse_config(void) {
 			snprintf(filename, sizeof(filename), "%s/mango/config.conf",
 					 SYSCONFDIR);
 		}
-	} else {
-		// 使用 MANGOCONFIG 环境变量作为配置文件夹路径
-		snprintf(filename, sizeof(filename), "%s/config.conf", mangoconfig);
 	}
 
 	set_value_default();
@@ -2548,7 +3123,7 @@ void parse_config(void) {
 
 void reset_blur_params(void) {
 	if (blur) {
-		Monitor *m;
+		Monitor *m = NULL;
 		wl_list_for_each(m, &mons, link) {
 			if (m->blur != NULL) {
 				wlr_scene_node_destroy(&m->blur->node);
@@ -2562,7 +3137,7 @@ void reset_blur_params(void) {
 				blur_params.saturation);
 		}
 	} else {
-		Monitor *m;
+		Monitor *m = NULL;
 		wl_list_for_each(m, &mons, link) {
 
 			if (m->blur) {
@@ -2575,9 +3150,10 @@ void reset_blur_params(void) {
 
 void reapply_monitor_rules(void) {
 	ConfigMonitorRule *mr;
-	Monitor *m;
-	int ji, jk;
+	Monitor *m = NULL;
+	int32_t ji, jk;
 	struct wlr_output_state state;
+	struct wlr_output_mode *internal_mode = NULL;
 	wlr_output_state_init(&state);
 
 	wl_list_for_each(m, &mons, link) {
@@ -2606,9 +3182,15 @@ void reapply_monitor_rules(void) {
 				}
 
 				if (mr->width > 0 && mr->height > 0 && mr->refresh > 0) {
-					wlr_output_state_set_custom_mode(
-						&state, mr->width, mr->height,
-						(int)roundf(mr->refresh * 1000));
+					internal_mode = get_nearest_output_mode(
+						m->wlr_output, mr->width, mr->height, mr->refresh);
+					if (internal_mode) {
+						wlr_output_state_set_mode(&state, internal_mode);
+					} else if (wlr_output_is_headless(m->wlr_output)) {
+						wlr_output_state_set_custom_mode(
+							&state, mr->width, mr->height,
+							(int32_t)roundf(mr->refresh * 1000));
+					}
 				}
 
 				wlr_output_state_set_scale(&state, mr->scale);
@@ -2618,19 +3200,57 @@ void reapply_monitor_rules(void) {
 			}
 		}
 
+		if (adaptive_sync) {
+			enable_adaptive_sync(m, &state);
+		}
+
 		wlr_output_commit_state(m->wlr_output, &state);
 		wlr_output_state_finish(&state);
 		updatemons(NULL, NULL);
 	}
 }
 
+void reapply_cursor_style(void) {
+	if (hide_source) {
+		wl_event_source_timer_update(hide_source, 0);
+		wl_event_source_remove(hide_source);
+		hide_source = NULL;
+	}
+
+	wlr_cursor_unset_image(cursor);
+
+	wlr_cursor_set_surface(cursor, NULL, 0, 0);
+
+	if (cursor_mgr) {
+		wlr_xcursor_manager_destroy(cursor_mgr);
+		cursor_mgr = NULL;
+	}
+
+	cursor_mgr = wlr_xcursor_manager_create(config.cursor_theme, cursor_size);
+
+	Monitor *m = NULL;
+	wl_list_for_each(m, &mons, link) {
+		wlr_xcursor_manager_load(cursor_mgr, m->wlr_output->scale);
+	}
+
+	wlr_cursor_set_xcursor(cursor, cursor_mgr, "left_ptr");
+
+	hide_source = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
+										  hidecursor, cursor);
+	if (cursor_hidden) {
+		wlr_cursor_unset_image(cursor);
+	} else {
+		wl_event_source_timer_update(hide_source, cursor_hide_timeout * 1000);
+	}
+}
+
 void reapply_border(void) {
-	Client *c;
+	Client *c = NULL;
 
 	// reset border width when config change
 	wl_list_for_each(c, &clients, link) {
 		if (c && !c->iskilling) {
-			if (c->bw && !c->isnoborder) {
+			if (!c->isnoborder && !c->isfullscreen) {
 				c->bw = borderpx;
 			}
 		}
@@ -2638,17 +3258,36 @@ void reapply_border(void) {
 }
 
 void reapply_keyboard(void) {
-	Keyboard *kb;
-	wl_list_for_each(kb, &keyboards, link) {
-		wlr_keyboard_set_repeat_info(kb->wlr_keyboard, repeat_rate,
-									 repeat_delay);
+	InputDevice *id;
+	wl_list_for_each(id, &inputdevices, link) {
+		if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+			continue;
+		}
+		wlr_keyboard_set_repeat_info((struct wlr_keyboard *)id->device_data,
+									 repeat_rate, repeat_delay);
+	}
+}
+
+void reapply_pointer(void) {
+	InputDevice *id;
+	struct libinput_device *device;
+	wl_list_for_each(id, &inputdevices, link) {
+
+		if (id->wlr_device->type != WLR_INPUT_DEVICE_POINTER) {
+			continue;
+		}
+
+		device = id->libinput_device;
+		if (wlr_input_device_is_libinput(id->wlr_device) && device) {
+			configure_pointer(device);
+		}
 	}
 }
 
 void reapply_master(void) {
 
-	int i;
-	Monitor *m;
+	int32_t i;
+	Monitor *m = NULL;
 	for (i = 0; i <= LENGTH(tags); i++) {
 		wl_list_for_each(m, &mons, link) {
 			if (!m->wlr_output->enabled) {
@@ -2656,7 +3295,6 @@ void reapply_master(void) {
 			}
 			m->pertag->nmasters[i] = default_nmaster;
 			m->pertag->mfacts[i] = default_mfact;
-			m->pertag->smfacts[i] = default_smfact;
 			m->gappih = gappih;
 			m->gappiv = gappiv;
 			m->gappoh = gappoh;
@@ -2665,48 +3303,63 @@ void reapply_master(void) {
 	}
 }
 
-void reapply_tagrule(void) {
-	Monitor *m;
-	int i, jk;
-	char *rule_monitor_name = NULL;
-	wl_list_for_each(m, &mons, link) {
-		if (!m->wlr_output->enabled) {
-			continue;
-		}
+void parse_tagrule(Monitor *m) {
+	int32_t i, jk;
+	ConfigTagRule tr;
 
-		// apply tag rule
-		for (i = 1; i <= config.tag_rules_count; i++) {
-			rule_monitor_name = config.tag_rules[i - 1].monitor_name;
-			if (regex_match(rule_monitor_name, m->wlr_output->name) ||
-				!rule_monitor_name) {
-				for (jk = 0; jk < LENGTH(layouts); jk++) {
-					if (config.tag_rules_count > 0 &&
-						config.tag_rules[i - 1].layout_name &&
-						strcmp(layouts[jk].name,
-							   config.tag_rules[i - 1].layout_name) == 0) {
-						m->pertag->ltidxs[config.tag_rules[i - 1].id] =
-							&layouts[jk];
-					}
+	for (i = 0; i < config.tag_rules_count; i++) {
+
+		tr = config.tag_rules[i];
+
+		if (config.tag_rules_count > 0 &&
+			(!tr.monitor_name ||
+			 regex_match(tr.monitor_name, m->wlr_output->name))) {
+
+			for (jk = 0; jk < LENGTH(layouts); jk++) {
+				if (tr.layout_name &&
+					strcmp(layouts[jk].name, tr.layout_name) == 0) {
+					m->pertag->ltidxs[tr.id] = &layouts[jk];
 				}
 			}
+
+			m->pertag->no_hide[tr.id] = tr.no_hide;
 		}
 	}
 }
 
-void reload_config(const Arg *arg) {
-	parse_config();
+void reapply_tagrule(void) {
+	Monitor *m = NULL;
+	wl_list_for_each(m, &mons, link) {
+		if (!m->wlr_output->enabled) {
+			continue;
+		}
+		parse_tagrule(m);
+	}
+}
+
+void reset_option(void) {
 	init_baked_points();
 	handlecursoractivity();
 	reset_keyboard_layout();
 	reset_blur_params();
+	set_env();
 	run_exec();
 
+	reapply_cursor_style();
 	reapply_border();
 	reapply_keyboard();
+	reapply_pointer();
 	reapply_master();
 
 	reapply_tagrule();
 	reapply_monitor_rules();
 
-	arrange(selmon, false);
+	arrange(selmon, false, false);
+}
+
+int32_t reload_config(const Arg *arg) {
+	parse_config();
+	reset_option();
+	printstatus();
+	return 1;
 }

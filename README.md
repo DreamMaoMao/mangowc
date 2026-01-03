@@ -1,7 +1,7 @@
-# MangoWC
-
-<img width="255" height="256" alt="mango-transparency-256" src="https://github.com/user-attachments/assets/54caff2c-932f-4998-a090-2a5292ebbfa4" />
-
+# Mango Wayland Compositor
+<div>
+  <img src="https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png" alt="MangoWC Logo" width="120"/>
+</div>
 
 This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
@@ -16,17 +16,13 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Base tags not workspaces (supports separate window layouts for each tag)
      - Smooth and customizable complete animations (window open/move/close, tag enter/leave,layer open/close/move)
      - Excellent input method support (text input v2/v3)
-     - Flexible window layouts with easy switching (scroller, master, monocle, spiral, etc.)
+     - Flexible window layouts with easy switching (scroller, master-stack, monocle,center-master, etc.)
      - Rich window states (swallow, minimize, maximize, unglobal, global, fakefullscreen, overlay, etc.)
-     - Simple yet powerful external configuration
+     - Simple yet powerful external configuration(support shortcuts hot-reload)
      - Sway-like scratchpad and named scratchpad
-     - Minimize window to scratchpad
+     - Ipc support(get/send message from/to compositor by external program)
      - Hycov-like overview
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
-
-3. **Some disadvantages**
-   - Since it uses the fully automatic layout like dwm style, it does not allow you to manually adjust the window size when the window is in tiled state. It only allows you to change the layout parameters to adjust the window ratio.
-
 
 Master-Stack Layout
 
@@ -36,30 +32,25 @@ Scroller Layout
 
 https://github.com/user-attachments/assets/c9bf9415-fad1-4400-bcdc-3ad2d76de85a
 
-Layer animaiton
+Layer animation
 
 https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
 
 
+# Our discord
+[mangowc](https://discord.gg/CPjbDxesh5)
+
 # Supported layouts
 
-## Horizontal Layouts
 - tile
 - scroller
 - monocle
 - grid
-- dwindle
-- spiral
 - deck
-
-## Vertical Layouts
+- center_tile
 - vertical_tile
-- vertical_scroller
-- vertical_monocle
 - vertical_grid
-- vertical_dwindle
-- vertical_spiral
-- vertical_deck
+- vertical_scroller
 
 # Installation
 
@@ -80,16 +71,17 @@ https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
 - hwdata
 - seatd
 - pcre2
+- xorg-xwayland
+- libxcb
 
 ## Arch Linux
-
+The package is in the Arch User Repository and is availble for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper like yay:
 ```bash
 yay -S mangowc-git
 
 ```
 
 ## Gentoo Linux
-
 The package is in the community-maintained repository called GURU.
 First, add GURU repository:
 
@@ -107,19 +99,25 @@ Finally, install the package:
 emerge --ask --verbose gui-wm/mangowc
 ```
 
-Patching wlroots is done by getting the patch with git from [the repository](https://github.com/DreamMaoMao/wlroots.git)
-and then copying it to `/etc/portage/patches/gui-libs/wlroots/`.
+## Fedora Linux
+The package is in the third-party Terra repository.
+First, add the [Terra Repository](https://terra.fyralabs.com/).
+
+Then, install the package:
+
+```bash
+dnf install mangowc
+```
 
 ## Other
 
 ```bash
-# wlroots 0.19.0 release with a fix-patch to avoid crash
-git clone https://github.com/DreamMaoMao/wlroots.git
+git clone -b 0.19.2 https://gitlab.freedesktop.org/wlroots/wlroots.git
 cd wlroots
 meson build -Dprefix=/usr
 sudo ninja -C build install
 
-git clone https://github.com/wlrfx/scenefx.git
+git clone -b 0.4.1 https://github.com/wlrfx/scenefx.git
 cd scenefx
 meson build -Dprefix=/usr
 sudo ninja -C build install
@@ -132,7 +130,11 @@ sudo ninja -C build install
 
 ## Suggested Tools
 
-- Application launcher (rofi-wayland, bemenu, wmenu, fuzzel)
+### Hybrid component
+- [dms-shell](https://github.com/AvengeMedia/DankMaterialShell)
+
+### Independent component
+- Application launcher (rofi, bemenu, wmenu, fuzzel)
 - Terminal emulator (foot, wezterm, alacritty, kitty, ghostty)
 - Status bar (waybar, eww, quickshell, ags), waybar is preferred
 - Wallpaper setup (swww, swaybg)
@@ -145,19 +147,32 @@ sudo ninja -C build install
 ## Some Common Default Keybindings
 
 - alt+return: open foot terminal
+- alt+space: open rofi launcher
 - alt+q: kill client
 - alt+left/right/up/down: focus direction
 - super+m: quit mango
 
 ## My Dotfiles
 
+### Daily
 - Dependencies
 
 ```bash
-yay -S rofi-wayland foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer lavalauncher-mao-git wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
+yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
 ```
 
-- use my config
+### Dms
+- Dependencies
+```bash
+yay -S foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard sway-audio-idle-inhibit-git brightnessctl grim slurp satty matugen-bin dms-shell-git
+
+```
+- use my dms config
+
+```bash
+git clone -b dms https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
+```
+- use my daily config
 
 ```bash
 git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
@@ -166,7 +181,9 @@ git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 
 ## Config Documentation
 
-Refer to the [wiki](https://github.com/DreamMaoMao/mango/wiki/)
+Refer to the repo wiki [wiki](https://github.com/DreamMaoMao/mango/wiki/)
+
+or the website docs [docs](https://mangowc.vercel.app/docs)
 
 # NixOS + Home-manager
 
@@ -185,7 +202,10 @@ Here's an example of using the modules in a flake:
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-parts.url = "github:hercules-ci/flake-parts";
-    mango.url = "github:DreamMaoMao/mango";
+    mango = {
+      url = "github:DreamMaoMao/mango";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs =
     inputs@{ self, flake-parts, ... }:
@@ -245,13 +265,11 @@ Here's an example of using the modules in a flake:
 
 To package mango for other distributions, you can check the reference setup for:
 
-- [nix](https://github.com/DreamMaoMao/mango/blob/main/nix/default.nix)
-- [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mango-git).
+- [nix](https://github.com/DreamMaoMao/mangowc/blob/main/nix/default.nix)
+- [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mangowc-git).
 - [gentoo](https://data.gpo.zugaina.org/guru/gui-wm/mangowc)
 
-Currently building mango requires a patched version of `wlroots-0.19`. If possible, the patch can be extracted from the [latest commit](https://github.com/DreamMaoMao/wlroots.git)
-and applied on `prepare` step. If it is not possible, you will need to create a separate `wlroots` package and make it a build dependency.
-You might also need to package `scenefx` for your distribution, check availability [here](https://github.com/wlrfx/scenefx.git).
+You might need to package `scenefx` for your distribution, check availability [here](https://github.com/wlrfx/scenefx.git).
 
 If you encounter build errors when packaging `mango`, feel free to create an issue and ask a question, but
 Read The Friendly Manual on packaging software in your distribution first.
