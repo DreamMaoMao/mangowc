@@ -765,6 +765,7 @@ static void refresh_monitors_workspaces_status(Monitor *m);
 static void init_client_properties(Client *c);
 static float *get_border_color(Client *c);
 static void clear_fullscreen_and_maximized_state(Monitor *m);
+static void request_fresh_all_monitors(void);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -854,6 +855,7 @@ static double swipe_dy = 0;
 bool render_border = true;
 
 uint32_t chvt_backup_tag = 0;
+bool allow_frame_scheduling = true;
 char chvt_backup_selmon[32] = {0};
 
 struct dvec2 *baked_points_move;
@@ -4177,7 +4179,7 @@ void rendermon(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	if (!m->wlr_output->enabled)
+	if (!m->wlr_output->enabled || !allow_frame_scheduling)
 		return;
 
 	frame_allow_tearing = check_tearing_frame_allow(m);
@@ -4196,11 +4198,6 @@ void rendermon(struct wl_listener *listener, void *data) {
 
 	wl_list_for_each_safe(l, tmpl, &fadeout_layers, fadeout_link) {
 		need_more_frames = layer_draw_fadeout_frame(l) || need_more_frames;
-	}
-
-	// 如果需要更多帧，确保安排下一帧
-	if (need_more_frames) {
-		wlr_output_schedule_frame(m->wlr_output);
 	}
 
 	// 绘制客户端
@@ -4228,6 +4225,11 @@ skip:
 	} else {
 		wlr_scene_output_send_frame_done(m->scene_output, &now);
 		wlr_output_state_finish(&pending);
+	}
+
+	// 如果需要更多帧，确保安排下一帧
+	if (need_more_frames && allow_frame_scheduling) {
+		request_fresh_all_monitors();
 	}
 }
 

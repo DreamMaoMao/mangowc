@@ -31,13 +31,28 @@ int32_t bind_to_view(const Arg *arg) {
 }
 
 int32_t chvt(const Arg *arg) {
+	struct timespec ts;
 
+	// prevent the animation to rquest the new frame
+	allow_frame_scheduling = false;
+
+	// backup current tag and monitor name
 	if (selmon) {
 		chvt_backup_tag = selmon->pertag->curtag;
 		strncpy(chvt_backup_selmon, selmon->wlr_output->name,
 				sizeof(chvt_backup_selmon) - 1);
 	}
+
 	wlr_session_change_vt(session, arg->ui);
+
+	// wait for DRM device to stabilize and ensure the session state is inactive
+	ts.tv_sec = 0;
+	ts.tv_nsec = 100000000; // 200ms
+	nanosleep(&ts, NULL);
+
+	// allow frame scheduling,
+	// because session state is now inactive, rendermon will not enter
+	allow_frame_scheduling = true;
 	return 1;
 }
 
