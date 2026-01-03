@@ -68,7 +68,7 @@ void dwl_im_relay_set_focus(struct dwl_input_method_relay *relay,
 
 /*------------------协议内部代码------------------------------*/
 Monitor *output_from_wlr_output(struct wlr_output *wlr_output) {
-	Monitor *m;
+	Monitor *m = NULL;
 	wl_list_for_each(m, &mons, link) {
 		if (m->wlr_output == wlr_output) {
 			return m;
@@ -77,7 +77,7 @@ Monitor *output_from_wlr_output(struct wlr_output *wlr_output) {
 	return NULL;
 }
 
-Monitor *output_nearest_to(int lx, int ly) {
+Monitor *output_nearest_to(int32_t lx, int32_t ly) {
 	double closest_x, closest_y;
 	wlr_output_layout_closest_point(output_layout, NULL, lx, ly, &closest_x,
 									&closest_y);
@@ -111,6 +111,7 @@ get_keyboard_grab(KeyboardGroup *keyboard) {
 		return NULL;
 	}
 
+	// kb_group是一个物理键盘组，它不应该被过滤掉
 	if (keyboard != kb_group)
 		return NULL;
 
@@ -221,10 +222,10 @@ static void update_popup_position(struct dwl_input_method_popup *popup) {
 	struct wlr_xdg_surface *xdg_surface;
 	struct wlr_layer_surface_v1 *layer_surface;
 	struct wlr_scene_tree *tree;
-	Monitor *output;
+	Monitor *output = NULL;
 	struct wlr_xdg_positioner_rules pointer_rules;
 	struct wlr_box output_box;
-	int lx, ly;
+	int32_t lx, ly;
 	struct wlr_box popup_box;
 
 	if (!text_input || !relay->focused_surface ||
@@ -489,6 +490,7 @@ static void handle_text_input_enable(struct wl_listener *listener, void *data) {
 		update_popups_position(relay);
 		send_state_to_input_method(relay);
 	}
+	wlr_text_input_v3_send_done(text_input->input);
 }
 
 static void handle_text_input_disable(struct wl_listener *listener,
