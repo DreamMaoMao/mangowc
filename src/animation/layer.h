@@ -270,10 +270,10 @@ void layer_animation_next_tick(LayerSurface *l) {
 		l->animation.initial.height +
 		(l->current.height - l->animation.initial.height) * factor;
 
-	uint32_t x = l->animation.initial.x +
-				 (l->current.x - l->animation.initial.x) * factor;
-	uint32_t y = l->animation.initial.y +
-				 (l->current.y - l->animation.initial.y) * factor;
+	int32_t x = l->animation.initial.x +
+				(l->current.x - l->animation.initial.x) * factor;
+	int32_t y = l->animation.initial.y +
+				(l->current.y - l->animation.initial.y) * factor;
 
 	double opacity_eased_progress =
 		find_animation_curve_at(animation_passed, OPAFADEIN);
