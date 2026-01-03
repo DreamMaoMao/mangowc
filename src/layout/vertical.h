@@ -3,8 +3,8 @@ void vertical_tile(Monitor *m) {
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
-	int master_num = 0;
-	int stack_num = 0;
+	int32_t master_num = 0;
+	int32_t stack_num = 0;
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
@@ -106,7 +106,7 @@ void vertical_tile(Monitor *m) {
 
 void vertical_deck(Monitor *m) {
 	uint32_t mh, mx;
-	int i, n = 0;
+	int32_t i, n = 0;
 	Client *c = NULL;
 	Client *fc = NULL;
 	float mfact;
@@ -207,7 +207,7 @@ void vertical_scroller(Monitor *m) {
 	Client *c = NULL, *root_client = NULL;
 	Client **tempClients = NULL;
 	struct wlr_box target_geom;
-	int focus_client_index = 0;
+	int32_t focus_client_index = 0;
 	bool need_scroller = false;
 	uint32_t cur_gappiv = enablegaps ? m->gappiv : 0;
 	uint32_t cur_gappov = enablegaps ? m->gappov : 0;
@@ -359,8 +359,10 @@ void vertical_grid(Monitor *m) {
 	uint32_t dy;
 	uint32_t rows, cols, overrows;
 	Client *c = NULL;
-	int target_gappo = enablegaps ? m->isoverview ? overviewgappo : gappov : 0;
-	int target_gappi = enablegaps ? m->isoverview ? overviewgappi : gappiv : 0;
+	int32_t target_gappo =
+		enablegaps ? m->isoverview ? overviewgappo : gappov : 0;
+	int32_t target_gappi =
+		enablegaps ? m->isoverview ? overviewgappi : gappiv : 0;
 	float single_width_ratio = m->isoverview ? 0.7 : 0.9;
 	float single_height_ratio = m->isoverview ? 0.8 : 0.9;
 

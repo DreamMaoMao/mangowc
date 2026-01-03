@@ -22,8 +22,9 @@ void set_size_per(Monitor *m, Client *c) {
 	}
 }
 
-void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
-								   int offsety, uint32_t time, int type) {
+void resize_tile_master_horizontal(Client *grabc, bool isdrag, int32_t offsetx,
+								   int32_t offsety, uint32_t time,
+								   int32_t type) {
 	Client *tc = NULL;
 	float delta_x, delta_y;
 	Client *next = NULL;
@@ -216,8 +217,8 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int offsetx,
 	}
 }
 
-void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
-								 int offsety, uint32_t time, int type) {
+void resize_tile_master_vertical(Client *grabc, bool isdrag, int32_t offsetx,
+								 int32_t offsety, uint32_t time, int32_t type) {
 	Client *tc = NULL;
 	float delta_x, delta_y;
 	Client *next = NULL;
@@ -373,8 +374,8 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int offsetx,
 	}
 }
 
-void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
-						  uint32_t time, bool isvertical) {
+void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
+						  int32_t offsety, uint32_t time, bool isvertical) {
 	float delta_x, delta_y;
 	float new_scroller_proportion;
 
@@ -477,8 +478,8 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int offsetx, int offsety,
 	}
 }
 
-void resize_tile_client(Client *grabc, bool isdrag, int offsetx, int offsety,
-						uint32_t time) {
+void resize_tile_client(Client *grabc, bool isdrag, int32_t offsetx,
+						int32_t offsety, uint32_t time) {
 
 	if (!grabc || grabc->isfullscreen || grabc->ismaximizescreen)
 		return;
@@ -506,14 +507,14 @@ void resize_tile_client(Client *grabc, bool isdrag, int offsetx, int offsety,
 	}
 }
 
-void reset_size_per_mon(Monitor *m, int tile_cilent_num,
+void reset_size_per_mon(Monitor *m, int32_t tile_cilent_num,
 						double total_left_stack_hight_percent,
 						double total_right_stack_hight_percent,
 						double total_stack_hight_percent,
-						double total_master_inner_percent, int master_num,
-						int stack_num) {
+						double total_master_inner_percent, int32_t master_num,
+						int32_t stack_num) {
 	Client *c = NULL;
-	int i = 0;
+	int32_t i = 0;
 	uint32_t stack_index = 0;
 	uint32_t nmasters = m->pertag->nmasters[m->pertag->curtag];
 
@@ -587,11 +588,11 @@ arrange(Monitor *m, bool want_animation, bool from_view) {
 	double total_master_inner_percent = 0;
 	double total_right_stack_hight_percent = 0;
 	double total_left_stack_hight_percent = 0;
-	int i = 0;
-	int nmasters = 0;
-	int stack_index = 0;
-	int master_num = 0;
-	int stack_num = 0;
+	int32_t i = 0;
+	int32_t nmasters = 0;
+	int32_t stack_index = 0;
+	int32_t master_num = 0;
+	int32_t stack_num = 0;
 
 	if (!m)
 		return;

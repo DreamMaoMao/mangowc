@@ -1,5 +1,5 @@
 bool check_hit_no_border(Client *c) {
-	int i;
+	int32_t i;
 	bool hit_no_border = false;
 	if (!render_border) {
 		hit_no_border = true;
@@ -74,11 +74,11 @@ Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title) {
 	return target_client;
 }
 struct wlr_box // 计算客户端居中坐标
-setclient_coordinate_center(Client *c, struct wlr_box geom, int offsetx,
-							int offsety) {
+setclient_coordinate_center(Client *c, struct wlr_box geom, int32_t offsetx,
+							int32_t offsety) {
 	struct wlr_box tempbox;
-	int offset = 0;
-	int len = 0;
+	int32_t offset = 0;
+	int32_t len = 0;
 	Monitor *m = c->mon ? c->mon : selmon;
 
 	uint32_t cbw = check_hit_no_border(c) ? c->bw : 0;
@@ -135,9 +135,9 @@ static bool is_window_rule_matches(const ConfigWinRule *r, const char *appid,
 Client *center_tiled_select(Monitor *m) {
 	Client *c = NULL;
 	Client *target_c = NULL;
-	long int mini_distance = -1;
-	int dirx, diry;
-	long int distance;
+	int64_t mini_distance = -1;
+	int32_t dirx, diry;
+	int64_t distance;
 	wl_list_for_each(c, &clients, link) {
 		if (c && VISIBLEON(c, m) && ISSCROLLTILED(c) &&
 			client_surface(c)->mapped && !c->isfloating &&
@@ -157,7 +157,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 								 bool ignore_align) {
 	Client *c = NULL;
 	Client **tempClients = NULL; // 初始化为 NULL
-	int last = -1;
+	int32_t last = -1;
 
 	// 第一次遍历，计算客户端数量
 	wl_list_for_each(c, &clients, link) {
@@ -190,23 +190,23 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 		}
 	}
 
-	int sel_x = tc->geom.x;
-	int sel_y = tc->geom.y;
-	long long int distance = LLONG_MAX;
-	long long int same_monitor_distance = LLONG_MAX;
+	int32_t sel_x = tc->geom.x;
+	int32_t sel_y = tc->geom.y;
+	int64_t distance = LLONG_MAX;
+	int64_t same_monitor_distance = LLONG_MAX;
 	Client *tempFocusClients = NULL;
 	Client *tempSameMonitorFocusClients = NULL;
 
 	switch (arg->i) {
 	case UP:
 		if (!ignore_align) {
-			for (int _i = 0; _i <= last; _i++) {
+			for (int32_t _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.y < sel_y &&
 					tempClients[_i]->geom.x == sel_x &&
 					tempClients[_i]->mon == tc->mon) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
 						dis_x * dis_x + dis_y * dis_y; // 计算距离
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
@@ -216,11 +216,11 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 			}
 		}
 		if (!tempFocusClients) {
-			for (int _i = 0; _i <= last; _i++) {
+			for (int32_t _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.y < sel_y) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
 						dis_x * dis_x + dis_y * dis_y; // 计算距离
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
@@ -237,13 +237,13 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 		break;
 	case DOWN:
 		if (!ignore_align) {
-			for (int _i = 0; _i <= last; _i++) {
+			for (int32_t _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.y > sel_y &&
 					tempClients[_i]->geom.x == sel_x &&
 					tempClients[_i]->mon == tc->mon) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
 						dis_x * dis_x + dis_y * dis_y; // 计算距离
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
@@ -253,11 +253,11 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 			}
 		}
 		if (!tempFocusClients) {
-			for (int _i = 0; _i <= last; _i++) {
+			for (int32_t _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.y > sel_y) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
 						dis_x * dis_x + dis_y * dis_y; // 计算距离
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
@@ -274,13 +274,13 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 		break;
 	case LEFT:
 		if (!ignore_align) {
-			for (int _i = 0; _i <= last; _i++) {
+			for (int32_t _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.x < sel_x &&
 					tempClients[_i]->geom.y == sel_y &&
 					tempClients[_i]->mon == tc->mon) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
 						dis_x * dis_x + dis_y * dis_y; // 计算距离
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
@@ -290,11 +290,11 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 			}
 		}
 		if (!tempFocusClients) {
-			for (int _i = 0; _i <= last; _i++) {
+			for (int32_t _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.x < sel_x) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
 						dis_x * dis_x + dis_y * dis_y; // 计算距离
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
@@ -311,13 +311,13 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 		break;
 	case RIGHT:
 		if (!ignore_align) {
-			for (int _i = 0; _i <= last; _i++) {
+			for (int32_t _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.x > sel_x &&
 					tempClients[_i]->geom.y == sel_y &&
 					tempClients[_i]->mon == tc->mon) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
 						dis_x * dis_x + dis_y * dis_y; // 计算距离
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
@@ -327,11 +327,11 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 			}
 		}
 		if (!tempFocusClients) {
-			for (int _i = 0; _i <= last; _i++) {
+			for (int32_t _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.x > sel_x) {
-					int dis_x = tempClients[_i]->geom.x - sel_x;
-					int dis_y = tempClients[_i]->geom.y - sel_y;
-					long long int tmp_distance =
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
 						dis_x * dis_x + dis_y * dis_y; // 计算距离
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
@@ -438,7 +438,7 @@ float *get_border_color(Client *c) {
 	}
 }
 
-int is_single_bit_set(uint32_t x) { return x && !(x & (x - 1)); }
+int32_t is_single_bit_set(uint32_t x) { return x && !(x & (x - 1)); }
 
 bool client_only_in_one_tag(Client *c) {
 	uint32_t masked = c->tags & TAGMASK;

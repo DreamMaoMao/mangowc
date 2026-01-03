@@ -1,4 +1,4 @@
-struct dvec2 calculate_animation_curve_at(double t, int type) {
+struct dvec2 calculate_animation_curve_at(double t, int32_t type) {
 	struct dvec2 point;
 	double *animation_curve;
 	if (type == MOVE) {
@@ -71,7 +71,7 @@ void init_baked_points(void) {
 	}
 }
 
-double find_animation_curve_at(double t, int type) {
+double find_animation_curve_at(double t, int32_t type) {
 	uint32_t down = 0;
 	uint32_t up = BAKED_POINTS_COUNT - 1;
 
@@ -106,7 +106,8 @@ double find_animation_curve_at(double t, int type) {
 	return baked_points[up].y;
 }
 
-static bool scene_node_snapshot(struct wlr_scene_node *node, int lx, int ly,
+static bool scene_node_snapshot(struct wlr_scene_node *node, int32_t lx,
+								int32_t ly,
 								struct wlr_scene_tree *snapshot_tree) {
 	if (!node->enabled && node->type != WLR_SCENE_NODE_TREE) {
 		return true;

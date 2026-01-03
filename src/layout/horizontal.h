@@ -6,8 +6,10 @@ void grid(Monitor *m) {
 	uint32_t cols, rows, overcols;
 	Client *c = NULL;
 	n = 0;
-	int target_gappo = enablegaps ? m->isoverview ? overviewgappo : gappoh : 0;
-	int target_gappi = enablegaps ? m->isoverview ? overviewgappi : gappih : 0;
+	int32_t target_gappo =
+		enablegaps ? m->isoverview ? overviewgappo : gappoh : 0;
+	int32_t target_gappi =
+		enablegaps ? m->isoverview ? overviewgappi : gappih : 0;
 	float single_width_ratio = m->isoverview ? 0.7 : 0.9;
 	float single_height_ratio = m->isoverview ? 0.8 : 0.9;
 
@@ -111,7 +113,7 @@ void grid(Monitor *m) {
 
 void deck(Monitor *m) {
 	uint32_t mw, my;
-	int i, n = 0;
+	int32_t i, n = 0;
 	Client *c = NULL;
 	Client *fc = NULL;
 	float mfact;
@@ -218,7 +220,7 @@ void scroller(Monitor *m) {
 	Client *c = NULL, *root_client = NULL;
 	Client **tempClients = NULL; // 初始化为 NULL
 	struct wlr_box target_geom;
-	int focus_client_index = 0;
+	int32_t focus_client_index = 0;
 	bool need_scroller = false;
 	uint32_t cur_gappih = enablegaps ? m->gappih : 0;
 	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0;
@@ -370,8 +372,8 @@ void center_tile(Monitor *m) {
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
-	int master_num = 0;
-	int stack_num = 0;
+	int32_t master_num = 0;
+	int32_t stack_num = 0;
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
@@ -411,7 +413,7 @@ void center_tile(Monitor *m) {
 	tw = mw;
 
 	// 判断是否需要主区域铺满
-	int should_overspread = center_master_overspread && (n <= nmasters);
+	int32_t should_overspread = center_master_overspread && (n <= nmasters);
 
 	uint32_t master_surplus_height =
 		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (master_num - 1));
@@ -513,7 +515,7 @@ void center_tile(Monitor *m) {
 					c->master_mfact_per = mfact;
 				}
 
-				int stack_x;
+				int32_t stack_x;
 				if (center_when_single_stack) {
 					// 放在右侧（master居中时，stack在右边）
 					stack_x = m->w.x + mx + mw + cur_gappih * ie;
@@ -553,7 +555,7 @@ void center_tile(Monitor *m) {
 						c->master_mfact_per = mfact;
 					}
 
-					int stack_x = m->w.x + mx + mw + cur_gappih * ie;
+					int32_t stack_x = m->w.x + mx + mw + cur_gappih * ie;
 
 					resize(c,
 						   (struct wlr_box){.x = stack_x,
@@ -582,7 +584,7 @@ void center_tile(Monitor *m) {
 						c->master_mfact_per = mfact;
 					}
 
-					int stack_x = m->w.x + cur_gappoh;
+					int32_t stack_x = m->w.x + cur_gappoh;
 					resize(c,
 						   (struct wlr_box){.x = stack_x,
 											.y = m->w.y + oty,
@@ -602,8 +604,8 @@ void tile(Monitor *m) {
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
-	int master_num = 0;
-	int stack_num = 0;
+	int32_t master_num = 0;
+	int32_t stack_num = 0;
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];
@@ -712,8 +714,8 @@ void right_tile(Monitor *m) {
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
-	int master_num = 0;
-	int stack_num = 0;
+	int32_t master_num = 0;
+	int32_t stack_num = 0;
 
 	n = m->visible_tiling_clients;
 	master_num = m->pertag->nmasters[m->pertag->curtag];

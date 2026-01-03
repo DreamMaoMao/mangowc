@@ -8,17 +8,17 @@
 	 ((hex >> 8) & 0xFF) / 255.0f, (hex & 0xFF) / 255.0f}
 
 /* animaion */
-char *animation_type_open = "slide";		// 是否启用动画 //slide,zoom
-char *animation_type_close = "slide";		// 是否启用动画 //slide,zoom
-char *layer_animation_type_open = "slide";	// 是否启用layer动画 //slide,zoom
-char *layer_animation_type_close = "slide"; // 是否启用layer动画 //slide,zoom
-int animations = 1;							// 是否启用动画
-int layer_animations = 0;					// 是否启用layer动画
-int tag_animation_direction = HORIZONTAL;	// 标签动画方向
-int animation_fade_in = 1;					// Enable animation fade in
-int animation_fade_out = 1;					// Enable animation fade out
-float zoom_initial_ratio = 0.3;				// 动画起始窗口比例
-float zoom_end_ratio = 0.8;					// 动画结束窗口比例
+char *animation_type_open = "slide";		  // 是否启用动画 //slide,zoom
+char *animation_type_close = "slide";		  // 是否启用动画 //slide,zoom
+char *layer_animation_type_open = "slide";	  // 是否启用layer动画 //slide,zoom
+char *layer_animation_type_close = "slide";	  // 是否启用layer动画 //slide,zoom
+int32_t animations = 1;						  // 是否启用动画
+int32_t layer_animations = 0;				  // 是否启用layer动画
+int32_t tag_animation_direction = HORIZONTAL; // 标签动画方向
+int32_t animation_fade_in = 1;				  // Enable animation fade in
+int32_t animation_fade_out = 1;				  // Enable animation fade out
+float zoom_initial_ratio = 0.3;				  // 动画起始窗口比例
+float zoom_end_ratio = 0.8;					  // 动画结束窗口比例
 float fadein_begin_opacity = 0.5;  // Begin opac window ratio for animations
 float fadeout_begin_opacity = 0.5; // Begin opac window ratio for animations
 uint32_t animation_duration_move = 500;	 // Animation move speed
@@ -40,47 +40,47 @@ uint32_t focus_on_activate = 1;			// 收到窗口激活请求是否自动跳转�
 uint32_t new_is_master = 1;				// 新窗口是否插在头部
 double default_mfact = 0.55f;			// master 窗口比例
 uint32_t default_nmaster = 1;			// 默认master数量
-int center_master_overspread = 0;		// 中心master时是否铺满
-int center_when_single_stack = 1;		// 单个stack时是否居中
+int32_t center_master_overspread = 0;	// 中心master时是否铺满
+int32_t center_when_single_stack = 1;	// 单个stack时是否居中
 /* logging */
-int log_level = WLR_ERROR;
+int32_t log_level = WLR_ERROR;
 uint32_t numlockon = 0; // 是否打开右边小键盘
 uint32_t capslock = 0;	// 是否启用快捷键
 
 uint32_t ov_tab_mode = 0;	 // alt tab切换模式
 uint32_t hotarea_size = 10;	 // 热区大小,10x10
 uint32_t enable_hotarea = 1; // 是否启用鼠标热区
-int smartgaps = 0;	  /* 1 means no outer gap when there is only one window */
-int sloppyfocus = 1;  /* focus follows mouse */
-uint32_t gappih = 5;  /* horiz inner gap between windows */
-uint32_t gappiv = 5;  /* vert inner gap between windows */
-uint32_t gappoh = 10; /* horiz outer gap between windows and screen edge */
-uint32_t gappov = 10; /* vert outer gap between windows and screen edge */
+int32_t smartgaps = 0; /* 1 means no outer gap when there is only one window */
+int32_t sloppyfocus = 1; /* focus follows mouse */
+uint32_t gappih = 5;	 /* horiz inner gap between windows */
+uint32_t gappiv = 5;	 /* vert inner gap between windows */
+uint32_t gappoh = 10;	 /* horiz outer gap between windows and screen edge */
+uint32_t gappov = 10;	 /* vert outer gap between windows and screen edge */
 float scratchpad_width_ratio = 0.8;
 float scratchpad_height_ratio = 0.9;
 
-int scroller_structs = 20;
+int32_t scroller_structs = 20;
 float scroller_default_proportion = 0.9;
 float scroller_default_proportion_single = 1.0;
-int scroller_ignore_proportion_single = 0;
-int scroller_focus_center = 0;
-int scroller_prefer_center = 0;
-int focus_cross_monitor = 0;
-int focus_cross_tag = 0;
-int exchange_cross_monitor = 0;
-int scratchpad_cross_monitor = 0;
-int view_current_to_back = 0;
-int no_border_when_single = 0;
-int no_radius_when_single = 0;
-int snap_distance = 30;
-int enable_floating_snap = 0;
-int drag_tile_to_tile = 0;
+int32_t scroller_ignore_proportion_single = 0;
+int32_t scroller_focus_center = 0;
+int32_t scroller_prefer_center = 0;
+int32_t focus_cross_monitor = 0;
+int32_t focus_cross_tag = 0;
+int32_t exchange_cross_monitor = 0;
+int32_t scratchpad_cross_monitor = 0;
+int32_t view_current_to_back = 0;
+int32_t no_border_when_single = 0;
+int32_t no_radius_when_single = 0;
+int32_t snap_distance = 30;
+int32_t enable_floating_snap = 0;
+int32_t drag_tile_to_tile = 0;
 uint32_t cursor_size = 24;
 uint32_t cursor_hide_timeout = 0;
 
 uint32_t swipe_min_threshold = 1;
 
-int idleinhibit_ignore_visible =
+int32_t idleinhibit_ignore_visible =
 	0; /* 1 means idle inhibitors will disable idle tracking even if it's
 		  surface isn't visible  */
 uint32_t borderpx = 4; /* border pixel of windows */
@@ -94,21 +94,21 @@ float globalcolor[] = COLOR(0xb153a7ff);
 float overlaycolor[] = COLOR(0x14a57cff);
 // char *cursor_theme = "Bibata-Modern-Ice";
 
-int overviewgappi = 5;	/* overview时 窗口与边缘 缝隙大小 */
-int overviewgappo = 30; /* overview时 窗口与窗口 缝隙大小 */
+int32_t overviewgappi = 5;	/* overview时 窗口与边缘 缝隙大小 */
+int32_t overviewgappo = 30; /* overview时 窗口与窗口 缝隙大小 */
 
 /* To conform the xdg-protocol, set the alpha to zero to restore the old
  * behavior */
 float fullscreen_bg[] = {0.1, 0.1, 0.1, 1.0};
 
-int warpcursor = 1;			  /* Warp cursor to focused client */
-int xwayland_persistence = 1; /* xwayland persistence */
-int syncobj_enable = 0;
-int adaptive_sync = 0;
-int allow_lock_transparent = 0;
+int32_t warpcursor = 1;			  /* Warp cursor to focused client */
+int32_t xwayland_persistence = 1; /* xwayland persistence */
+int32_t syncobj_enable = 0;
+int32_t adaptive_sync = 0;
+int32_t allow_lock_transparent = 0;
 double drag_refresh_interval = 16.0;
-int allow_tearing = TEARING_DISABLED;
-int allow_shortcuts_inhibit = SHORTCUTS_INHIBIT_ENABLE;
+int32_t allow_tearing = TEARING_DISABLED;
+int32_t allow_shortcuts_inhibit = SHORTCUTS_INHIBIT_ENABLE;
 
 /* keyboard */
 
@@ -145,21 +145,21 @@ struct xkb_rule_names xkb_rules = {
 	.options = xkb_rules_options,
 };
 
-int repeat_rate = 25;
-int repeat_delay = 600;
+int32_t repeat_rate = 25;
+int32_t repeat_delay = 600;
 
 /* Trackpad */
-int disable_trackpad = 0;
-int tap_to_click = 1;
-int tap_and_drag = 1;
-int drag_lock = 1;
-int mouse_natural_scrolling = 0;
-int trackpad_natural_scrolling = 0;
-int disable_while_typing = 1;
-int left_handed = 0;
-int middle_button_emulation = 0;
-int single_scratchpad = 1;
-int edge_scroller_pointer_focus = 1;
+int32_t disable_trackpad = 0;
+int32_t tap_to_click = 1;
+int32_t tap_and_drag = 1;
+int32_t drag_lock = 1;
+int32_t mouse_natural_scrolling = 0;
+int32_t trackpad_natural_scrolling = 0;
+int32_t disable_while_typing = 1;
+int32_t left_handed = 0;
+int32_t middle_button_emulation = 0;
+int32_t single_scratchpad = 1;
+int32_t edge_scroller_pointer_focus = 1;
 
 /* You can choose between:
 LIBINPUT_CONFIG_SCROLL_NO_SCROLL

@@ -19,11 +19,11 @@ pid_t getparentprocess(pid_t p) {
 	return (pid_t)v;
 }
 
-int isdescprocess(pid_t p, pid_t c) {
+int32_t isdescprocess(pid_t p, pid_t c) {
 	while (p != c && c != 0)
 		c = getparentprocess(c);
 
-	return (int)c;
+	return (int32_t)c;
 }
 
 void get_layout_abbr(char *abbr, const char *full_name) {
@@ -31,7 +31,7 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 	abbr[0] = '\0';
 
 	// 1. 尝试在映射表中查找
-	for (int i = 0; layout_mappings[i].full_name != NULL; i++) {
+	for (int32_t i = 0; layout_mappings[i].full_name != NULL; i++) {
 		if (strcmp(full_name, layout_mappings[i].full_name) == 0) {
 			strcpy(abbr, layout_mappings[i].abbr);
 			return;
@@ -83,7 +83,7 @@ void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
 	struct wlr_surface *surface = NULL;
 	Client *c = NULL;
 	LayerSurface *l = NULL;
-	int layer;
+	int32_t layer;
 
 	for (layer = NUM_LAYERS - 1; !surface && layer >= 0; layer--) {
 
