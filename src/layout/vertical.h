@@ -1,5 +1,5 @@
 void vertical_tile(Monitor *m) {
-	uint32_t i, n = 0, w, r, ie = enablegaps, mh, mx, tx;
+	int32_t i, n = 0, w, r, ie = enablegaps, mh, mx, tx;
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
@@ -14,10 +14,10 @@ void vertical_tile(Monitor *m) {
 	if (n == 0)
 		return;
 
-	uint32_t cur_gapih = enablegaps ? m->gappih : 0;
-	uint32_t cur_gapiv = enablegaps ? m->gappiv : 0;
-	uint32_t cur_gapoh = enablegaps ? m->gappoh : 0;
-	uint32_t cur_gapov = enablegaps ? m->gappov : 0;
+	int32_t cur_gapih = enablegaps ? m->gappih : 0;
+	int32_t cur_gapiv = enablegaps ? m->gappiv : 0;
+	int32_t cur_gapoh = enablegaps ? m->gappoh : 0;
+	int32_t cur_gapov = enablegaps ? m->gappov : 0;
 
 	cur_gapih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gapih;
 	cur_gapiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gapiv;
@@ -42,11 +42,11 @@ void vertical_tile(Monitor *m) {
 	i = 0;
 	mx = tx = cur_gapoh;
 
-	uint32_t master_surplus_width =
+	int32_t master_surplus_width =
 		(m->w.width - 2 * cur_gapoh - cur_gapih * ie * (master_num - 1));
 	float master_surplus_ratio = 1.0;
 
-	uint32_t slave_surplus_width =
+	int32_t slave_surplus_width =
 		(m->w.width - 2 * cur_gapoh - cur_gapih * ie * (stack_num - 1));
 	float slave_surplus_ratio = 1.0;
 
@@ -105,15 +105,15 @@ void vertical_tile(Monitor *m) {
 }
 
 void vertical_deck(Monitor *m) {
-	uint32_t mh, mx;
+	int32_t mh, mx;
 	int32_t i, n = 0;
 	Client *c = NULL;
 	Client *fc = NULL;
 	float mfact;
 
-	uint32_t cur_gappiv = enablegaps ? m->gappiv : 0;
-	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0;
-	uint32_t cur_gappov = enablegaps ? m->gappov : 0;
+	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
+	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+	int32_t cur_gappov = enablegaps ? m->gappov : 0;
 
 	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
@@ -170,9 +170,9 @@ void vertical_deck(Monitor *m) {
 
 void vertical_scroll_adjust_fullandmax(Client *c, struct wlr_box *target_geom) {
 	Monitor *m = c->mon;
-	uint32_t cur_gappiv = enablegaps ? m->gappiv : 0;
-	uint32_t cur_gappov = enablegaps ? m->gappov : 0;
-	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
+	int32_t cur_gappov = enablegaps ? m->gappov : 0;
+	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
 
 	cur_gappiv =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappiv;
@@ -201,7 +201,7 @@ void vertical_scroll_adjust_fullandmax(Client *c, struct wlr_box *target_geom) {
 
 // 竖屏滚动布局
 void vertical_scroller(Monitor *m) {
-	uint32_t i, n, j;
+	int32_t i, n, j;
 	float single_proportion = 1.0;
 
 	Client *c = NULL, *root_client = NULL;
@@ -209,9 +209,9 @@ void vertical_scroller(Monitor *m) {
 	struct wlr_box target_geom;
 	int32_t focus_client_index = 0;
 	bool need_scroller = false;
-	uint32_t cur_gappiv = enablegaps ? m->gappiv : 0;
-	uint32_t cur_gappov = enablegaps ? m->gappov : 0;
-	uint32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
+	int32_t cur_gappov = enablegaps ? m->gappov : 0;
+	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
 
 	cur_gappiv =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappiv;
@@ -220,8 +220,7 @@ void vertical_scroller(Monitor *m) {
 	cur_gappoh =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappoh;
 
-	uint32_t max_client_height =
-		m->w.height - 2 * scroller_structs - cur_gappiv;
+	int32_t max_client_height = m->w.height - 2 * scroller_structs - cur_gappiv;
 
 	n = m->visible_scroll_tiling_clients;
 
@@ -354,10 +353,10 @@ void vertical_scroller(Monitor *m) {
 }
 
 void vertical_grid(Monitor *m) {
-	uint32_t i, n;
-	uint32_t cx, cy, cw, ch;
-	uint32_t dy;
-	uint32_t rows, cols, overrows;
+	int32_t i, n;
+	int32_t cx, cy, cw, ch;
+	int32_t dy;
+	int32_t rows, cols, overrows;
 	Client *c = NULL;
 	int32_t target_gappo =
 		enablegaps ? m->isoverview ? overviewgappo : gappov : 0;
