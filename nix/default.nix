@@ -20,10 +20,11 @@
   libGL,
   enableXWayland ? true,
   debug ? false,
+  gitRev ? "unknown",
 }:
 stdenv.mkDerivation {
   pname = "mango";
-  version = "nightly";
+  version = "nightly-${gitRev}";
 
   src = builtins.path {
     path = ../.;
