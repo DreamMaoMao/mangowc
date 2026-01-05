@@ -4112,8 +4112,10 @@ void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 				  uint32_t time) {
 	struct timespec now;
 
-	if (surface != seat->pointer_state.focused_surface && sloppyfocus && time &&
-		c && c->scene->node.enabled && !client_is_unmanaged(c))
+	if (sloppyfocus && c && time && c->scene->node.enabled &&
+		(surface != seat->pointer_state.focused_surface ||
+		 (selmon && selmon->sel && c != selmon->sel)) &&
+		!client_is_unmanaged(c))
 		focusclient(c, 0);
 
 	/* If surface is NULL, clear pointer focus */
