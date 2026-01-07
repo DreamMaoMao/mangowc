@@ -4197,19 +4197,6 @@ void motionnotify(uint32_t time, struct wlr_input_device *device, double dx,
 	struct wlr_pointer_constraint_v1 *constraint;
 	bool should_lock = false;
 
-	/* Find the client under the pointer and send the event along. */
-	xytonode(cursor->x, cursor->y, &surface, &c, NULL, &sx, &sy);
-
-	if (cursor_mode == CurPressed && !seat->drag &&
-		surface != seat->pointer_state.focused_surface &&
-		toplevel_from_wlr_surface(seat->pointer_state.focused_surface, &w,
-								  &l) >= 0) {
-		c = w;
-		surface = seat->pointer_state.focused_surface;
-		sx = cursor->x - (l ? l->scene->node.x : w->geom.x);
-		sy = cursor->y - (l ? l->scene->node.y : w->geom.y);
-	}
-
 	/* time is 0 in internal calls meant to restore pointer focus. */
 	if (time) {
 		wlr_relative_pointer_manager_v1_send_relative_motion(
@@ -4245,6 +4232,19 @@ void motionnotify(uint32_t time, struct wlr_input_device *device, double dx,
 		/* Update selmon (even while dragging a window) */
 		if (sloppyfocus)
 			selmon = xytomon(cursor->x, cursor->y);
+	}
+
+	/* Find the client under the pointer and send the event along. */
+	xytonode(cursor->x, cursor->y, &surface, &c, NULL, &sx, &sy);
+
+	if (cursor_mode == CurPressed && !seat->drag &&
+		surface != seat->pointer_state.focused_surface &&
+		toplevel_from_wlr_surface(seat->pointer_state.focused_surface, &w,
+								  &l) >= 0) {
+		c = w;
+		surface = seat->pointer_state.focused_surface;
+		sx = cursor->x - (l ? l->scene->node.x : w->geom.x);
+		sy = cursor->y - (l ? l->scene->node.y : w->geom.y);
 	}
 
 	/* Update drag icon's position */
