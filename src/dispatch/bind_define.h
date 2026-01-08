@@ -741,7 +741,7 @@ int32_t centerwin(const Arg *arg) {
 		return 0;
 
 	if (c->isfloating) {
-		c->float_geom = setclient_coordinate_center(c, c->geom, 0, 0);
+		c->float_geom = setclient_coordinate_center(c, c->mon, c->geom, 0, 0);
 		c->iscustomsize = 1;
 		resize(c, c->float_geom, 1);
 		return 0;
@@ -1056,7 +1056,7 @@ int32_t tagmon(const Arg *arg) {
 	c->float_geom.height =
 		(int32_t)(c->float_geom.height * c->mon->w.height / selmon->w.height);
 	selmon = c->mon;
-	c->float_geom = setclient_coordinate_center(c, c->float_geom, 0, 0);
+	c->float_geom = setclient_coordinate_center(c, c->mon, c->float_geom, 0, 0);
 
 	// 重新计算居中的坐标
 	// 重新计算居中的坐标

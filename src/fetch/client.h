@@ -74,12 +74,12 @@ Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title) {
 	return target_client;
 }
 struct wlr_box // 计算客户端居中坐标
-setclient_coordinate_center(Client *c, struct wlr_box geom, int32_t offsetx,
-							int32_t offsety) {
+setclient_coordinate_center(Client *c, Monitor *tm, struct wlr_box geom,
+							int32_t offsetx, int32_t offsety) {
 	struct wlr_box tempbox;
 	int32_t offset = 0;
 	int32_t len = 0;
-	Monitor *m = c->mon ? c->mon : selmon;
+	Monitor *m = tm ? tm : selmon;
 
 	uint32_t cbw = check_hit_no_border(c) ? c->bw : 0;
 
