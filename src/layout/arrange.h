@@ -504,6 +504,8 @@ void resize_tile_client(Client *grabc, bool isdrag, int32_t offsetx,
 		resize_tile_scroller(grabc, isdrag, offsetx, offsety, time, false);
 	} else if (current_layout->id == VERTICAL_SCROLLER) {
 		resize_tile_scroller(grabc, isdrag, offsetx, offsety, time, true);
+	} else if (current_layout->id == DUAL_SCROLLER) {
+		resize_tile_scroller(grabc, isdrag, offsetx, offsety, time, false);
 	}
 }
 
