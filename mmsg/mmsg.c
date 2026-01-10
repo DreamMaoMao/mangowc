@@ -25,31 +25,31 @@ static enum {
 	WATCH = 1 << 2 | GET,
 } mode = NONE;
 
-static int Oflag;
-static int Tflag;
-static int Lflag;
-static int oflag;
-static int tflag;
-static int lflag;
-static int cflag;
-static int vflag;
-static int mflag;
-static int fflag;
-static int qflag;
-static int dflag;
-static int xflag;
-static int eflag;
-static int kflag;
-static int bflag;
-static int Aflag;
+static int32_t Oflag;
+static int32_t Tflag;
+static int32_t Lflag;
+static int32_t oflag;
+static int32_t tflag;
+static int32_t lflag;
+static int32_t cflag;
+static int32_t vflag;
+static int32_t mflag;
+static int32_t fflag;
+static int32_t qflag;
+static int32_t dflag;
+static int32_t xflag;
+static int32_t eflag;
+static int32_t kflag;
+static int32_t bflag;
+static int32_t Aflag;
 
 static uint32_t occ, seltags, total_clients, urg;
 
 static char *output_name;
-static int tagcount;
+static int32_t tagcount;
 static char *tagset;
 static char *layout_name;
-static int layoutcount, layout_idx;
+static int32_t layoutcount, layout_idx;
 static char *client_tags;
 static char *dispatch_cmd;
 static char *dispatch_arg1;
@@ -87,7 +87,7 @@ static void noop_description(void *data, struct wl_output *wl_output,
 
 // 将 n 转换为 9 位二进制字符串，结果存入 buf（至少长度 10）
 void bin_str_9bits(char *buf, uint32_t n) {
-	for (int i = 8; i >= 0; i--) {
+	for (int32_t i = 8; i >= 0; i--) {
 		*buf++ = ((n >> i) & 1) ? '1' : '0';
 	}
 	*buf = '\0'; // 字符串结尾
@@ -324,7 +324,7 @@ static void dwl_ipc_output_frame(void *data,
 		if (tflag) {
 			uint32_t mask = seltags;
 			char *t = tagset;
-			int i = 0;
+			int32_t i = 0;
 
 			for (; *t && *t >= '0' && *t <= '9'; t++)
 				i = *t - '0' + i * 10;
@@ -354,7 +354,7 @@ static void dwl_ipc_output_frame(void *data,
 		if (cflag) {
 			uint32_t and = ~0, xor = 0;
 			char *t = client_tags;
-			int i = 0;
+			int32_t i = 0;
 
 			for (; *t && *t >= '0' && *t <= '9'; t++)
 				i = *t - '0' + i * 10;
@@ -509,7 +509,7 @@ static void usage(void) {
 	exit(2);
 }
 
-int main(int argc, char *argv[]) {
+int32_t main(int32_t argc, char *argv[]) {
 	ARGBEGIN {
 	case 'q':
 		qflag = 1;

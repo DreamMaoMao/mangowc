@@ -10,8 +10,9 @@
 
 // 整数版本 - 截断小数部分
 #define CLAMP_INT(x, min, max)                                                 \
-	((int)(x) < (int)(min) ? (int)(min)                                        \
-						   : ((int)(x) > (int)(max) ? (int)(max) : (int)(x)))
+	((int32_t)(x) < (int32_t)(min)                                             \
+		 ? (int32_t)(min)                                                      \
+		 : ((int32_t)(x) > (int32_t)(max) ? (int32_t)(max) : (int32_t)(x)))
 
 // 浮点数版本 - 保留小数部分
 #define CLAMP_FLOAT(x, min, max)                                               \
@@ -30,13 +31,13 @@ typedef struct {
 typedef struct {
 	xkb_keysym_t keysym;
 	MultiKeycode keycode;
-	int type;
+	int32_t type;
 } KeySymCode;
 
 typedef struct {
 	uint32_t mod;
 	KeySymCode keysymcode;
-	int (*func)(const Arg *);
+	int32_t (*func)(const Arg *);
 	Arg arg;
 	char mode[28];
 	bool iscommonmode;
@@ -55,42 +56,42 @@ typedef struct {
 	const char *id;
 	const char *title;
 	uint32_t tags;
-	int isfloating;
-	int isfullscreen;
+	int32_t isfloating;
+	int32_t isfullscreen;
 	float scroller_proportion;
 	const char *animation_type_open;
 	const char *animation_type_close;
 	const char *layer_animation_type_open;
 	const char *layer_animation_type_close;
-	int isnoborder;
-	int isnoshadow;
-	int isnoradius;
-	int isnoanimation;
-	int isopensilent;
-	int istagsilent;
-	int isnamedscratchpad;
-	int isunglobal;
-	int isglobal;
-	int isoverlay;
-	int allow_shortcuts_inhibit;
-	int ignore_maximize;
-	int ignore_minimize;
-	int isnosizehint;
+	int32_t isnoborder;
+	int32_t isnoshadow;
+	int32_t isnoradius;
+	int32_t isnoanimation;
+	int32_t isopensilent;
+	int32_t istagsilent;
+	int32_t isnamedscratchpad;
+	int32_t isunglobal;
+	int32_t isglobal;
+	int32_t isoverlay;
+	int32_t allow_shortcuts_inhibit;
+	int32_t ignore_maximize;
+	int32_t ignore_minimize;
+	int32_t isnosizehint;
 	const char *monitor;
-	int offsetx;
-	int offsety;
-	int width;
-	int height;
-	int nofocus;
-	int nofadein;
-	int nofadeout;
-	int no_force_center;
-	int isterm;
-	int allow_csd;
-	int force_maximize;
-	int force_tearing;
-	int noswallow;
-	int noblur;
+	int32_t offsetx;
+	int32_t offsety;
+	int32_t width;
+	int32_t height;
+	int32_t nofocus;
+	int32_t nofadein;
+	int32_t nofadeout;
+	int32_t no_force_center;
+	int32_t isterm;
+	int32_t allow_csd;
+	int32_t force_maximize;
+	int32_t force_tearing;
+	int32_t noswallow;
+	int32_t noblur;
 	float focused_opacity;
 	float unfocused_opacity;
 	float scroller_proportion_single;
@@ -100,15 +101,15 @@ typedef struct {
 } ConfigWinRule;
 
 typedef struct {
-	const char *name;	// 显示器名称
-	float mfact;		// 主区域比例
-	int nmaster;		// 主区域窗口数量
-	const char *layout; // 布局名称（字符串）
-	int rr;				// 旋转和翻转（假设为整数）
-	float scale;		// 显示器缩放比例
-	int x, y;			// 显示器位置
-	int width, height;	// 显示器分辨率
-	float refresh;		// 刷新率
+	const char *name;	   // 显示器名称
+	float mfact;		   // 主区域比例
+	int32_t nmaster;	   // 主区域窗口数量
+	const char *layout;	   // 布局名称（字符串）
+	int32_t rr;			   // 旋转和翻转（假设为整数）
+	float scale;		   // 显示器缩放比例
+	int32_t x, y;		   // 显示器位置
+	int32_t width, height; // 显示器分辨率
+	float refresh;		   // 刷新率
 } ConfigMonitorRule;
 
 // 修改后的宏定义
@@ -129,20 +130,20 @@ KeyBinding default_key_bindings[] = {CHVT(1), CHVT(2),	CHVT(3),  CHVT(4),
 typedef struct {
 	uint32_t mod;
 	uint32_t button;
-	int (*func)(const Arg *);
+	int32_t (*func)(const Arg *);
 	Arg arg;
 } MouseBinding;
 
 typedef struct {
 	uint32_t mod;
 	uint32_t dir;
-	int (*func)(const Arg *);
+	int32_t (*func)(const Arg *);
 	Arg arg;
 } AxisBinding;
 
 typedef struct {
 	uint32_t fold;
-	int (*func)(const Arg *);
+	int32_t (*func)(const Arg *);
 	Arg arg;
 } SwitchBinding;
 
@@ -150,37 +151,37 @@ typedef struct {
 	uint32_t mod;
 	uint32_t motion;
 	uint32_t fingers_count;
-	int (*func)(const Arg *);
+	int32_t (*func)(const Arg *);
 	Arg arg;
 } GestureBinding;
 
 typedef struct {
-	int id;			   // 标签ID (1-9)
+	int32_t id;		   // 标签ID (1-9)
 	char *layout_name; // 布局名称
 	char *monitor_name;
-	int no_render_border;
-	int no_hide;
+	int32_t no_render_border;
+	int32_t no_hide;
 } ConfigTagRule;
 
 typedef struct {
 	char *layer_name; // 布局名称
 	char *animation_type_open;
 	char *animation_type_close;
-	int noblur;
-	int noanim;
-	int noshadow;
+	int32_t noblur;
+	int32_t noanim;
+	int32_t noshadow;
 } ConfigLayerRule;
 
 typedef struct {
-	int animations;
-	int layer_animations;
+	int32_t animations;
+	int32_t layer_animations;
 	char animation_type_open[10];
 	char animation_type_close[10];
 	char layer_animation_type_open[10];
 	char layer_animation_type_close[10];
-	int animation_fade_in;
-	int animation_fade_out;
-	int tag_animation_direction;
+	int32_t animation_fade_in;
+	int32_t animation_fade_out;
+	int32_t tag_animation_direction;
 	float zoom_initial_ratio;
 	float zoom_end_ratio;
 	float fadein_begin_opacity;
@@ -198,67 +199,67 @@ typedef struct {
 	double animation_curve_opafadein[4];
 	double animation_curve_opafadeout[4];
 
-	int scroller_structs;
+	int32_t scroller_structs;
 	float scroller_default_proportion;
 	float scroller_default_proportion_single;
-	int scroller_ignore_proportion_single;
-	int scroller_focus_center;
-	int scroller_prefer_center;
-	int edge_scroller_pointer_focus;
+	int32_t scroller_ignore_proportion_single;
+	int32_t scroller_focus_center;
+	int32_t scroller_prefer_center;
+	int32_t edge_scroller_pointer_focus;
 	float dual_scroller_default_split_ratio;
-	int focus_cross_monitor;
-	int exchange_cross_monitor;
-	int scratchpad_cross_monitor;
-	int focus_cross_tag;
-	int view_current_to_back;
-	int no_border_when_single;
-	int no_radius_when_single;
-	int snap_distance;
-	int enable_floating_snap;
-	int drag_tile_to_tile;
+	int32_t focus_cross_monitor;
+	int32_t exchange_cross_monitor;
+	int32_t scratchpad_cross_monitor;
+	int32_t focus_cross_tag;
+	int32_t view_current_to_back;
+	int32_t no_border_when_single;
+	int32_t no_radius_when_single;
+	int32_t snap_distance;
+	int32_t enable_floating_snap;
+	int32_t drag_tile_to_tile;
 	uint32_t swipe_min_threshold;
 	float focused_opacity;
 	float unfocused_opacity;
 	float *scroller_proportion_preset;
-	int scroller_proportion_preset_count;
+	int32_t scroller_proportion_preset_count;
 
 	char **circle_layout;
-	int circle_layout_count;
+	int32_t circle_layout_count;
 
 	uint32_t new_is_master;
 	float default_mfact;
 	uint32_t default_nmaster;
-	int center_master_overspread;
-	int center_when_single_stack;
+	int32_t center_master_overspread;
+	int32_t center_when_single_stack;
 
 	uint32_t hotarea_size;
 	uint32_t enable_hotarea;
 	uint32_t ov_tab_mode;
-	int overviewgappi;
-	int overviewgappo;
+	int32_t overviewgappi;
+	int32_t overviewgappo;
 	uint32_t cursor_hide_timeout;
 
 	uint32_t axis_bind_apply_timeout;
 	uint32_t focus_on_activate;
-	int idleinhibit_ignore_visible;
-	int sloppyfocus;
-	int warpcursor;
+	int32_t idleinhibit_ignore_visible;
+	int32_t sloppyfocus;
+	int32_t warpcursor;
 
 	/* keyboard */
-	int repeat_rate;
-	int repeat_delay;
+	int32_t repeat_rate;
+	int32_t repeat_delay;
 	uint32_t numlockon;
 
 	/* Trackpad */
-	int disable_trackpad;
-	int tap_to_click;
-	int tap_and_drag;
-	int drag_lock;
-	int mouse_natural_scrolling;
-	int trackpad_natural_scrolling;
-	int disable_while_typing;
-	int left_handed;
-	int middle_button_emulation;
+	int32_t disable_trackpad;
+	int32_t tap_to_click;
+	int32_t tap_and_drag;
+	int32_t drag_lock;
+	int32_t mouse_natural_scrolling;
+	int32_t trackpad_natural_scrolling;
+	int32_t disable_while_typing;
+	int32_t left_handed;
+	int32_t middle_button_emulation;
 	uint32_t accel_profile;
 	double accel_speed;
 	uint32_t scroll_method;
@@ -269,21 +270,21 @@ typedef struct {
 
 	double axis_scroll_factor;
 
-	int blur;
-	int blur_layer;
-	int blur_optimized;
-	int border_radius;
+	int32_t blur;
+	int32_t blur_layer;
+	int32_t blur_optimized;
+	int32_t border_radius;
 	struct blur_data blur_params;
-	int shadows;
-	int shadow_only_floating;
-	int layer_shadows;
+	int32_t shadows;
+	int32_t shadow_only_floating;
+	int32_t layer_shadows;
 	uint32_t shadows_size;
 	float shadows_blur;
-	int shadows_position_x;
-	int shadows_position_y;
+	int32_t shadows_position_x;
+	int32_t shadows_position_y;
 	float shadowscolor[4];
 
-	int smartgaps;
+	int32_t smartgaps;
 	uint32_t gappih;
 	uint32_t gappiv;
 	uint32_t gappoh;
@@ -303,51 +304,51 @@ typedef struct {
 	char autostart[3][256];
 
 	ConfigTagRule *tag_rules; // 动态数组
-	int tag_rules_count;	  // 数量
+	int32_t tag_rules_count;  // 数量
 
 	ConfigLayerRule *layer_rules; // 动态数组
-	int layer_rules_count;		  // 数量
+	int32_t layer_rules_count;	  // 数量
 
 	ConfigWinRule *window_rules;
-	int window_rules_count;
+	int32_t window_rules_count;
 
 	ConfigMonitorRule *monitor_rules; // 动态数组
-	int monitor_rules_count;		  // 条数
+	int32_t monitor_rules_count;	  // 条数
 
 	KeyBinding *key_bindings;
-	int key_bindings_count;
+	int32_t key_bindings_count;
 
 	MouseBinding *mouse_bindings;
-	int mouse_bindings_count;
+	int32_t mouse_bindings_count;
 
 	AxisBinding *axis_bindings;
-	int axis_bindings_count;
+	int32_t axis_bindings_count;
 
 	SwitchBinding *switch_bindings;
-	int switch_bindings_count;
+	int32_t switch_bindings_count;
 
 	GestureBinding *gesture_bindings;
-	int gesture_bindings_count;
+	int32_t gesture_bindings_count;
 
 	ConfigEnv **env;
-	int env_count;
+	int32_t env_count;
 
 	char **exec;
-	int exec_count;
+	int32_t exec_count;
 
 	char **exec_once;
-	int exec_once_count;
+	int32_t exec_once_count;
 
 	char *cursor_theme;
 	uint32_t cursor_size;
 
-	int single_scratchpad;
-	int xwayland_persistence;
-	int syncobj_enable;
-	int adaptive_sync;
-	int allow_tearing;
-	int allow_shortcuts_inhibit;
-	int allow_lock_transparent;
+	int32_t single_scratchpad;
+	int32_t xwayland_persistence;
+	int32_t syncobj_enable;
+	int32_t adaptive_sync;
+	int32_t allow_tearing;
+	int32_t allow_shortcuts_inhibit;
+	int32_t allow_lock_transparent;
 
 	struct xkb_rule_names xkb_rules;
 
@@ -357,7 +358,7 @@ typedef struct {
 	struct xkb_keymap *keymap;
 } Config;
 
-typedef int (*FuncType)(const Arg *);
+typedef int32_t (*FuncType)(const Arg *);
 Config config;
 
 void parse_config_file(Config *config, const char *file_path);
@@ -388,10 +389,11 @@ void trim_whitespace(char *str) {
 	}
 }
 
-int parse_double_array(const char *input, double *output, int max_count) {
+int32_t parse_double_array(const char *input, double *output,
+						   int32_t max_count) {
 	char *dup = strdup(input);
 	char *token;
-	int count = 0;
+	int32_t count = 0;
 
 	// 先清空整个数组
 	memset(output, 0, max_count * sizeof(double));
@@ -439,7 +441,7 @@ void parse_bind_flags(const char *str, KeyBinding *kb) {
 	const char *suffix = str + 4; // 跳过"bind"
 
 	// 遍历后缀字符
-	for (int i = 0; suffix[i] != '\0'; i++) {
+	for (int32_t i = 0; suffix[i] != '\0'; i++) {
 		switch (suffix[i]) {
 		case 's':
 			kb->keysymcode.type = KEY_TYPE_SYM;
@@ -460,10 +462,10 @@ void parse_bind_flags(const char *str, KeyBinding *kb) {
 	}
 }
 
-int parse_circle_direction(const char *str) {
+int32_t parse_circle_direction(const char *str) {
 	// 将输入字符串转换为小写
 	char lowerStr[10];
-	int i = 0;
+	int32_t i = 0;
 	while (str[i] && i < 9) {
 		lowerStr[i] = tolower(str[i]);
 		i++;
@@ -478,10 +480,10 @@ int parse_circle_direction(const char *str) {
 	}
 }
 
-int parse_direction(const char *str) {
+int32_t parse_direction(const char *str) {
 	// 将输入字符串转换为小写
 	char lowerStr[10];
-	int i = 0;
+	int32_t i = 0;
 	while (str[i] && i < 9) {
 		lowerStr[i] = tolower(str[i]);
 		i++;
@@ -502,10 +504,10 @@ int parse_direction(const char *str) {
 	}
 }
 
-int parse_fold_state(const char *str) {
+int32_t parse_fold_state(const char *str) {
 	// 将输入字符串转换为小写
 	char lowerStr[10];
-	int i = 0;
+	int32_t i = 0;
 	while (str[i] && i < 9) {
 		lowerStr[i] = tolower(str[i]);
 		i++;
@@ -521,9 +523,9 @@ int parse_fold_state(const char *str) {
 		return INVALIDFOLD;
 	}
 }
-long int parse_color(const char *hex_str) {
+int64_t parse_color(const char *hex_str) {
 	char *endptr;
-	long int hex_num = strtol(hex_str, &endptr, 16);
+	int64_t hex_num = strtol(hex_str, &endptr, 16);
 	if (*endptr != '\0') {
 		return -1;
 	}
@@ -621,8 +623,9 @@ uint32_t parse_mod(const char *mod_str) {
 }
 
 // 定义辅助函数：在 keymap 中查找 keysym 对应的多个 keycode
-static int find_keycodes_for_keysym(struct xkb_keymap *keymap, xkb_keysym_t sym,
-									MultiKeycode *multi_kc) {
+static int32_t find_keycodes_for_keysym(struct xkb_keymap *keymap,
+										xkb_keysym_t sym,
+										MultiKeycode *multi_kc) {
 	xkb_keycode_t min_keycode = xkb_keymap_min_keycode(keymap);
 	xkb_keycode_t max_keycode = xkb_keymap_max_keycode(keymap);
 
@@ -630,16 +633,16 @@ static int find_keycodes_for_keysym(struct xkb_keymap *keymap, xkb_keysym_t sym,
 	multi_kc->keycode2 = 0;
 	multi_kc->keycode3 = 0;
 
-	int found_count = 0;
+	int32_t found_count = 0;
 
 	for (xkb_keycode_t keycode = min_keycode;
 		 keycode <= max_keycode && found_count < 3; keycode++) {
 		// 使用布局0和层级0
 		const xkb_keysym_t *syms;
-		int num_syms =
+		int32_t num_syms =
 			xkb_keymap_key_get_syms_by_level(keymap, keycode, 0, 0, &syms);
 
-		for (int i = 0; i < num_syms; i++) {
+		for (int32_t i = 0; i < num_syms; i++) {
 			if (syms[i] == sym) {
 				switch (found_count) {
 				case 0:
@@ -717,7 +720,7 @@ KeySymCode parse_key(const char *key_str, bool isbindsym) {
 
 	if (sym != XKB_KEY_NoSymbol) {
 		// 尝试找到对应的多个 keycode
-		int found_count =
+		int32_t found_count =
 			find_keycodes_for_keysym(config.keymap, sym, &kc.keycode);
 		if (found_count > 0) {
 			kc.type = KEY_TYPE_CODE;
@@ -737,10 +740,10 @@ KeySymCode parse_key(const char *key_str, bool isbindsym) {
 	return kc;
 }
 
-int parse_button(const char *str) {
+int32_t parse_button(const char *str) {
 	// 将输入字符串转换为小写
 	char lowerStr[20];
-	int i = 0;
+	int32_t i = 0;
 	while (str[i] && i < 19) {
 		lowerStr[i] = tolower(str[i]);
 		i++;
@@ -769,10 +772,10 @@ int parse_button(const char *str) {
 	}
 }
 
-int parse_mouse_action(const char *str) {
+int32_t parse_mouse_action(const char *str) {
 	// 将输入字符串转换为小写
 	char lowerStr[20];
-	int i = 0;
+	int32_t i = 0;
 	while (str[i] && i < 19) {
 		lowerStr[i] = tolower(str[i]);
 		i++;
@@ -793,7 +796,7 @@ int parse_mouse_action(const char *str) {
 	}
 }
 
-void convert_hex_to_rgba(float *color, unsigned long int hex) {
+void convert_hex_to_rgba(float *color, uint32_t hex) {
 	color[0] = ((hex >> 24) & 0xFF) / 255.0f;
 	color[1] = ((hex >> 16) & 0xFF) / 255.0f;
 	color[2] = ((hex >> 8) & 0xFF) / 255.0f;
@@ -885,7 +888,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 
 		// 收集需要拼接的参数
 		const char *non_empty_params[4] = {NULL};
-		int param_index = 0;
+		int32_t param_index = 0;
 
 		if (arg_value2 && arg_value2[0] != '\0')
 			non_empty_params[param_index++] = arg_value2;
@@ -902,7 +905,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		} else {
 			// 计算总长度
 			size_t len = 0;
-			for (int i = 0; i < param_index; i++) {
+			for (int32_t i = 0; i < param_index; i++) {
 				len += strlen(non_empty_params[i]);
 			}
 			len += (param_index - 1) + 1; // 逗号数 + null终止符
@@ -910,7 +913,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 			char *temp = malloc(len);
 			if (temp) {
 				char *cursor = temp;
-				for (int i = 0; i < param_index; i++) {
+				for (int32_t i = 0; i < param_index; i++) {
 					if (i > 0) {
 						*cursor++ = ',';
 					}
@@ -1014,7 +1017,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 			token = strtok_r(arg_copy, "|", &saveptr);
 
 			while (token != NULL) {
-				int num = atoi(token);
+				int32_t num = atoi(token);
 				if (num > 0 && num <= LENGTH(tags)) {
 					mask |= (1 << (num - 1));
 				}
@@ -1090,7 +1093,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 }
 
 void set_env() {
-	for (int i = 0; i < config.env_count; i++) {
+	for (int32_t i = 0; i < config.env_count; i++) {
 		setenv(config.env[i]->type, config.env[i]->value, 1);
 	}
 }
@@ -1098,7 +1101,7 @@ void set_env() {
 void run_exec() {
 	Arg arg;
 
-	for (int i = 0; i < config.exec_count; i++) {
+	for (int32_t i = 0; i < config.exec_count; i++) {
 		arg.v = config.exec[i];
 		spawn_shell(&arg);
 	}
@@ -1107,7 +1110,7 @@ void run_exec() {
 void run_exec_once() {
 	Arg arg;
 
-	for (int i = 0; i < config.exec_once_count; i++) {
+	for (int32_t i = 0; i < config.exec_once_count; i++) {
 		arg.v = config.exec_once[i];
 		spawn_shell(&arg);
 	}
@@ -1161,39 +1164,43 @@ void parse_option(Config *config, char *key, char *value) {
 	} else if (strcmp(key, "animation_duration_focus") == 0) {
 		config->animation_duration_focus = atoi(value);
 	} else if (strcmp(key, "animation_curve_move") == 0) {
-		int num = parse_double_array(value, config->animation_curve_move, 4);
+		int32_t num =
+			parse_double_array(value, config->animation_curve_move, 4);
 		if (num != 4) {
 			fprintf(stderr, "Error: Failed to parse animation_curve_move: %s\n",
 					value);
 		}
 	} else if (strcmp(key, "animation_curve_open") == 0) {
-		int num = parse_double_array(value, config->animation_curve_open, 4);
+		int32_t num =
+			parse_double_array(value, config->animation_curve_open, 4);
 		if (num != 4) {
 			fprintf(stderr, "Error: Failed to parse animation_curve_open: %s\n",
 					value);
 		}
 	} else if (strcmp(key, "animation_curve_tag") == 0) {
-		int num = parse_double_array(value, config->animation_curve_tag, 4);
+		int32_t num = parse_double_array(value, config->animation_curve_tag, 4);
 		if (num != 4) {
 			fprintf(stderr, "Error: Failed to parse animation_curve_tag: %s\n",
 					value);
 		}
 	} else if (strcmp(key, "animation_curve_close") == 0) {
-		int num = parse_double_array(value, config->animation_curve_close, 4);
+		int32_t num =
+			parse_double_array(value, config->animation_curve_close, 4);
 		if (num != 4) {
 			fprintf(stderr,
 					"Error: Failed to parse animation_curve_close: %s\n",
 					value);
 		}
 	} else if (strcmp(key, "animation_curve_focus") == 0) {
-		int num = parse_double_array(value, config->animation_curve_focus, 4);
+		int32_t num =
+			parse_double_array(value, config->animation_curve_focus, 4);
 		if (num != 4) {
 			fprintf(stderr,
 					"Error: Failed to parse animation_curve_focus: %s\n",
 					value);
 		}
 	} else if (strcmp(key, "animation_curve_opafadein") == 0) {
-		int num =
+		int32_t num =
 			parse_double_array(value, config->animation_curve_opafadein, 4);
 		if (num != 4) {
 			fprintf(stderr,
@@ -1201,7 +1208,7 @@ void parse_option(Config *config, char *key, char *value) {
 					value);
 		}
 	} else if (strcmp(key, "animation_curve_opafadeout") == 0) {
-		int num =
+		int32_t num =
 			parse_double_array(value, config->animation_curve_opafadeout, 4);
 		if (num != 4) {
 			fprintf(stderr,
@@ -1320,12 +1327,12 @@ void parse_option(Config *config, char *key, char *value) {
 			'\0'; // 确保字符串以 null 结尾
 	} else if (strcmp(key, "scroller_proportion_preset") == 0) {
 		// 1. 统计 value 中有多少个逗号，确定需要解析的浮点数个数
-		int count = 0; // 初始化为 0
+		int32_t count = 0; // 初始化为 0
 		for (const char *p = value; *p; p++) {
 			if (*p == ',')
 				count++;
 		}
-		int float_count = count + 1; // 浮点数的数量是逗号数量加 1
+		int32_t float_count = count + 1; // 浮点数的数量是逗号数量加 1
 
 		// 2. 动态分配内存，存储浮点数
 		config->scroller_proportion_preset =
@@ -1339,7 +1346,7 @@ void parse_option(Config *config, char *key, char *value) {
 		char *value_copy =
 			strdup(value); // 复制 value，因为 strtok 会修改原字符串
 		char *token = strtok(value_copy, ",");
-		int i = 0;
+		int32_t i = 0;
 		float value_set;
 
 		while (token != NULL && i < float_count) {
@@ -1379,12 +1386,12 @@ void parse_option(Config *config, char *key, char *value) {
 		free(value_copy);
 	} else if (strcmp(key, "circle_layout") == 0) {
 		// 1. 统计 value 中有多少个逗号，确定需要解析的字符串个数
-		int count = 0; // 初始化为 0
+		int32_t count = 0; // 初始化为 0
 		for (const char *p = value; *p; p++) {
 			if (*p == ',')
 				count++;
 		}
-		int string_count = count + 1; // 字符串的数量是逗号数量加 1
+		int32_t string_count = count + 1; // 字符串的数量是逗号数量加 1
 
 		// 2. 动态分配内存，存储字符串指针
 		config->circle_layout = (char **)malloc(string_count * sizeof(char *));
@@ -1398,7 +1405,7 @@ void parse_option(Config *config, char *key, char *value) {
 		char *value_copy =
 			strdup(value); // 复制 value，因为 strtok 会修改原字符串
 		char *token = strtok(value_copy, ",");
-		int i = 0;
+		int32_t i = 0;
 		char *cleaned_token;
 		while (token != NULL && i < string_count) {
 			// 为每个字符串分配内存并复制内容
@@ -1409,7 +1416,7 @@ void parse_option(Config *config, char *key, char *value) {
 						"Error: Memory allocation failed for string: %s\n",
 						token);
 				// 释放之前分配的内存
-				for (int j = 0; j < i; j++) {
+				for (int32_t j = 0; j < i; j++) {
 					free(config->circle_layout[j]);
 				}
 				free(config->circle_layout);
@@ -1426,7 +1433,7 @@ void parse_option(Config *config, char *key, char *value) {
 		if (i != string_count) {
 			fprintf(stderr, "Error: Invalid circle_layout format: %s\n", value);
 			// 释放之前分配的内存
-			for (int j = 0; j < i; j++) {
+			for (int32_t j = 0; j < i; j++) {
 				free(config->circle_layout[j]);
 			}
 			free(config->circle_layout);
@@ -1532,7 +1539,7 @@ void parse_option(Config *config, char *key, char *value) {
 	} else if (strcmp(key, "borderpx") == 0) {
 		config->borderpx = atoi(value);
 	} else if (strcmp(key, "rootcolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid rootcolor format: %s\n", value);
 		} else {
@@ -1540,28 +1547,28 @@ void parse_option(Config *config, char *key, char *value) {
 		}
 
 	} else if (strcmp(key, "shadowscolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid shadowscolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->shadowscolor, color);
 		}
 	} else if (strcmp(key, "bordercolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid bordercolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->bordercolor, color);
 		}
 	} else if (strcmp(key, "focuscolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid focuscolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->focuscolor, color);
 		}
 	} else if (strcmp(key, "maximizescreencolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid maximizescreencolor format: %s\n",
 					value);
@@ -1569,14 +1576,14 @@ void parse_option(Config *config, char *key, char *value) {
 			convert_hex_to_rgba(config->maximizescreencolor, color);
 		}
 	} else if (strcmp(key, "urgentcolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid urgentcolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->urgentcolor, color);
 		}
 	} else if (strcmp(key, "scratchpadcolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid scratchpadcolor format: %s\n",
 					value);
@@ -1584,14 +1591,14 @@ void parse_option(Config *config, char *key, char *value) {
 			convert_hex_to_rgba(config->scratchpadcolor, color);
 		}
 	} else if (strcmp(key, "globalcolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid globalcolor format: %s\n", value);
 		} else {
 			convert_hex_to_rgba(config->globalcolor, color);
 		}
 	} else if (strcmp(key, "overlaycolor") == 0) {
-		long int color = parse_color(value);
+		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr, "Error: Invalid overlaycolor format: %s\n", value);
 		} else {
@@ -1709,7 +1716,7 @@ void parse_option(Config *config, char *key, char *value) {
 		ConfigWinRule *rule = &config->window_rules[config->window_rules_count];
 		memset(rule, 0, sizeof(ConfigWinRule));
 
-		// int rule value, relay to a client property
+		// int32_t rule value, relay to a client property
 		rule->isfloating = -1;
 		rule->isfullscreen = -1;
 		rule->isnoborder = -1;
@@ -1884,7 +1891,7 @@ void parse_option(Config *config, char *key, char *value) {
 			raw_height[256], raw_refresh[256];
 
 		// 先读取所有字段为字符串
-		int parsed =
+		int32_t parsed =
 			sscanf(value,
 				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
 				   "^,],%255[^,],%255[^,],%255[^,],%255[^,],%255s",
@@ -2398,7 +2405,7 @@ void parse_config_file(Config *config, const char *file_path) {
 void free_circle_layout(Config *config) {
 	if (config->circle_layout) {
 		// 释放每个字符串
-		for (int i = 0; i < config->circle_layout_count; i++) {
+		for (int32_t i = 0; i < config->circle_layout_count; i++) {
 			if (config->circle_layout[i]) {
 				free(config->circle_layout[i]);	 // 释放单个字符串
 				config->circle_layout[i] = NULL; // 防止野指针
@@ -2444,11 +2451,11 @@ void free_baked_points(void) {
 
 void free_config(void) {
 	// 释放内存
-	int i;
+	int32_t i;
 
 	// 释放 window_rules
 	if (config.window_rules) {
-		for (int i = 0; i < config.window_rules_count; i++) {
+		for (int32_t i = 0; i < config.window_rules_count; i++) {
 			ConfigWinRule *rule = &config.window_rules[i];
 			if (rule->id)
 				free((void *)rule->id);
@@ -2477,7 +2484,7 @@ void free_config(void) {
 
 	// 释放 monitor_rules
 	if (config.monitor_rules) {
-		for (int i = 0; i < config.monitor_rules_count; i++) {
+		for (int32_t i = 0; i < config.monitor_rules_count; i++) {
 			ConfigMonitorRule *rule = &config.monitor_rules[i];
 			free((void *)rule->name);
 			free((void *)rule->layout);
@@ -2594,7 +2601,7 @@ void free_config(void) {
 
 	// 释放 tag_rules
 	if (config.tag_rules) {
-		for (int i = 0; i < config.tag_rules_count; i++) {
+		for (int32_t i = 0; i < config.tag_rules_count; i++) {
 			if (config.tag_rules[i].layout_name)
 				free((void *)config.tag_rules[i].layout_name);
 			if (config.tag_rules[i].monitor_name)
@@ -2607,7 +2614,7 @@ void free_config(void) {
 
 	// 释放 layer_rules
 	if (config.layer_rules) {
-		for (int i = 0; i < config.layer_rules_count; i++) {
+		for (int32_t i = 0; i < config.layer_rules_count; i++) {
 			if (config.layer_rules[i].layer_name)
 				free((void *)config.layer_rules[i].layer_name);
 			if (config.layer_rules[i].animation_type_open)
@@ -2622,7 +2629,7 @@ void free_config(void) {
 
 	// 释放 env
 	if (config.env) {
-		for (int i = 0; i < config.env_count; i++) {
+		for (int32_t i = 0; i < config.env_count; i++) {
 			if (config.env[i]->type) {
 				free((void *)config.env[i]->type);
 			}
@@ -3155,7 +3162,7 @@ void reset_blur_params(void) {
 void reapply_monitor_rules(void) {
 	ConfigMonitorRule *mr;
 	Monitor *m = NULL;
-	int ji, jk;
+	int32_t ji, jk;
 	struct wlr_output_state state;
 	struct wlr_output_mode *internal_mode = NULL;
 	wlr_output_state_init(&state);
@@ -3193,7 +3200,7 @@ void reapply_monitor_rules(void) {
 					} else if (wlr_output_is_headless(m->wlr_output)) {
 						wlr_output_state_set_custom_mode(
 							&state, mr->width, mr->height,
-							(int)roundf(mr->refresh * 1000));
+							(int32_t)roundf(mr->refresh * 1000));
 					}
 				}
 
@@ -3290,7 +3297,7 @@ void reapply_pointer(void) {
 
 void reapply_master(void) {
 
-	int i;
+	int32_t i;
 	Monitor *m = NULL;
 	for (i = 0; i <= LENGTH(tags); i++) {
 		wl_list_for_each(m, &mons, link) {
@@ -3308,7 +3315,7 @@ void reapply_master(void) {
 }
 
 void parse_tagrule(Monitor *m) {
-	int i, jk;
+	int32_t i, jk;
 	ConfigTagRule tr;
 
 	for (i = 0; i < config.tag_rules_count; i++) {
@@ -3358,10 +3365,10 @@ void reset_option(void) {
 	reapply_tagrule();
 	reapply_monitor_rules();
 
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 }
 
-int reload_config(const Arg *arg) {
+int32_t reload_config(const Arg *arg) {
 	parse_config();
 	reset_option();
 	printstatus();

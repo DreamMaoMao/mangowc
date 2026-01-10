@@ -1,7 +1,7 @@
-# MangoWC
-
-<img width="255" height="256" alt="mango-transparency-256" src="https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png" />
-
+# Mango Wayland Compositor
+<div>
+  <img src="https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png" alt="MangoWC Logo" width="120"/>
+</div>
 
 This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
