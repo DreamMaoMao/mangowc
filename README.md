@@ -285,3 +285,15 @@ Read The Friendly Manual on packaging software in your distribution first.
 - https://github.com/swaywm/sway - Sample of Wayland protocol
 
 - https://github.com/wlrfx/scenefx - Make it simple to add window effect.
+
+
+# Sponsor
+At present, I can only accept sponsorship through an encrypted connection.
+If you find this project helpful to you, you can offer sponsorship in the following ways.
+
+<img width="650" height="870" alt="image" src="https://github.com/user-attachments/assets/8c860317-90d2-4071-971d-f1a92b674469" />
+
+
+Thanks to the following friends for their sponsorship of this project
+
+[@tonybanters](https://github.com/tonybanters)
