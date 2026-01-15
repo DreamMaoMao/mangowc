@@ -77,7 +77,7 @@ Monitor *output_from_wlr_output(struct wlr_output *wlr_output) {
 	return NULL;
 }
 
-Monitor *output_nearest_to(int lx, int ly) {
+Monitor *output_nearest_to(int32_t lx, int32_t ly) {
 	double closest_x, closest_y;
 	wlr_output_layout_closest_point(output_layout, NULL, lx, ly, &closest_x,
 									&closest_y);
@@ -225,7 +225,7 @@ static void update_popup_position(struct dwl_input_method_popup *popup) {
 	Monitor *output = NULL;
 	struct wlr_xdg_positioner_rules pointer_rules;
 	struct wlr_box output_box;
-	int lx, ly;
+	int32_t lx, ly;
 	struct wlr_box popup_box;
 
 	if (!text_input || !relay->focused_surface ||
