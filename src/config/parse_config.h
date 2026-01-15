@@ -1083,6 +1083,16 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "scroller_stack") == 0) {
 		func = scroller_stack;
 		(*arg).i = parse_direction(arg_value);
+	} else if (strcmp(func_name, "toggle_opacity") == 0) {
+		func = toggle_opacity;
+	} else if (strcmp(func_name, "inc_opacity") == 0) {
+		(*arg).f = atof(arg_value);
+		func = inc_opacity;
+	} else if (strcmp(func_name, "dec_opacity") == 0) {
+		(*arg).f = atof(arg_value);
+		func = dec_opacity;
+	} else if (strcmp(func_name, "clear_custom_opacity") == 0) {
+		func = clear_custom_opacity;
 	} else {
 		return NULL;
 	}
