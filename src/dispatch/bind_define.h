@@ -426,6 +426,12 @@ int32_t resizewin(const Arg *arg) {
 		return 0;
 
 	if (ISTILED(c)) {
+		Client *target_client = c;
+		if (is_scroller_layout(c->mon) && (c->prev_in_stack || c->next_in_stack)) {
+			while (target_client->prev_in_stack) {
+				target_client = target_client->prev_in_stack;
+			}
+		}
 		switch (arg->ui) {
 		case NUM_TYPE_MINUS:
 			offsetx = -arg->i;
@@ -449,7 +455,7 @@ int32_t resizewin(const Arg *arg) {
 			offsety = arg->i2;
 			break;
 		}
-		resize_tile_client(c, false, offsetx, offsety, 0);
+		resize_tile_client(target_client, false, offsetx, offsety, 0);
 		return 0;
 	}
 
