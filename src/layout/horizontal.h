@@ -252,8 +252,7 @@ void scroller(Monitor *m) {
 	int32_t cur_gappih = enablegaps ? m->gappih : 0;
 	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
 	int32_t cur_gappov = enablegaps ? m->gappov : 0;
-    int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
-
+  int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
 
 	cur_gappih =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappih;
