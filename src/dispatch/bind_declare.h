@@ -68,4 +68,10 @@ int32_t toggle_trackpad_enable(const Arg *arg);
 int32_t setoption(const Arg *arg);
 int32_t disable_monitor(const Arg *arg);
 int32_t enable_monitor(const Arg *arg);
+int32_t expand_client_left(const Arg *arg);
+int32_t collapse_client_right(const Arg *arg);
+int32_t stack_with_left(const Arg *arg);
+int32_t unstack(const Arg *arg);
+int32_t revert_size(const Arg *arg);
+
 int32_t toggle_monitor(const Arg *arg);

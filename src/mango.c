@@ -407,6 +407,8 @@ struct Client {
 	int32_t allow_shortcuts_inhibit;
 	float scroller_proportion_single;
 	bool isfocusing;
+	struct Client *next_in_stack;
+	struct Client *prev_in_stack;
 };
 
 typedef struct {

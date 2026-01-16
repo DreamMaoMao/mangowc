@@ -1585,3 +1585,130 @@ int32_t toggle_monitor(const Arg *arg) {
 	}
 	return 0;
 }
+
+int32_t expand_client_left(const Arg *arg) {
+	Client *c = selmon->sel;
+	if (selmon && c && is_scroller_layout(selmon)) {
+		c->scroller_proportion += arg->f;
+		if (c->scroller_proportion > 1.0)
+			c->scroller_proportion = 1.0;
+		arrange(selmon, false, false);
+	} else {
+		setmfact(arg);
+	}
+	return 0;
+}
+
+int32_t collapse_client_right(const Arg *arg) {
+	Client *c = selmon->sel;
+	if (selmon && c && is_scroller_layout(selmon)) {
+		c->scroller_proportion += arg->f;
+		if (c->scroller_proportion < 0.1)
+			c->scroller_proportion = 0.1;
+		arrange(selmon, false, false);
+	} else {
+		setmfact(arg);
+	}
+	return 0;
+}
+
+int32_t stack_with_left(const Arg *arg) {
+    Client *c = selmon->sel;
+    if (!c || c->isfloating || !is_scroller_layout(selmon))
+        return 0;
+
+    Client *left_c = get_next_stack_client(c, true);
+    if (!left_c)
+        return 0;
+
+    // If c is already in a stack, remove it.
+    if (c->prev_in_stack) {
+        c->prev_in_stack->next_in_stack = c->next_in_stack;
+    }
+    if (c->next_in_stack) {
+        c->next_in_stack->prev_in_stack = c->prev_in_stack;
+    }
+    // If c was a stack head, its next client becomes the new head.
+    if (c->next_in_stack) {
+        c->next_in_stack->prev_in_stack = NULL;
+    }
+
+
+    // Find the tail of left_c's stack
+    Client *stack_tail = left_c;
+    while (stack_tail->next_in_stack) {
+        stack_tail = stack_tail->next_in_stack;
+    }
+
+    // Add c to the stack
+    stack_tail->next_in_stack = c;
+    c->prev_in_stack = stack_tail;
+    c->next_in_stack = NULL;
+
+    arrange(selmon, false, false);
+    return 0;
+}
+
+int32_t unstack(const Arg *arg) {
+    Client *c = selmon->sel;
+    if (!c || !c->prev_in_stack) {
+        // Not in a stack or is the head of a stack, do nothing.
+        return 0;
+    }
+
+    Client *stack_head = c;
+    while(stack_head->prev_in_stack) {
+        stack_head = stack_head->prev_in_stack;
+    }
+
+    // Remove c from its current stack
+    if (c->prev_in_stack) {
+        c->prev_in_stack->next_in_stack = c->next_in_stack;
+    }
+    if (c->next_in_stack) {
+        c->next_in_stack->prev_in_stack = c->prev_in_stack;
+    }
+
+    c->next_in_stack = NULL;
+    c->prev_in_stack = NULL;
+
+    // Insert c after the stack it was in
+    wl_list_remove(&c->link);
+    wl_list_insert(&stack_head->link, &c->link);
+
+    focusclient(c, 1);
+    arrange(selmon, false, false);
+    return 0;
+}
+
+int32_t revert_size(const Arg *arg) {
+    Client *c = selmon->sel;
+    if (!c) {
+        return 0;
+    }
+
+    // Ensure the client is not floating and its size is managed by the layout
+    if (c->isfloating) {
+        setfloating(c, false);
+    }
+    c->iscustomsize = 0; // Let the layout manage its size
+
+    // Explicitly remove the client from any stack it might be in
+    if (c->prev_in_stack) {
+        c->prev_in_stack->next_in_stack = c->next_in_stack;
+    }
+    if (c->next_in_stack) {
+        c->next_in_stack->prev_in_stack = c->prev_in_stack;
+    }
+    c->prev_in_stack = NULL;
+    c->next_in_stack = NULL;
+
+    // Explicitly reset float_geom to ensure arrange recalculates geometry
+    c->float_geom = (struct wlr_box){0};
+
+    // The arrange function will now correctly size and position the window
+    // within the scroller layout, giving it full vertical size and preventing overlaps.
+    arrange(selmon, false, false);
+
+    return 0;
+}

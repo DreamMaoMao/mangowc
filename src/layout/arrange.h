@@ -627,7 +627,7 @@ arrange(Monitor *m, bool want_animation, bool from_view) {
 				m->visible_tiling_clients++;
 			}
 
-			if (ISSCROLLTILED(c)) {
+			if (ISSCROLLTILED(c) && !c->prev_in_stack) {
 				m->visible_scroll_tiling_clients++;
 			}
 		}

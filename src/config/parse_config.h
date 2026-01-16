@@ -1080,6 +1080,26 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "toggle_monitor") == 0) {
 		func = toggle_monitor;
 		(*arg).v = strdup(arg_value);
+	} else if (strcmp(func_name, "expand_client_left") == 0) {
+		func = expand_client_left;
+		if (arg_value && *arg_value) {
+			(*arg).f = atof(arg_value);
+		} else {
+			(*arg).f = 0.05;
+		}
+	} else if (strcmp(func_name, "collapse_client_right") == 0) {
+		func = collapse_client_right;
+		if (arg_value && *arg_value) {
+			(*arg).f = atof(arg_value);
+		} else {
+			(*arg).f = -0.05;
+		}
+	} else if (strcmp(func_name, "stack_with_left") == 0) {
+		func = stack_with_left;
+	} else if (strcmp(func_name, "unstack") == 0) {
+		func = unstack;
+	} else if (strcmp(func_name, "revert_size") == 0) {
+		func = revert_size;
 	} else {
 		return NULL;
 	}

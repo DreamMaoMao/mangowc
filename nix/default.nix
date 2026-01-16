@@ -35,6 +35,10 @@ stdenv.mkDerivation {
     (lib.mesonBool "asan" debug)
   ];
 
+  preConfigure = ''
+    rm -rf build
+  '';
+
   nativeBuildInputs = [
     meson
     ninja
