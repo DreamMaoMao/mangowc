@@ -3638,7 +3638,27 @@ void keypressmod(struct wl_listener *listener, void *data) {
 }
 
 void pending_kill_client(Client *c) {
-	// c->iskilling = 1; //不可以提前标记已经杀掉，因为有些客户端可能拒绝
+	if (!c || c->iskilling)
+		return;
+
+	// If the client is in a stack, remove it from the stack
+	if (c->prev_in_stack || c->next_in_stack) {
+		if (c->prev_in_stack) {
+			c->prev_in_stack->next_in_stack = c->next_in_stack;
+		}
+		if (c->next_in_stack) {
+			c->next_in_stack->prev_in_stack = c->prev_in_stack;
+			if (!c->prev_in_stack) { // c was the head of the stack
+				// The next client becomes the new head, so we need to ensure it's treated as such.
+				// This is implicitly handled by setting its prev_in_stack to NULL.
+			}
+		}
+		c->prev_in_stack = NULL;
+		c->next_in_stack = NULL;
+		arrange(c->mon, false, false);
+	}
+
+	c->iskilling = 1;
 	client_send_close(c);
 }
 

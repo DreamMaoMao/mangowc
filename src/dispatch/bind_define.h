@@ -426,6 +426,12 @@ int32_t resizewin(const Arg *arg) {
 		return 0;
 
 	if (ISTILED(c)) {
+		Client *target_client = c;
+		if (is_scroller_layout(c->mon) && (c->prev_in_stack || c->next_in_stack)) {
+			while (target_client->prev_in_stack) {
+				target_client = target_client->prev_in_stack;
+			}
+		}
 		switch (arg->ui) {
 		case NUM_TYPE_MINUS:
 			offsetx = -arg->i;
@@ -449,7 +455,7 @@ int32_t resizewin(const Arg *arg) {
 			offsety = arg->i2;
 			break;
 		}
-		resize_tile_client(c, false, offsetx, offsety, 0);
+		resize_tile_client(target_client, false, offsetx, offsety, 0);
 		return 0;
 	}
 
@@ -1616,6 +1622,20 @@ int32_t stack_with_left(const Arg *arg) {
     Client *c = selmon->sel;
     if (!c || c->isfloating || !is_scroller_layout(selmon))
         return 0;
+
+    if (!config.stacker_loop) {
+        Client *first_tiled = NULL;
+        Client *iter_c = NULL;
+        wl_list_for_each(iter_c, &clients, link) {
+            if (ISTILED(iter_c) && VISIBLEON(iter_c, selmon)) {
+                first_tiled = iter_c;
+                break;
+            }
+        }
+        if (c == first_tiled) {
+            return 0; // It's the first client and loop is disabled, so do nothing.
+        }
+    }
 
     Client *left_c = get_next_stack_client(c, true);
     if (!left_c)
