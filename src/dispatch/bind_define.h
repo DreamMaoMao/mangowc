@@ -1623,6 +1623,20 @@ int32_t stack_with_left(const Arg *arg) {
     if (!c || c->isfloating || !is_scroller_layout(selmon))
         return 0;
 
+    if (!config.stacker_loop) {
+        Client *first_tiled = NULL;
+        Client *iter_c = NULL;
+        wl_list_for_each(iter_c, &clients, link) {
+            if (ISTILED(iter_c) && VISIBLEON(iter_c, selmon)) {
+                first_tiled = iter_c;
+                break;
+            }
+        }
+        if (c == first_tiled) {
+            return 0; // It's the first client and loop is disabled, so do nothing.
+        }
+    }
+
     Client *left_c = get_next_stack_client(c, true);
     if (!left_c)
         return 0;
