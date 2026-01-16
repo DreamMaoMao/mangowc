@@ -550,12 +550,14 @@ int32_t set_proportion(const Arg *arg) {
 		!scroller_ignore_proportion_single)
 		return 0;
 
-	if (selmon->sel) {
+	Client *tc = selmon->sel;
+
+	if (tc) {
+		tc = get_scroll_stack_head(tc);
 		uint32_t max_client_width =
 			selmon->w.width - 2 * scroller_structs - gappih;
-		selmon->sel->scroller_proportion = arg->f;
-		selmon->sel->geom.width = max_client_width * arg->f;
-		// resize(selmon->sel, selmon->sel->geom, 0);
+		tc->scroller_proportion = arg->f;
+		tc->geom.width = max_client_width * arg->f;
 		arrange(selmon, false, false);
 	}
 	return 0;
@@ -971,11 +973,13 @@ int32_t switch_proportion_preset(const Arg *arg) {
 		!scroller_ignore_proportion_single)
 		return 0;
 
-	if (selmon->sel) {
+	Client *tc = selmon->sel;
 
+	if (tc) {
+		tc = get_scroll_stack_head(tc);
 		for (int32_t i = 0; i < config.scroller_proportion_preset_count; i++) {
 			if (config.scroller_proportion_preset[i] ==
-				selmon->sel->scroller_proportion) {
+				tc->scroller_proportion) {
 				if (i == config.scroller_proportion_preset_count - 1) {
 					target_proportion = config.scroller_proportion_preset[0];
 					break;
@@ -993,9 +997,8 @@ int32_t switch_proportion_preset(const Arg *arg) {
 
 		uint32_t max_client_width =
 			selmon->w.width - 2 * scroller_structs - gappih;
-		selmon->sel->scroller_proportion = target_proportion;
-		selmon->sel->geom.width = max_client_width * target_proportion;
-		// resize(selmon->sel, selmon->sel->geom, 0);
+		tc->scroller_proportion = target_proportion;
+		tc->geom.width = max_client_width * target_proportion;
 		arrange(selmon, false, false);
 	}
 	return 0;
@@ -1093,6 +1096,7 @@ int32_t tagsilent(const Arg *arg) {
 			clear_fullscreen_flag(fc);
 		}
 	}
+	exit_scroller_stack(target_client);
 	focusclient(focustop(selmon), 1);
 	arrange(target_client->mon, false, false);
 	return 0;
@@ -1221,9 +1225,11 @@ int32_t toggleglobal(const Arg *arg) {
 		selmon->sel->isnamedscratchpad = 0;
 	}
 	selmon->sel->isglobal ^= 1;
-	//   selmon->sel->tags =
-	//       selmon->sel->isglobal ? TAGMASK : selmon->tagset[selmon->seltags];
-	//   focustop(selmon);
+	if (selmon->sel->isglobal &&
+		(selmon->sel->prev_in_stack || selmon->sel->next_in_stack)) {
+		exit_scroller_stack(selmon->sel);
+		arrange(selmon, false, false);
+	}
 	setborder_color(selmon->sel);
 	return 0;
 }
@@ -1583,5 +1589,87 @@ int32_t toggle_monitor(const Arg *arg) {
 			break;
 		}
 	}
+	return 0;
+}
+
+int32_t scroller_stack(const Arg *arg) {
+	Client *c = selmon->sel;
+	Client *stack_head = NULL;
+	Client *source_stack_head = NULL;
+	if (!c || c->isfloating || !is_scroller_layout(selmon))
+		return 0;
+
+	if (c && (!client_only_in_one_tag(c) || c->isglobal || c->isunglobal))
+		return 0;
+
+	Client *target_client = find_client_by_direction(c, arg, false, true);
+
+	if (target_client && (!client_only_in_one_tag(target_client) ||
+						  target_client->isglobal || target_client->isunglobal))
+		return 0;
+
+	if (target_client) {
+		stack_head = get_scroll_stack_head(target_client);
+	}
+
+	if (c) {
+		source_stack_head = get_scroll_stack_head(c);
+	}
+
+	if (stack_head == source_stack_head) {
+		return 0;
+	}
+
+	if (c->isfullscreen) {
+		setfullscreen(c, 0);
+	}
+
+	if (c->ismaximizescreen) {
+		setmaximizescreen(c, 0);
+	}
+
+	if (c->prev_in_stack) {
+		exit_scroller_stack(c);
+		if (arg->i == LEFT || arg->i == UP) {
+			wl_list_remove(&c->link);
+			wl_list_insert(source_stack_head->link.prev, &c->link);
+		} else {
+			wl_list_remove(&c->link);
+			wl_list_insert(&source_stack_head->link, &c->link);
+		}
+		arrange(selmon, false, false);
+		return 0;
+	} else if (c->next_in_stack) {
+		Client *next_in_stack = c->next_in_stack;
+		exit_scroller_stack(c);
+		if (arg->i == LEFT || arg->i == UP) {
+			wl_list_remove(&c->link);
+			wl_list_insert(next_in_stack->link.prev, &c->link);
+		} else {
+			wl_list_remove(&c->link);
+			wl_list_insert(&next_in_stack->link, &c->link);
+		}
+		arrange(selmon, false, false);
+		return 0;
+	}
+
+	if (!target_client || target_client->mon != c->mon) {
+		return 0;
+	}
+
+	exit_scroller_stack(c);
+
+	// Find the tail of target_client's stack
+	Client *stack_tail = target_client;
+	while (stack_tail->next_in_stack) {
+		stack_tail = stack_tail->next_in_stack;
+	}
+
+	// Add c to the stack
+	stack_tail->next_in_stack = c;
+	c->prev_in_stack = stack_tail;
+	c->next_in_stack = NULL;
+
+	arrange(selmon, false, false);
 	return 0;
 }

@@ -448,3 +448,11 @@ bool client_only_in_one_tag(Client *c) {
 		return false;
 	}
 }
+
+Client *get_scroll_stack_head(Client *c) {
+	Client *scroller_stack_head = c;
+	while (scroller_stack_head->prev_in_stack) {
+		scroller_stack_head = scroller_stack_head->prev_in_stack;
+	}
+	return scroller_stack_head;
+}
