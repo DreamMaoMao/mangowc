@@ -605,6 +605,10 @@ arrange(Monitor *m, bool want_animation, bool from_view) {
 
 	wl_list_for_each(c, &clients, link) {
 
+		if (!client_only_in_one_tag(c) || c->isglobal || c->isunglobal) {
+			exit_scroller_stack(c);
+		}
+
 		if (from_view && (c->isglobal || c->isunglobal)) {
 			set_size_per(m, c);
 		}
