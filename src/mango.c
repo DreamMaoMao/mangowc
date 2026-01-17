@@ -630,7 +630,7 @@ static void motionrelative(struct wl_listener *listener, void *data);
 static void reset_foreign_tolevel(Client *c);
 static void remove_foreign_topleve(Client *c);
 static void add_foreign_topleve(Client *c);
-static void exchange_two_client(Client *c1, Client *c2, bool samemon);
+static void exchange_two_client(Client *c1, Client *c2);
 static void outputmgrapply(struct wl_listener *listener, void *data);
 static void outputmgrapplyortest(struct wlr_output_configuration_v1 *config,
 								 int32_t test);
@@ -1848,7 +1848,7 @@ void place_drag_tile_client(Client *c) {
 		closest_client->link.prev->next = &c->link;
 		closest_client->link.prev = &c->link;
 	} else if (closest_client) {
-		exchange_two_client(c, closest_client, false);
+		exchange_two_client(c, closest_client);
 	}
 	setfloating(c, 0);
 }
@@ -4357,7 +4357,7 @@ void setborder_color(Client *c) {
 	client_set_border_color(c, border_color);
 }
 
-void exchange_two_client(Client *c1, Client *c2, bool samemon) {
+void exchange_two_client(Client *c1, Client *c2) {
 
 	Monitor *tmp_mon = NULL;
 	uint32_t tmp_tags;
@@ -4370,10 +4370,8 @@ void exchange_two_client(Client *c1, Client *c2, bool samemon) {
 		return;
 	}
 
-	if (samemon && c1->mon != c2->mon)
-		return;
-
-	if(c1->mon != c2->mon && (c1->prev_in_stack || c2->prev_in_stack||c1->next_in_stack||c2->next_in_stack))
+	if (c1->mon != c2->mon && (c1->prev_in_stack || c2->prev_in_stack ||
+							   c1->next_in_stack || c2->next_in_stack))
 		return;
 
 	// 交换布局参数
@@ -4417,7 +4415,7 @@ void exchange_two_client(Client *c1, Client *c2, bool samemon) {
 	} else if (c1->prev_in_stack || c2->prev_in_stack) {
 		Client *c1head = get_scroll_stack_head(c1);
 		Client *c2head = get_scroll_stack_head(c2);
-		exchange_two_client(c1head, c2head, true);
+		exchange_two_client(c1head, c2head);
 		focusclient(c1, 0);
 		return;
 	}

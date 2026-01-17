@@ -107,7 +107,7 @@ int32_t exchange_client(const Arg *arg) {
 	if ((c->isfullscreen || c->ismaximizescreen) && !is_scroller_layout(c->mon))
 		return 0;
 
-	exchange_two_client(c, direction_select(arg), false);
+	exchange_two_client(c, direction_select(arg));
 	return 0;
 }
 
@@ -122,7 +122,7 @@ int32_t exchange_stack_client(const Arg *arg) {
 		tc = get_next_stack_client(c, true);
 	}
 	if (tc)
-		exchange_two_client(c, tc, false);
+		exchange_two_client(c, tc);
 	return 0;
 }
 
