@@ -199,8 +199,8 @@ void vertical_scroll_adjust_fullandmax(Client *c, struct wlr_box *target_geom) {
 	target_geom->x = m->w.x + (m->w.width - target_geom->width) / 2;
 }
 
-void arrange_stack_vertical(Client *scroller_stack_head, struct wlr_box geometry,
-				   int32_t gappih) {
+void arrange_stack_vertical(Client *scroller_stack_head,
+							struct wlr_box geometry, int32_t gappih) {
 	int32_t stack_size = 0;
 	Client *iter = scroller_stack_head;
 	while (iter) {
@@ -214,8 +214,9 @@ void arrange_stack_vertical(Client *scroller_stack_head, struct wlr_box geometry
 	float total_proportion = 0.0f;
 	iter = scroller_stack_head;
 	while (iter) {
-		if(iter->stack_proportion <= 0.0f || iter->stack_proportion >= 1.0f) {
-			iter->stack_proportion = stack_size == 1 ? 1.0f : 1.0f/(stack_size - 1);
+		if (iter->stack_proportion <= 0.0f || iter->stack_proportion >= 1.0f) {
+			iter->stack_proportion =
+				stack_size == 1 ? 1.0f : 1.0f / (stack_size - 1);
 		}
 		total_proportion += iter->stack_proportion;
 		iter = iter->next_in_stack;
@@ -235,7 +236,8 @@ void arrange_stack_vertical(Client *scroller_stack_head, struct wlr_box geometry
 	iter = scroller_stack_head;
 	while (iter) {
 
-		client_width = remain_client_width * (iter->stack_proportion / remain_proportion);
+		client_width =
+			remain_client_width * (iter->stack_proportion / remain_proportion);
 
 		struct wlr_box client_geom = {.y = geometry.y,
 									  .x = current_x,

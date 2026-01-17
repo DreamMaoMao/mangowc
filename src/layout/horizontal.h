@@ -227,8 +227,9 @@ void arrange_stack(Client *scroller_stack_head, struct wlr_box geometry,
 	float total_proportion = 0.0f;
 	iter = scroller_stack_head;
 	while (iter) {
-		if(iter->stack_proportion <= 0.0f || iter->stack_proportion >= 1.0f) {
-			iter->stack_proportion = stack_size == 1 ? 1.0f : 1.0f/(stack_size - 1);
+		if (iter->stack_proportion <= 0.0f || iter->stack_proportion >= 1.0f) {
+			iter->stack_proportion =
+				stack_size == 1 ? 1.0f : 1.0f / (stack_size - 1);
 		}
 		total_proportion += iter->stack_proportion;
 		iter = iter->next_in_stack;
@@ -248,7 +249,8 @@ void arrange_stack(Client *scroller_stack_head, struct wlr_box geometry,
 	iter = scroller_stack_head;
 	while (iter) {
 
-		client_height = remain_client_height * (iter->stack_proportion / remain_proportion);
+		client_height =
+			remain_client_height * (iter->stack_proportion / remain_proportion);
 
 		struct wlr_box client_geom = {.x = geometry.x,
 									  .y = current_y,

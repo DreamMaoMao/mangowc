@@ -376,6 +376,7 @@ struct Client {
 	bool is_restoring_from_ov;
 	float scroller_proportion;
 	float stack_proportion;
+	float old_stack_proportion;
 	bool need_output_flush;
 	struct dwl_animation animation;
 	struct dwl_opacity_animation opacity_animation;

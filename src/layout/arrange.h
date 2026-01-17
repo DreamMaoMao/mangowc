@@ -378,6 +378,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 						  int32_t offsety, uint32_t time, bool isvertical) {
 	float delta_x, delta_y;
 	float new_scroller_proportion;
+	float new_stack_proportion;
 
 	if (grabc && grabc->mon->visible_tiling_clients == 1 &&
 		!scroller_ignore_proportion_single)
@@ -390,6 +391,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 
 		// 记录初始状态
 		grabc->old_scroller_pproportion = grabc->scroller_proportion;
+		grabc->old_stack_proportion = grabc->stack_proportion;
 
 		grabc->cursor_in_left_half =
 			cursor->x < grabc->geom.x + grabc->geom.width / 2;
@@ -410,14 +412,22 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 			grabc->old_stack_inner_per = grabc->stack_inner_per;
 			grabc->drag_begin_geom = grabc->geom;
 			grabc->old_scroller_pproportion = grabc->scroller_proportion;
+			grabc->old_stack_proportion = grabc->stack_proportion;
 			grabc->cursor_in_upper_half = false;
 			grabc->cursor_in_left_half = false;
 		}
 
-		delta_x = (float)(offsetx) * (grabc->old_scroller_pproportion) /
-				  grabc->drag_begin_geom.width;
-		delta_y = (float)(offsety) * (grabc->old_scroller_pproportion) /
-				  grabc->drag_begin_geom.height;
+		if (isvertical) {
+			delta_y = (float)(offsety) * (grabc->old_scroller_pproportion) /
+					  grabc->drag_begin_geom.height;
+			delta_x = (float)(offsetx) * (grabc->old_stack_proportion) /
+					  grabc->drag_begin_geom.width;
+		} else {
+			delta_x = (float)(offsetx) * (grabc->old_scroller_pproportion) /
+					  grabc->drag_begin_geom.width;
+			delta_y = (float)(offsety) * (grabc->old_stack_proportion) /
+					  grabc->drag_begin_geom.height;
+		}
 
 		bool moving_up;
 		bool moving_down;
@@ -452,20 +462,36 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 			delta_x = -fabsf(delta_x);
 		}
 
+		if (isvertical) {
+			if (!grabc->next_in_stack && grabc->prev_in_stack && !isdrag) {
+				delta_x = delta_x * -1.0f;
+			}
+		} else {
+			if (!grabc->next_in_stack && grabc->prev_in_stack && !isdrag) {
+				delta_y = delta_y * -1.0f;
+			}
+		}
+
 		// 直接设置新的比例，基于初始值 + 变化量
 		if (isvertical) {
 			new_scroller_proportion = grabc->old_scroller_pproportion + delta_y;
+			new_stack_proportion = grabc->old_stack_proportion + delta_x;
+
 		} else {
 			new_scroller_proportion = grabc->old_scroller_pproportion + delta_x;
+			new_stack_proportion = grabc->old_stack_proportion + delta_y;
 		}
 
 		// 应用限制，确保比例在合理范围内
 		new_scroller_proportion =
 			fmaxf(0.1f, fminf(1.0f, new_scroller_proportion));
+		new_stack_proportion = fmaxf(0.1f, fminf(1.0f, new_stack_proportion));
 
 		grabc->scroller_proportion = new_scroller_proportion;
-		if(grabc->prev_in_stack) {
-			grabc->prev_in_stack->scroller_proportion = grabc->scroller_proportion;
+		grabc->stack_proportion = new_stack_proportion;
+		if (grabc->prev_in_stack) {
+			grabc->prev_in_stack->scroller_proportion =
+				grabc->scroller_proportion;
 		}
 
 		if (!isdrag) {
