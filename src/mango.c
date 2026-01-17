@@ -767,6 +767,7 @@ static void request_fresh_all_monitors(void);
 static Client *find_client_by_direction(Client *tc, const Arg *arg,
 										bool findfloating, bool ignore_align);
 static void exit_scroller_stack(Client *c);
+static Client *get_scroll_stack_head(Client *c);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -5470,16 +5471,7 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 		init_fadeout_client(c);
 
 	// If the client is in a stack, remove it from the stack
-	if (c->prev_in_stack || c->next_in_stack) {
-		if (c->prev_in_stack) {
-			c->prev_in_stack->next_in_stack = c->next_in_stack;
-		}
-		if (c->next_in_stack) {
-			c->next_in_stack->prev_in_stack = c->prev_in_stack;
-		}
-		c->prev_in_stack = NULL;
-		c->next_in_stack = NULL;
-	}
+	exit_scroller_stack(c);
 
 	if (c->swallowedby) {
 		c->swallowedby->mon = c->mon;

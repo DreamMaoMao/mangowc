@@ -314,9 +314,7 @@ void scroller(Monitor *m) {
 
 	// root_client might be in a stack, find the stack head
 	if (root_client) {
-		while (root_client->prev_in_stack) {
-			root_client = root_client->prev_in_stack;
-		}
+		root_client = get_scroll_stack_head(root_client);
 	}
 
 	if (!root_client) {

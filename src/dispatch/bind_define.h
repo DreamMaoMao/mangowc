@@ -429,9 +429,7 @@ int32_t resizewin(const Arg *arg) {
 		Client *target_client = c;
 		if (is_scroller_layout(c->mon) &&
 			(c->prev_in_stack || c->next_in_stack)) {
-			while (target_client->prev_in_stack) {
-				target_client = target_client->prev_in_stack;
-			}
+			target_client = get_scroll_stack_head(target_client);
 		}
 		switch (arg->ui) {
 		case NUM_TYPE_MINUS:
@@ -1636,20 +1634,10 @@ int32_t scroller_unstack(const Arg *arg) {
 	}
 
 	Client *scroller_stack_head = c;
-	while (scroller_stack_head->prev_in_stack) {
-		scroller_stack_head = scroller_stack_head->prev_in_stack;
-	}
+	scroller_stack_head = get_scroll_stack_head(scroller_stack_head);
 
 	// Remove c from its current stack
-	if (c->prev_in_stack) {
-		c->prev_in_stack->next_in_stack = c->next_in_stack;
-	}
-	if (c->next_in_stack) {
-		c->next_in_stack->prev_in_stack = c->prev_in_stack;
-	}
-
-	c->next_in_stack = NULL;
-	c->prev_in_stack = NULL;
+	exit_scroller_stack(c);
 
 	// Insert c after the stack it was in
 	wl_list_remove(&c->link);
