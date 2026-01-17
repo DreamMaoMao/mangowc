@@ -1063,6 +1063,13 @@ void swallow(Client *c, Client *w) {
 	c->geom = w->geom;
 	c->float_geom = w->float_geom;
 	c->scroller_proportion = w->scroller_proportion;
+	c->next_in_stack = w->next_in_stack;
+	c->prev_in_stack = w->prev_in_stack;
+	if(w->next_in_stack)
+		w->next_in_stack->prev_in_stack = c;
+	if(w->prev_in_stack)
+		w->prev_in_stack->next_in_stack = c;
+	c->stack_proportion = w->stack_proportion;
 	wl_list_insert(&w->link, &c->link);
 	wl_list_insert(&w->flink, &c->flink);
 
@@ -5486,11 +5493,13 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 		init_fadeout_client(c);
 
 	// If the client is in a stack, remove it from the stack
-	exit_scroller_stack(c);
+	
 
 	if (c->swallowedby) {
 		c->swallowedby->mon = c->mon;
 		swallow(c->swallowedby, c);
+	} else {
+		exit_scroller_stack(c);
 	}
 
 	if (c == grabc) {
@@ -5511,9 +5520,9 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	}
 
 	if (c->mon && c->mon == selmon) {
-		if (next_in_stack) {
+		if (next_in_stack && !c->swallowedby) {
 			nextfocus = next_in_stack;
-		} else if (prev_in_stack) {
+		} else if (prev_in_stack && !c->swallowedby) {
 			nextfocus = prev_in_stack;
 		} else {
 			nextfocus = focustop(selmon);
