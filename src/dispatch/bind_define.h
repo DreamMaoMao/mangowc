@@ -1599,7 +1599,7 @@ int32_t scroller_stack(const Arg *arg) {
 	Client *left_c = find_client_by_direction(c, arg, false, true);
 
 	if (!left_c) {
-		if (arg->i == LEFT) {
+		if (arg->i == LEFT || arg->i == UP) {
 			exit_scroller_stack(c);
 			wl_list_remove(&c->link);
 			wl_list_insert(&clients, &c->link);
@@ -1652,7 +1652,7 @@ int32_t scroller_unstack(const Arg *arg) {
 
 	// Insert c after the stack it was in
 	wl_list_remove(&c->link);
-	if (arg->i == RIGHT)
+	if (arg->i == RIGHT || arg->i == DOWN)
 		wl_list_insert(&scroller_stack_head->link, &c->link);
 	else
 		wl_list_insert(scroller_stack_head->link.prev, &c->link);
