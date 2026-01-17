@@ -218,6 +218,7 @@ void arrange_stack(Client *scroller_stack_head, struct wlr_box geometry,
 	Client *iter = scroller_stack_head;
 	while (iter) {
 		stack_size++;
+		iter->scroller_proportion = scroller_stack_head->scroller_proportion;
 		iter = iter->next_in_stack;
 	}
 

@@ -205,6 +205,7 @@ void arrange_stack_vertical(Client *scroller_stack_head,
 	Client *iter = scroller_stack_head;
 	while (iter) {
 		stack_size++;
+		iter->scroller_proportion = scroller_stack_head->scroller_proportion;
 		iter = iter->next_in_stack;
 	}
 

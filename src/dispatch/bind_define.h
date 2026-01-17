@@ -1634,6 +1634,9 @@ int32_t scroller_stack(const Arg *arg) {
 		stack_tail = stack_tail->next_in_stack;
 	}
 
+	Client *stack_head = get_scroll_stack_head(target_client);
+	c->scroller_proportion = stack_head->scroller_proportion;
+
 	// Add c to the stack
 	stack_tail->next_in_stack = c;
 	c->prev_in_stack = stack_tail;
