@@ -493,7 +493,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 		Client *stack_head = get_scroll_stack_head(grabc);
 		Client *iter = stack_head;
 
-		while(iter) {
+		while (iter) {
 			iter->scroller_proportion = grabc->scroller_proportion;
 			iter = iter->next_in_stack;
 		}

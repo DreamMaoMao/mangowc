@@ -4665,6 +4665,7 @@ void exit_scroller_stack(Client *c) {
 
 	c->prev_in_stack = NULL;
 	c->next_in_stack = NULL;
+	c->stack_proportion = 0.0f;
 }
 
 void setmaximizescreen(Client *c, int32_t maximizescreen) {
