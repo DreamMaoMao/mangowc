@@ -205,7 +205,6 @@ typedef struct {
 	int32_t scroller_ignore_proportion_single;
 	int32_t scroller_focus_center;
 	int32_t scroller_prefer_center;
-	int32_t stacker_loop;
 	int32_t edge_scroller_pointer_focus;
 	int32_t focus_cross_monitor;
 	int32_t exchange_cross_monitor;
@@ -1081,26 +1080,9 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 	} else if (strcmp(func_name, "toggle_monitor") == 0) {
 		func = toggle_monitor;
 		(*arg).v = strdup(arg_value);
-	} else if (strcmp(func_name, "expand_client_left") == 0) {
-		func = expand_client_left;
-		if (arg_value && *arg_value) {
-			(*arg).f = atof(arg_value);
-		} else {
-			(*arg).f = 0.05;
-		}
-	} else if (strcmp(func_name, "collapse_client_right") == 0) {
-		func = collapse_client_right;
-		if (arg_value && *arg_value) {
-			(*arg).f = atof(arg_value);
-		} else {
-			(*arg).f = -0.05;
-		}
-	} else if (strcmp(func_name, "stack_with_left") == 0) {
-		func = stack_with_left;
-	} else if (strcmp(func_name, "unstack") == 0) {
-		func = unstack;
-	} else if (strcmp(func_name, "revert_size") == 0) {
-		func = revert_size;
+	} else if (strcmp(func_name, "scroller_stack") == 0) {
+		func = scroller_stack;
+		(*arg).i = parse_direction(arg_value);
 	} else {
 		return NULL;
 	}
@@ -1242,8 +1224,6 @@ void parse_option(Config *config, char *key, char *value) {
 		config->scroller_focus_center = atoi(value);
 	} else if (strcmp(key, "scroller_prefer_center") == 0) {
 		config->scroller_prefer_center = atoi(value);
-	} else if (strcmp(key, "stacker_loop") == 0) {
-		config->stacker_loop = atoi(value);
 	} else if (strcmp(key, "edge_scroller_pointer_focus") == 0) {
 		config->edge_scroller_pointer_focus = atoi(value);
 	} else if (strcmp(key, "focus_cross_monitor") == 0) {

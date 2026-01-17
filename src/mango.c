@@ -21,6 +21,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <wayland-server-core.h>
+#include <wayland-util.h>
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
 #include <wlr/backend/libinput.h>
@@ -101,6 +102,10 @@
 	(A->geom.x >= A->mon->m.x && A->geom.y >= A->mon->m.y &&                   \
 	 A->geom.x + A->geom.width <= A->mon->m.x + A->mon->m.width &&             \
 	 A->geom.y + A->geom.height <= A->mon->m.y + A->mon->m.height)
+#define GEOMINSIDEMON(A, M)                                                    \
+	(A->x >= M->m.x && A->y >= M->m.y &&                                       \
+	 A->x + A->width <= M->m.x + M->m.width &&                                 \
+	 A->y + A->height <= M->m.y + M->m.height)
 #define ISTILED(A)                                                             \
 	(A && !(A)->isfloating && !(A)->isminimized && !(A)->iskilling &&          \
 	 !(A)->ismaximizescreen && !(A)->isfullscreen && !(A)->isunglobal)
@@ -375,6 +380,8 @@ struct Client {
 	bool is_pending_open_animation;
 	bool is_restoring_from_ov;
 	float scroller_proportion;
+	float stack_proportion;
+	float old_stack_proportion;
 	bool need_output_flush;
 	struct dwl_animation animation;
 	struct dwl_opacity_animation opacity_animation;
@@ -764,6 +771,11 @@ static void init_client_properties(Client *c);
 static float *get_border_color(Client *c);
 static void clear_fullscreen_and_maximized_state(Monitor *m);
 static void request_fresh_all_monitors(void);
+static Client *find_client_by_direction(Client *tc, const Arg *arg,
+										bool findfloating, bool ignore_align);
+static void exit_scroller_stack(Client *c);
+static Client *get_scroll_stack_head(Client *c);
+static bool client_only_in_one_tag(Client *c);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -1055,6 +1067,13 @@ void swallow(Client *c, Client *w) {
 	c->geom = w->geom;
 	c->float_geom = w->float_geom;
 	c->scroller_proportion = w->scroller_proportion;
+	c->next_in_stack = w->next_in_stack;
+	c->prev_in_stack = w->prev_in_stack;
+	if (w->next_in_stack)
+		w->next_in_stack->prev_in_stack = c;
+	if (w->prev_in_stack)
+		w->prev_in_stack->next_in_stack = c;
+	c->stack_proportion = w->stack_proportion;
 	wl_list_insert(&w->link, &c->link);
 	wl_list_insert(&w->flink, &c->flink);
 
@@ -3640,25 +3659,6 @@ void keypressmod(struct wl_listener *listener, void *data) {
 void pending_kill_client(Client *c) {
 	if (!c || c->iskilling)
 		return;
-
-	// If the client is in a stack, remove it from the stack
-	if (c->prev_in_stack || c->next_in_stack) {
-		if (c->prev_in_stack) {
-			c->prev_in_stack->next_in_stack = c->next_in_stack;
-		}
-		if (c->next_in_stack) {
-			c->next_in_stack->prev_in_stack = c->prev_in_stack;
-			if (!c->prev_in_stack) { // c was the head of the stack
-				// The next client becomes the new head, so we need to ensure it's treated as such.
-				// This is implicitly handled by setting its prev_in_stack to NULL.
-			}
-		}
-		c->prev_in_stack = NULL;
-		c->next_in_stack = NULL;
-		arrange(c->mon, false, false);
-	}
-
-	c->iskilling = 1;
 	client_send_close(c);
 }
 
@@ -3845,7 +3845,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 
 		if (selmon->sel && ISSCROLLTILED(selmon->sel) &&
 			VISIBLEON(selmon->sel, selmon)) {
-			at_client = selmon->sel;
+			at_client = get_scroll_stack_head(selmon->sel);
 		} else {
 			at_client = center_tiled_select(selmon);
 		}
@@ -4375,10 +4375,30 @@ void exchange_two_client(Client *c1, Client *c2) {
 	double master_inner_per = 0.0f;
 	double master_mfact_per = 0.0f;
 	double stack_inner_per = 0.0f;
+	float scroller_proportion = 0.0f;
+	float stack_proportion = 0.0f;
 
 	if (c1 == NULL || c2 == NULL ||
 		(!exchange_cross_monitor && c1->mon != c2->mon)) {
 		return;
+	}
+
+	if (c1->mon != c2->mon && (c1->prev_in_stack || c2->prev_in_stack ||
+							   c1->next_in_stack || c2->next_in_stack))
+		return;
+
+	Client *c1head = get_scroll_stack_head(c1);
+	Client *c2head = get_scroll_stack_head(c2);
+
+	// 交换布局参数
+	if (c1head == c2head) {
+		scroller_proportion = c1->scroller_proportion;
+		stack_proportion = c1->stack_proportion;
+
+		c1->scroller_proportion = c2->scroller_proportion;
+		c1->stack_proportion = c2->stack_proportion;
+		c2->scroller_proportion = scroller_proportion;
+		c2->stack_proportion = stack_proportion;
 	}
 
 	master_inner_per = c1->master_inner_per;
@@ -4393,17 +4413,46 @@ void exchange_two_client(Client *c1, Client *c2) {
 	c2->master_mfact_per = master_mfact_per;
 	c2->stack_inner_per = stack_inner_per;
 
+	// 交换栈链表连接
+	Client *tmp1_next_in_stack = c1->next_in_stack;
+	Client *tmp1_prev_in_stack = c1->prev_in_stack;
+	Client *tmp2_next_in_stack = c2->next_in_stack;
+	Client *tmp2_prev_in_stack = c2->prev_in_stack;
+
+	// 处理相邻节点的情况
+	if (c1->next_in_stack == c2) {
+		c1->next_in_stack = tmp2_next_in_stack;
+		c2->next_in_stack = c1;
+		c1->prev_in_stack = c2;
+		c2->prev_in_stack = tmp1_prev_in_stack;
+		if (tmp1_prev_in_stack)
+			tmp1_prev_in_stack->next_in_stack = c2;
+		if (tmp2_next_in_stack)
+			tmp2_next_in_stack->prev_in_stack = c1;
+	} else if (c2->next_in_stack == c1) {
+		c2->next_in_stack = tmp1_next_in_stack;
+		c1->next_in_stack = c2;
+		c2->prev_in_stack = c1;
+		c1->prev_in_stack = tmp2_prev_in_stack;
+		if (tmp2_prev_in_stack)
+			tmp2_prev_in_stack->next_in_stack = c1;
+		if (tmp1_next_in_stack)
+			tmp1_next_in_stack->prev_in_stack = c2;
+	} else if (c1->prev_in_stack || c2->prev_in_stack) {
+		Client *c1head = get_scroll_stack_head(c1);
+		Client *c2head = get_scroll_stack_head(c2);
+		exchange_two_client(c1head, c2head);
+		focusclient(c1, 0);
+		return;
+	}
+
+	// 交换全局链表连接
 	struct wl_list *tmp1_prev = c1->link.prev;
 	struct wl_list *tmp2_prev = c2->link.prev;
 	struct wl_list *tmp1_next = c1->link.next;
 	struct wl_list *tmp2_next = c2->link.next;
 
-	// wl_list
-	// 是双向链表,其中clients是头部节点,它的下一个节点是第一个客户端的链表节点
-	// 最后一个客户端的链表节点的下一个节点也指向clients,但clients本身不是客户端的链表节点
-	// 客户端遍历从clients的下一个节点开始,到检测到客户端节点的下一个是clients结束
-
-	// 当c1和c2为相邻节点时
+	// 处理相邻节点的情况
 	if (c1->link.next == &c2->link) {
 		c1->link.next = c2->link.next;
 		c1->link.prev = &c2->link;
@@ -4430,6 +4479,7 @@ void exchange_two_client(Client *c1, Client *c2) {
 		tmp2_next->prev = &c1->link;
 	}
 
+	// 处理跨监视器交换
 	if (exchange_cross_monitor) {
 		tmp_mon = c2->mon;
 		tmp_tags = c2->tags;
@@ -4440,7 +4490,6 @@ void exchange_two_client(Client *c1, Client *c2) {
 		focusclient(c1, 0);
 	} else {
 		arrange(c1->mon, false, false);
-		focusclient(c1, 0);
 	}
 }
 
@@ -4560,6 +4609,8 @@ setfloating(Client *c, int32_t floating) {
 			c->bw = c->isnoborder ? 0 : borderpx;
 		}
 
+		exit_scroller_stack(c);
+
 		// 重新计算居中的坐标
 		if (!client_is_x11(c) && !c->iscustompos)
 			target_box =
@@ -4631,6 +4682,27 @@ void reset_maximizescreen_size(Client *c) {
 	resize(c, c->geom, 0);
 }
 
+void exit_scroller_stack(Client *c) {
+	// If c is already in a stack, remove it.
+	if (c->prev_in_stack) {
+		c->prev_in_stack->next_in_stack = c->next_in_stack;
+	}
+
+	if (!c->prev_in_stack && c->next_in_stack) {
+		c->next_in_stack->scroller_proportion = c->scroller_proportion;
+		wl_list_remove(&c->next_in_stack->link);
+		wl_list_insert(&c->link, &c->next_in_stack->link);
+	}
+
+	if (c->next_in_stack) {
+		c->next_in_stack->prev_in_stack = c->prev_in_stack;
+	}
+
+	c->prev_in_stack = NULL;
+	c->next_in_stack = NULL;
+	c->stack_proportion = 0.0f;
+}
+
 void setmaximizescreen(Client *c, int32_t maximizescreen) {
 	struct wlr_box maximizescreen_box;
 	if (!c || !c->mon || !client_surface(c)->mapped || c->iskilling)
@@ -4645,6 +4717,8 @@ void setmaximizescreen(Client *c, int32_t maximizescreen) {
 
 		if (c->isfullscreen)
 			setfullscreen(c, 0);
+
+		exit_scroller_stack(c);
 
 		if (c->isfloating)
 			c->float_geom = c->geom;
@@ -4705,6 +4779,8 @@ void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自
 	if (fullscreen) {
 		if (c->ismaximizescreen)
 			setmaximizescreen(c, 0);
+
+		exit_scroller_stack(c);
 
 		if (c->isfloating)
 			c->float_geom = c->geom;
@@ -5279,6 +5355,7 @@ void tag_client(const Arg *arg, Client *target_client) {
 	Client *fc = NULL;
 	if (target_client && arg->ui & TAGMASK) {
 
+		exit_scroller_stack(target_client);
 		target_client->tags = arg->ui & TAGMASK;
 		target_client->istagswitching = 1;
 
@@ -5426,15 +5503,22 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	 */
 	Client *c = wl_container_of(listener, c, unmap);
 	Monitor *m = NULL;
+	Client *nextfocus = NULL;
+	Client *next_in_stack = c->next_in_stack;
+	Client *prev_in_stack = c->prev_in_stack;
 	c->iskilling = 1;
 
 	if (animations && !c->is_clip_to_hide && !c->isminimized &&
 		(!c->mon || VISIBLEON(c, c->mon)))
 		init_fadeout_client(c);
 
+	// If the client is in a stack, remove it from the stack
+
 	if (c->swallowedby) {
 		c->swallowedby->mon = c->mon;
 		swallow(c->swallowedby, c);
+	} else {
+		exit_scroller_stack(c);
 	}
 
 	if (c == grabc) {
@@ -5455,7 +5539,13 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	}
 
 	if (c->mon && c->mon == selmon) {
-		Client *nextfocus = focustop(selmon);
+		if (next_in_stack && !c->swallowedby) {
+			nextfocus = next_in_stack;
+		} else if (prev_in_stack && !c->swallowedby) {
+			nextfocus = prev_in_stack;
+		} else {
+			nextfocus = focustop(selmon);
+		}
 
 		if (nextfocus) {
 			focusclient(nextfocus, 0);
