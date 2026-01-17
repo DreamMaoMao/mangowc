@@ -464,6 +464,9 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 			fmaxf(0.1f, fminf(1.0f, new_scroller_proportion));
 
 		grabc->scroller_proportion = new_scroller_proportion;
+		if(grabc->prev_in_stack) {
+			grabc->prev_in_stack->scroller_proportion = grabc->scroller_proportion;
+		}
 
 		if (!isdrag) {
 			arrange(grabc->mon, false, false);
