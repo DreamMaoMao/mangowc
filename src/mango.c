@@ -4601,10 +4601,11 @@ void setfakefullscreen(Client *c, int32_t fakefullscreen) {
 	c->isfakefullscreen = fakefullscreen;
 	if (!c->mon)
 		return;
+
 	if (c->isfullscreen)
 		setfullscreen(c, 0);
-	else
-		client_set_fullscreen(c, fakefullscreen);
+
+	client_set_fullscreen(c, fakefullscreen);
 }
 
 void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自带全屏
@@ -4627,6 +4628,8 @@ void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自
 		if (c->isfloating)
 			c->float_geom = c->geom;
 
+		c->isfakefullscreen = 0;
+
 		c->bw = 0;
 		wlr_scene_node_raise_to_top(&c->scene->node); // 将视图提升到顶层
 		if (!is_scroller_layout(c->mon) || c->isfloating)
@@ -4635,7 +4638,6 @@ void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自
 	} else {
 		c->bw = c->isnoborder ? 0 : borderpx;
 		c->isfullscreen = 0;
-		c->isfakefullscreen = 0;
 		if (c->isfloating)
 			setfloating(c, 1);
 	}
