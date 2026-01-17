@@ -1652,7 +1652,10 @@ int32_t scroller_unstack(const Arg *arg) {
 
 	// Insert c after the stack it was in
 	wl_list_remove(&c->link);
-	wl_list_insert(&scroller_stack_head->link, &c->link);
+	if (arg->i == RIGHT)
+		wl_list_insert(&scroller_stack_head->link, &c->link);
+	else
+		wl_list_insert(scroller_stack_head->link.prev, &c->link);
 
 	focusclient(c, 1);
 	arrange(selmon, false, false);

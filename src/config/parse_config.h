@@ -1085,6 +1085,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		(*arg).i = parse_direction(arg_value);
 	} else if (strcmp(func_name, "scroller_unstack") == 0) {
 		func = scroller_unstack;
+		(*arg).i = parse_direction(arg_value);
 	} else {
 		return NULL;
 	}
