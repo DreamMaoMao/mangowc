@@ -5319,6 +5319,7 @@ void tag_client(const Arg *arg, Client *target_client) {
 	Client *fc = NULL;
 	if (target_client && arg->ui & TAGMASK) {
 
+		exit_scroller_stack(target_client);
 		target_client->tags = arg->ui & TAGMASK;
 		target_client->istagswitching = 1;
 

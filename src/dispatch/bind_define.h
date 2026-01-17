@@ -1096,6 +1096,7 @@ int32_t tagsilent(const Arg *arg) {
 			clear_fullscreen_flag(fc);
 		}
 	}
+	exit_scroller_stack(target_client);
 	focusclient(focustop(selmon), 1);
 	arrange(target_client->mon, false, false);
 	return 0;
