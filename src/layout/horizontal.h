@@ -212,31 +212,32 @@ void horizontal_scroll_adjust_fullandmax(Client *c,
 	target_geom->y = m->w.y + (m->w.height - target_geom->height) / 2;
 }
 
-void arrange_stack(Client *stack_head, struct wlr_box geometry, int32_t gappiv) {
-    int32_t stack_size = 0;
-    Client *iter = stack_head;
-    while (iter) {
-        stack_size++;
-        iter = iter->next_in_stack;
-    }
+void arrange_stack(Client *scroller_stack_head, struct wlr_box geometry,
+				   int32_t gappiv) {
+	int32_t stack_size = 0;
+	Client *iter = scroller_stack_head;
+	while (iter) {
+		stack_size++;
+		iter = iter->next_in_stack;
+	}
 
-    if (stack_size == 0) return;
+	if (stack_size == 0)
+		return;
 
-    int32_t client_height = (geometry.height - (stack_size - 1) * gappiv) / stack_size;
-    int32_t current_y = geometry.y;
+	int32_t client_height =
+		(geometry.height - (stack_size - 1) * gappiv) / stack_size;
+	int32_t current_y = geometry.y;
 
-    iter = stack_head;
-    while (iter) {
-        struct wlr_box client_geom = {
-            .x = geometry.x,
-            .y = current_y,
-            .width = geometry.width,
-            .height = client_height
-        };
-        resize(iter, client_geom, 0);
-        current_y += client_height + gappiv;
-        iter = iter->next_in_stack;
-    }
+	iter = scroller_stack_head;
+	while (iter) {
+		struct wlr_box client_geom = {.x = geometry.x,
+									  .y = current_y,
+									  .width = geometry.width,
+									  .height = client_height};
+		resize(iter, client_geom, 0);
+		current_y += client_height + gappiv;
+		iter = iter->next_in_stack;
+	}
 }
 
 // 滚动布局
@@ -252,7 +253,7 @@ void scroller(Monitor *m) {
 	int32_t cur_gappih = enablegaps ? m->gappih : 0;
 	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
 	int32_t cur_gappov = enablegaps ? m->gappov : 0;
-  int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
+	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
 
 	cur_gappih =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappih;
@@ -311,13 +312,12 @@ void scroller(Monitor *m) {
 		root_client = center_tiled_select(m);
 	}
 
-    // root_client might be in a stack, find the stack head
-    if (root_client) {
-        while(root_client->prev_in_stack) {
-            root_client = root_client->prev_in_stack;
-        }
-    }
-
+	// root_client might be in a stack, find the stack head
+	if (root_client) {
+		while (root_client->prev_in_stack) {
+			root_client = root_client->prev_in_stack;
+		}
+	}
 
 	if (!root_client) {
 		free(tempClients); // 释放内存

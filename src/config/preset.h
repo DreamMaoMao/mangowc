@@ -65,7 +65,6 @@ float scroller_default_proportion_single = 1.0;
 int32_t scroller_ignore_proportion_single = 0;
 int32_t scroller_focus_center = 0;
 int32_t scroller_prefer_center = 0;
-int32_t stacker_loop = 1;
 int32_t focus_cross_monitor = 0;
 int32_t focus_cross_tag = 0;
 int32_t exchange_cross_monitor = 0;
