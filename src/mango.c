@@ -768,6 +768,7 @@ static Client *find_client_by_direction(Client *tc, const Arg *arg,
 										bool findfloating, bool ignore_align);
 static void exit_scroller_stack(Client *c);
 static Client *get_scroll_stack_head(Client *c);
+static bool client_only_in_one_tag(Client *c);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"

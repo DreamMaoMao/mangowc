@@ -1596,9 +1596,15 @@ int32_t scroller_stack(const Arg *arg) {
 	if (!c || c->isfloating || !is_scroller_layout(selmon))
 		return 0;
 
-	Client *left_c = find_client_by_direction(c, arg, false, true);
+	Client *target_client = find_client_by_direction(c, arg, false, true);
 
-	if (!left_c) {
+	if(!target_client)
+		return 0;
+
+	if(!client_only_in_one_tag(target_client) || target_client->isglobal || target_client->isunglobal)
+		return 0;
+
+	if (!target_client) {
 		if (arg->i == LEFT || arg->i == UP) {
 			exit_scroller_stack(c);
 			wl_list_remove(&c->link);
@@ -1622,8 +1628,8 @@ int32_t scroller_stack(const Arg *arg) {
 
 	exit_scroller_stack(c);
 
-	// Find the tail of left_c's stack
-	Client *stack_tail = left_c;
+	// Find the tail of target_client's stack
+	Client *stack_tail = target_client;
 	while (stack_tail->next_in_stack) {
 		stack_tail = stack_tail->next_in_stack;
 	}
