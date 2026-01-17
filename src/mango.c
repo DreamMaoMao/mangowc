@@ -4578,6 +4578,8 @@ setfloating(Client *c, int32_t floating) {
 			c->bw = c->isnoborder ? 0 : borderpx;
 		}
 
+		exit_scroller_stack(c);
+
 		// 重新计算居中的坐标
 		if (!client_is_x11(c) && !c->iscustompos)
 			target_box =
