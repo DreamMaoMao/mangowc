@@ -1598,8 +1598,19 @@ int32_t scroller_stack(const Arg *arg) {
 
 	Client *left_c = find_client_by_direction(c, arg, false, true);
 
-	if (!left_c)
+	if (!left_c) {
+		if (arg->i == LEFT) {
+			exit_scroller_stack(c);
+			wl_list_remove(&c->link);
+			wl_list_insert(&clients, &c->link);
+		} else {
+			exit_scroller_stack(c);
+			wl_list_remove(&c->link);
+			wl_list_insert(clients.prev, &c->link);
+		}
+		arrange(selmon, false, false);
 		return 0;
+	}
 
 	if (c->isfullscreen) {
 		setfullscreen(c, 0);
