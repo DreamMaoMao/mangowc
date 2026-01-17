@@ -555,12 +555,14 @@ int32_t set_proportion(const Arg *arg) {
 		!scroller_ignore_proportion_single)
 		return 0;
 
-	if (selmon->sel) {
+	Client *tc = selmon->sel;
+
+	if (tc) {
+		tc = get_scroll_stack_head(tc);
 		uint32_t max_client_width =
 			selmon->w.width - 2 * scroller_structs - gappih;
-		selmon->sel->scroller_proportion = arg->f;
-		selmon->sel->geom.width = max_client_width * arg->f;
-		// resize(selmon->sel, selmon->sel->geom, 0);
+		tc->scroller_proportion = arg->f;
+		tc->geom.width = max_client_width * arg->f;
 		arrange(selmon, false, false);
 	}
 	return 0;
@@ -976,11 +978,13 @@ int32_t switch_proportion_preset(const Arg *arg) {
 		!scroller_ignore_proportion_single)
 		return 0;
 
-	if (selmon->sel) {
+	Client *tc = selmon->sel;
 
+	if (tc) {
+		tc = get_scroll_stack_head(tc);
 		for (int32_t i = 0; i < config.scroller_proportion_preset_count; i++) {
 			if (config.scroller_proportion_preset[i] ==
-				selmon->sel->scroller_proportion) {
+				tc->scroller_proportion) {
 				if (i == config.scroller_proportion_preset_count - 1) {
 					target_proportion = config.scroller_proportion_preset[0];
 					break;
@@ -998,9 +1002,8 @@ int32_t switch_proportion_preset(const Arg *arg) {
 
 		uint32_t max_client_width =
 			selmon->w.width - 2 * scroller_structs - gappih;
-		selmon->sel->scroller_proportion = target_proportion;
-		selmon->sel->geom.width = max_client_width * target_proportion;
-		// resize(selmon->sel, selmon->sel->geom, 0);
+		tc->scroller_proportion = target_proportion;
+		tc->geom.width = max_client_width * target_proportion;
 		arrange(selmon, false, false);
 	}
 	return 0;
@@ -1598,10 +1601,8 @@ int32_t scroller_stack(const Arg *arg) {
 
 	Client *target_client = find_client_by_direction(c, arg, false, true);
 
-	if(!target_client)
-		return 0;
-
-	if(!client_only_in_one_tag(target_client) || target_client->isglobal || target_client->isunglobal)
+	if (target_client && (!client_only_in_one_tag(target_client) ||
+						  target_client->isglobal || target_client->isunglobal))
 		return 0;
 
 	if (!target_client) {
