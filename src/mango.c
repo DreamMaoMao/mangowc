@@ -4373,6 +4373,9 @@ void exchange_two_client(Client *c1, Client *c2, bool samemon) {
 	if (samemon && c1->mon != c2->mon)
 		return;
 
+	if(c1->mon != c2->mon && (c1->prev_in_stack || c2->prev_in_stack||c1->next_in_stack||c2->next_in_stack))
+		return;
+
 	// 交换布局参数
 	master_inner_per = c1->master_inner_per;
 	master_mfact_per = c1->master_mfact_per;

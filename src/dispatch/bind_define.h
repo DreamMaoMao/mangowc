@@ -1604,7 +1604,7 @@ int32_t scroller_stack(const Arg *arg) {
 						  target_client->isglobal || target_client->isunglobal))
 		return 0;
 
-	if (!target_client) {
+	if (!target_client || target_client->mon != c->mon) {
 		if (arg->i == LEFT || arg->i == UP) {
 			exit_scroller_stack(c);
 			wl_list_remove(&c->link);
