@@ -21,6 +21,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <wayland-server-core.h>
+#include <wayland-util.h>
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
 #include <wlr/backend/libinput.h>
@@ -4659,6 +4660,12 @@ void exit_scroller_stack(Client *c) {
 	if (c->prev_in_stack) {
 		c->prev_in_stack->next_in_stack = c->next_in_stack;
 	}
+
+	if (!c->prev_in_stack && c->next_in_stack) {
+		wl_list_remove(&c->next_in_stack->link);
+		wl_list_insert(&c->link, &c->next_in_stack->link);
+	}
+
 	if (c->next_in_stack) {
 		c->next_in_stack->prev_in_stack = c->prev_in_stack;
 	}
