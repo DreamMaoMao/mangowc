@@ -1599,6 +1599,9 @@ int32_t scroller_stack(const Arg *arg) {
 	if (!c || c->isfloating || !is_scroller_layout(selmon))
 		return 0;
 
+	if (c && (!client_only_in_one_tag(c) || c->isglobal || c->isunglobal))
+		return 0;
+
 	Client *target_client = find_client_by_direction(c, arg, false, true);
 
 	if (target_client && (!client_only_in_one_tag(target_client) ||
