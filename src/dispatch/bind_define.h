@@ -1673,3 +1673,63 @@ int32_t scroller_stack(const Arg *arg) {
 	arrange(selmon, false, false);
 	return 0;
 }
+
+int32_t toggle_opacity(const Arg *arg) {
+	Client *c = selmon->sel;
+	if (!c)
+		return 0;
+
+	if (c->custom_opacity > 0.0f) {
+		c->custom_opacity = 0.0f;
+		client_set_opacity(c, c->focused_opacity);
+	} else {
+		c->custom_opacity = 1.0f;
+		client_set_opacity(c, 1.0f);
+	}
+	return 0;
+}
+
+int32_t inc_opacity(const Arg *arg) {
+	Client *c = selmon->sel;
+	if (!c)
+		return 0;
+
+	float value = CLAMP_FLOAT(arg->f, 0.01f, 1.0f);
+
+	if (c->custom_opacity == 0.0f) {
+		c->custom_opacity = c->focused_opacity;
+	}
+
+	float target = MIN(c->custom_opacity + value, 1.0f);
+	c->custom_opacity = target;
+	client_set_opacity(c, target);
+	return 0;
+}
+
+int32_t dec_opacity(const Arg *arg) {
+	Client *c = selmon->sel;
+
+	if (!c)
+		return 0;
+
+	float value = CLAMP_FLOAT(arg->f, 0.01f, 1.0f);
+
+	if (c->custom_opacity == 0.0f) {
+		c->custom_opacity = c->focused_opacity;
+	}
+
+	float target = MAX(c->custom_opacity - value, 0.01f);
+	c->custom_opacity = target;
+	client_set_opacity(c, target);
+	return 0;
+}
+
+int32_t clear_custom_opacity(const Arg *arg) {
+	Client *c = selmon->sel;
+	if (!c)
+		return 0;
+
+	c->custom_opacity = 0.0f;
+	client_set_opacity(c, c->focused_opacity);
+	return 0;
+}
