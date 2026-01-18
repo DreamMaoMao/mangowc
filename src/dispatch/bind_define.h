@@ -383,6 +383,9 @@ int32_t movewin(const Arg *arg) {
 	if (!c->isfloating)
 		togglefloating(NULL);
 
+	int32_t animations_state_backup = animations;
+	animations = 0;
+
 	switch (arg->ui) {
 	case NUM_TYPE_MINUS:
 		c->geom.x -= arg->i;
@@ -410,6 +413,7 @@ int32_t movewin(const Arg *arg) {
 	c->iscustomsize = 1;
 	c->float_geom = c->geom;
 	resize(c, c->geom, 0);
+	animations = animations_state_backup;
 	return 0;
 }
 
@@ -425,6 +429,9 @@ int32_t resizewin(const Arg *arg) {
 
 	if (!c || c->isfullscreen || c->ismaximizescreen)
 		return 0;
+
+	int32_t animations_state_backup = animations;
+	animations = 0;
 
 	if (ISTILED(c)) {
 		switch (arg->ui) {
@@ -451,6 +458,7 @@ int32_t resizewin(const Arg *arg) {
 			break;
 		}
 		resize_tile_client(c, false, offsetx, offsety, 0);
+		animations = animations_state_backup;
 		return 0;
 	}
 
@@ -481,6 +489,7 @@ int32_t resizewin(const Arg *arg) {
 	c->iscustomsize = 1;
 	c->float_geom = c->geom;
 	resize(c, c->geom, 0);
+	animations = animations_state_backup;
 	return 0;
 }
 
@@ -576,6 +585,9 @@ int32_t smartmovewin(const Arg *arg) {
 	nx = c->geom.x;
 	ny = c->geom.y;
 
+	int32_t animations_state_backup = animations;
+	animations = 0;
+
 	switch (arg->i) {
 	case UP:
 		tar = -99999;
@@ -662,6 +674,7 @@ int32_t smartmovewin(const Arg *arg) {
 		.x = nx, .y = ny, .width = c->geom.width, .height = c->geom.height};
 	c->iscustomsize = 1;
 	resize(c, c->float_geom, 1);
+	animations = animations_state_backup;
 	return 0;
 }
 
@@ -676,6 +689,9 @@ int32_t smartresizewin(const Arg *arg) {
 		setfloating(c, true);
 	nw = c->geom.width;
 	nh = c->geom.height;
+
+	int32_t animations_state_backup = animations;
+	animations = 0;
 
 	switch (arg->i) {
 	case UP:
@@ -732,6 +748,7 @@ int32_t smartresizewin(const Arg *arg) {
 		.x = c->geom.x, .y = c->geom.y, .width = nw, .height = nh};
 	c->iscustomsize = 1;
 	resize(c, c->float_geom, 1);
+	animations = animations_state_backup;
 	return 0;
 }
 
