@@ -1614,11 +1614,15 @@ int32_t scroller_stack(const Arg *arg) {
 	Client *c = selmon->sel;
 	Client *stack_head = NULL;
 	Client *source_stack_head = NULL;
-	if (!c || c->isfloating || !is_scroller_layout(selmon))
+	if (!c || !c->mon || c->isfloating || !is_scroller_layout(selmon))
 		return 0;
 
 	if (c && (!client_only_in_one_tag(c) || c->isglobal || c->isunglobal))
 		return 0;
+
+	bool is_horizontal_layout =
+		c->mon->pertag->ltidxs[c->mon->pertag->curtag]->id == SCROLLER ? true
+																	   : false;
 
 	Client *target_client = find_client_by_direction(c, arg, false, true);
 
@@ -1647,27 +1651,36 @@ int32_t scroller_stack(const Arg *arg) {
 	}
 
 	if (c->prev_in_stack) {
-		exit_scroller_stack(c);
-		if (arg->i == LEFT || arg->i == UP) {
+		if ((is_horizontal_layout && arg->i == LEFT) ||
+			(!is_horizontal_layout && arg->i == UP)) {
+			exit_scroller_stack(c);
 			wl_list_remove(&c->link);
 			wl_list_insert(source_stack_head->link.prev, &c->link);
-		} else {
+			arrange(selmon, false, false);
+
+		} else if ((is_horizontal_layout && arg->i == RIGHT) ||
+				   (!is_horizontal_layout && arg->i == DOWN)) {
+			exit_scroller_stack(c);
 			wl_list_remove(&c->link);
 			wl_list_insert(&source_stack_head->link, &c->link);
+			arrange(selmon, false, false);
 		}
-		arrange(selmon, false, false);
 		return 0;
 	} else if (c->next_in_stack) {
 		Client *next_in_stack = c->next_in_stack;
-		exit_scroller_stack(c);
-		if (arg->i == LEFT || arg->i == UP) {
+		if ((is_horizontal_layout && arg->i == LEFT) ||
+			(!is_horizontal_layout && arg->i == UP)) {
+			exit_scroller_stack(c);
 			wl_list_remove(&c->link);
 			wl_list_insert(next_in_stack->link.prev, &c->link);
-		} else {
+			arrange(selmon, false, false);
+		} else if ((is_horizontal_layout && arg->i == RIGHT) ||
+				   (!is_horizontal_layout && arg->i == DOWN)) {
+			exit_scroller_stack(c);
 			wl_list_remove(&c->link);
 			wl_list_insert(&next_in_stack->link, &c->link);
+			arrange(selmon, false, false);
 		}
-		arrange(selmon, false, false);
 		return 0;
 	}
 
