@@ -379,6 +379,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 	float delta_x, delta_y;
 	float new_scroller_proportion;
 	float new_stack_proportion;
+	Client *stack_head = get_scroll_stack_head(grabc);
 
 	if (grabc && grabc->mon->visible_tiling_clients == 1 &&
 		!scroller_ignore_proportion_single)
@@ -390,7 +391,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 		start_drag_window = true;
 
 		// 记录初始状态
-		grabc->old_scroller_pproportion = grabc->scroller_proportion;
+		stack_head->old_scroller_pproportion = stack_head->scroller_proportion;
 		grabc->old_stack_proportion = grabc->stack_proportion;
 
 		grabc->cursor_in_left_half =
@@ -411,19 +412,22 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 			grabc->old_master_inner_per = grabc->master_inner_per;
 			grabc->old_stack_inner_per = grabc->stack_inner_per;
 			grabc->drag_begin_geom = grabc->geom;
-			grabc->old_scroller_pproportion = grabc->scroller_proportion;
+			stack_head->old_scroller_pproportion =
+				stack_head->scroller_proportion;
 			grabc->old_stack_proportion = grabc->stack_proportion;
 			grabc->cursor_in_upper_half = false;
 			grabc->cursor_in_left_half = false;
 		}
 
 		if (isvertical) {
-			delta_y = (float)(offsety) * (grabc->old_scroller_pproportion) /
+			delta_y = (float)(offsety) *
+					  (stack_head->old_scroller_pproportion) /
 					  grabc->drag_begin_geom.height;
 			delta_x = (float)(offsetx) * (grabc->old_stack_proportion) /
 					  grabc->drag_begin_geom.width;
 		} else {
-			delta_x = (float)(offsetx) * (grabc->old_scroller_pproportion) /
+			delta_x = (float)(offsetx) *
+					  (stack_head->old_scroller_pproportion) /
 					  grabc->drag_begin_geom.width;
 			delta_y = (float)(offsety) * (grabc->old_stack_proportion) /
 					  grabc->drag_begin_geom.height;
@@ -474,11 +478,13 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 
 		// 直接设置新的比例，基于初始值 + 变化量
 		if (isvertical) {
-			new_scroller_proportion = grabc->old_scroller_pproportion + delta_y;
+			new_scroller_proportion =
+				stack_head->old_scroller_pproportion + delta_y;
 			new_stack_proportion = grabc->old_stack_proportion + delta_x;
 
 		} else {
-			new_scroller_proportion = grabc->old_scroller_pproportion + delta_x;
+			new_scroller_proportion =
+				stack_head->old_scroller_pproportion + delta_x;
 			new_stack_proportion = grabc->old_stack_proportion + delta_y;
 		}
 
@@ -487,16 +493,9 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 			fmaxf(0.1f, fminf(1.0f, new_scroller_proportion));
 		new_stack_proportion = fmaxf(0.1f, fminf(1.0f, new_stack_proportion));
 
-		grabc->scroller_proportion = new_scroller_proportion;
 		grabc->stack_proportion = new_stack_proportion;
 
-		Client *stack_head = get_scroll_stack_head(grabc);
-		Client *iter = stack_head;
-
-		while (iter) {
-			iter->scroller_proportion = grabc->scroller_proportion;
-			iter = iter->next_in_stack;
-		}
+		stack_head->scroller_proportion = new_scroller_proportion;
 
 		if (!isdrag) {
 			arrange(grabc->mon, false, false);
