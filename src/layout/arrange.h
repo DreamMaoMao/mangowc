@@ -519,6 +519,9 @@ void resize_tile_client(Client *grabc, bool isdrag, int32_t offsetx,
 	if (grabc->mon->isoverview)
 		return;
 
+	int32_t animations_state_backup = animations;
+	animations = 0;
+
 	const Layout *current_layout =
 		grabc->mon->pertag->ltidxs[grabc->mon->pertag->curtag];
 	if (current_layout->id == TILE || current_layout->id == DECK ||
@@ -537,6 +540,8 @@ void resize_tile_client(Client *grabc, bool isdrag, int32_t offsetx,
 	} else if (current_layout->id == VERTICAL_SCROLLER) {
 		resize_tile_scroller(grabc, isdrag, offsetx, offsety, time, true);
 	}
+
+	animations = animations_state_backup;
 }
 
 void reset_size_per_mon(Monitor *m, int32_t tile_cilent_num,
