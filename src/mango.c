@@ -4371,6 +4371,10 @@ void exchange_two_client(Client *c1, Client *c2) {
 	double master_inner_per = 0.0f;
 	double master_mfact_per = 0.0f;
 	double stack_inner_per = 0.0f;
+	float scroller_proportion = 0.0f;
+	float stack_proportion = 0.0f;
+	Client *c1head = get_scroll_stack_head(c1);
+	Client *c2head = get_scroll_stack_head(c2);
 
 	if (c1 == NULL || c2 == NULL ||
 		(!exchange_cross_monitor && c1->mon != c2->mon)) {
@@ -4382,6 +4386,16 @@ void exchange_two_client(Client *c1, Client *c2) {
 		return;
 
 	// 交换布局参数
+	if (c1head == c2head) {
+		scroller_proportion = c1->scroller_proportion;
+		stack_proportion = c1->stack_proportion;
+
+		c1->scroller_proportion = c2->scroller_proportion;
+		c1->stack_proportion = c2->stack_proportion;
+		c2->scroller_proportion = scroller_proportion;
+		c2->stack_proportion = stack_proportion;
+	}
+
 	master_inner_per = c1->master_inner_per;
 	master_mfact_per = c1->master_mfact_per;
 	stack_inner_per = c1->stack_inner_per;
