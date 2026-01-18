@@ -1065,9 +1065,9 @@ void swallow(Client *c, Client *w) {
 	c->scroller_proportion = w->scroller_proportion;
 	c->next_in_stack = w->next_in_stack;
 	c->prev_in_stack = w->prev_in_stack;
-	if(w->next_in_stack)
+	if (w->next_in_stack)
 		w->next_in_stack->prev_in_stack = c;
-	if(w->prev_in_stack)
+	if (w->prev_in_stack)
 		w->prev_in_stack->next_in_stack = c;
 	c->stack_proportion = w->stack_proportion;
 	wl_list_insert(&w->link, &c->link);
@@ -5493,7 +5493,6 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 		init_fadeout_client(c);
 
 	// If the client is in a stack, remove it from the stack
-	
 
 	if (c->swallowedby) {
 		c->swallowedby->mon = c->mon;

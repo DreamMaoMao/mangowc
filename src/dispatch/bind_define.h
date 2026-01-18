@@ -1592,6 +1592,8 @@ int32_t toggle_monitor(const Arg *arg) {
 
 int32_t scroller_stack(const Arg *arg) {
 	Client *c = selmon->sel;
+	Client *stack_head = NULL;
+	Client *source_stack_head = NULL;
 	if (!c || c->isfloating || !is_scroller_layout(selmon))
 		return 0;
 
@@ -1603,6 +1605,23 @@ int32_t scroller_stack(const Arg *arg) {
 	if (target_client && (!client_only_in_one_tag(target_client) ||
 						  target_client->isglobal || target_client->isunglobal))
 		return 0;
+
+	if (target_client && c) {
+		stack_head = get_scroll_stack_head(target_client);
+		source_stack_head = get_scroll_stack_head(c);
+
+		if (stack_head == source_stack_head) {
+			return 0;
+		}
+	}
+
+	if (c->isfullscreen) {
+		setfullscreen(c, 0);
+	}
+
+	if (c->ismaximizescreen) {
+		setmaximizescreen(c, 0);
+	}
 
 	if (!target_client || target_client->mon != c->mon) {
 		if (arg->i == LEFT || arg->i == UP) {
@@ -1618,12 +1637,18 @@ int32_t scroller_stack(const Arg *arg) {
 		return 0;
 	}
 
-	if (c->isfullscreen) {
-		setfullscreen(c, 0);
-	}
-
-	if (c->ismaximizescreen) {
-		setmaximizescreen(c, 0);
+	if (target_client && (c->next_in_stack || c->prev_in_stack)) {
+		if (arg->i == LEFT || arg->i == UP) {
+			exit_scroller_stack(c);
+			wl_list_remove(&c->link);
+			wl_list_insert(&target_client->link, &c->link);
+		} else {
+			exit_scroller_stack(c);
+			wl_list_remove(&c->link);
+			wl_list_insert(target_client->link.prev, &c->link);
+		}
+		arrange(selmon, false, false);
+		return 0;
 	}
 
 	exit_scroller_stack(c);
@@ -1634,7 +1659,6 @@ int32_t scroller_stack(const Arg *arg) {
 		stack_tail = stack_tail->next_in_stack;
 	}
 
-	Client *stack_head = get_scroll_stack_head(target_client);
 	c->scroller_proportion = stack_head->scroller_proportion;
 
 	// Add c to the stack
