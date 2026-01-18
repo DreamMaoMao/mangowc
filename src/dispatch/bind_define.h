@@ -1700,6 +1700,14 @@ int32_t scroller_stack(const Arg *arg) {
 	c->prev_in_stack = stack_tail;
 	c->next_in_stack = NULL;
 
+	if (stack_head->ismaximizescreen) {
+		setmaximizescreen(stack_head, 0);
+	}
+
+	if (stack_head->isfullscreen) {
+		setfullscreen(stack_head, 0);
+	}
+
 	arrange(selmon, false, false);
 	return 0;
 }
