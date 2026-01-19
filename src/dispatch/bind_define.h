@@ -770,10 +770,13 @@ int32_t centerwin(const Arg *arg) {
 	if (!is_scroller_layout(selmon))
 		return 0;
 
+	Client *stack_head = get_scroll_stack_head(c);
 	if (selmon->pertag->ltidxs[selmon->pertag->curtag]->id == SCROLLER) {
-		c->geom.x = selmon->w.x + (selmon->w.width - c->geom.width) / 2;
+		stack_head->geom.x =
+			selmon->w.x + (selmon->w.width - stack_head->geom.width) / 2;
 	} else {
-		c->geom.y = selmon->w.y + (selmon->w.height - c->geom.height) / 2;
+		stack_head->geom.y =
+			selmon->w.y + (selmon->w.height - stack_head->geom.height) / 2;
 	}
 
 	arrange(selmon, false, false);
