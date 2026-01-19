@@ -470,9 +470,54 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 			if (!grabc->next_in_stack && grabc->prev_in_stack && !isdrag) {
 				delta_x = delta_x * -1.0f;
 			}
+			if (!grabc->next_in_stack && grabc->prev_in_stack && isdrag) {
+				if (moving_right) {
+					delta_x = -fabsf(delta_x);
+				} else {
+					delta_x = fabsf(delta_x);
+				}
+			}
+			if (!grabc->prev_in_stack && grabc->next_in_stack && isdrag) {
+				if (moving_left) {
+					delta_x = -fabsf(delta_x);
+				} else {
+					delta_x = fabsf(delta_x);
+				}
+			}
+
+			if (isdrag) {
+				if (moving_up) {
+					delta_y = -fabsf(delta_y);
+				} else {
+					delta_y = fabsf(delta_y);
+				}
+			}
+
 		} else {
 			if (!grabc->next_in_stack && grabc->prev_in_stack && !isdrag) {
 				delta_y = delta_y * -1.0f;
+			}
+			if (!grabc->next_in_stack && grabc->prev_in_stack && isdrag) {
+				if (moving_down) {
+					delta_y = -fabsf(delta_y);
+				} else {
+					delta_y = fabsf(delta_y);
+				}
+			}
+			if (!grabc->prev_in_stack && grabc->next_in_stack && isdrag) {
+				if (moving_up) {
+					delta_y = -fabsf(delta_y);
+				} else {
+					delta_y = fabsf(delta_y);
+				}
+			}
+
+			if (isdrag) {
+				if (moving_left) {
+					delta_x = -fabsf(delta_x);
+				} else {
+					delta_x = fabsf(delta_x);
+				}
 			}
 		}
 
