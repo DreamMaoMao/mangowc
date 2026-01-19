@@ -26,6 +26,14 @@ bool is_scroller_layout(Monitor *m) {
 	return false;
 }
 
+bool is_centertile_layout(Monitor *m) {
+
+	if (m->pertag->ltidxs[m->pertag->curtag]->id == CENTER_TILE)
+		return true;
+
+	return false;
+}
+
 uint32_t get_tag_status(uint32_t tag, Monitor *m) {
 	Client *c = NULL;
 	uint32_t status = 0;
