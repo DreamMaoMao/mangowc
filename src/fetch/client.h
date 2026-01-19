@@ -471,10 +471,11 @@ bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc) {
 		return false;
 
 	if (id == SCROLLER || id == VERTICAL_SCROLLER) {
-		if (fc->prev_in_stack)
-			return false;
 		Client *source_stack_head = get_scroll_stack_head(sc);
 		Client *target_stack_head = get_scroll_stack_head(tc);
+		Client *fc_head = get_scroll_stack_head(fc);
+		if (fc->prev_in_stack && fc_head == source_stack_head)
+			return false;
 		if (source_stack_head == target_stack_head)
 			return true;
 		else
