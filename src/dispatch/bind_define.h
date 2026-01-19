@@ -129,6 +129,7 @@ int32_t exchange_stack_client(const Arg *arg) {
 int32_t focusdir(const Arg *arg) {
 	Client *c = NULL;
 	c = direction_select(arg);
+	c = get_focused_stack_client(c);
 	if (c) {
 		focusclient(c, 1);
 		if (warpcursor)

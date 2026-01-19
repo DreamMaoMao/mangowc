@@ -752,6 +752,7 @@ static struct wlr_scene_tree *
 wlr_scene_tree_snapshot(struct wlr_scene_node *node,
 						struct wlr_scene_tree *parent);
 static bool is_scroller_layout(Monitor *m);
+static bool is_centertile_layout(Monitor *m);
 static void create_output(struct wlr_backend *backend, void *data);
 static void get_layout_abbr(char *abbr, const char *full_name);
 static void apply_named_scratchpad(Client *target_client);
@@ -776,6 +777,8 @@ static Client *find_client_by_direction(Client *tc, const Arg *arg,
 static void exit_scroller_stack(Client *c);
 static Client *get_scroll_stack_head(Client *c);
 static bool client_only_in_one_tag(Client *c);
+static Client *get_focused_stack_client(Client *sc);
+static bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
