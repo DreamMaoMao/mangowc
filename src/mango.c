@@ -776,6 +776,8 @@ static Client *find_client_by_direction(Client *tc, const Arg *arg,
 static void exit_scroller_stack(Client *c);
 static Client *get_scroll_stack_head(Client *c);
 static bool client_only_in_one_tag(Client *c);
+static Client *get_focused_stack_client(Client *sc);
+static bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"

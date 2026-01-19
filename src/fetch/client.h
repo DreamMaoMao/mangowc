@@ -456,3 +456,76 @@ Client *get_scroll_stack_head(Client *c) {
 	}
 	return scroller_stack_head;
 }
+
+bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc) {
+	if (!sc || !tc)
+		return false;
+
+	uint32_t id = sc->mon->pertag->ltidxs[sc->mon->pertag->curtag]->id;
+
+	if (id != SCROLLER && id != VERTICAL_SCROLLER && id != TILE &&
+		id != VERTICAL_TILE && id != DECK && id != VERTICAL_DECK &&
+		id != CENTER_TILE && id != RIGHT_TILE && id != TGMIX)
+		return false;
+
+	if (id == SCROLLER || id == VERTICAL_SCROLLER) {
+		if (fc->prev_in_stack)
+			return false;
+		Client *source_stack_head = get_scroll_stack_head(sc);
+		Client *target_stack_head = get_scroll_stack_head(tc);
+		if (source_stack_head == target_stack_head)
+			return true;
+		else
+			return false;
+	}
+
+	if (id == TILE || id == VERTICAL_TILE || id == DECK ||
+		id == VERTICAL_DECK || id == RIGHT_TILE) {
+		if (!fc->ismaster)
+			return false;
+		else
+			return true;
+	}
+
+	if (id == TGMIX) {
+		if (!fc->ismaster)
+			return false;
+		if (sc->mon->visible_tiling_clients <= 3)
+			return true;
+	}
+
+	if (id == CENTER_TILE) {
+		if (!fc->ismaster)
+			return false;
+		if (sc->geom.x == tc->geom.x)
+			return true;
+		else
+			return false;
+	}
+
+	return false;
+}
+
+Client *get_focused_stack_client(Client *sc) {
+	if (!sc || sc->isfloating)
+		return sc;
+
+	Client *tc = NULL;
+	Client *fc = focustop(sc->mon);
+
+	wl_list_for_each(tc, &fstack, flink) {
+		if (tc->iskilling || tc->isunglobal)
+			continue;
+		if (!VISIBLEON(tc, sc->mon))
+			continue;
+		if (tc == fc)
+			continue;
+
+		if (client_is_in_same_stack(sc, tc, fc)) {
+			wlr_log(WLR_ERROR, "11");
+			return tc;
+		}
+	}
+	wlr_log(WLR_ERROR, "22");
+	return sc;
+}
