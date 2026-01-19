@@ -692,8 +692,10 @@ arrange(Monitor *m, bool want_animation, bool from_view) {
 
 		if (c->mon == m && (c->isglobal || c->isunglobal)) {
 			c->tags = m->tagset[m->seltags];
-			if (c->mon->sel == NULL)
-				focusclient(c, 0);
+		}
+
+		if (from_view && m->sel == NULL && c->isglobal && VISIBLEON(c, m)) {
+			focusclient(c, 1);
 		}
 
 		if (VISIBLEON(c, m)) {
