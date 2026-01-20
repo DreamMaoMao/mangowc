@@ -217,6 +217,27 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 		}
 		if (!tempFocusClients) {
 			for (int32_t _i = 0; _i <= last; _i++) {
+				if (tempClients[_i]->geom.y < sel_y &&
+					tempClients[_i]->mon == tc->mon &&
+					client_is_in_same_stack(tc, tempClients[_i], NULL)) {
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
+						dis_x * dis_x + dis_y * dis_y; // 计算距离
+					if (tmp_distance < distance) {
+						distance = tmp_distance;
+						tempFocusClients = tempClients[_i];
+					}
+					if (tempClients[_i]->mon == tc->mon &&
+						tmp_distance < same_monitor_distance) {
+						same_monitor_distance = tmp_distance;
+						tempSameMonitorFocusClients = tempClients[_i];
+					}
+				}
+			}
+		}
+		if (!tempFocusClients) {
+			for (int32_t _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.y < sel_y) {
 					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
 					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
@@ -248,6 +269,27 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
 						tempFocusClients = tempClients[_i];
+					}
+				}
+			}
+		}
+		if (!tempFocusClients) {
+			for (int32_t _i = 0; _i <= last; _i++) {
+				if (tempClients[_i]->geom.y > sel_y &&
+					tempClients[_i]->mon == tc->mon &&
+					client_is_in_same_stack(tc, tempClients[_i], NULL)) {
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
+						dis_x * dis_x + dis_y * dis_y; // 计算距离
+					if (tmp_distance < distance) {
+						distance = tmp_distance;
+						tempFocusClients = tempClients[_i];
+					}
+					if (tempClients[_i]->mon == tc->mon &&
+						tmp_distance < same_monitor_distance) {
+						same_monitor_distance = tmp_distance;
+						tempSameMonitorFocusClients = tempClients[_i];
 					}
 				}
 			}
@@ -291,6 +333,27 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 		}
 		if (!tempFocusClients) {
 			for (int32_t _i = 0; _i <= last; _i++) {
+				if (tempClients[_i]->geom.x < sel_x &&
+					tempClients[_i]->mon == tc->mon &&
+					client_is_in_same_stack(tc, tempClients[_i], NULL)) {
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
+						dis_x * dis_x + dis_y * dis_y; // 计算距离
+					if (tmp_distance < distance) {
+						distance = tmp_distance;
+						tempFocusClients = tempClients[_i];
+					}
+					if (tempClients[_i]->mon == tc->mon &&
+						tmp_distance < same_monitor_distance) {
+						same_monitor_distance = tmp_distance;
+						tempSameMonitorFocusClients = tempClients[_i];
+					}
+				}
+			}
+		}
+		if (!tempFocusClients) {
+			for (int32_t _i = 0; _i <= last; _i++) {
 				if (tempClients[_i]->geom.x < sel_x) {
 					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
 					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
@@ -322,6 +385,27 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 					if (tmp_distance < distance) {
 						distance = tmp_distance;
 						tempFocusClients = tempClients[_i];
+					}
+				}
+			}
+		}
+		if (!tempFocusClients) {
+			for (int32_t _i = 0; _i <= last; _i++) {
+				if (tempClients[_i]->geom.x > sel_x &&
+					tempClients[_i]->mon == tc->mon &&
+					client_is_in_same_stack(tc, tempClients[_i], NULL)) {
+					int32_t dis_x = tempClients[_i]->geom.x - sel_x;
+					int32_t dis_y = tempClients[_i]->geom.y - sel_y;
+					int64_t tmp_distance =
+						dis_x * dis_x + dis_y * dis_y; // 计算距离
+					if (tmp_distance < distance) {
+						distance = tmp_distance;
+						tempFocusClients = tempClients[_i];
+					}
+					if (tempClients[_i]->mon == tc->mon &&
+						tmp_distance < same_monitor_distance) {
+						same_monitor_distance = tmp_distance;
+						tempSameMonitorFocusClients = tempClients[_i];
 					}
 				}
 			}
@@ -453,6 +537,10 @@ bool client_only_in_one_tag(Client *c) {
 
 Client *get_scroll_stack_head(Client *c) {
 	Client *scroller_stack_head = c;
+
+	if (!scroller_stack_head)
+		return NULL;
+
 	while (scroller_stack_head->prev_in_stack) {
 		scroller_stack_head = scroller_stack_head->prev_in_stack;
 	}
@@ -473,8 +561,8 @@ bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc) {
 	if (id == SCROLLER || id == VERTICAL_SCROLLER) {
 		Client *source_stack_head = get_scroll_stack_head(sc);
 		Client *target_stack_head = get_scroll_stack_head(tc);
-		Client *fc_head = get_scroll_stack_head(fc);
-		if (fc->prev_in_stack && fc_head == source_stack_head)
+		Client *fc_head = fc ? get_scroll_stack_head(fc) : NULL;
+		if (fc && fc->prev_in_stack && fc_head == source_stack_head)
 			return false;
 		if (source_stack_head == target_stack_head)
 			return true;
@@ -484,23 +572,23 @@ bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc) {
 
 	if (id == TILE || id == VERTICAL_TILE || id == DECK ||
 		id == VERTICAL_DECK || id == RIGHT_TILE) {
-		if (!fc->ismaster)
+		if (fc && !fc->ismaster)
 			return false;
-		else
+		else if (!sc->ismaster)
 			return true;
 	}
 
 	if (id == TGMIX) {
-		if (!fc->ismaster)
+		if (fc && !fc->ismaster)
 			return false;
-		if (sc->mon->visible_tiling_clients <= 3)
+		if (!sc->ismaster && sc->mon->visible_tiling_clients <= 3)
 			return true;
 	}
 
 	if (id == CENTER_TILE) {
-		if (!fc->ismaster)
+		if (fc && !fc->ismaster)
 			return false;
-		if (sc->geom.x == tc->geom.x)
+		if (!sc->ismaster && sc->geom.x == tc->geom.x)
 			return true;
 		else
 			return false;
