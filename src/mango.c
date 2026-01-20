@@ -4444,7 +4444,8 @@ void exchange_two_client(Client *c1, Client *c2) {
 			tmp2_prev_in_stack->next_in_stack = c1;
 		if (tmp1_next_in_stack)
 			tmp1_next_in_stack->prev_in_stack = c2;
-	} else if (c1->prev_in_stack || c2->prev_in_stack) {
+	} else if (is_scroller_layout(c1->mon) &&
+			   (c1->prev_in_stack || c2->prev_in_stack)) {
 		Client *c1head = get_scroll_stack_head(c1);
 		Client *c2head = get_scroll_stack_head(c2);
 		exchange_two_client(c1head, c2head);
