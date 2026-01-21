@@ -1950,7 +1950,7 @@ buttonpress(struct wl_listener *listener, void *data) {
 			m = &config.mouse_bindings[ji];
 			if (CLEANMASK(mods) == CLEANMASK(m->mod) &&
 				event->button == m->button && m->func &&
-				(selmon->isoverview == 1 || m->button == BTN_MIDDLE) && c) {
+				(selmon->isoverview == 1 || m->button == BTN_MIDDLE || m->button == BTN_SIDE || m->button == BTN_EXTRA) && c) {
 				m->func(&m->arg);
 				return;
 			} else if (CLEANMASK(mods) == CLEANMASK(m->mod) &&
