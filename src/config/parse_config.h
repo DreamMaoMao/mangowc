@@ -243,6 +243,8 @@ typedef struct {
 	int32_t idleinhibit_ignore_visible;
 	int32_t sloppyfocus;
 	int32_t warpcursor;
+	int32_t drag_corner;
+	int32_t drag_warp_cursor;
 
 	/* keyboard */
 	int32_t repeat_rate;
@@ -1475,6 +1477,10 @@ void parse_option(Config *config, char *key, char *value) {
 		config->sloppyfocus = atoi(value);
 	} else if (strcmp(key, "warpcursor") == 0) {
 		config->warpcursor = atoi(value);
+	} else if (strcmp(key, "drag_corner") == 0) {
+		config->drag_corner = atoi(value);
+	} else if (strcmp(key, "drag_warp_cursor") == 0) {
+		config->drag_warp_cursor = atoi(value);
 	} else if (strcmp(key, "smartgaps") == 0) {
 		config->smartgaps = atoi(value);
 	} else if (strcmp(key, "repeat_rate") == 0) {
@@ -2757,6 +2763,8 @@ void override_config(void) {
 		CLAMP_INT(config.idleinhibit_ignore_visible, 0, 1);
 	sloppyfocus = CLAMP_INT(config.sloppyfocus, 0, 1);
 	warpcursor = CLAMP_INT(config.warpcursor, 0, 1);
+	drag_corner = CLAMP_INT(config.drag_corner, 0, 4);
+	drag_warp_cursor = CLAMP_INT(config.drag_warp_cursor, 0, 1);
 	focus_cross_monitor = CLAMP_INT(config.focus_cross_monitor, 0, 1);
 	exchange_cross_monitor = CLAMP_INT(config.exchange_cross_monitor, 0, 1);
 	scratchpad_cross_monitor = CLAMP_INT(config.scratchpad_cross_monitor, 0, 1);
@@ -2954,6 +2962,8 @@ void set_value_default() {
 	config.cursor_hide_timeout = cursor_hide_timeout;
 
 	config.warpcursor = warpcursor; /* Warp cursor to focused client */
+	config.drag_corner = drag_corner;
+	config.drag_warp_cursor = drag_warp_cursor;
 
 	config.repeat_rate = repeat_rate;
 	config.repeat_delay = repeat_delay;

@@ -841,6 +841,7 @@ static struct wl_list inputdevices;
 static struct wl_list keyboard_shortcut_inhibitors;
 static uint32_t cursor_mode;
 static Client *grabc;
+static int32_t rzcorner;
 static int32_t grabcx, grabcy;						   /* client-relative */
 static int32_t drag_begin_cursorx, drag_begin_cursory; /* client-relative */
 static bool start_drag_window = false;
@@ -3988,6 +3989,30 @@ void motionabsolute(struct wl_listener *listener, void *data) {
 	motionnotify(event->time_msec, &event->pointer->base, dx, dy, dx, dy);
 }
 
+void resize_floating_window(Client *grabc) {
+	int cdx = (int)round(cursor->x) - grabcx;
+	int cdy = (int)round(cursor->y) - grabcy;
+
+	cdx = !(rzcorner & 1) && grabc->geom.width - 2 * (int)grabc->bw - cdx < 1
+			  ? 0
+			  : cdx;
+	cdy = !(rzcorner & 2) && grabc->geom.height - 2 * (int)grabc->bw - cdy < 1
+			  ? 0
+			  : cdy;
+
+	const struct wlr_box box = {
+		.x = grabc->geom.x + (rzcorner & 1 ? 0 : cdx),
+		.y = grabc->geom.y + (rzcorner & 2 ? 0 : cdy),
+		.width = grabc->geom.width + (rzcorner & 1 ? cdx : -cdx),
+		.height = grabc->geom.height + (rzcorner & 2 ? cdy : -cdy)};
+
+	grabc->float_geom = box;
+
+	resize(grabc, box, 1);
+	grabcx += cdx;
+	grabcy += cdy;
+}
+
 void motionnotify(uint32_t time, struct wlr_input_device *device, double dx,
 				  double dy, double dx_unaccel, double dy_unaccel) {
 	double sx = 0, sy = 0, sx_confined, sy_confined;
@@ -4065,14 +4090,9 @@ void motionnotify(uint32_t time, struct wlr_input_device *device, double dx,
 	} else if (cursor_mode == CurResize) {
 		if (grabc->isfloating) {
 			grabc->iscustomsize = 1;
-			grabc->float_geom = (struct wlr_box){
-				.x = grabc->geom.x,
-				.y = grabc->geom.y,
-				.width = (int32_t)round(cursor->x) - grabc->geom.x,
-				.height = (int32_t)round(cursor->y) - grabc->geom.y};
 			if (last_apply_drap_time == 0 ||
 				time - last_apply_drap_time > drag_refresh_interval) {
-				resize(grabc, grabc->float_geom, 1);
+				resize_floating_window(grabc);
 				last_apply_drap_time = time;
 			}
 			return;
