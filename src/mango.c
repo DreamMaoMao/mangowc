@@ -3438,8 +3438,8 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 	int32_t isbreak = 0;
 
 	// not allow modifier keys to be used as a keybinding
-	if (keycode == 50 || keycode == 37 || keycode == 133 || keycode == 64 ||
-		keycode == 62 || keycode == 108 || keycode == 105 || keycode == 134)
+	if (keycode == 50 || keycode == 37 || keycode == 64 ||
+		keycode == 62 || keycode == 108 || keycode == 105)
 		return false;
 
 	if (is_keyboard_shortcut_inhibitor(seat->keyboard_state.focused_surface)) {
@@ -3458,7 +3458,7 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 			continue;
 
 		if (state == WL_KEYBOARD_KEY_STATE_PRESSED &&
-			config.key_bindings[ji].isreleaseapply == true)
+			(config.key_bindings[ji].isreleaseapply == true || keycode == 133 || keycode == 134))
 			continue;
 
 		if (state != WL_KEYBOARD_KEY_STATE_PRESSED &&
