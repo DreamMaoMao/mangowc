@@ -339,6 +339,9 @@ int32_t killclient(const Arg *arg) {
 }
 
 int32_t moveresize(const Arg *arg) {
+	const char *cursors[] = {"nw-resize", "ne-resize", "sw-resize",
+							 "se-resize"};
+
 	if (cursor_mode != CurNormal && cursor_mode != CurPressed)
 		return 0;
 	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
@@ -364,10 +367,29 @@ int32_t moveresize(const Arg *arg) {
 		/* Doesn't work for X11 output - the next absolute motion event
 		 * returns the cursor to where it started */
 		if (grabc->isfloating) {
-			wlr_cursor_warp_closest(cursor, NULL,
-									grabc->geom.x + grabc->geom.width,
-									grabc->geom.y + grabc->geom.height);
-			wlr_cursor_set_xcursor(cursor, cursor_mgr, "bottom_right_corner");
+			rzcorner = drag_corner;
+			grabcx = (int)round(cursor->x);
+			grabcy = (int)round(cursor->y);
+			if (rzcorner == 4)
+				/* identify the closest corner index */
+				rzcorner = (grabcx - grabc->geom.x <
+									grabc->geom.x + grabc->geom.width - grabcx
+								? 0
+								: 1) +
+						   (grabcy - grabc->geom.y <
+									grabc->geom.y + grabc->geom.height - grabcy
+								? 0
+								: 2);
+
+			if (drag_warp_cursor) {
+				grabcx = rzcorner & 1 ? grabc->geom.x + grabc->geom.width
+									  : grabc->geom.x;
+				grabcy = rzcorner & 2 ? grabc->geom.y + grabc->geom.height
+									  : grabc->geom.y;
+				wlr_cursor_warp_closest(cursor, NULL, grabcx, grabcy);
+			}
+
+			wlr_cursor_set_xcursor(cursor, cursor_mgr, cursors[rzcorner]);
 		} else {
 			wlr_cursor_set_xcursor(cursor, cursor_mgr, "grab");
 		}
