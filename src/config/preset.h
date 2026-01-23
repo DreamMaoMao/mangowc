@@ -101,7 +101,9 @@ int32_t overviewgappo = 30; /* overview时 窗口与窗口 缝隙大小 */
  * behavior */
 float fullscreen_bg[] = {0.1, 0.1, 0.1, 1.0};
 
-int32_t warpcursor = 1;			  /* Warp cursor to focused client */
+int32_t warpcursor = 1;
+int32_t drag_corner = 3;
+int32_t drag_warp_cursor = 1;
 int32_t xwayland_persistence = 1; /* xwayland persistence */
 int32_t syncobj_enable = 0;
 int32_t adaptive_sync = 0;

@@ -129,6 +129,7 @@ int32_t exchange_stack_client(const Arg *arg) {
 int32_t focusdir(const Arg *arg) {
 	Client *c = NULL;
 	c = direction_select(arg);
+	c = get_focused_stack_client(c);
 	if (c) {
 		focusclient(c, 1);
 		if (warpcursor)
@@ -337,6 +338,9 @@ int32_t killclient(const Arg *arg) {
 }
 
 int32_t moveresize(const Arg *arg) {
+	const char *cursors[] = {"nw-resize", "ne-resize", "sw-resize",
+							 "se-resize"};
+
 	if (cursor_mode != CurNormal && cursor_mode != CurPressed)
 		return 0;
 	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
@@ -362,10 +366,29 @@ int32_t moveresize(const Arg *arg) {
 		/* Doesn't work for X11 output - the next absolute motion event
 		 * returns the cursor to where it started */
 		if (grabc->isfloating) {
-			wlr_cursor_warp_closest(cursor, NULL,
-									grabc->geom.x + grabc->geom.width,
-									grabc->geom.y + grabc->geom.height);
-			wlr_cursor_set_xcursor(cursor, cursor_mgr, "bottom_right_corner");
+			rzcorner = drag_corner;
+			grabcx = (int)round(cursor->x);
+			grabcy = (int)round(cursor->y);
+			if (rzcorner == 4)
+				/* identify the closest corner index */
+				rzcorner = (grabcx - grabc->geom.x <
+									grabc->geom.x + grabc->geom.width - grabcx
+								? 0
+								: 1) +
+						   (grabcy - grabc->geom.y <
+									grabc->geom.y + grabc->geom.height - grabcy
+								? 0
+								: 2);
+
+			if (drag_warp_cursor) {
+				grabcx = rzcorner & 1 ? grabc->geom.x + grabc->geom.width
+									  : grabc->geom.x;
+				grabcy = rzcorner & 2 ? grabc->geom.y + grabc->geom.height
+									  : grabc->geom.y;
+				wlr_cursor_warp_closest(cursor, NULL, grabcx, grabcy);
+			}
+
+			wlr_cursor_set_xcursor(cursor, cursor_mgr, cursors[rzcorner]);
 		} else {
 			wlr_cursor_set_xcursor(cursor, cursor_mgr, "grab");
 		}
@@ -425,6 +448,10 @@ int32_t resizewin(const Arg *arg) {
 	if (!c || c->isfullscreen || c->ismaximizescreen)
 		return 0;
 
+	int32_t animations_state_backup = animations;
+	if (!c->isfloating)
+		animations = 0;
+
 	if (ISTILED(c)) {
 		switch (arg->ui) {
 		case NUM_TYPE_MINUS:
@@ -450,6 +477,7 @@ int32_t resizewin(const Arg *arg) {
 			break;
 		}
 		resize_tile_client(c, false, offsetx, offsety, 0);
+		animations = animations_state_backup;
 		return 0;
 	}
 
@@ -480,6 +508,7 @@ int32_t resizewin(const Arg *arg) {
 	c->iscustomsize = 1;
 	c->float_geom = c->geom;
 	resize(c, c->geom, 0);
+	animations = animations_state_backup;
 	return 0;
 }
 
@@ -550,12 +579,14 @@ int32_t set_proportion(const Arg *arg) {
 		!scroller_ignore_proportion_single)
 		return 0;
 
-	if (selmon->sel) {
+	Client *tc = selmon->sel;
+
+	if (tc) {
+		tc = get_scroll_stack_head(tc);
 		uint32_t max_client_width =
 			selmon->w.width - 2 * scroller_structs - gappih;
-		selmon->sel->scroller_proportion = arg->f;
-		selmon->sel->geom.width = max_client_width * arg->f;
-		// resize(selmon->sel, selmon->sel->geom, 0);
+		tc->scroller_proportion = arg->f;
+		tc->geom.width = max_client_width * arg->f;
 		arrange(selmon, false, false);
 	}
 	return 0;
@@ -749,10 +780,13 @@ int32_t centerwin(const Arg *arg) {
 	if (!is_scroller_layout(selmon))
 		return 0;
 
+	Client *stack_head = get_scroll_stack_head(c);
 	if (selmon->pertag->ltidxs[selmon->pertag->curtag]->id == SCROLLER) {
-		c->geom.x = selmon->w.x + (selmon->w.width - c->geom.width) / 2;
+		stack_head->geom.x =
+			selmon->w.x + (selmon->w.width - stack_head->geom.width) / 2;
 	} else {
-		c->geom.y = selmon->w.y + (selmon->w.height - c->geom.height) / 2;
+		stack_head->geom.y =
+			selmon->w.y + (selmon->w.height - stack_head->geom.height) / 2;
 	}
 
 	arrange(selmon, false, false);
@@ -971,11 +1005,13 @@ int32_t switch_proportion_preset(const Arg *arg) {
 		!scroller_ignore_proportion_single)
 		return 0;
 
-	if (selmon->sel) {
+	Client *tc = selmon->sel;
 
+	if (tc) {
+		tc = get_scroll_stack_head(tc);
 		for (int32_t i = 0; i < config.scroller_proportion_preset_count; i++) {
 			if (config.scroller_proportion_preset[i] ==
-				selmon->sel->scroller_proportion) {
+				tc->scroller_proportion) {
 				if (i == config.scroller_proportion_preset_count - 1) {
 					target_proportion = config.scroller_proportion_preset[0];
 					break;
@@ -993,9 +1029,8 @@ int32_t switch_proportion_preset(const Arg *arg) {
 
 		uint32_t max_client_width =
 			selmon->w.width - 2 * scroller_structs - gappih;
-		selmon->sel->scroller_proportion = target_proportion;
-		selmon->sel->geom.width = max_client_width * target_proportion;
-		// resize(selmon->sel, selmon->sel->geom, 0);
+		tc->scroller_proportion = target_proportion;
+		tc->geom.width = max_client_width * target_proportion;
 		arrange(selmon, false, false);
 	}
 	return 0;
@@ -1093,6 +1128,7 @@ int32_t tagsilent(const Arg *arg) {
 			clear_fullscreen_flag(fc);
 		}
 	}
+	exit_scroller_stack(target_client);
 	focusclient(focustop(selmon), 1);
 	arrange(target_client->mon, false, false);
 	return 0;
@@ -1221,9 +1257,11 @@ int32_t toggleglobal(const Arg *arg) {
 		selmon->sel->isnamedscratchpad = 0;
 	}
 	selmon->sel->isglobal ^= 1;
-	//   selmon->sel->tags =
-	//       selmon->sel->isglobal ? TAGMASK : selmon->tagset[selmon->seltags];
-	//   focustop(selmon);
+	if (selmon->sel->isglobal &&
+		(selmon->sel->prev_in_stack || selmon->sel->next_in_stack)) {
+		exit_scroller_stack(selmon->sel);
+		arrange(selmon, false, false);
+	}
 	setborder_color(selmon->sel);
 	return 0;
 }
@@ -1583,5 +1621,108 @@ int32_t toggle_monitor(const Arg *arg) {
 			break;
 		}
 	}
+	return 0;
+}
+
+int32_t scroller_stack(const Arg *arg) {
+	Client *c = selmon->sel;
+	Client *stack_head = NULL;
+	Client *source_stack_head = NULL;
+	if (!c || !c->mon || c->isfloating || !is_scroller_layout(selmon))
+		return 0;
+
+	if (c && (!client_only_in_one_tag(c) || c->isglobal || c->isunglobal))
+		return 0;
+
+	bool is_horizontal_layout =
+		c->mon->pertag->ltidxs[c->mon->pertag->curtag]->id == SCROLLER ? true
+																	   : false;
+
+	Client *target_client = find_client_by_direction(c, arg, false, true);
+
+	if (target_client && (!client_only_in_one_tag(target_client) ||
+						  target_client->isglobal || target_client->isunglobal))
+		return 0;
+
+	if (target_client) {
+		stack_head = get_scroll_stack_head(target_client);
+	}
+
+	if (c) {
+		source_stack_head = get_scroll_stack_head(c);
+	}
+
+	if (stack_head == source_stack_head) {
+		return 0;
+	}
+
+	if (c->isfullscreen) {
+		setfullscreen(c, 0);
+	}
+
+	if (c->ismaximizescreen) {
+		setmaximizescreen(c, 0);
+	}
+
+	if (c->prev_in_stack) {
+		if ((is_horizontal_layout && arg->i == LEFT) ||
+			(!is_horizontal_layout && arg->i == UP)) {
+			exit_scroller_stack(c);
+			wl_list_remove(&c->link);
+			wl_list_insert(source_stack_head->link.prev, &c->link);
+			arrange(selmon, false, false);
+
+		} else if ((is_horizontal_layout && arg->i == RIGHT) ||
+				   (!is_horizontal_layout && arg->i == DOWN)) {
+			exit_scroller_stack(c);
+			wl_list_remove(&c->link);
+			wl_list_insert(&source_stack_head->link, &c->link);
+			arrange(selmon, false, false);
+		}
+		return 0;
+	} else if (c->next_in_stack) {
+		Client *next_in_stack = c->next_in_stack;
+		if ((is_horizontal_layout && arg->i == LEFT) ||
+			(!is_horizontal_layout && arg->i == UP)) {
+			exit_scroller_stack(c);
+			wl_list_remove(&c->link);
+			wl_list_insert(next_in_stack->link.prev, &c->link);
+			arrange(selmon, false, false);
+		} else if ((is_horizontal_layout && arg->i == RIGHT) ||
+				   (!is_horizontal_layout && arg->i == DOWN)) {
+			exit_scroller_stack(c);
+			wl_list_remove(&c->link);
+			wl_list_insert(&next_in_stack->link, &c->link);
+			arrange(selmon, false, false);
+		}
+		return 0;
+	}
+
+	if (!target_client || target_client->mon != c->mon) {
+		return 0;
+	}
+
+	exit_scroller_stack(c);
+
+	// Find the tail of target_client's stack
+	Client *stack_tail = target_client;
+	while (stack_tail->next_in_stack) {
+		stack_tail = stack_tail->next_in_stack;
+	}
+
+	// Add c to the stack
+	stack_tail->next_in_stack = c;
+	c->prev_in_stack = stack_tail;
+	c->next_in_stack = NULL;
+
+	if (stack_head->ismaximizescreen) {
+		setmaximizescreen(stack_head, 0);
+	}
+
+	if (stack_head->isfullscreen) {
+		setfullscreen(stack_head, 0);
+	}
+
+	arrange(selmon, false, false);
 	return 0;
 }
