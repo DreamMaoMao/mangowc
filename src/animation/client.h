@@ -1131,6 +1131,7 @@ bool client_apply_focus_opacity(Client *c) {
 			target_opacity = opacity;
 		}
 		client_set_opacity(c, target_opacity);
+		client_set_border_color(c, c->opacity_animation.target_border_color);
 	} else if (animations && c->opacity_animation.running) {
 
 		struct timespec now;
