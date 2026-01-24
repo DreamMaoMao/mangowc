@@ -354,27 +354,12 @@ void apply_border(Client *c) {
 	if (!c || c->iskilling || !client_surface(c)->mapped)
 		return;
 
-	bool hit_no_border = check_hit_no_border(c);
 	enum corner_location current_corner_location;
 	if (c->isfullscreen || (no_radius_when_single && c->mon &&
 							c->mon->visible_tiling_clients == 1)) {
 		current_corner_location = CORNER_LOCATION_NONE;
 	} else {
 		current_corner_location = set_client_corner_location(c);
-	}
-
-	// Handle no-border cases
-	if (hit_no_border && smartgaps) {
-		c->bw = 0;
-		c->fake_no_border = true;
-	} else if (hit_no_border && !smartgaps) {
-		wlr_scene_rect_set_size(c->border, 0, 0);
-		wlr_scene_node_set_position(&c->scene_surface->node, c->bw, c->bw);
-		c->fake_no_border = true;
-		return;
-	} else if (!c->isfullscreen && VISIBLEON(c, c->mon)) {
-		c->bw = c->isnoborder ? 0 : borderpx;
-		c->fake_no_border = false;
 	}
 
 	struct wlr_box clip_box = c->animation.current;
@@ -979,6 +964,22 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 
 	if (c->isnoborder || c->iskilling) {
 		c->bw = 0;
+	}
+
+	bool hit_no_border = check_hit_no_border(c);
+
+	// Handle no-border cases
+	if (hit_no_border && smartgaps) {
+		c->bw = 0;
+		c->fake_no_border = true;
+	} else if (hit_no_border && !smartgaps) {
+		wlr_scene_rect_set_size(c->border, 0, 0);
+		wlr_scene_node_set_position(&c->scene_surface->node, c->bw, c->bw);
+		c->fake_no_border = true;
+		return;
+	} else if (!c->isfullscreen && VISIBLEON(c, c->mon)) {
+		c->bw = c->isnoborder ? 0 : borderpx;
+		c->fake_no_border = false;
 	}
 
 	// c->geom 是真实的窗口大小和位置，跟过度的动画无关，用于计算布局
