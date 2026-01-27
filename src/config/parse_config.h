@@ -3163,6 +3163,7 @@ void reapply_monitor_rules(void) {
 	ConfigMonitorRule *mr;
 	Monitor *m = NULL;
 	int32_t ji, vrr;
+	int32_t mx, my;
 	struct wlr_output_state state;
 	struct wlr_output_mode *internal_mode = NULL;
 	wlr_output_state_init(&state);
@@ -3179,8 +3180,8 @@ void reapply_monitor_rules(void) {
 			mr = &config.monitor_rules[ji];
 			if (regex_match(mr->name, m->wlr_output->name)) {
 
-				m->m.x = mr->x == INT32_MAX ? m->m.x : mr->x;
-				m->m.y = mr->y == INT32_MAX ? m->m.y : mr->y;
+				mx = mr->x == INT32_MAX ? m->m.x : mr->x;
+				my = mr->y == INT32_MAX ? m->m.y : mr->y;
 				vrr = mr->vrr >= 0 ? mr->vrr : 0;
 
 				if (mr->width > 0 && mr->height > 0 && mr->refresh > 0) {
@@ -3201,8 +3202,7 @@ void reapply_monitor_rules(void) {
 
 				wlr_output_state_set_scale(&state, mr->scale);
 				wlr_output_state_set_transform(&state, mr->rr);
-				wlr_output_layout_add(output_layout, m->wlr_output, m->m.x,
-									  m->m.y);
+				wlr_output_layout_add(output_layout, m->wlr_output, mx, my);
 			}
 		}
 
