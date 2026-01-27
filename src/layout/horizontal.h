@@ -117,6 +117,7 @@ void deck(Monitor *m) {
 	Client *c = NULL;
 	Client *fc = NULL;
 	float mfact;
+	uint32_t nmasters = m->pertag->nmasters[m->pertag->curtag];
 
 	int32_t cur_gappih = enablegaps ? m->gappih : 0;
 	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
@@ -142,8 +143,8 @@ void deck(Monitor *m) {
 										: m->pertag->mfacts[m->pertag->curtag];
 
 	// Calculate master width including outer gaps
-	if (n > m->nmaster)
-		mw = m->nmaster ? round((m->w.width - 2 * cur_gappoh) * mfact) : 0;
+	if (n > nmasters)
+		mw = nmasters ? round((m->w.width - 2 * cur_gappoh) * mfact) : 0;
 	else
 		mw = m->w.width - 2 * cur_gappoh;
 
@@ -151,7 +152,7 @@ void deck(Monitor *m) {
 	wl_list_for_each(c, &clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
-		if (i < m->nmaster) {
+		if (i < nmasters) {
 			c->master_mfact_per = mfact;
 			// Master area clients
 			resize(
@@ -160,7 +161,7 @@ void deck(Monitor *m) {
 								 .y = m->w.y + cur_gappov + my,
 								 .width = mw,
 								 .height = (m->w.height - 2 * cur_gappov - my) /
-										   (MIN(n, m->nmaster) - i)},
+										   (MIN(n, nmasters) - i)},
 				0);
 			my += c->geom.height;
 		} else {
