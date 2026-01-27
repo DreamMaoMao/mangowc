@@ -101,15 +101,13 @@ typedef struct {
 } ConfigWinRule;
 
 typedef struct {
-	const char *name;	   // 显示器名称
-	float mfact;		   // 主区域比例
-	int32_t nmaster;	   // 主区域窗口数量
-	const char *layout;	   // 布局名称（字符串）
-	int32_t rr;			   // 旋转和翻转（假设为整数）
-	float scale;		   // 显示器缩放比例
-	int32_t x, y;		   // 显示器位置
-	int32_t width, height; // 显示器分辨率
-	float refresh;		   // 刷新率
+	const char *name;	   // Monitor name
+	int32_t rr;			   // Rotate and flip (assume integer)
+	float scale;		   // Monitor scale factor
+	int32_t x, y;		   // Monitor position
+	int32_t width, height; // Monitor resolution
+	float refresh;		   // Refresh rate
+	int32_t vrr;		   // variable refresh rate
 } ConfigMonitorRule;
 
 // 修改后的宏定义
@@ -156,9 +154,11 @@ typedef struct {
 } GestureBinding;
 
 typedef struct {
-	int32_t id;		   // 标签ID (1-9)
-	char *layout_name; // 布局名称
+	int32_t id;
+	char *layout_name;
 	char *monitor_name;
+	float mfact;
+	int32_t nmaster;
 	int32_t no_render_border;
 	int32_t no_hide;
 } ConfigTagRule;
@@ -1605,6 +1605,66 @@ void parse_option(Config *config, char *key, char *value) {
 		} else {
 			convert_hex_to_rgba(config->overlaycolor, color);
 		}
+	} else if (strcmp(key, "monitorrule") == 0) {
+		config->monitor_rules =
+			realloc(config->monitor_rules, (config->monitor_rules_count + 1) *
+											   sizeof(ConfigMonitorRule));
+		if (!config->monitor_rules) {
+			fprintf(stderr,
+					"Error: Failed to allocate memory for monitor rules\n");
+			return;
+		}
+
+		ConfigMonitorRule *rule =
+			&config->monitor_rules[config->monitor_rules_count];
+		memset(rule, 0, sizeof(ConfigMonitorRule));
+
+		// 设置默认值
+		rule->name = NULL;
+		rule->rr = 0;
+		rule->scale = 1.0f;
+		rule->x = INT32_MAX;
+		rule->y = INT32_MAX;
+		rule->width = -1;
+		rule->height = -1;
+		rule->refresh = 0.0f;
+		rule->vrr = 0;
+
+		char *token = strtok(value, ",");
+		while (token != NULL) {
+			char *colon = strchr(token, ':');
+			if (colon != NULL) {
+				*colon = '\0';
+				char *key = token;
+				char *val = colon + 1;
+
+				trim_whitespace(key);
+				trim_whitespace(val);
+
+				if (strcmp(key, "name") == 0) {
+					rule->name = strdup(val);
+				} else if (strcmp(key, "rr") == 0) {
+					rule->rr = CLAMP_INT(atoi(val), 0, 7);
+				} else if (strcmp(key, "scale") == 0) {
+					rule->scale = CLAMP_FLOAT(atof(val), 0.001f, 1000.0f);
+				} else if (strcmp(key, "x") == 0) {
+					rule->x = atoi(val);
+				} else if (strcmp(key, "y") == 0) {
+					rule->y = atoi(val);
+				} else if (strcmp(key, "width") == 0) {
+					rule->width = CLAMP_INT(atoi(val), 1, INT32_MAX);
+				} else if (strcmp(key, "height") == 0) {
+					rule->height = CLAMP_INT(atoi(val), 1, INT32_MAX);
+				} else if (strcmp(key, "refresh") == 0) {
+					rule->refresh = CLAMP_FLOAT(atof(val), 0.001f, 1000.0f);
+				} else if (strcmp(key, "vrr") == 0) {
+					rule->vrr = CLAMP_INT(atoi(val), 0, 1);
+				}
+			}
+			token = strtok(NULL, ",");
+		}
+
+		config->monitor_rules_count++;
 	} else if (strcmp(key, "tagrule") == 0) {
 		config->tag_rules =
 			realloc(config->tag_rules,
@@ -1621,6 +1681,10 @@ void parse_option(Config *config, char *key, char *value) {
 		rule->id = 0;
 		rule->layout_name = NULL;
 		rule->monitor_name = NULL;
+		rule->nmaster = 0;
+		rule->mfact = 0.0f;
+		rule->no_render_border = 0;
+		rule->no_hide = 0;
 
 		char *token = strtok(value, ",");
 		while (token != NULL) {
@@ -1643,6 +1707,10 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->no_render_border = CLAMP_INT(atoi(val), 0, 1);
 				} else if (strcmp(key, "no_hide") == 0) {
 					rule->no_hide = CLAMP_INT(atoi(val), 0, 1);
+				} else if (strcmp(key, "nmaster") == 0) {
+					rule->nmaster = CLAMP_INT(atoi(val), 1, 99);
+				} else if (strcmp(key, "mfact") == 0) {
+					rule->mfact = CLAMP_FLOAT(atof(val), 0.1f, 0.9f);
 				}
 			}
 			token = strtok(NULL, ",");
@@ -1871,75 +1939,6 @@ void parse_option(Config *config, char *key, char *value) {
 			token = strtok(NULL, ",");
 		}
 		config->window_rules_count++;
-	} else if (strcmp(key, "monitorrule") == 0) {
-		config->monitor_rules =
-			realloc(config->monitor_rules, (config->monitor_rules_count + 1) *
-											   sizeof(ConfigMonitorRule));
-		if (!config->monitor_rules) {
-			fprintf(stderr,
-					"Error: Failed to allocate memory for monitor rules\n");
-			return;
-		}
-
-		ConfigMonitorRule *rule =
-			&config->monitor_rules[config->monitor_rules_count];
-		memset(rule, 0, sizeof(ConfigMonitorRule));
-
-		// 临时存储每个字段的原始字符串
-		char raw_name[256], raw_layout[256];
-		char raw_mfact[256], raw_nmaster[256], raw_rr[256];
-		char raw_scale[256], raw_x[256], raw_y[256], raw_width[256],
-			raw_height[256], raw_refresh[256];
-
-		// 先读取所有字段为字符串
-		int32_t parsed =
-			sscanf(value,
-				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
-				   "^,],%255[^,],%255[^,],%255[^,],%255[^,],%255s",
-				   raw_name, raw_mfact, raw_nmaster, raw_layout, raw_rr,
-				   raw_scale, raw_x, raw_y, raw_width, raw_height, raw_refresh);
-
-		if (parsed == 11) {
-			// 修剪每个字段的空格
-			trim_whitespace(raw_name);
-			trim_whitespace(raw_mfact);
-			trim_whitespace(raw_nmaster);
-			trim_whitespace(raw_layout);
-			trim_whitespace(raw_rr);
-			trim_whitespace(raw_scale);
-			trim_whitespace(raw_x);
-			trim_whitespace(raw_y);
-			trim_whitespace(raw_width);
-			trim_whitespace(raw_height);
-			trim_whitespace(raw_refresh);
-
-			// 转换修剪后的字符串为特定类型
-			rule->name = strdup(raw_name);
-			rule->layout = strdup(raw_layout);
-			rule->mfact = atof(raw_mfact);
-			rule->nmaster = atoi(raw_nmaster);
-			rule->rr = atoi(raw_rr);
-			rule->scale = atof(raw_scale);
-			rule->x = atoi(raw_x);
-			rule->y = atoi(raw_y);
-			rule->width = atoi(raw_width);
-			rule->height = atoi(raw_height);
-			rule->refresh = atof(raw_refresh);
-
-			if (!rule->name || !rule->layout) {
-				if (rule->name)
-					free((void *)rule->name);
-				if (rule->layout)
-					free((void *)rule->layout);
-				fprintf(stderr,
-						"Error: Failed to allocate memory for monitor rule\n");
-				return;
-			}
-
-			config->monitor_rules_count++;
-		} else {
-			fprintf(stderr, "Error: Invalid monitorrule format: %s\n", value);
-		}
 	} else if (strncmp(key, "env", 3) == 0) {
 
 		char env_type[256], env_value[256];
@@ -2483,18 +2482,6 @@ void free_config(void) {
 		config.window_rules_count = 0;
 	}
 
-	// 释放 monitor_rules
-	if (config.monitor_rules) {
-		for (int32_t i = 0; i < config.monitor_rules_count; i++) {
-			ConfigMonitorRule *rule = &config.monitor_rules[i];
-			free((void *)rule->name);
-			free((void *)rule->layout);
-		}
-		free(config.monitor_rules);
-		config.monitor_rules = NULL;
-		config.monitor_rules_count = 0;
-	}
-
 	// 释放 key_bindings
 	if (config.key_bindings) {
 		for (i = 0; i < config.key_bindings_count; i++) {
@@ -2611,6 +2598,17 @@ void free_config(void) {
 		free(config.tag_rules);
 		config.tag_rules = NULL;
 		config.tag_rules_count = 0;
+	}
+
+	// 释放 monitor_rules
+	if (config.monitor_rules) {
+		for (int32_t i = 0; i < config.monitor_rules_count; i++) {
+			if (config.monitor_rules[i].name)
+				free((void *)config.monitor_rules[i].name);
+		}
+		free(config.monitor_rules);
+		config.monitor_rules = NULL;
+		config.monitor_rules_count = 0;
 	}
 
 	// 释放 layer_rules
@@ -3164,7 +3162,8 @@ void reset_blur_params(void) {
 void reapply_monitor_rules(void) {
 	ConfigMonitorRule *mr;
 	Monitor *m = NULL;
-	int32_t ji, jk;
+	int32_t ji, vrr;
+	int32_t mx, my;
 	struct wlr_output_state state;
 	struct wlr_output_mode *internal_mode = NULL;
 	wlr_output_state_init(&state);
@@ -3179,20 +3178,11 @@ void reapply_monitor_rules(void) {
 				break;
 
 			mr = &config.monitor_rules[ji];
-			if (!mr->name || regex_match(mr->name, m->wlr_output->name)) {
+			if (regex_match(mr->name, m->wlr_output->name)) {
 
-				m->mfact = mr->mfact;
-				m->nmaster = mr->nmaster;
-				m->m.x = mr->x;
-				m->m.y = mr->y;
-
-				if (mr->layout) {
-					for (jk = 0; jk < LENGTH(layouts); jk++) {
-						if (strcmp(layouts[jk].name, mr->layout) == 0) {
-							m->lt = &layouts[jk];
-						}
-					}
-				}
+				mx = mr->x == INT32_MAX ? m->m.x : mr->x;
+				my = mr->y == INT32_MAX ? m->m.y : mr->y;
+				vrr = mr->vrr >= 0 ? mr->vrr : 0;
 
 				if (mr->width > 0 && mr->height > 0 && mr->refresh > 0) {
 					internal_mode = get_nearest_output_mode(
@@ -3206,15 +3196,14 @@ void reapply_monitor_rules(void) {
 					}
 				}
 
+				if (vrr) {
+					enable_adaptive_sync(m, &state);
+				}
+
 				wlr_output_state_set_scale(&state, mr->scale);
 				wlr_output_state_set_transform(&state, mr->rr);
-				wlr_output_layout_add(output_layout, m->wlr_output, mr->x,
-									  mr->y);
+				wlr_output_layout_add(output_layout, m->wlr_output, mx, my);
 			}
-		}
-
-		if (adaptive_sync) {
-			enable_adaptive_sync(m, &state);
 		}
 
 		wlr_output_commit_state(m->wlr_output, &state);
@@ -3319,6 +3308,12 @@ void reapply_master(void) {
 void parse_tagrule(Monitor *m) {
 	int32_t i, jk;
 	ConfigTagRule tr;
+	Client *c = NULL;
+
+	for (i = 0; i <= LENGTH(tags); i++) {
+		m->pertag->nmasters[i] = default_nmaster;
+		m->pertag->mfacts[i] = default_mfact;
+	}
 
 	for (i = 0; i < config.tag_rules_count; i++) {
 
@@ -3335,7 +3330,23 @@ void parse_tagrule(Monitor *m) {
 				}
 			}
 
-			m->pertag->no_hide[tr.id] = tr.no_hide;
+			if (tr.no_hide >= 0)
+				m->pertag->no_hide[tr.id] = tr.no_hide;
+			if (tr.nmaster >= 1)
+				m->pertag->nmasters[tr.id] = tr.nmaster;
+			if (tr.mfact > 0.0f)
+				m->pertag->mfacts[tr.id] = tr.mfact;
+			if (tr.no_render_border >= 0)
+				m->pertag->no_render_border[tr.id] = tr.no_render_border;
+		}
+	}
+
+	for (i = 1; i <= LENGTH(tags); i++) {
+		wl_list_for_each(c, &clients, link) {
+			if ((c->tags & (1 << (i - 1)) & TAGMASK) && ISTILED(c)) {
+				if (m->pertag->mfacts[i] > 0.0f)
+					c->master_mfact_per = m->pertag->mfacts[i];
+			}
 		}
 	}
 }
