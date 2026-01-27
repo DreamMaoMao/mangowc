@@ -232,6 +232,7 @@ typedef struct {
 	int32_t center_when_single_stack;
 
 	uint32_t hotarea_size;
+	uint32_t hotarea_corner;
 	uint32_t enable_hotarea;
 	uint32_t ov_tab_mode;
 	int32_t overviewgappi;
@@ -1452,6 +1453,8 @@ void parse_option(Config *config, char *key, char *value) {
 		config->center_when_single_stack = atoi(value);
 	} else if (strcmp(key, "hotarea_size") == 0) {
 		config->hotarea_size = atoi(value);
+	} else if (strcmp(key, "hotarea_corner") == 0) {
+		config->hotarea_corner = atoi(value);
 	} else if (strcmp(key, "enable_hotarea") == 0) {
 		config->enable_hotarea = atoi(value);
 	} else if (strcmp(key, "ov_tab_mode") == 0) {
@@ -2739,6 +2742,7 @@ void override_config(void) {
 
 	// 概述模式设置
 	hotarea_size = CLAMP_INT(config.hotarea_size, 1, 1000);
+	hotarea_corner = CLAMP_INT(config.hotarea_corner, 0, 3);
 	enable_hotarea = CLAMP_INT(config.enable_hotarea, 0, 1);
 	ov_tab_mode = CLAMP_INT(config.ov_tab_mode, 0, 1);
 	overviewgappi = CLAMP_INT(config.overviewgappi, 0, 1000);
@@ -2901,8 +2905,9 @@ void set_value_default() {
 
 	config.numlockon = numlockon; // 是否打开右边小键盘
 
-	config.ov_tab_mode = ov_tab_mode;		// alt tab切换模式
-	config.hotarea_size = hotarea_size;		// 热区大小,10x10
+	config.ov_tab_mode = ov_tab_mode;	// alt tab切换模式
+	config.hotarea_size = hotarea_size; // 热区大小,10x10
+	config.hotarea_corner = hotarea_corner;
 	config.enable_hotarea = enable_hotarea; // 是否启用鼠标热区
 	config.smartgaps =
 		smartgaps; /* 1 means no outer gap when there is only one window */

@@ -143,6 +143,8 @@
 #define BAKED_POINTS_COUNT 256
 
 /* enums */
+enum { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT };
+
 enum { VERTICAL, HORIZONTAL };
 enum { SWIPE_UP, SWIPE_DOWN, SWIPE_LEFT, SWIPE_RIGHT };
 enum { CurNormal, CurPressed, CurMove, CurResize }; /* cursor */
@@ -1215,17 +1217,59 @@ void toggle_hotarea(int32_t x_root, int32_t y_root) {
 	if (grabc)
 		return;
 
-	unsigned hx = selmon->m.x + hotarea_size;
-	unsigned hy = selmon->m.y + selmon->m.height - hotarea_size;
+	// 根据热角位置计算不同的热区坐标
+	unsigned hx, hy;
 
-	if (enable_hotarea == 1 && selmon->is_in_hotarea == 0 && y_root > hy &&
-		x_root < hx && x_root >= selmon->m.x &&
-		y_root <= (selmon->m.y + selmon->m.height)) {
+	switch (hotarea_corner) {
+	case BOTTOM_RIGHT: // 右下角
+		hx = selmon->m.x + selmon->m.width - hotarea_size;
+		hy = selmon->m.y + selmon->m.height - hotarea_size;
+		break;
+	case TOP_LEFT: // 左上角
+		hx = selmon->m.x + hotarea_size;
+		hy = selmon->m.y + hotarea_size;
+		break;
+	case TOP_RIGHT: // 右上角
+		hx = selmon->m.x + selmon->m.width - hotarea_size;
+		hy = selmon->m.y + hotarea_size;
+		break;
+	case BOTTOM_LEFT: // 左下角（默认）
+	default:
+		hx = selmon->m.x + hotarea_size;
+		hy = selmon->m.y + selmon->m.height - hotarea_size;
+		break;
+	}
+
+	// 判断鼠标是否在热区内
+	int in_hotarea = 0;
+
+	switch (hotarea_corner) {
+	case BOTTOM_RIGHT: // 右下角
+		in_hotarea = (y_root > hy && x_root > hx &&
+					  x_root <= (selmon->m.x + selmon->m.width) &&
+					  y_root <= (selmon->m.y + selmon->m.height));
+		break;
+	case TOP_LEFT: // 左上角
+		in_hotarea = (y_root < hy && x_root < hx && x_root >= selmon->m.x &&
+					  y_root >= selmon->m.y);
+		break;
+	case TOP_RIGHT: // 右上角
+		in_hotarea = (y_root < hy && x_root > hx &&
+					  x_root <= (selmon->m.x + selmon->m.width) &&
+					  y_root >= selmon->m.y);
+		break;
+	case BOTTOM_LEFT: // 左下角（默认）
+	default:
+		in_hotarea = (y_root > hy && x_root < hx && x_root >= selmon->m.x &&
+					  y_root <= (selmon->m.y + selmon->m.height));
+		break;
+	}
+
+	if (enable_hotarea == 1 && selmon->is_in_hotarea == 0 && in_hotarea) {
 		toggleoverview(&arg);
 		selmon->is_in_hotarea = 1;
 	} else if (enable_hotarea == 1 && selmon->is_in_hotarea == 1 &&
-			   (y_root <= hy || x_root >= hx || x_root < selmon->m.x ||
-				y_root > (selmon->m.y + selmon->m.height))) {
+			   !in_hotarea) {
 		selmon->is_in_hotarea = 0;
 	}
 }

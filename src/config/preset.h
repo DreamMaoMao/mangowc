@@ -47,8 +47,9 @@ int32_t log_level = WLR_ERROR;
 uint32_t numlockon = 0; // 是否打开右边小键盘
 uint32_t capslock = 0;	// 是否启用快捷键
 
-uint32_t ov_tab_mode = 0;	 // alt tab切换模式
-uint32_t hotarea_size = 10;	 // 热区大小,10x10
+uint32_t ov_tab_mode = 0;	// alt tab切换模式
+uint32_t hotarea_size = 10; // 热区大小,10x10
+uint32_t hotarea_corner = BOTTOM_LEFT;
 uint32_t enable_hotarea = 1; // 是否启用鼠标热区
 int32_t smartgaps = 0; /* 1 means no outer gap when there is only one window */
 int32_t sloppyfocus = 1; /* focus follows mouse */
