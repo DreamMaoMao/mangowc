@@ -496,11 +496,8 @@ struct Monitor {
 	struct wlr_box m;		  /* monitor area, layout-relative */
 	struct wlr_box w;		  /* window area, layout-relative */
 	struct wl_list layers[4]; /* LayerSurface::link */
-	const Layout *lt;
 	uint32_t seltags;
 	uint32_t tagset[2];
-	double mfact;
-	int32_t nmaster;
 
 	struct wl_list dwl_ipc_outputs;
 	int32_t gappih; /* horizontal gap between windows */
@@ -907,6 +904,7 @@ struct Pertag {
 	int32_t nmasters[LENGTH(tags) + 1]; /* number of windows in master area */
 	float mfacts[LENGTH(tags) + 1];		/* mfacts per tag */
 	bool no_hide[LENGTH(tags) + 1];		/* no_hide per tag */
+	bool no_render_border[LENGTH(tags) + 1]; /* no_render_border per tag */
 	const Layout
 		*ltidxs[LENGTH(tags) + 1]; /* matrix of tags and layouts indexes  */
 };
@@ -2623,7 +2621,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	struct wlr_output *wlr_output = data;
 	const ConfigMonitorRule *r;
 	uint32_t i;
-	int32_t ji, jk;
+	int32_t ji, vrr;
 	struct wlr_output_state state;
 	Monitor *m = NULL;
 	struct wlr_output_mode *internal_mode = NULL;
@@ -2659,30 +2657,19 @@ void createmon(struct wl_listener *listener, void *data) {
 	m->sel = NULL;
 	m->is_in_hotarea = 0;
 	float scale = 1;
-	m->mfact = default_mfact;
-	m->nmaster = default_nmaster;
 	enum wl_output_transform rr = WL_OUTPUT_TRANSFORM_NORMAL;
 	wlr_output_state_set_scale(&state, scale);
 	wlr_output_state_set_transform(&state, rr);
 
-	m->lt = &layouts[0];
 	for (ji = 0; ji < config.monitor_rules_count; ji++) {
 		if (config.monitor_rules_count < 1)
 			break;
 
 		r = &config.monitor_rules[ji];
-		if (!r->name || regex_match(r->name, wlr_output->name)) {
-			m->mfact = r->mfact;
-			m->nmaster = r->nmaster;
-			m->m.x = r->x;
-			m->m.y = r->y;
-			if (r->layout) {
-				for (jk = 0; jk < LENGTH(layouts); jk++) {
-					if (strcmp(layouts[jk].name, r->layout) == 0) {
-						m->lt = &layouts[jk];
-					}
-				}
-			}
+		if (regex_match(r->name, wlr_output->name)) {
+			m->m.x = r->x == INT32_MAX ? INT32_MAX : r->x;
+			m->m.y = r->y == INT32_MAX ? INT32_MAX : r->y;
+			vrr = r->vrr >= 0 ? r->vrr : 0;
 			scale = r->scale;
 			rr = r->rr;
 
@@ -2699,6 +2686,11 @@ void createmon(struct wl_listener *listener, void *data) {
 						(int32_t)roundf(r->refresh * 1000));
 				}
 			}
+
+			if (vrr) {
+				enable_adaptive_sync(m, &state);
+			}
+
 			wlr_output_state_set_scale(&state, r->scale);
 			wlr_output_state_set_transform(&state, r->rr);
 			break;
@@ -2712,10 +2704,6 @@ void createmon(struct wl_listener *listener, void *data) {
 	if (!custom_monitor_mode)
 		wlr_output_state_set_mode(&state,
 								  wlr_output_preferred_mode(wlr_output));
-
-	if (adaptive_sync) {
-		enable_adaptive_sync(m, &state);
-	}
 
 	/* Set up event listeners */
 	LISTEN(&wlr_output->events.frame, &m->frame, rendermon);
@@ -2741,9 +2729,9 @@ void createmon(struct wl_listener *listener, void *data) {
 	}
 
 	for (i = 0; i <= LENGTH(tags); i++) {
-		m->pertag->nmasters[i] = m->nmaster;
-		m->pertag->mfacts[i] = m->mfact;
-		m->pertag->ltidxs[i] = m->lt;
+		m->pertag->nmasters[i] = default_nmaster;
+		m->pertag->mfacts[i] = default_mfact;
+		m->pertag->ltidxs[i] = &layouts[0];
 	}
 
 	// apply tag rule
@@ -2765,7 +2753,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	 * output (such as DPI, scale factor, manufacturer, etc).
 	 */
 	m->scene_output = wlr_scene_output_create(scene, wlr_output);
-	if (m->m.x == -1 && m->m.y == -1)
+	if (m->m.x == INT32_MAX || m->m.y == INT32_MAX)
 		wlr_output_layout_add_auto(output_layout, wlr_output);
 	else
 		wlr_output_layout_add(output_layout, wlr_output, m->m.x, m->m.y);
