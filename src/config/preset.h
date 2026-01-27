@@ -106,7 +106,6 @@ int32_t drag_corner = 3;
 int32_t drag_warp_cursor = 1;
 int32_t xwayland_persistence = 1; /* xwayland persistence */
 int32_t syncobj_enable = 0;
-int32_t adaptive_sync = 0;
 int32_t allow_lock_transparent = 0;
 double drag_refresh_interval = 16.0;
 int32_t allow_tearing = TEARING_DISABLED;
