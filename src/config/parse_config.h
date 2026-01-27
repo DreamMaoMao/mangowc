@@ -3310,6 +3310,11 @@ void parse_tagrule(Monitor *m) {
 	ConfigTagRule tr;
 	Client *c = NULL;
 
+	for (i = 0; i <= LENGTH(tags); i++) {
+		m->pertag->nmasters[i] = default_nmaster;
+		m->pertag->mfacts[i] = default_mfact;
+	}
+
 	for (i = 0; i < config.tag_rules_count; i++) {
 
 		tr = config.tag_rules[i];
@@ -3329,14 +3334,18 @@ void parse_tagrule(Monitor *m) {
 				m->pertag->no_hide[tr.id] = tr.no_hide;
 			if (tr.nmaster >= 1)
 				m->pertag->nmasters[tr.id] = tr.nmaster;
-			if (tr.mfact >= 0.0f)
+			if (tr.mfact > 0.0f)
 				m->pertag->mfacts[tr.id] = tr.mfact;
 			if (tr.no_render_border >= 0)
 				m->pertag->no_render_border[tr.id] = tr.no_render_border;
-			wl_list_for_each(c, &clients, link) {
-				if ((c->tags & (1 << (tr.id - 1)) & TAGMASK) && ISTILED(c)) {
-					c->master_mfact_per = m->pertag->mfacts[tr.id];
-				}
+		}
+	}
+
+	for (i = 1; i <= LENGTH(tags); i++) {
+		wl_list_for_each(c, &clients, link) {
+			if ((c->tags & (1 << (i - 1)) & TAGMASK) && ISTILED(c)) {
+				if (m->pertag->mfacts[i] > 0.0f)
+					c->master_mfact_per = m->pertag->mfacts[i];
 			}
 		}
 	}
