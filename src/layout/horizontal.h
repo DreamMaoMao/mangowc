@@ -930,3 +930,8 @@ void tgmix(Monitor *m) {
 		return;
 	}
 }
+
+void tab_layout(Monitor *m) {
+	monocle(m)
+}
+
