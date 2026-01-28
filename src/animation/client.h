@@ -933,9 +933,9 @@ void client_set_focused_opacity_animation(Client *c) {
 		c->opacity_animation.initial_opacity =
 			c->opacity_animation.current_opacity;
 	} else {
-		memcpy(c->opacity_animation.initial_border_color, border_color,
+		memcpy(c->opacity_animation.initial_border_color, bordercolor,
 			   sizeof(c->opacity_animation.initial_border_color));
-		memcpy(c->opacity_animation.current_border_color, border_color,
+		memcpy(c->opacity_animation.current_border_color, bordercolor,
 			   sizeof(c->opacity_animation.current_border_color));
 		c->opacity_animation.initial_opacity = c->unfocused_opacity;
 		c->opacity_animation.current_opacity = c->unfocused_opacity;
@@ -1039,7 +1039,7 @@ bool client_apply_focus_opacity(Client *c) {
 					eased_progress;
 		}
 		client_set_border_color(c, c->opacity_animation.current_border_color);
-		if (linear_progress == 1.0f) {
+		if (linear_progress >= 1.0f) {
 			c->opacity_animation.running = false;
 		} else {
 			return true;
