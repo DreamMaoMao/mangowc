@@ -932,6 +932,6 @@ void tgmix(Monitor *m) {
 }
 
 void tab_layout(Monitor *m) {
-	monocle(m)
+	monocle(m);
 }
 
