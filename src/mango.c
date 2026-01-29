@@ -2958,9 +2958,14 @@ void configure_pointer(struct libinput_device *device) {
 	if (libinput_device_config_send_events_get_modes(device))
 		libinput_device_config_send_events_set_mode(device, send_events_mode);
 
-	if (libinput_device_config_accel_is_available(device)) {
+	if (accel_profile && libinput_device_config_accel_is_available(device)) {
 		libinput_device_config_accel_set_profile(device, accel_profile);
 		libinput_device_config_accel_set_speed(device, accel_speed);
+	} else {
+		// profile cannot be directly applied to 0, need to set to 1 first
+		libinput_device_config_accel_set_profile(device, 1);
+		libinput_device_config_accel_set_profile(device, 0);
+		libinput_device_config_accel_set_speed(device, 0);
 	}
 }
 
