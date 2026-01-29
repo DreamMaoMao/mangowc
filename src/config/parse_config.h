@@ -3061,6 +3061,8 @@ void reapply_monitor_rules(void) {
 
 				if (vrr) {
 					enable_adaptive_sync(m, &state);
+				} else {
+					wlr_output_state_set_adaptive_sync_enabled(&state, false);
 				}
 
 				wlr_output_state_set_scale(&state, mr->scale);
