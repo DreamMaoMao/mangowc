@@ -480,6 +480,7 @@ typedef struct {
 	char *animation_type_open;
 	char *animation_type_close;
 	bool need_output_flush;
+	bool being_unmapped;
 } LayerSurface;
 
 typedef struct {
@@ -592,7 +593,7 @@ static void cursorwarptohint(void);
 static void destroydecoration(struct wl_listener *listener, void *data);
 static void destroydragicon(struct wl_listener *listener, void *data);
 static void destroyidleinhibitor(struct wl_listener *listener, void *data);
-static void destroylayersurfacenotify(struct wl_listener *listener, void *data);
+static void destroylayernodenotify(struct wl_listener *listener, void *data);
 static void destroylock(SessionLock *lock, int32_t unlocked);
 static void destroylocksurface(struct wl_listener *listener, void *data);
 static void destroynotify(struct wl_listener *listener, void *data);
@@ -1521,6 +1522,9 @@ void arrangelayer(Monitor *m, struct wl_list *list, struct wlr_box *usable_area,
 			!layer_surface->initialized)
 			continue;
 
+		if (l->being_unmapped)
+			continue;
+
 		wlr_scene_layer_surface_v1_configure(l->scene_layer, &full_area,
 											 usable_area);
 		wlr_scene_node_set_position(&l->popups->node, l->scene->node.x,
@@ -2337,6 +2341,15 @@ void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
 		return;
 	}
 
+	// 检查surface是否有buffer
+	if (!layer_surface->surface->buffer) {
+		// 空buffer，只是隐藏，不改变mapped状态
+		wlr_scene_node_set_enabled(&l->scene->node, false);
+		return;
+	} else {
+		wlr_scene_node_set_enabled(&l->scene->node, true);
+	}
+
 	get_layer_target_geometry(l, &box);
 
 	if (animations && layer_animations && !l->noanim && l->mapped &&
@@ -2633,8 +2646,6 @@ void createlayersurface(struct wl_listener *listener, void *data) {
 	LISTEN(&surface->events.commit, &l->surface_commit,
 		   commitlayersurfacenotify);
 	LISTEN(&surface->events.unmap, &l->unmap, unmaplayersurfacenotify);
-	LISTEN(&layer_surface->events.destroy, &l->destroy,
-		   destroylayersurfacenotify);
 
 	l->layer_surface = layer_surface;
 	l->mon = layer_surface->output->data;
@@ -2646,6 +2657,8 @@ void createlayersurface(struct wl_listener *listener, void *data) {
 			? layers[LyrTop]
 			: scene_layer);
 	l->scene->node.data = l->popups->node.data = l;
+
+	LISTEN(&l->scene->node.events.destroy, &l->destroy, destroylayernodenotify);
 
 	wl_list_insert(&l->mon->layers[layer_surface->pending.layer], &l->link);
 	wlr_surface_send_enter(surface, layer_surface->output);
@@ -3112,7 +3125,7 @@ void destroyidleinhibitor(struct wl_listener *listener, void *data) {
 	free(listener);
 }
 
-void destroylayersurfacenotify(struct wl_listener *listener, void *data) {
+void destroylayernodenotify(struct wl_listener *listener, void *data) {
 	LayerSurface *l = wl_container_of(listener, l, destroy);
 
 	wl_list_remove(&l->link);
@@ -3120,7 +3133,6 @@ void destroylayersurfacenotify(struct wl_listener *listener, void *data) {
 	wl_list_remove(&l->map.link);
 	wl_list_remove(&l->unmap.link);
 	wl_list_remove(&l->surface_commit.link);
-	wlr_scene_node_destroy(&l->scene->node);
 	wlr_scene_node_destroy(&l->popups->node);
 	free(l);
 }
@@ -5554,6 +5566,7 @@ void unmaplayersurfacenotify(struct wl_listener *listener, void *data) {
 	LayerSurface *l = wl_container_of(listener, l, unmap);
 
 	l->mapped = 0;
+	l->being_unmapped = true;
 
 	init_fadeout_layers(l);
 
@@ -5565,6 +5578,9 @@ void unmaplayersurfacenotify(struct wl_listener *listener, void *data) {
 	if (l->layer_surface->surface == seat->keyboard_state.focused_surface)
 		focusclient(focustop(selmon), 1);
 	motionnotify(0, NULL, 0, 0, 0, 0);
+	l->being_unmapped = false;
+	wlr_scene_node_destroy(&l->shadow->node);
+	l->shadow = NULL;
 }
 
 void unmapnotify(struct wl_listener *listener, void *data) {
