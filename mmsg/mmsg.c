@@ -42,6 +42,7 @@ static int32_t eflag;
 static int32_t kflag;
 static int32_t bflag;
 static int32_t Aflag;
+static int32_t pflag;
 
 static uint32_t occ, seltags, total_clients, urg;
 
@@ -288,6 +289,28 @@ static void dwl_ipc_output_keymode(void *data,
 	printf("keymode %s\n", keymode);
 }
 
+static void dwl_ipc_output_cursor_x(void *data,
+									 struct zdwl_ipc_output_v2 *dwl_ipc_output,
+									 int32_t x) {
+	if (!pflag)
+		return;
+	char *output_name = data;
+	if (output_name)
+		printf("%s ", output_name);
+	printf("cursor_x %d\n", x);
+}
+
+static void dwl_ipc_output_cursor_y(void *data,
+									 struct zdwl_ipc_output_v2 *dwl_ipc_output,
+									 int32_t y) {
+	if (!pflag)
+		return;
+	char *output_name = data;
+	if (output_name)
+		printf("%s ", output_name);
+	printf("cursor_y %d\n", y);
+}
+
 static void dwl_ipc_output_fullscreen(void *data,
 									  struct zdwl_ipc_output_v2 *dwl_ipc_output,
 									  uint32_t is_fullscreen) {
@@ -427,6 +450,8 @@ static const struct zdwl_ipc_output_v2_listener dwl_ipc_output_listener = {
 	.kb_layout = dwl_ipc_output_kb_layout,
 	.keymode = dwl_ipc_output_keymode,
 	.scalefactor = dwl_ipc_output_scalefactor,
+	.cursor_x = dwl_ipc_output_cursor_x,
+	.cursor_y = dwl_ipc_output_cursor_y,
 	.frame = dwl_ipc_output_frame,
 };
 
@@ -504,7 +529,7 @@ static void usage(void) {
 			"\t%s [-OTLq]\n"
 			"\t%s [-o <output>] -s [-t <tags>] [-l <layout>] [-c <tags>] [-d "
 			"<cmd>,<arg1>,<arg2>,<arg3>,<arg4>,<arg5>]\n"
-			"\t%s [-o <output>] (-g | -w) [-OotlcvmfxekbA]\n",
+			"\t%s [-o <output>] (-g | -w) [-OotlcvmfxekbAp]\n",
 			argv0, argv0, argv0);
 	exit(2);
 }
@@ -752,6 +777,12 @@ int32_t main(int32_t argc, char *argv[]) {
 			usage();
 		mode |= GET;
 		break;
+	case 'p':
+		pflag = 1;
+		if (mode == SET)
+			usage();
+		mode |= GET;
+		break;
 	default:
 		fprintf(stderr, "bad option %c\n", ARGC());
 		usage();
@@ -762,9 +793,9 @@ int32_t main(int32_t argc, char *argv[]) {
 	if (mode & GET && !output_name &&
 		!(oflag || tflag || lflag || Oflag || Tflag || Lflag || cflag ||
 		  vflag || mflag || fflag || xflag || eflag || kflag || bflag ||
-		  Aflag || dflag))
+		  Aflag || pflag || dflag))
 		oflag = tflag = lflag = cflag = vflag = mflag = fflag = xflag = eflag =
-			kflag = bflag = Aflag = 1;
+			kflag = bflag = Aflag = pflag = 1;
 
 	display = wl_display_connect(NULL);
 	if (!display)
