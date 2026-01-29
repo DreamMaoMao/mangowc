@@ -1445,8 +1445,13 @@ int32_t viewcrossmon(const Arg *arg) {
 }
 
 int32_t tagcrossmon(const Arg *arg) {
-	if (!selmon->sel)
+	if (!selmon || !selmon->sel)
 		return 0;
+
+	if (regex_match(selmon->wlr_output->name, arg->v)) {
+		tag_client(arg, selmon->sel);
+		return 0;
+	}
 
 	tagmon(&(Arg){.ui = arg->ui, .i = UNDIR, .v = arg->v});
 	return 0;
