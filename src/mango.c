@@ -2321,8 +2321,8 @@ void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
 	}
 
 	// 检查surface是否有buffer
-	if (!layer_surface->surface->buffer) {
-		// 空buffer，只是隐藏，不改变mapped状态
+	// 空buffer，只是隐藏，不改变mapped状态
+	if (l->mapped && !layer_surface->surface->buffer) {
 		wlr_scene_node_set_enabled(&l->scene->node, false);
 		return;
 	} else {
