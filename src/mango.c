@@ -5523,8 +5523,6 @@ void unmaplayersurfacenotify(struct wl_listener *listener, void *data) {
 		focusclient(focustop(selmon), 1);
 	motionnotify(0, NULL, 0, 0, 0, 0);
 	l->being_unmapped = false;
-	wlr_scene_node_destroy(&l->shadow->node);
-	l->shadow = NULL;
 }
 
 void unmapnotify(struct wl_listener *listener, void *data) {
