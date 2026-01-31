@@ -955,11 +955,11 @@ static struct wl_listener xwayland_ready = {.notify = xwaylandready};
 static struct wlr_xwayland *xwayland;
 #endif
 
+#include "config/parse_config.h"
 #include "animation/client.h"
 #include "animation/common.h"
 #include "animation/layer.h"
 #include "animation/tag.h"
-#include "config/parse_config.h"
 #include "dispatch/bind_define.h"
 #include "ext-protocol/all.h"
 #include "fetch/fetch.h"
