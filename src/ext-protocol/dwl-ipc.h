@@ -211,6 +211,18 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 											monitor->wlr_output->scale * 100);
 	}
 
+	if (wl_resource_get_version(ipc_output->resource) >=
+		ZDWL_IPC_OUTPUT_V2_CURSOR_X_SINCE_VERSION) {
+		zdwl_ipc_output_v2_send_cursor_x(ipc_output->resource,
+										  (int32_t)cursor->x);
+	}
+
+	if (wl_resource_get_version(ipc_output->resource) >=
+		ZDWL_IPC_OUTPUT_V2_CURSOR_Y_SINCE_VERSION) {
+		zdwl_ipc_output_v2_send_cursor_y(ipc_output->resource,
+										  (int32_t)cursor->y);
+	}
+
 	zdwl_ipc_output_v2_send_frame(ipc_output->resource);
 }
 
