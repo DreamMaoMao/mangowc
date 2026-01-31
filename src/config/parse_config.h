@@ -1,8 +1,11 @@
 #include <ctype.h>
+#include <dirent.h>
 #include <libgen.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #ifndef SYSCONFDIR
 #define SYSCONFDIR "/etc"
@@ -362,7 +365,10 @@ typedef struct {
 typedef int32_t (*FuncType)(const Arg *);
 Config config;
 
+void resolve_file_path(const char *file_path, char *full_path, size_t size);
 void parse_config_file(Config *config, const char *file_path);
+void parse_config_file_or_dir(Config *config, const char *file_path);
+void parse_config_dir(Config *config, const char *dir_path);
 
 // Helper function to trim whitespace from start and end of a string
 void trim_whitespace(char *str) {
@@ -2325,7 +2331,7 @@ void parse_option(Config *config, char *key, char *value) {
 		}
 
 	} else if (strncmp(key, "source", 6) == 0) {
-		parse_config_file(config, value);
+		parse_config_file_or_dir(config, value);
 	} else {
 		fprintf(stderr, "Error: Unknown key: %s\n", key);
 	}
@@ -2349,43 +2355,12 @@ void parse_config_file(Config *config, const char *file_path) {
 	FILE *file;
 	char full_path[1024];
 
-	if (file_path[0] == '.' && file_path[1] == '/') {
-		// Relative path
-
-		if (cli_config_path) {
-			char *config_path = strdup(cli_config_path);
-			char *config_dir = dirname(config_path);
-			snprintf(full_path, sizeof(full_path), "%s/%s", config_dir,
-					 file_path + 1);
-			free(config_path);
-		} else {
-			const char *home = getenv("HOME");
-			if (!home) {
-				fprintf(stderr, "Error: HOME environment variable not set.\n");
-				return;
-			}
-			snprintf(full_path, sizeof(full_path), "%s/.config/mango/%s", home,
-					 file_path + 1);
-		}
-		file = fopen(full_path, "r");
-
-	} else if (file_path[0] == '~' &&
-			   (file_path[1] == '/' || file_path[1] == '\0')) {
-		// Home directory
-
-		const char *home = getenv("HOME");
-		if (!home) {
-			fprintf(stderr, "Error: HOME environment variable not set.\n");
-			return;
-		}
-		snprintf(full_path, sizeof(full_path), "%s%s", home, file_path + 1);
-		file = fopen(full_path, "r");
-
-	} else {
-		// Absolute path
-		file = fopen(file_path, "r");
+	resolve_file_path(file_path, full_path, sizeof(full_path));
+	if (full_path[0] == '\0') {
+		return;
 	}
 
+	file = fopen(full_path, "r");
 	if (!file) {
 		perror("Error opening file");
 		return;
@@ -2400,6 +2375,112 @@ void parse_config_file(Config *config, const char *file_path) {
 	}
 
 	fclose(file);
+}
+
+void resolve_file_path(const char *file_path, char *full_path, size_t size) {
+	int len;
+
+	if (file_path[0] == '.' && file_path[1] == '/') {
+		// Relative path
+		if (cli_config_path) {
+			char *config_path = strdup(cli_config_path);
+			char *config_dir = dirname(config_path);
+			len = snprintf(full_path, size, "%s/%s", config_dir, file_path + 1);
+			free(config_path);
+			if (len >= size) {
+				fprintf(stderr, "Error: Path too long\n");
+				full_path[0] = '\0';
+				return;
+			}
+		} else {
+			const char *home = getenv("HOME");
+			if (!home) {
+				fprintf(stderr, "Error: HOME environment variable not set.\n");
+				full_path[0] = '\0';
+				return;
+			}
+			len = snprintf(full_path, size, "%s/.config/mango/%s", home,
+						   file_path + 1);
+			if (len >= size) {
+				fprintf(stderr, "Error: Path too long\n");
+				full_path[0] = '\0';
+				return;
+			}
+		}
+	} else if (file_path[0] == '~' &&
+			   (file_path[1] == '/' || file_path[1] == '\0')) {
+		// Home directory
+		const char *home = getenv("HOME");
+		if (!home) {
+			fprintf(stderr, "Error: HOME environment variable not set.\n");
+			full_path[0] = '\0';
+			return;
+		}
+		len = snprintf(full_path, size, "%s%s", home, file_path + 1);
+		if (len >= size) {
+			fprintf(stderr, "Error: Path too long\n");
+			full_path[0] = '\0';
+			return;
+		}
+	} else {
+		// Absolute
+		len = snprintf(full_path, size, "%s", file_path);
+		if (len >= size) {
+			fprintf(stderr, "Error: Path too long\n");
+			full_path[0] = '\0';
+		}
+	}
+}
+
+void parse_config_file_or_dir(Config *config, const char *file_path) {
+	struct stat st;
+	char full_path[1024];
+
+	resolve_file_path(file_path, full_path, sizeof(full_path));
+	if (full_path[0] == '\0') {
+		return;
+	}
+
+	if (stat(full_path, &st) == 0) {
+		if (S_ISDIR(st.st_mode)) {
+			fprintf(stdout, "loading config in directory %s\n", full_path);
+			parse_config_dir(config, full_path);
+		} else {
+			parse_config_file(config, file_path);
+		}
+	}
+}
+
+void parse_config_dir(Config *config, const char *dir_path) {
+	DIR *dir_stream;
+	struct dirent *entry;
+
+	dir_stream = opendir(dir_path);
+	if (!dir_stream) {
+		fprintf(stderr, "Warning: Cannot open directory: %s\n", dir_path);
+		return;
+	}
+
+	while ((entry = readdir(dir_stream)) != NULL) {
+		char *ext = strrchr(entry->d_name, '.');
+		// Skip if no extension or extension isn't ".conf"
+		if (!ext || strcmp(ext, ".conf") != 0) {
+			continue;
+		}
+
+		// Construct full path to the .conf file
+		char config_file_path[2048];
+		int len = snprintf(config_file_path, sizeof(config_file_path), "%s/%s",
+						   dir_path, entry->d_name);
+		if (len >= sizeof(config_file_path)) {
+			fprintf(stderr, "Error: Path too long\n");
+			continue;
+		}
+
+		parse_config_file(config, config_file_path);
+	}
+
+	closedir(dir_stream);
 }
 
 void free_circle_layout(Config *config) {
