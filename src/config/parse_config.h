@@ -385,7 +385,10 @@ int32_t parse_double_array(const char *input, double *output,
 		char *endptr;
 		double val = strtod(token, &endptr);
 		if (endptr == token || *endptr != '\0') {
-			fprintf(stderr, "Error: Invalid number in array: %s\n", token);
+			fprintf(
+				stderr,
+				"\033[1m\033[31m[ERROR]:\033[33m Invalid number in array: %s\n",
+				token);
 			free(dup);
 			return -1;
 		}
@@ -437,7 +440,9 @@ void parse_bind_flags(const char *str, KeyBinding *kb) {
 			kb->ispassapply = true;
 			break;
 		default:
-			// 忽略其他字符或可根据需要处理错误
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Unknown bind flag: %c\n",
+					suffix[i]);
 			break;
 		}
 	}
@@ -527,13 +532,14 @@ static bool starts_with_ignore_case(const char *str, const char *prefix) {
 
 uint32_t parse_mod(const char *mod_str) {
 	if (!mod_str || !*mod_str) {
-		return 0;
+		return UINT32_MAX;
 	}
 
 	uint32_t mod = 0;
 	char input_copy[256];
 	char *token;
 	char *saveptr = NULL;
+	bool match_success = false;
 
 	// 复制并转换为小写
 	strncpy(input_copy, mod_str, sizeof(input_copy) - 1);
@@ -571,33 +577,54 @@ uint32_t parse_mod(const char *mod_str) {
 				case 108:
 					mod |= WLR_MODIFIER_ALT;
 					break;
+				default:
+					fprintf(stderr,
+							"unknown modifier keycode: \033[1m\033[31m%s\n",
+							token);
+					break;
 				}
 			}
 		} else {
 			// 完整的 modifier 检查（保留原始所有检查项）
-			if (strstr(token, "super") || strstr(token, "super_l") ||
-				strstr(token, "super_r")) {
+			if (!strcmp(token, "super") || !strcmp(token, "super_l") ||
+				!strcmp(token, "super_r")) {
 				mod |= WLR_MODIFIER_LOGO;
+				match_success = true;
 			}
-			if (strstr(token, "ctrl") || strstr(token, "ctrl_l") ||
-				strstr(token, "ctrl_r")) {
+			if (!strcmp(token, "ctrl") || !strcmp(token, "ctrl_l") ||
+				!strcmp(token, "ctrl_r")) {
 				mod |= WLR_MODIFIER_CTRL;
+				match_success = true;
 			}
-			if (strstr(token, "shift") || strstr(token, "shift_l") ||
-				strstr(token, "shift_r")) {
+			if (!strcmp(token, "shift") || !strcmp(token, "shift_l") ||
+				!strcmp(token, "shift_r")) {
 				mod |= WLR_MODIFIER_SHIFT;
+				match_success = true;
 			}
-			if (strstr(token, "alt") || strstr(token, "alt_l") ||
-				strstr(token, "alt_r")) {
+			if (!strcmp(token, "alt") || !strcmp(token, "alt_l") ||
+				!strcmp(token, "alt_r")) {
 				mod |= WLR_MODIFIER_ALT;
+				match_success = true;
 			}
-			if (strstr(token, "hyper") || strstr(token, "hyper_l") ||
-				strstr(token, "hyper_r")) {
+			if (!strcmp(token, "hyper") || !strcmp(token, "hyper_l") ||
+				!strcmp(token, "hyper_r")) {
 				mod |= WLR_MODIFIER_MOD3;
+				match_success = true;
+			}
+			if (!strcmp(token, "none")) {
+				match_success = true;
 			}
 		}
 
 		token = strtok_r(NULL, "+", &saveptr);
+	}
+
+	if (!match_success) {
+		mod = UINT32_MAX;
+		fprintf(stderr,
+				"\033[1m\033[31m[ERROR]:\033[33m Unknown modifier: "
+				"\033[1m\033[31m%s\n",
+				mod_str);
 	}
 
 	return mod;
@@ -715,13 +742,17 @@ KeySymCode parse_key(const char *key_str, bool isbindsym) {
 		// 无法解析的键名
 		kc.type = KEY_TYPE_SYM;
 		kc.keysym = XKB_KEY_NoSymbol;
+		fprintf(
+			stderr,
+			"\033[1m\033[31m[ERROR]:\033[33m Unknown key: \033[1m\033[31m%s\n",
+			key_str);
 		// keycode 字段保持为0
 	}
 
 	return kc;
 }
 
-int32_t parse_button(const char *str) {
+uint32_t parse_button(const char *str) {
 	// 将输入字符串转换为小写
 	char lowerStr[20];
 	int32_t i = 0;
@@ -749,7 +780,11 @@ int32_t parse_button(const char *str) {
 	} else if (strcmp(lowerStr, "btn_task") == 0) {
 		return BTN_TASK;
 	} else {
-		return 0;
+		fprintf(stderr,
+				"\033[1m\033[31m[ERROR]:\033[33m Unknown button: "
+				"\033[1m\033[31m%s\n",
+				str);
+		return UINT32_MAX;
 	}
 }
 
@@ -1095,7 +1130,7 @@ void run_exec_once() {
 	}
 }
 
-void parse_option(Config *config, char *key, char *value) {
+bool parse_option(Config *config, char *key, char *value) {
 	if (strcmp(key, "keymode") == 0) {
 		snprintf(config->keymode, sizeof(config->keymode), "%.27s", value);
 	} else if (strcmp(key, "animations") == 0) {
@@ -1146,53 +1181,70 @@ void parse_option(Config *config, char *key, char *value) {
 		int32_t num =
 			parse_double_array(value, config->animation_curve_move, 4);
 		if (num != 4) {
-			fprintf(stderr, "Error: Failed to parse animation_curve_move: %s\n",
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to parse "
+					"animation_curve_move: %s\n",
 					value);
+			return false;
 		}
 	} else if (strcmp(key, "animation_curve_open") == 0) {
 		int32_t num =
 			parse_double_array(value, config->animation_curve_open, 4);
 		if (num != 4) {
-			fprintf(stderr, "Error: Failed to parse animation_curve_open: %s\n",
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to parse "
+					"animation_curve_open: %s\n",
 					value);
+			return false;
 		}
 	} else if (strcmp(key, "animation_curve_tag") == 0) {
 		int32_t num = parse_double_array(value, config->animation_curve_tag, 4);
 		if (num != 4) {
-			fprintf(stderr, "Error: Failed to parse animation_curve_tag: %s\n",
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to parse "
+					"animation_curve_tag: %s\n",
 					value);
+			return false;
 		}
 	} else if (strcmp(key, "animation_curve_close") == 0) {
 		int32_t num =
 			parse_double_array(value, config->animation_curve_close, 4);
 		if (num != 4) {
 			fprintf(stderr,
-					"Error: Failed to parse animation_curve_close: %s\n",
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to parse "
+					"animation_curve_close: %s\n",
 					value);
+			return false;
 		}
 	} else if (strcmp(key, "animation_curve_focus") == 0) {
 		int32_t num =
 			parse_double_array(value, config->animation_curve_focus, 4);
 		if (num != 4) {
 			fprintf(stderr,
-					"Error: Failed to parse animation_curve_focus: %s\n",
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to parse "
+					"animation_curve_focus: %s\n",
 					value);
+			return false;
 		}
 	} else if (strcmp(key, "animation_curve_opafadein") == 0) {
 		int32_t num =
 			parse_double_array(value, config->animation_curve_opafadein, 4);
 		if (num != 4) {
 			fprintf(stderr,
-					"Error: Failed to parse animation_curve_opafadein: %s\n",
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to parse "
+					"animation_curve_opafadein: %s\n",
 					value);
+			return false;
 		}
 	} else if (strcmp(key, "animation_curve_opafadeout") == 0) {
 		int32_t num =
 			parse_double_array(value, config->animation_curve_opafadeout, 4);
 		if (num != 4) {
 			fprintf(stderr,
-					"Error: Failed to parse animation_curve_opafadeout: %s\n",
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to parse "
+					"animation_curve_opafadeout: %s\n",
 					value);
+			return false;
 		}
 	} else if (strcmp(key, "scroller_structs") == 0) {
 		config->scroller_structs = atoi(value);
@@ -1277,8 +1329,10 @@ void parse_option(Config *config, char *key, char *value) {
 		config->scroller_proportion_preset =
 			(float *)malloc(float_count * sizeof(float));
 		if (!config->scroller_proportion_preset) {
-			fprintf(stderr, "Error: Memory allocation failed\n");
-			return;
+			fprintf(
+				stderr,
+				"\033[1m\033[31m[ERROR]:\033[33m Memory allocation failed\n");
+			return false;
 		}
 
 		// 3. 解析 value 中的浮点数
@@ -1290,14 +1344,15 @@ void parse_option(Config *config, char *key, char *value) {
 
 		while (token != NULL && i < float_count) {
 			if (sscanf(token, "%f", &value_set) != 1) {
-				fprintf(stderr,
-						"Error: Invalid float value in "
-						"scroller_proportion_preset: %s\n",
-						token);
+				fprintf(
+					stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid float value in "
+					"scroller_proportion_preset: %s\n",
+					token);
 				free(value_copy);
 				free(config->scroller_proportion_preset);
 				config->scroller_proportion_preset = NULL;
-				return;
+				return false;
 			}
 
 			// Clamp the value between 0.0 and 1.0 (or your desired range)
@@ -1311,13 +1366,14 @@ void parse_option(Config *config, char *key, char *value) {
 		// 4. 检查解析的浮点数数量是否匹配
 		if (i != float_count) {
 			fprintf(stderr,
-					"Error: Invalid scroller_proportion_preset format: %s\n",
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid "
+					"scroller_proportion_preset format: %s\n",
 					value);
 			free(value_copy);
 			free(config->scroller_proportion_preset);  // 释放已分配的内存
 			config->scroller_proportion_preset = NULL; // 防止野指针
 			config->scroller_proportion_preset_count = 0;
-			return;
+			return false;
 		}
 		config->scroller_proportion_preset_count = float_count;
 
@@ -1336,8 +1392,10 @@ void parse_option(Config *config, char *key, char *value) {
 		config->circle_layout = (char **)malloc(string_count * sizeof(char *));
 		memset(config->circle_layout, 0, string_count * sizeof(char *));
 		if (!config->circle_layout) {
-			fprintf(stderr, "Error: Memory allocation failed\n");
-			return;
+			fprintf(
+				stderr,
+				"\033[1m\033[31m[ERROR]:\033[33m Memory allocation failed\n");
+			return false;
 		}
 
 		// 3. 解析 value 中的字符串
@@ -1352,7 +1410,9 @@ void parse_option(Config *config, char *key, char *value) {
 			config->circle_layout[i] = strdup(cleaned_token);
 			if (!config->circle_layout[i]) {
 				fprintf(stderr,
-						"Error: Memory allocation failed for string: %s\n",
+						"\033[1m\033[31m[ERROR]:\033[33m Memory allocation "
+						"failed for "
+						"string: %s\n",
 						token);
 				// 释放之前分配的内存
 				for (int32_t j = 0; j < i; j++) {
@@ -1362,7 +1422,7 @@ void parse_option(Config *config, char *key, char *value) {
 				free(value_copy);
 				config->circle_layout = NULL; // 防止野指针
 				config->circle_layout_count = 0;
-				return;
+				return false;
 			}
 			token = strtok(NULL, ",");
 			i++;
@@ -1370,7 +1430,10 @@ void parse_option(Config *config, char *key, char *value) {
 
 		// 4. 检查解析的字符串数量是否匹配
 		if (i != string_count) {
-			fprintf(stderr, "Error: Invalid circle_layout format: %s\n", value);
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid circle_layout "
+					"format: %s\n",
+					value);
 			// 释放之前分配的内存
 			for (int32_t j = 0; j < i; j++) {
 				free(config->circle_layout[j]);
@@ -1379,7 +1442,7 @@ void parse_option(Config *config, char *key, char *value) {
 			free(value_copy);
 			config->circle_layout = NULL; // 防止野指针
 			config->circle_layout_count = 0;
-			return;
+			return false;
 		}
 		config->circle_layout_count = string_count;
 
@@ -1486,7 +1549,11 @@ void parse_option(Config *config, char *key, char *value) {
 	} else if (strcmp(key, "rootcolor") == 0) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
-			fprintf(stderr, "Error: Invalid rootcolor format: %s\n", value);
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid rootcolor format: "
+					"%s\n",
+					value);
+			return false;
 		} else {
 			convert_hex_to_rgba(config->rootcolor, color);
 		}
@@ -1494,51 +1561,78 @@ void parse_option(Config *config, char *key, char *value) {
 	} else if (strcmp(key, "bordercolor") == 0) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
-			fprintf(stderr, "Error: Invalid bordercolor format: %s\n", value);
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid bordercolor "
+					"format: %s\n",
+					value);
+			return false;
 		} else {
 			convert_hex_to_rgba(config->bordercolor, color);
 		}
 	} else if (strcmp(key, "focuscolor") == 0) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
-			fprintf(stderr, "Error: Invalid focuscolor format: %s\n", value);
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid focuscolor "
+					"format: %s\n",
+					value);
+			return false;
 		} else {
 			convert_hex_to_rgba(config->focuscolor, color);
 		}
 	} else if (strcmp(key, "maximizescreencolor") == 0) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
-			fprintf(stderr, "Error: Invalid maximizescreencolor format: %s\n",
-					value);
+			fprintf(
+				stderr,
+				"\033[1m\033[31m[ERROR]:\033[33m Invalid maximizescreencolor "
+				"format: %s\n",
+				value);
+			return false;
 		} else {
 			convert_hex_to_rgba(config->maximizescreencolor, color);
 		}
 	} else if (strcmp(key, "urgentcolor") == 0) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
-			fprintf(stderr, "Error: Invalid urgentcolor format: %s\n", value);
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid urgentcolor "
+					"format: %s\n",
+					value);
+			return false;
 		} else {
 			convert_hex_to_rgba(config->urgentcolor, color);
 		}
 	} else if (strcmp(key, "scratchpadcolor") == 0) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
-			fprintf(stderr, "Error: Invalid scratchpadcolor format: %s\n",
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid scratchpadcolor "
+					"format: %s\n",
 					value);
+			return false;
 		} else {
 			convert_hex_to_rgba(config->scratchpadcolor, color);
 		}
 	} else if (strcmp(key, "globalcolor") == 0) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
-			fprintf(stderr, "Error: Invalid globalcolor format: %s\n", value);
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid globalcolor "
+					"format: %s\n",
+					value);
+			return false;
 		} else {
 			convert_hex_to_rgba(config->globalcolor, color);
 		}
 	} else if (strcmp(key, "overlaycolor") == 0) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
-			fprintf(stderr, "Error: Invalid overlaycolor format: %s\n", value);
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid overlaycolor "
+					"format: %s\n",
+					value);
+			return false;
 		} else {
 			convert_hex_to_rgba(config->overlaycolor, color);
 		}
@@ -1548,8 +1642,9 @@ void parse_option(Config *config, char *key, char *value) {
 											   sizeof(ConfigMonitorRule));
 		if (!config->monitor_rules) {
 			fprintf(stderr,
-					"Error: Failed to allocate memory for monitor rules\n");
-			return;
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for monitor rules\n");
+			return false;
 		}
 
 		ConfigMonitorRule *rule =
@@ -1567,6 +1662,7 @@ void parse_option(Config *config, char *key, char *value) {
 		rule->refresh = 0.0f;
 		rule->vrr = 0;
 
+		bool parse_error = false;
 		char *token = strtok(value, ",");
 		while (token != NULL) {
 			char *colon = strchr(token, ':');
@@ -1596,19 +1692,29 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->refresh = CLAMP_FLOAT(atof(val), 0.001f, 1000.0f);
 				} else if (strcmp(key, "vrr") == 0) {
 					rule->vrr = CLAMP_INT(atoi(val), 0, 1);
+				} else {
+					fprintf(
+						stderr,
+						"\033[1m\033[31m[ERROR]:\033[33m Unknown monitor rule "
+						"option:\033[1m\033[31m %s\n",
+						key);
+					parse_error = true;
 				}
 			}
 			token = strtok(NULL, ",");
 		}
 
 		config->monitor_rules_count++;
+		return !parse_error;
 	} else if (strcmp(key, "tagrule") == 0) {
 		config->tag_rules =
 			realloc(config->tag_rules,
 					(config->tag_rules_count + 1) * sizeof(ConfigTagRule));
 		if (!config->tag_rules) {
-			fprintf(stderr, "Error: Failed to allocate memory for tag rules\n");
-			return;
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for tag rules\n");
+			return false;
 		}
 
 		ConfigTagRule *rule = &config->tag_rules[config->tag_rules_count];
@@ -1623,6 +1729,7 @@ void parse_option(Config *config, char *key, char *value) {
 		rule->no_render_border = 0;
 		rule->no_hide = 0;
 
+		bool parse_error = false;
 		char *token = strtok(value, ",");
 		while (token != NULL) {
 			char *colon = strchr(token, ':');
@@ -1648,20 +1755,28 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->nmaster = CLAMP_INT(atoi(val), 1, 99);
 				} else if (strcmp(key, "mfact") == 0) {
 					rule->mfact = CLAMP_FLOAT(atof(val), 0.1f, 0.9f);
+				} else {
+					fprintf(stderr,
+							"\033[1m\033[31m[ERROR]:\033[33m Unknown tag rule "
+							"option:\033[1m\033[31m %s\n",
+							key);
+					parse_error = true;
 				}
 			}
 			token = strtok(NULL, ",");
 		}
 
 		config->tag_rules_count++;
+		return !parse_error;
 	} else if (strcmp(key, "layerrule") == 0) {
 		config->layer_rules =
 			realloc(config->layer_rules,
 					(config->layer_rules_count + 1) * sizeof(ConfigLayerRule));
 		if (!config->layer_rules) {
 			fprintf(stderr,
-					"Error: Failed to allocate memory for layer rules\n");
-			return;
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for layer rules\n");
+			return false;
 		}
 
 		ConfigLayerRule *rule = &config->layer_rules[config->layer_rules_count];
@@ -1674,6 +1789,7 @@ void parse_option(Config *config, char *key, char *value) {
 		rule->noblur = 0;
 		rule->noanim = 0;
 
+		bool parse_error = false;
 		char *token = strtok(value, ",");
 		while (token != NULL) {
 			char *colon = strchr(token, ':');
@@ -1706,14 +1822,16 @@ void parse_option(Config *config, char *key, char *value) {
 		}
 
 		config->layer_rules_count++;
+		return !parse_error;
 	} else if (strcmp(key, "windowrule") == 0) {
 		config->window_rules =
 			realloc(config->window_rules,
 					(config->window_rules_count + 1) * sizeof(ConfigWinRule));
 		if (!config->window_rules) {
 			fprintf(stderr,
-					"Error: Failed to allocate memory for window rules\n");
-			return;
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for window rules\n");
+			return false;
 		}
 
 		ConfigWinRule *rule = &config->window_rules[config->window_rules_count];
@@ -1767,6 +1885,7 @@ void parse_option(Config *config, char *key, char *value) {
 
 		rule->globalkeybinding = (KeyBinding){0};
 
+		bool parse_error = false;
 		char *token = strtok(value, ",");
 		while (token != NULL) {
 			char *colon = strchr(token, ':');
@@ -1862,17 +1981,37 @@ void parse_option(Config *config, char *key, char *value) {
 					rule->globalkeybinding.mod = parse_mod(mod_str);
 					rule->globalkeybinding.keysymcode =
 						parse_key(keysym_str, false);
+					if (rule->globalkeybinding.mod == UINT32_MAX) {
+						return false;
+					}
+					if (rule->globalkeybinding.keysymcode.type ==
+							KEY_TYPE_SYM &&
+						rule->globalkeybinding.keysymcode.keysym ==
+							XKB_KEY_NoSymbol) {
+						return false;
+					}
+				} else {
+					fprintf(
+						stderr,
+						"\033[1m\033[31m[ERROR]:\033[33m Unknown window rule "
+						"option:\033[1m\033[31m %s\n",
+						key);
+					parse_error = true;
 				}
 			}
 			token = strtok(NULL, ",");
 		}
 		config->window_rules_count++;
+		return !parse_error;
 	} else if (strncmp(key, "env", 3) == 0) {
 
 		char env_type[256], env_value[256];
 		if (sscanf(value, "%255[^,],%255[^\n]", env_type, env_value) < 2) {
-			fprintf(stderr, "Error: Invalid bind format: %s\n", value);
-			return;
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid bind format: "
+					"\033[1m\033[31m%s\n",
+					value);
+			return false;
 		}
 		trim_whitespace(env_type);
 		trim_whitespace(env_value);
@@ -1887,8 +2026,9 @@ void parse_option(Config *config, char *key, char *value) {
 			free(env->type);
 			free(env->value);
 			free(env);
-			fprintf(stderr, "Error: Failed to allocate memory for env\n");
-			return;
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Failed to "
+							"allocate memory for env\n");
+			return false;
 		}
 
 		config->env[config->env_count] = env;
@@ -1898,15 +2038,18 @@ void parse_option(Config *config, char *key, char *value) {
 		char **new_exec =
 			realloc(config->exec, (config->exec_count + 1) * sizeof(char *));
 		if (!new_exec) {
-			fprintf(stderr, "Error: Failed to allocate memory for exec\n");
-			return;
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for exec\n");
+			return false;
 		}
 		config->exec = new_exec;
 
 		config->exec[config->exec_count] = strdup(value);
 		if (!config->exec[config->exec_count]) {
-			fprintf(stderr, "Error: Failed to duplicate exec string\n");
-			return;
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Failed to "
+							"duplicate exec string\n");
+			return false;
 		}
 
 		config->exec_count++;
@@ -1916,15 +2059,19 @@ void parse_option(Config *config, char *key, char *value) {
 		char **new_exec_once = realloc(
 			config->exec_once, (config->exec_once_count + 1) * sizeof(char *));
 		if (!new_exec_once) {
-			fprintf(stderr, "Error: Failed to allocate memory for exec_once\n");
-			return;
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for exec_once\n");
+			return false;
 		}
 		config->exec_once = new_exec_once;
 
 		config->exec_once[config->exec_once_count] = strdup(value);
 		if (!config->exec_once[config->exec_once_count]) {
-			fprintf(stderr, "Error: Failed to duplicate exec_once string\n");
-			return;
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to duplicate "
+					"exec_once string\n");
+			return false;
 		}
 
 		config->exec_once_count++;
@@ -1935,8 +2082,9 @@ void parse_option(Config *config, char *key, char *value) {
 					(config->key_bindings_count + 1) * sizeof(KeyBinding));
 		if (!config->key_bindings) {
 			fprintf(stderr,
-					"Error: Failed to allocate memory for key bindings\n");
-			return;
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for key bindings\n");
+			return false;
 		}
 
 		KeyBinding *binding = &config->key_bindings[config->key_bindings_count];
@@ -1951,8 +2099,11 @@ void parse_option(Config *config, char *key, char *value) {
 				   "^,],%255[^\n]",
 				   mod_str, keysym_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
-			fprintf(stderr, "Error: Invalid bind format: %s\n", value);
-			return;
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid bind format: "
+					"\033[1m\033[31m%s\n",
+					value);
+			return false;
 		}
 		trim_whitespace(mod_str);
 		trim_whitespace(keysym_str);
@@ -1985,7 +2136,9 @@ void parse_option(Config *config, char *key, char *value) {
 		binding->func =
 			parse_func_name(func_name, &binding->arg, arg_value, arg_value2,
 							arg_value3, arg_value4, arg_value5);
-		if (!binding->func) {
+		if (!binding->func || binding->mod == UINT32_MAX ||
+			(binding->keysymcode.type == KEY_TYPE_SYM &&
+			 binding->keysymcode.keysym == XKB_KEY_NoSymbol)) {
 			if (binding->arg.v) {
 				free(binding->arg.v);
 				binding->arg.v = NULL;
@@ -1998,7 +2151,13 @@ void parse_option(Config *config, char *key, char *value) {
 				free(binding->arg.v3);
 				binding->arg.v3 = NULL;
 			}
-			fprintf(stderr, "Error: Unknown function in bind: %s\n", func_name);
+			if (!binding->func)
+				fprintf(
+					stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Unknown dispatch in bind: "
+					"\033[1m\033[31m%s\n",
+					func_name);
+			return false;
 		} else {
 			config->key_bindings_count++;
 		}
@@ -2009,8 +2168,9 @@ void parse_option(Config *config, char *key, char *value) {
 					(config->mouse_bindings_count + 1) * sizeof(MouseBinding));
 		if (!config->mouse_bindings) {
 			fprintf(stderr,
-					"Error: Failed to allocate memory for mouse bindings\n");
-			return;
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for mouse bindings\n");
+			return false;
 		}
 
 		MouseBinding *binding =
@@ -2026,8 +2186,11 @@ void parse_option(Config *config, char *key, char *value) {
 				   "^,],%255[^\n]",
 				   mod_str, button_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
-			fprintf(stderr, "Error: Invalid mousebind format: %s\n", value);
-			return;
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid mousebind format: "
+					"%s\n",
+					value);
+			return false;
 		}
 		trim_whitespace(mod_str);
 		trim_whitespace(button_str);
@@ -2046,7 +2209,8 @@ void parse_option(Config *config, char *key, char *value) {
 		binding->func =
 			parse_func_name(func_name, &binding->arg, arg_value, arg_value2,
 							arg_value3, arg_value4, arg_value5);
-		if (!binding->func) {
+		if (!binding->func || binding->mod == UINT32_MAX ||
+			binding->button == UINT32_MAX) {
 			if (binding->arg.v) {
 				free(binding->arg.v);
 				binding->arg.v = NULL;
@@ -2059,8 +2223,12 @@ void parse_option(Config *config, char *key, char *value) {
 				free(binding->arg.v3);
 				binding->arg.v3 = NULL;
 			}
-			fprintf(stderr, "Error: Unknown function in mousebind: %s\n",
-					func_name);
+			if (!binding->func)
+				fprintf(stderr,
+						"\033[1m\033[31m[ERROR]:\033[33m Unknown dispatch in "
+						"mousebind: \033[1m\033[31m%s\n",
+						func_name);
+			return false;
 		} else {
 			config->mouse_bindings_count++;
 		}
@@ -2070,8 +2238,9 @@ void parse_option(Config *config, char *key, char *value) {
 					(config->axis_bindings_count + 1) * sizeof(AxisBinding));
 		if (!config->axis_bindings) {
 			fprintf(stderr,
-					"Error: Failed to allocate memory for axis bindings\n");
-			return;
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for axis bindings\n");
+			return false;
 		}
 
 		AxisBinding *binding =
@@ -2087,8 +2256,11 @@ void parse_option(Config *config, char *key, char *value) {
 				   "^,],%255[^\n]",
 				   mod_str, dir_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
-			fprintf(stderr, "Error: Invalid axisbind format: %s\n", value);
-			return;
+			fprintf(
+				stderr,
+				"\033[1m\033[31m[ERROR]:\033[33m Invalid axisbind format: %s\n",
+				value);
+			return false;
 		}
 
 		trim_whitespace(mod_str);
@@ -2109,7 +2281,7 @@ void parse_option(Config *config, char *key, char *value) {
 			parse_func_name(func_name, &binding->arg, arg_value, arg_value2,
 							arg_value3, arg_value4, arg_value5);
 
-		if (!binding->func) {
+		if (!binding->func || binding->mod == UINT32_MAX) {
 			if (binding->arg.v) {
 				free(binding->arg.v);
 				binding->arg.v = NULL;
@@ -2122,8 +2294,12 @@ void parse_option(Config *config, char *key, char *value) {
 				free(binding->arg.v3);
 				binding->arg.v3 = NULL;
 			}
-			fprintf(stderr, "Error: Unknown function in axisbind: %s\n",
-					func_name);
+			if (!binding->func)
+				fprintf(stderr,
+						"\033[1m\033[31m[ERROR]:\033[33m Unknown dispatch in "
+						"axisbind: \033[1m\033[31m%s\n",
+						func_name);
+			return false;
 		} else {
 			config->axis_bindings_count++;
 		}
@@ -2134,8 +2310,9 @@ void parse_option(Config *config, char *key, char *value) {
 											  sizeof(SwitchBinding));
 		if (!config->switch_bindings) {
 			fprintf(stderr,
-					"Error: Failed to allocate memory for switch bindings\n");
-			return;
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for switch bindings\n");
+			return false;
 		}
 
 		SwitchBinding *binding =
@@ -2151,8 +2328,11 @@ void parse_option(Config *config, char *key, char *value) {
 				   "^\n]",
 				   fold_str, func_name, arg_value, arg_value2, arg_value3,
 				   arg_value4, arg_value5) < 3) {
-			fprintf(stderr, "Error: Invalid switchbind format: %s\n", value);
-			return;
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid switchbind "
+					"format: %s\n",
+					value);
+			return false;
 		}
 		trim_whitespace(fold_str);
 		trim_whitespace(func_name);
@@ -2180,8 +2360,13 @@ void parse_option(Config *config, char *key, char *value) {
 				free(binding->arg.v3);
 				binding->arg.v3 = NULL;
 			}
-			fprintf(stderr, "Error: Unknown function in switchbind: %s\n",
+
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Unknown dispatch in "
+					"switchbind: "
+					"\033[1m\033[31m%s\n",
 					func_name);
+			return false;
 		} else {
 			config->switch_bindings_count++;
 		}
@@ -2192,8 +2377,9 @@ void parse_option(Config *config, char *key, char *value) {
 			(config->gesture_bindings_count + 1) * sizeof(GestureBinding));
 		if (!config->gesture_bindings) {
 			fprintf(stderr,
-					"Error: Failed to allocate memory for axis gesturebind\n");
-			return;
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for axis gesturebind\n");
+			return false;
 		}
 
 		GestureBinding *binding =
@@ -2209,8 +2395,11 @@ void parse_option(Config *config, char *key, char *value) {
 				   "^,],%255[^,],%255[^\n]",
 				   mod_str, motion_str, fingers_count_str, func_name, arg_value,
 				   arg_value2, arg_value3, arg_value4, arg_value5) < 4) {
-			fprintf(stderr, "Error: Invalid gesturebind format: %s\n", value);
-			return;
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid gesturebind "
+					"format: %s\n",
+					value);
+			return false;
 		}
 
 		trim_whitespace(mod_str);
@@ -2233,7 +2422,7 @@ void parse_option(Config *config, char *key, char *value) {
 			parse_func_name(func_name, &binding->arg, arg_value, arg_value2,
 							arg_value3, arg_value4, arg_value5);
 
-		if (!binding->func) {
+		if (!binding->func || binding->mod == UINT32_MAX) {
 			if (binding->arg.v) {
 				free(binding->arg.v);
 				binding->arg.v = NULL;
@@ -2246,8 +2435,12 @@ void parse_option(Config *config, char *key, char *value) {
 				free(binding->arg.v3);
 				binding->arg.v3 = NULL;
 			}
-			fprintf(stderr, "Error: Unknown function in axisbind: %s\n",
-					func_name);
+			if (!binding->func)
+				fprintf(stderr,
+						"\033[1m\033[31m[ERROR]:\033[33m Unknown dispatch in "
+						"axisbind: \033[1m\033[31m%s\n",
+						func_name);
+			return false;
 		} else {
 			config->gesture_bindings_count++;
 		}
@@ -2255,22 +2448,30 @@ void parse_option(Config *config, char *key, char *value) {
 	} else if (strncmp(key, "source", 6) == 0) {
 		parse_config_file(config, value);
 	} else {
-		fprintf(stderr, "Error: Unknown key: %s\n", key);
+		fprintf(stderr,
+				"\033[1m\033[31m[ERROR]:\033[33m Unknown keyword: "
+				"\033[1m\033[31m%s\n",
+				key);
+		return false;
 	}
+
+	return true;
 }
 
-void parse_config_line(Config *config, const char *line) {
+bool parse_config_line(Config *config, const char *line) {
 	char key[256], value[256];
 	if (sscanf(line, "%255[^=]=%255[^\n]", key, value) != 2) {
-		// fprintf(stderr, "Error: Invalid line format: %s\n", line);
-		return;
+		fprintf(stderr,
+				"\033[1m\033[31m[ERROR]:\033[33m Invalid line format: %s",
+				line);
+		return false;
 	}
 
 	// Then trim each part separately
 	trim_whitespace(key);
 	trim_whitespace(value);
 
-	parse_option(config, key, value);
+	return parse_option(config, key, value);
 }
 
 void parse_config_file(Config *config, const char *file_path) {
@@ -2289,7 +2490,9 @@ void parse_config_file(Config *config, const char *file_path) {
 		} else {
 			const char *home = getenv("HOME");
 			if (!home) {
-				fprintf(stderr, "Error: HOME environment variable not set.\n");
+				fprintf(stderr,
+						"\033[1m\033[31m[ERROR]:\033[33m HOME environment "
+						"variable not set.\n");
 				return;
 			}
 			snprintf(full_path, sizeof(full_path), "%s/.config/mango/%s", home,
@@ -2303,7 +2506,8 @@ void parse_config_file(Config *config, const char *file_path) {
 
 		const char *home = getenv("HOME");
 		if (!home) {
-			fprintf(stderr, "Error: HOME environment variable not set.\n");
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m HOME environment "
+							"variable not set.\n");
 			return;
 		}
 		snprintf(full_path, sizeof(full_path), "%s%s", home, file_path + 1);
@@ -2320,11 +2524,21 @@ void parse_config_file(Config *config, const char *file_path) {
 	}
 
 	char line[512];
+	bool parse_correct = true;
+	uint32_t line_count = 0;
 	while (fgets(line, sizeof(line), file)) {
+		line_count++;
 		if (line[0] == '#' || line[0] == '\n') {
 			continue;
 		}
-		parse_config_line(config, line);
+		parse_correct = parse_config_line(config, line);
+		if (!parse_correct) {
+			fprintf(stderr,
+					"\033[1;31m╰─\033[1;33m[Index]\033[0m "
+					"\033[1;36m%s\033[0m:\033[1;35m%d\033[0m\n"
+					"   \033[1;36m╰─\033[0;33m%s\033[0m\n\n",
+					file_path, line_count, line);
+		}
 	}
 
 	fclose(file);
