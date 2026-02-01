@@ -6160,17 +6160,22 @@ int32_t main(int32_t argc, char *argv[]) {
 	char *startup_cmd = NULL;
 	int32_t c;
 
-	while ((c = getopt(argc, argv, "s:c:hdv")) != -1) {
-		if (c == 's')
+	while ((c = getopt(argc, argv, "s:c:hdvp")) != -1) {
+		if (c == 's') {
 			startup_cmd = optarg;
-		else if (c == 'd')
+		} else if (c == 'd') {
 			log_level = WLR_DEBUG;
-		else if (c == 'v')
-			die("mango " VERSION);
-		else if (c == 'c')
+		} else if (c == 'v') {
+			printf("mango " VERSION "\n");
+			return EXIT_SUCCESS;
+		} else if (c == 'c') {
 			cli_config_path = optarg;
-		else
+		} else if (c == 'p') {
+			parse_config();
+			return EXIT_SUCCESS;
+		} else {
 			goto usage;
+		}
 	}
 	if (optind < argc)
 		goto usage;
@@ -6184,7 +6189,14 @@ int32_t main(int32_t argc, char *argv[]) {
 	run(startup_cmd);
 	cleanup();
 	return EXIT_SUCCESS;
-
 usage:
-	die("Usage: %s [-v] [-d] [-c config file] [-s startup command]", argv[0]);
+	printf("Usage: mango [OPTIONS]\n"
+		   "\n"
+		   "Options:\n"
+		   "  -v             Show mango version\n"
+		   "  -d             Enable debug log\n"
+		   "  -c <file>      Use custom configuration file\n"
+		   "  -s <command>   Execute startup command\n"
+		   "  -p             Check configuration file error\n");
+	return EXIT_SUCCESS;
 }
