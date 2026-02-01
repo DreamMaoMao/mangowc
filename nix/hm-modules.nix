@@ -12,6 +12,18 @@ self: {
     ${lib.optionalString cfg.systemd.enable systemdActivation}
     ${cfg.autostart_sh}
   '';
+  validatedConfig = pkgs.runCommand "mango-config.conf" { } ''
+    cat > "$out" <<'EOF'
+    ${cfg.settings}
+    EOF
+
+    output=$(${cfg.package}/bin/mango -c "$out" -p 2>&1 || true)
+
+    if echo "$output" | grep -Fq '[ERROR]:'; then
+      echo "$output"
+      exit 1
+    fi
+  '';
 in {
   options = {
     wayland.windowManager.mango = with lib; {
@@ -99,7 +111,7 @@ in {
     home.packages = [cfg.package];
     xdg.configFile = {
       "mango/config.conf" = lib.mkIf (cfg.settings != "") {
-        text = cfg.settings;
+        source = validatedConfig;
       };
       "mango/autostart.sh" = lib.mkIf (cfg.autostart_sh != "") {
         source = autostart_sh;
