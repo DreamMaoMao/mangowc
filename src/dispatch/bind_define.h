@@ -1068,7 +1068,7 @@ int32_t tagmon(const Arg *arg) {
 	if (!m || !m->wlr_output->enabled)
 		return 0;
 
-	uint32_t newtags = arg->ui ? arg->ui : arg->i2 ? c->tags : 0;
+	uint32_t newtags = arg->ui != 0 ? arg->ui : arg->i2 != 0 ? c->tags : 1;
 	uint32_t target;
 
 	if (c->mon == m) {
