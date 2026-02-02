@@ -4063,7 +4063,7 @@ void motionnotify(uint32_t time, struct wlr_input_device *device, double dx,
 		if (grabc->isfloating) {
 			grabc->iscustomsize = 1;
 			if (last_apply_drap_time == 0 ||
-				time - last_apply_drap_time > drag_refresh_interval) {
+				time - last_apply_drap_time > drag_floating_refresh_interval) {
 				resize_floating_window(grabc);
 				last_apply_drap_time = time;
 			}
