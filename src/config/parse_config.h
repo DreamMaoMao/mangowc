@@ -304,7 +304,7 @@ typedef struct {
 	float overlaycolor[4];
 
 	/* TABS */
-	// Tab Border Visbility
+	// Tab Border Visbility (1 = true, 0 = false)
 	uint32_t tab_border_top;
 	uint32_t tab_border_bottom;
 	uint32_t tab_border_left;
@@ -1746,6 +1746,155 @@ bool parse_option(Config *config, char *key, char *value) {
 		} else {
 			convert_hex_to_rgba(config->overlaycolor, color);
 		}
+	} else if (strcmp(key, "tab_border_top") == 0) {
+		config->tab_area_border_top = atoi(value);
+	} else if(strcmp(key, "tab_border_bottom") == 0) {
+		config->tab_border_bottom = atoi(value);
+	} else if(strcmp(key, "tab_border_left") == 0) {
+		config->tab_border_left = atoi(value);
+	} else if(strcmp(key, "tab_border_right") == 0) {
+		config->tab_border_right = atoi(value);
+	} else if (strcmp(key, "tab_focused_border_top") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_focused_border_top format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_focused_border_top, color);
+		}
+	} else if (strcmp(key, "tab_focused_border_bottom") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_focused_border_bottom format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_focused_border_bottom, color);
+		}
+	} else if (strcmp(key, "tab_focused_border_left") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_focused_border_left format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_focused_border_left, color);
+		}
+	} else if (strcmp(key, "tab_focused_border_right") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_focused_border_right format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_focused_border_right, color);
+		}
+	} else if (strcmp(key, "tab_focused_bg") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_focused_bg format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_focused_bg, color);
+		}
+	} else if (strcmp(key, "tab_focused_text_color") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_focused_text_color format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_focused_text_color, color);
+		}
+	} else if (strcmp(key, "tab_unfocused_border_top") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_unfocused_border_top format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_unfocused_border_top, color);
+		}
+	} else if (strcmp(key, "tab_unfocused_border_bottom") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_unfocused_border_bottom format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_unfocused_border_bottom, color);
+		}
+	} else if (strcmp(key, "tab_unfocused_border_left") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_unfocused_border_left format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_unfocused_border_left, color);
+		}
+	} else if (strcmp(key, "tab_unfocused_border_right") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_unfocused_border_right format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_unfocused_border_right, color);
+		}
+	} else if (strcmp(key, "tab_unfocused_bg") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_unfocused_bg format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_unfocused_bg, color);
+		}
+	} else if (strcmp(key, "tab_unfocused_text_color") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_unfocused_text_color format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_unfocused_text_color, color);
+		}
+	} else if (strcmp(key, "tab_padding_width") == 0) {
+		config->tab_padding_width = atoi(value);
+	} else if (strcmp(key, "tab_padding_height") == 0) {
+		config->tab_padding_height = atoi(value);
+	} else if (strcmp(key, "tab_border_size") == 0) {
+		config->tab_border_size = atoi(value);
+	} else if (strcmp(key, "tab_font_size") == 0) {
+		config->tab_font_size = atoi(value);
+	} else if (strcmp(key, "tab_client_border") == 0) {
+		config->tab_client_border = atoi(value);
+	} else if (strcmp(key, "tab_client_border_style") == 0) {
+		strncpy(config->tab_client_border_style, value, sizeof(config->tab_client_border_style) - 1);
+		config->tab_client_border_style[sizeof(config->tab_client_border_style) - 1] = '\0';
+	} else if (strcmp(key, "tab_area_borders") == 0) {
+		config->tab_area_borders = atoi(value);
+	} else if (strcmp(key, "tab_area_border_top") == 0) {
+		config->tab_area_border_top = atoi(value);
+	} else if (strcmp(key, "tab_area_border_bottom") == 0) {
+		config->tab_area_border_bottom = atoi(value);
+	} else if (strcmp(key, "tab_area_border_left") == 0) {
+		config->tab_area_border_left = atoi(value);
+	} else if (strcmp(key, "tab_area_border_right") == 0) {
+		config->tab_area_border_right = atoi(value);
+	} else if (strcmp(key, "tab_area_border_focused") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_area_border_focused format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_area_border_focused, color);
+		}
+	} else if (strcmp(key, "tab_area_border_unfocused") == 0) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Invalid tab_area_border_unfocused format: %s\n", value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->tab_area_border_unfocused, color);
+		}
+	} else if (strcmp(key, "tab_area_border_size") == 0) {
+		config->tab_area_border_size = atoi(value);
+	} else if (strcmp(key, "tab_area_padding_width") == 0) {
+		config->tab_area_padding_width = atoi(value);
+	} else if (strcmp(key, "tab_area_padding_height") == 0) {
+		config->tab_area_padding_height = atoi(value);
 	} else if (strcmp(key, "monitorrule") == 0) {
 		config->monitor_rules =
 			realloc(config->monitor_rules, (config->monitor_rules_count + 1) *
