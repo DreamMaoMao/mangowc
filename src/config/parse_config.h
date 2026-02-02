@@ -303,6 +303,49 @@ typedef struct {
 	float globalcolor[4];
 	float overlaycolor[4];
 
+	/* TABS */
+	// Tab Border Visbility
+	uint32_t tab_border_top;
+	uint32_t tab_border_bottom;
+	uint32_t tab_border_left;
+	uint32_t tab_border_right;	
+	// Color of the tab's border when focused
+	float tab_focused_border_top[4];
+	float tab_focused_border_bottom[4];
+	float tab_focused_border_left[4];
+	float tab_focused_border_right[4];
+	// Color of tab's focused background (bg) and text color
+	float tab_focused_bg[4];
+	float tab_focused_text_color[4];
+	// Color of the tab's border when unfocused
+	float tab_unfocused_border_top[4];
+	float tab_unfocused_border_bottom[4];
+	float tab_unfocused_border_left[4];
+	float tab_unfocused_border_right[4];
+	// Color of tab's unfocused background (bg) and text color 
+	float tab_unfocused_bg[4]; 
+	float tab_unfocused_text_color[4];
+	// Tab layout appearance
+	uint32_t tab_padding_width;   // Space between text and left borders
+	uint32_t tab_padding_height;  // Space between text and top/bottom borders
+	uint32_t tab_border_size;     // Tab border thickness (pixels)
+	uint32_t tab_font_size;       // Tab text font size (pixels)
+	uint32_t tab_client_border;   // enable client borders (1=true, 0=false)
+	char tab_client_border_style[16]; // "full" (client border all sides) or "notop" (client no top border)
+	// Tab area appearance
+	uint32_t tab_area_borders;       // enable borders around tab area (1=true, 0=false)
+	// Tab area border visibility (1=true, 0=false)
+	uint32_t tab_area_border_top;    // top border of tab area
+	uint32_t tab_area_border_bottom; // bottom border of tab area
+	uint32_t tab_area_border_left;   // left border of tab area
+	uint32_t tab_area_border_right;  // right border of tab area
+	// Tab Area Border Appearance
+	float tab_area_border_focused[4];   // color of the tab area border when focused
+	float tab_area_border_unfocused[4]; // color of the tab area border when unfocused
+	uint32_t tab_area_border_size;      // Tab border thickness (pixels)
+	uint32_t tab_area_padding_width;    // Space between tab area border and tab's left/right borders
+	uint32_t tab_area_padding_height;   // Space between tab area border and tab's top/bottom borders
+
 	char autostart[3][256];
 
 	ConfigTagRule *tag_rules; // 动态数组

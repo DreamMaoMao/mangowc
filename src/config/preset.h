@@ -42,6 +42,50 @@ double default_mfact = 0.55f;			// master 窗口比例
 uint32_t default_nmaster = 1;			// 默认master数量
 int32_t center_master_overspread = 0;	// 中心master时是否铺满
 int32_t center_when_single_stack = 1;	// 单个stack时是否居中
+
+/* TABS */
+// Tab Border Visbility
+uint32_t tab_border_top = 0;
+uint32_t tab_border_bottom = 1;
+uint32_t tab_border_left = 0;
+uint32_t tab_border_right = 0;	
+// Color of the tab's border when focused
+float tab_focused_border_top[] = COLOR(0xc9b890ff);
+float tab_focused_border_bottom[] = COLOR(0xc9b890ff);
+float tab_focused_border_left[] = COLOR(0xc9b890ff);
+float tab_focused_border_right[] = COLOR(0xc9b890ff);
+// Color of tab's focused background (bg) and text color
+float tab_focused_bg[] = COLOR(0xc9b890ff);
+float tab_focused_text_color[] = COLOR(0x201b14ff);
+// Color of the tab's border when unfocused
+float tab_unfocused_border_top[] = COLOR(0x444444ff);
+float tab_unfocused_border_bottom[] = COLOR(0x444444ff);
+float tab_unfocused_border_left[] = COLOR(0x444444ff);
+float tab_unfocused_border_right[] = COLOR(0x444444ff);
+// Color of tab's unfocused background (bg) and text color 
+float tab_unfocused_bg[] = COLOR(0x444444ff); 
+float tab_unfocused_text_color[] = COLOR(0xccccccff);
+// Tab appearance
+uint32_t tab_padding_width = 10;   // Space between text and left borders (pixels)
+uint32_t tab_padding_height = 3;  // Space between text and top/bottom borders (pixel)
+uint32_t tab_border_size = 2;     // Tab border thickness (pixels)
+uint32_t tab_font_size = 14;       // Tab text font size (pixels)
+uint32_t tab_client_border = 1;   // enable client borders (1=true, 0=false)
+char tab_client_border_style[] = "notop"; // "full" (client border all sides) or "notop" (client no top border)
+// Tab area appearance
+uint32_t tab_area_borders = 1;       // enable borders around tab area (1=true, 0=false)
+// Tab area border visibility (1=true, 0=false)
+uint32_t tab_area_border_top = 1;    // top border of tab area
+uint32_t tab_area_border_bottom = 0; // bottom border of tab area
+uint32_t tab_area_border_left = 1;   // left border of tab area
+uint32_t tab_area_border_right = 1;  // right border of tab area
+// Tab Area Border Appearance
+float tab_area_border_focused[] = COLOR(0xc9b890ff);   // color of the tab area border when focused
+float tab_area_border_unfocused[] = COLOR(0x444444ff); // color of the tab area border when unfocused
+uint32_t tab_area_border_size = 2;      // Tab border thickness (pixels)
+uint32_t tab_area_padding_width = 1;    // Space between tab area border and tab's left/right borders
+uint32_t tab_area_padding_height = 1;   // Space between tab area border and tab's top/bottom borders
+
 /* logging */
 int32_t log_level = WLR_ERROR;
 uint32_t numlockon = 0; // 是否打开右边小键盘

@@ -70,3 +70,7 @@ int32_t disable_monitor(const Arg *arg);
 int32_t enable_monitor(const Arg *arg);
 int32_t toggle_monitor(const Arg *arg);
 int32_t scroller_stack(const Arg *arg);
+int32_t tab_switch_next(const Arg *arg);
+int32_t tab_switch_prev(const Arg *arg);
+int32_t tab_focus_first(const Arg *arg); // Switch to the first tab in the stack
+int32_t tab_focus_last(const Arg *arg); // Switch to the last tab in the stack
