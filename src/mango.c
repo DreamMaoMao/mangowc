@@ -480,6 +480,7 @@ typedef struct {
 	char *animation_type_open;
 	char *animation_type_close;
 	bool need_output_flush;
+	bool being_unmapped;
 } LayerSurface;
 
 typedef struct {
@@ -592,7 +593,7 @@ static void cursorwarptohint(void);
 static void destroydecoration(struct wl_listener *listener, void *data);
 static void destroydragicon(struct wl_listener *listener, void *data);
 static void destroyidleinhibitor(struct wl_listener *listener, void *data);
-static void destroylayersurfacenotify(struct wl_listener *listener, void *data);
+static void destroylayernodenotify(struct wl_listener *listener, void *data);
 static void destroylock(SessionLock *lock, int32_t unlocked);
 static void destroylocksurface(struct wl_listener *listener, void *data);
 static void destroynotify(struct wl_listener *listener, void *data);
@@ -1521,6 +1522,9 @@ void arrangelayer(Monitor *m, struct wl_list *list, struct wlr_box *usable_area,
 			!layer_surface->initialized)
 			continue;
 
+		if (l->being_unmapped)
+			continue;
+
 		wlr_scene_layer_surface_v1_configure(l->scene_layer, &full_area,
 											 usable_area);
 		wlr_scene_node_set_position(&l->popups->node, l->scene->node.x,
@@ -2337,6 +2341,15 @@ void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
 		return;
 	}
 
+	// 检查surface是否有buffer
+	// 空buffer，只是隐藏，不改变mapped状态
+	if (l->mapped && !layer_surface->surface->buffer) {
+		wlr_scene_node_set_enabled(&l->scene->node, false);
+		return;
+	} else {
+		wlr_scene_node_set_enabled(&l->scene->node, true);
+	}
+
 	get_layer_target_geometry(l, &box);
 
 	if (animations && layer_animations && !l->noanim && l->mapped &&
@@ -2633,8 +2646,6 @@ void createlayersurface(struct wl_listener *listener, void *data) {
 	LISTEN(&surface->events.commit, &l->surface_commit,
 		   commitlayersurfacenotify);
 	LISTEN(&surface->events.unmap, &l->unmap, unmaplayersurfacenotify);
-	LISTEN(&layer_surface->events.destroy, &l->destroy,
-		   destroylayersurfacenotify);
 
 	l->layer_surface = layer_surface;
 	l->mon = layer_surface->output->data;
@@ -2646,6 +2657,8 @@ void createlayersurface(struct wl_listener *listener, void *data) {
 			? layers[LyrTop]
 			: scene_layer);
 	l->scene->node.data = l->popups->node.data = l;
+
+	LISTEN(&l->scene->node.events.destroy, &l->destroy, destroylayernodenotify);
 
 	wl_list_insert(&l->mon->layers[layer_surface->pending.layer], &l->link);
 	wlr_surface_send_enter(surface, layer_surface->output);
@@ -2777,6 +2790,8 @@ void createmon(struct wl_listener *listener, void *data) {
 
 			if (vrr) {
 				enable_adaptive_sync(m, &state);
+			} else {
+				wlr_output_state_set_adaptive_sync_enabled(&state, false);
 			}
 
 			wlr_output_state_set_scale(&state, r->scale);
@@ -2958,9 +2973,14 @@ void configure_pointer(struct libinput_device *device) {
 	if (libinput_device_config_send_events_get_modes(device))
 		libinput_device_config_send_events_set_mode(device, send_events_mode);
 
-	if (libinput_device_config_accel_is_available(device)) {
+	if (accel_profile && libinput_device_config_accel_is_available(device)) {
 		libinput_device_config_accel_set_profile(device, accel_profile);
 		libinput_device_config_accel_set_speed(device, accel_speed);
+	} else {
+		// profile cannot be directly applied to 0, need to set to 1 first
+		libinput_device_config_accel_set_profile(device, 1);
+		libinput_device_config_accel_set_profile(device, 0);
+		libinput_device_config_accel_set_speed(device, 0);
 	}
 }
 
@@ -3105,7 +3125,7 @@ void destroyidleinhibitor(struct wl_listener *listener, void *data) {
 	free(listener);
 }
 
-void destroylayersurfacenotify(struct wl_listener *listener, void *data) {
+void destroylayernodenotify(struct wl_listener *listener, void *data) {
 	LayerSurface *l = wl_container_of(listener, l, destroy);
 
 	wl_list_remove(&l->link);
@@ -3113,7 +3133,6 @@ void destroylayersurfacenotify(struct wl_listener *listener, void *data) {
 	wl_list_remove(&l->map.link);
 	wl_list_remove(&l->unmap.link);
 	wl_list_remove(&l->surface_commit.link);
-	wlr_scene_node_destroy(&l->scene->node);
 	wlr_scene_node_destroy(&l->popups->node);
 	free(l);
 }
@@ -4124,7 +4143,7 @@ void motionnotify(uint32_t time, struct wlr_input_device *device, double dx,
 		if (grabc->isfloating) {
 			grabc->iscustomsize = 1;
 			if (last_apply_drap_time == 0 ||
-				time - last_apply_drap_time > drag_refresh_interval) {
+				time - last_apply_drap_time > drag_floating_refresh_interval) {
 				resize_floating_window(grabc);
 				last_apply_drap_time = time;
 			}
@@ -5547,6 +5566,7 @@ void unmaplayersurfacenotify(struct wl_listener *listener, void *data) {
 	LayerSurface *l = wl_container_of(listener, l, unmap);
 
 	l->mapped = 0;
+	l->being_unmapped = true;
 
 	init_fadeout_layers(l);
 
@@ -5558,6 +5578,9 @@ void unmaplayersurfacenotify(struct wl_listener *listener, void *data) {
 	if (l->layer_surface->surface == seat->keyboard_state.focused_surface)
 		focusclient(focustop(selmon), 1);
 	motionnotify(0, NULL, 0, 0, 0, 0);
+	l->being_unmapped = false;
+	wlr_scene_node_destroy(&l->shadow->node);
+	l->shadow = NULL;
 }
 
 void unmapnotify(struct wl_listener *listener, void *data) {
@@ -6137,17 +6160,22 @@ int32_t main(int32_t argc, char *argv[]) {
 	char *startup_cmd = NULL;
 	int32_t c;
 
-	while ((c = getopt(argc, argv, "s:c:hdv")) != -1) {
-		if (c == 's')
+	while ((c = getopt(argc, argv, "s:c:hdvp")) != -1) {
+		if (c == 's') {
 			startup_cmd = optarg;
-		else if (c == 'd')
+		} else if (c == 'd') {
 			log_level = WLR_DEBUG;
-		else if (c == 'v')
-			die("mango " VERSION);
-		else if (c == 'c')
+		} else if (c == 'v') {
+			printf("mango " VERSION "\n");
+			return EXIT_SUCCESS;
+		} else if (c == 'c') {
 			cli_config_path = optarg;
-		else
+		} else if (c == 'p') {
+			parse_config();
+			return EXIT_SUCCESS;
+		} else {
 			goto usage;
+		}
 	}
 	if (optind < argc)
 		goto usage;
@@ -6161,7 +6189,14 @@ int32_t main(int32_t argc, char *argv[]) {
 	run(startup_cmd);
 	cleanup();
 	return EXIT_SUCCESS;
-
 usage:
-	die("Usage: %s [-v] [-d] [-c config file] [-s startup command]", argv[0]);
+	printf("Usage: mango [OPTIONS]\n"
+		   "\n"
+		   "Options:\n"
+		   "  -v             Show mango version\n"
+		   "  -d             Enable debug log\n"
+		   "  -c <file>      Use custom configuration file\n"
+		   "  -s <command>   Execute startup command\n"
+		   "  -p             Check configuration file error\n");
+	return EXIT_SUCCESS;
 }

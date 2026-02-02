@@ -210,7 +210,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int32_t offsetx,
 		}
 
 		if (last_apply_drap_time == 0 ||
-			time - last_apply_drap_time > drag_refresh_interval) {
+			time - last_apply_drap_time > drag_tile_refresh_interval) {
 			arrange(grabc->mon, false, false);
 			last_apply_drap_time = time;
 		}
@@ -367,7 +367,7 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int32_t offsetx,
 		}
 
 		if (last_apply_drap_time == 0 ||
-			time - last_apply_drap_time > drag_refresh_interval) {
+			time - last_apply_drap_time > drag_tile_refresh_interval) {
 			arrange(grabc->mon, false, false);
 			last_apply_drap_time = time;
 		}
@@ -548,7 +548,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 		}
 
 		if (last_apply_drap_time == 0 ||
-			time - last_apply_drap_time > drag_refresh_interval) {
+			time - last_apply_drap_time > drag_tile_refresh_interval) {
 			arrange(grabc->mon, false, false);
 			last_apply_drap_time = time;
 		}
