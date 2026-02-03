@@ -530,6 +530,48 @@ static bool starts_with_ignore_case(const char *str, const char *prefix) {
 	return true;
 }
 
+static char *combine_args_until_empty(char *values[], int count) {
+	// find the first empty string
+	int first_empty = count;
+	for (int i = 0; i < count; i++) {
+		// check if it's empty: empty string or only contains "0" (initialized)
+		if (values[i][0] == '\0' ||
+			(strlen(values[i]) == 1 && values[i][0] == '0')) {
+			first_empty = i;
+			break;
+		}
+	}
+
+	// 	if there are no valid parameters, return an empty string
+	if (first_empty == 0) {
+		return strdup("");
+	}
+
+	// 	calculate the total length
+	size_t total_len = 0;
+	for (int i = 0; i < first_empty; i++) {
+		total_len += strlen(values[i]);
+	}
+	// 	plus the number of commas (first_empty-1 commas)
+	total_len += (first_empty - 1);
+
+	// 	allocate memory and concatenate
+	char *combined = malloc(total_len + 1);
+	if (combined == NULL) {
+		return strdup("");
+	}
+
+	combined[0] = '\0';
+	for (int i = 0; i < first_empty; i++) {
+		if (i > 0) {
+			strcat(combined, ",");
+		}
+		strcat(combined, values[i]);
+	}
+
+	return combined;
+}
+
 uint32_t parse_mod(const char *mod_str) {
 	if (!mod_str || !*mod_str) {
 		return UINT32_MAX;
@@ -985,10 +1027,14 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		(*arg).ui = atoi(arg_value);
 	} else if (strcmp(func_name, "spawn") == 0) {
 		func = spawn;
-		(*arg).v = strdup(arg_value);
+		char *values[] = {arg_value, arg_value2, arg_value3, arg_value4,
+						  arg_value5};
+		(*arg).v = combine_args_until_empty(values, 5);
 	} else if (strcmp(func_name, "spawn_shell") == 0) {
 		func = spawn_shell;
-		(*arg).v = strdup(arg_value);
+		char *values[] = {arg_value, arg_value2, arg_value3, arg_value4,
+						  arg_value5};
+		(*arg).v = combine_args_until_empty(values, 5);
 	} else if (strcmp(func_name, "spawn_on_empty") == 0) {
 		func = spawn_on_empty;
 		(*arg).v = strdup(arg_value); // 注意：之后需要释放这个内存
@@ -1329,9 +1375,8 @@ bool parse_option(Config *config, char *key, char *value) {
 		config->scroller_proportion_preset =
 			(float *)malloc(float_count * sizeof(float));
 		if (!config->scroller_proportion_preset) {
-			fprintf(
-				stderr,
-				"\033[1m\033[31m[ERROR]:\033[33m Memory allocation failed\n");
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Memory "
+							"allocation failed\n");
 			return false;
 		}
 
@@ -1344,18 +1389,19 @@ bool parse_option(Config *config, char *key, char *value) {
 
 		while (token != NULL && i < float_count) {
 			if (sscanf(token, "%f", &value_set) != 1) {
-				fprintf(
-					stderr,
-					"\033[1m\033[31m[ERROR]:\033[33m Invalid float value in "
-					"scroller_proportion_preset: %s\n",
-					token);
+				fprintf(stderr,
+						"\033[1m\033[31m[ERROR]:\033[33m Invalid float "
+						"value in "
+						"scroller_proportion_preset: %s\n",
+						token);
 				free(value_copy);
 				free(config->scroller_proportion_preset);
 				config->scroller_proportion_preset = NULL;
 				return false;
 			}
 
-			// Clamp the value between 0.0 and 1.0 (or your desired range)
+			// Clamp the value between 0.0 and 1.0 (or your desired
+			// range)
 			config->scroller_proportion_preset[i] =
 				CLAMP_FLOAT(value_set, 0.1f, 1.0f);
 
@@ -1392,9 +1438,8 @@ bool parse_option(Config *config, char *key, char *value) {
 		config->circle_layout = (char **)malloc(string_count * sizeof(char *));
 		memset(config->circle_layout, 0, string_count * sizeof(char *));
 		if (!config->circle_layout) {
-			fprintf(
-				stderr,
-				"\033[1m\033[31m[ERROR]:\033[33m Memory allocation failed\n");
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Memory "
+							"allocation failed\n");
 			return false;
 		}
 
@@ -1550,7 +1595,8 @@ bool parse_option(Config *config, char *key, char *value) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr,
-					"\033[1m\033[31m[ERROR]:\033[33m Invalid rootcolor format: "
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid rootcolor "
+					"format: "
 					"%s\n",
 					value);
 			return false;
@@ -1583,11 +1629,11 @@ bool parse_option(Config *config, char *key, char *value) {
 	} else if (strcmp(key, "maximizescreencolor") == 0) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
-			fprintf(
-				stderr,
-				"\033[1m\033[31m[ERROR]:\033[33m Invalid maximizescreencolor "
-				"format: %s\n",
-				value);
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid "
+					"maximizescreencolor "
+					"format: %s\n",
+					value);
 			return false;
 		} else {
 			convert_hex_to_rgba(config->maximizescreencolor, color);
@@ -1607,7 +1653,8 @@ bool parse_option(Config *config, char *key, char *value) {
 		int64_t color = parse_color(value);
 		if (color == -1) {
 			fprintf(stderr,
-					"\033[1m\033[31m[ERROR]:\033[33m Invalid scratchpadcolor "
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid "
+					"scratchpadcolor "
 					"format: %s\n",
 					value);
 			return false;
@@ -1693,11 +1740,11 @@ bool parse_option(Config *config, char *key, char *value) {
 				} else if (strcmp(key, "vrr") == 0) {
 					rule->vrr = CLAMP_INT(atoi(val), 0, 1);
 				} else {
-					fprintf(
-						stderr,
-						"\033[1m\033[31m[ERROR]:\033[33m Unknown monitor rule "
-						"option:\033[1m\033[31m %s\n",
-						key);
+					fprintf(stderr,
+							"\033[1m\033[31m[ERROR]:\033[33m Unknown "
+							"monitor rule "
+							"option:\033[1m\033[31m %s\n",
+							key);
 					parse_error = true;
 				}
 			}
@@ -1757,7 +1804,8 @@ bool parse_option(Config *config, char *key, char *value) {
 					rule->mfact = CLAMP_FLOAT(atof(val), 0.1f, 0.9f);
 				} else {
 					fprintf(stderr,
-							"\033[1m\033[31m[ERROR]:\033[33m Unknown tag rule "
+							"\033[1m\033[31m[ERROR]:\033[33m Unknown "
+							"tag rule "
 							"option:\033[1m\033[31m %s\n",
 							key);
 					parse_error = true;
@@ -1991,11 +2039,11 @@ bool parse_option(Config *config, char *key, char *value) {
 						return false;
 					}
 				} else {
-					fprintf(
-						stderr,
-						"\033[1m\033[31m[ERROR]:\033[33m Unknown window rule "
-						"option:\033[1m\033[31m %s\n",
-						key);
+					fprintf(stderr,
+							"\033[1m\033[31m[ERROR]:\033[33m Unknown "
+							"window rule "
+							"option:\033[1m\033[31m %s\n",
+							key);
 					parse_error = true;
 				}
 			}
@@ -2095,7 +2143,8 @@ bool parse_option(Config *config, char *key, char *value) {
 			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
 			arg_value5[256] = "0\0";
 		if (sscanf(value,
-				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
+				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^"
+				   ",],%255["
 				   "^,],%255[^\n]",
 				   mod_str, keysym_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
@@ -2152,11 +2201,11 @@ bool parse_option(Config *config, char *key, char *value) {
 				binding->arg.v3 = NULL;
 			}
 			if (!binding->func)
-				fprintf(
-					stderr,
-					"\033[1m\033[31m[ERROR]:\033[33m Unknown dispatch in bind: "
-					"\033[1m\033[31m%s\n",
-					func_name);
+				fprintf(stderr,
+						"\033[1m\033[31m[ERROR]:\033[33m Unknown "
+						"dispatch in bind: "
+						"\033[1m\033[31m%s\n",
+						func_name);
 			return false;
 		} else {
 			config->key_bindings_count++;
@@ -2182,12 +2231,14 @@ bool parse_option(Config *config, char *key, char *value) {
 			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
 			arg_value5[256] = "0\0";
 		if (sscanf(value,
-				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
+				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^"
+				   ",],%255["
 				   "^,],%255[^\n]",
 				   mod_str, button_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
 			fprintf(stderr,
-					"\033[1m\033[31m[ERROR]:\033[33m Invalid mousebind format: "
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid mousebind "
+					"format: "
 					"%s\n",
 					value);
 			return false;
@@ -2225,7 +2276,8 @@ bool parse_option(Config *config, char *key, char *value) {
 			}
 			if (!binding->func)
 				fprintf(stderr,
-						"\033[1m\033[31m[ERROR]:\033[33m Unknown dispatch in "
+						"\033[1m\033[31m[ERROR]:\033[33m Unknown "
+						"dispatch in "
 						"mousebind: \033[1m\033[31m%s\n",
 						func_name);
 			return false;
@@ -2252,14 +2304,15 @@ bool parse_option(Config *config, char *key, char *value) {
 			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
 			arg_value5[256] = "0\0";
 		if (sscanf(value,
-				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
+				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^"
+				   ",],%255["
 				   "^,],%255[^\n]",
 				   mod_str, dir_str, func_name, arg_value, arg_value2,
 				   arg_value3, arg_value4, arg_value5) < 3) {
-			fprintf(
-				stderr,
-				"\033[1m\033[31m[ERROR]:\033[33m Invalid axisbind format: %s\n",
-				value);
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Invalid axisbind "
+					"format: %s\n",
+					value);
 			return false;
 		}
 
@@ -2296,7 +2349,8 @@ bool parse_option(Config *config, char *key, char *value) {
 			}
 			if (!binding->func)
 				fprintf(stderr,
-						"\033[1m\033[31m[ERROR]:\033[33m Unknown dispatch in "
+						"\033[1m\033[31m[ERROR]:\033[33m Unknown "
+						"dispatch in "
 						"axisbind: \033[1m\033[31m%s\n",
 						func_name);
 			return false;
@@ -2324,7 +2378,8 @@ bool parse_option(Config *config, char *key, char *value) {
 			arg_value3[256] = "0\0", arg_value4[256] = "0\0",
 			arg_value5[256] = "0\0";
 		if (sscanf(value,
-				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
+				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^"
+				   ",],%255["
 				   "^\n]",
 				   fold_str, func_name, arg_value, arg_value2, arg_value3,
 				   arg_value4, arg_value5) < 3) {
@@ -2391,7 +2446,8 @@ bool parse_option(Config *config, char *key, char *value) {
 							arg_value3[256] = "0\0", arg_value4[256] = "0\0",
 							arg_value5[256] = "0\0";
 		if (sscanf(value,
-				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255["
+				   "%255[^,],%255[^,],%255[^,],%255[^,],%255[^,],%255[^"
+				   ",],%255["
 				   "^,],%255[^,],%255[^\n]",
 				   mod_str, motion_str, fingers_count_str, func_name, arg_value,
 				   arg_value2, arg_value3, arg_value4, arg_value5) < 4) {
@@ -2437,7 +2493,8 @@ bool parse_option(Config *config, char *key, char *value) {
 			}
 			if (!binding->func)
 				fprintf(stderr,
-						"\033[1m\033[31m[ERROR]:\033[33m Unknown dispatch in "
+						"\033[1m\033[31m[ERROR]:\033[33m Unknown "
+						"dispatch in "
 						"axisbind: \033[1m\033[31m%s\n",
 						func_name);
 			return false;
@@ -3032,8 +3089,8 @@ void set_value_default() {
 	config.hotarea_size = hotarea_size; // 热区大小,10x10
 	config.hotarea_corner = hotarea_corner;
 	config.enable_hotarea = enable_hotarea; // 是否启用鼠标热区
-	config.smartgaps =
-		smartgaps; /* 1 means no outer gap when there is only one window */
+	config.smartgaps = smartgaps;	  /* 1 means no outer gap when there is
+										 only one window */
 	config.sloppyfocus = sloppyfocus; /* focus follows mouse */
 	config.gappih = gappih;			  /* horiz inner gap between windows */
 	config.gappiv = gappiv;			  /* vert inner gap between windows */
