@@ -2179,6 +2179,12 @@ bool parse_option(Config *config, char *key, char *value) {
 		binding->keysymcode =
 			parse_key(keysym_str, binding->keysymcode.type == KEY_TYPE_SYM);
 		binding->mod = parse_mod(mod_str);
+		binding->arg.i = 0;
+		binding->arg.i2 = 0;
+		binding->arg.f = 0.0f;
+		binding->arg.f2 = 0.0f;
+		binding->arg.ui = 0;
+		binding->arg.ui2 = 0;
 		binding->arg.v = NULL;
 		binding->arg.v2 = NULL;
 		binding->arg.v3 = NULL;
@@ -2254,6 +2260,12 @@ bool parse_option(Config *config, char *key, char *value) {
 
 		binding->mod = parse_mod(mod_str);
 		binding->button = parse_button(button_str);
+		binding->arg.i = 0;
+		binding->arg.i2 = 0;
+		binding->arg.f = 0.0f;
+		binding->arg.f2 = 0.0f;
+		binding->arg.ui = 0;
+		binding->arg.ui2 = 0;
 		binding->arg.v = NULL;
 		binding->arg.v2 = NULL;
 		binding->arg.v3 = NULL;
@@ -2471,6 +2483,12 @@ bool parse_option(Config *config, char *key, char *value) {
 		binding->mod = parse_mod(mod_str);
 		binding->motion = parse_direction(motion_str);
 		binding->fingers_count = atoi(fingers_count_str);
+		binding->arg.i = 0;
+		binding->arg.i2 = 0;
+		binding->arg.f = 0.0f;
+		binding->arg.f2 = 0.0f;
+		binding->arg.ui = 0;
+		binding->arg.ui2 = 0;
 		binding->arg.v = NULL;
 		binding->arg.v2 = NULL;
 		binding->arg.v3 = NULL;
