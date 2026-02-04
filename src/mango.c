@@ -3744,6 +3744,12 @@ void init_client_properties(Client *c) {
 	c->stack_proportion = 0.0f;
 	c->next_in_stack = NULL;
 	c->prev_in_stack = NULL;
+	memcpy(c->opacity_animation.initial_border_color, bordercolor,
+		   sizeof(c->opacity_animation.initial_border_color));
+	memcpy(c->opacity_animation.current_border_color, bordercolor,
+		   sizeof(c->opacity_animation.current_border_color));
+	c->opacity_animation.initial_opacity = c->unfocused_opacity;
+	c->opacity_animation.current_opacity = c->unfocused_opacity;
 }
 
 void // old fix to 0.5

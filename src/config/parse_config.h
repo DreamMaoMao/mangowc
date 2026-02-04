@@ -877,12 +877,12 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 						 char *arg_value5) {
 
 	FuncType func = NULL;
-    (*arg).i = 0;
-    (*arg).i2 = 0;
-    (*arg).f = 0.0f;
-    (*arg).f2 = 0.0f;
-    (*arg).ui = 0;
-    (*arg).ui2 = 0;
+	(*arg).i = 0;
+	(*arg).i2 = 0;
+	(*arg).f = 0.0f;
+	(*arg).f2 = 0.0f;
+	(*arg).ui = 0;
+	(*arg).ui2 = 0;
 	(*arg).v = NULL;
 	(*arg).v2 = NULL;
 	(*arg).v3 = NULL;

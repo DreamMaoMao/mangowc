@@ -926,20 +926,11 @@ void client_set_focused_opacity_animation(Client *c) {
 		   sizeof(c->opacity_animation.target_border_color));
 	c->opacity_animation.target_opacity = c->focused_opacity;
 	c->opacity_animation.time_started = get_now_in_ms();
-	if (c->opacity_animation.running) {
-		memcpy(c->opacity_animation.initial_border_color,
-			   c->opacity_animation.current_border_color,
-			   sizeof(c->opacity_animation.initial_border_color));
-		c->opacity_animation.initial_opacity =
-			c->opacity_animation.current_opacity;
-	} else {
-		memcpy(c->opacity_animation.initial_border_color, bordercolor,
-			   sizeof(c->opacity_animation.initial_border_color));
-		memcpy(c->opacity_animation.current_border_color, bordercolor,
-			   sizeof(c->opacity_animation.current_border_color));
-		c->opacity_animation.initial_opacity = c->unfocused_opacity;
-		c->opacity_animation.current_opacity = c->unfocused_opacity;
-	}
+	memcpy(c->opacity_animation.initial_border_color,
+		   c->opacity_animation.current_border_color,
+		   sizeof(c->opacity_animation.initial_border_color));
+	c->opacity_animation.initial_opacity = c->opacity_animation.current_opacity;
+
 	c->opacity_animation.running = true;
 }
 
@@ -959,20 +950,10 @@ void client_set_unfocused_opacity_animation(Client *c) {
 	c->opacity_animation.target_opacity = c->unfocused_opacity;
 	c->opacity_animation.time_started = get_now_in_ms();
 
-	if (c->opacity_animation.running) {
-		memcpy(c->opacity_animation.initial_border_color,
-			   c->opacity_animation.current_border_color,
-			   sizeof(c->opacity_animation.initial_border_color));
-		c->opacity_animation.initial_opacity =
-			c->opacity_animation.current_opacity;
-	} else {
-		memcpy(c->opacity_animation.initial_border_color, border_color,
-			   sizeof(c->opacity_animation.initial_border_color));
-		memcpy(c->opacity_animation.current_border_color, border_color,
-			   sizeof(c->opacity_animation.current_border_color));
-		c->opacity_animation.initial_opacity = c->focused_opacity;
-		c->opacity_animation.current_opacity = c->focused_opacity;
-	}
+	memcpy(c->opacity_animation.initial_border_color,
+		   c->opacity_animation.current_border_color,
+		   sizeof(c->opacity_animation.initial_border_color));
+	c->opacity_animation.initial_opacity = c->opacity_animation.current_opacity;
 
 	c->opacity_animation.running = true;
 }
@@ -1007,6 +988,10 @@ bool client_apply_focus_opacity(Client *c) {
 		if (target_opacity > opacity) {
 			target_opacity = opacity;
 		}
+		memcpy(c->opacity_animation.current_border_color,
+			   c->opacity_animation.target_border_color,
+			   sizeof(c->opacity_animation.current_border_color));
+		c->opacity_animation.current_opacity = target_opacity;
 		client_set_opacity(c, target_opacity);
 		client_set_border_color(c, c->opacity_animation.target_border_color);
 	} else if (animations && c->opacity_animation.running) {
