@@ -978,7 +978,6 @@ static struct wlr_xwayland *xwayland;
 
 void client_change_mon(Client *c, Monitor *m) {
 	setmon(c, m, c->tags, true);
-	reset_foreign_tolevel(c);
 	if (c->isfloating) {
 		c->float_geom = c->geom =
 			setclient_coordinate_center(c, c->mon, c->geom, 0, 0);
@@ -2035,7 +2034,6 @@ buttonpress(struct wl_listener *listener, void *data) {
 			selmon = xytomon(cursor->x, cursor->y);
 			client_update_oldmonname_record(grabc, selmon);
 			setmon(grabc, selmon, 0, true);
-			reset_foreign_tolevel(grabc);
 			selmon->prevsel = ISTILED(selmon->sel) ? selmon->sel : NULL;
 			selmon->sel = grabc;
 			tmpc = grabc;
@@ -4970,6 +4968,7 @@ void setmon(Client *c, Monitor *m, uint32_t newtags, bool focus) {
 		arrange(oldmon, false, false);
 	if (m) {
 		/* Make sure window actually overlaps with the monitor */
+		reset_foreign_tolevel(c);
 		resize(c, c->geom, 0);
 		c->tags =
 			newtags ? newtags
@@ -4980,21 +4979,6 @@ void setmon(Client *c, Monitor *m, uint32_t newtags, bool focus) {
 
 	if (focus && !client_is_x11_popup(c)) {
 		focusclient(focustop(selmon), 1);
-	}
-
-	if (m) {
-
-		if (c->foreign_toplevel) {
-			remove_foreign_topleve(c);
-		}
-
-		add_foreign_toplevel(c);
-		if (m->sel && m->sel->foreign_toplevel)
-			wlr_foreign_toplevel_handle_v1_set_activated(
-				m->sel->foreign_toplevel, false);
-		if (c->foreign_toplevel)
-			wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel,
-														 true);
 	}
 }
 
