@@ -1,18 +1,19 @@
 Monitor *dirtomon(enum wlr_direction dir) {
 	struct wlr_output *next;
-	if (!wlr_output_layout_get(output_layout, selmon->wlr_output))
-		return selmon;
-	if ((next = wlr_output_layout_adjacent_output(output_layout, 1 << dir,
-												  selmon->wlr_output,
-												  selmon->m.x, selmon->m.y)))
+	if (!wlr_output_layout_get(server.output_layout, server.selmon->wlr_output))
+		return server.selmon;
+	if ((next = wlr_output_layout_adjacent_output(
+			 server.output_layout, 1 << dir, server.selmon->wlr_output,
+			 server.selmon->m.x, server.selmon->m.y)))
 		return next->data;
 	if ((next = wlr_output_layout_farthest_output(
-			 output_layout,
+			 server.output_layout,
 			 dir ^ (WLR_DIRECTION_LEFT | WLR_DIRECTION_RIGHT |
 					WLR_DIRECTION_UP | WLR_DIRECTION_DOWN),
-			 selmon->wlr_output, selmon->m.x, selmon->m.y)))
+			 server.selmon->wlr_output, server.selmon->m.x,
+			 server.selmon->m.y)))
 		return next->data;
-	return selmon;
+	return server.selmon;
 }
 
 bool is_scroller_layout(Monitor *m) {
@@ -37,7 +38,7 @@ bool is_centertile_layout(Monitor *m) {
 uint32_t get_tag_status(uint32_t tag, Monitor *m) {
 	Client *c = NULL;
 	uint32_t status = 0;
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (c->mon == m && c->tags & 1 << (tag - 1) & TAGMASK) {
 			if (c->isurgent) {
 				status = 2;
@@ -54,7 +55,7 @@ uint32_t get_tags_first_tag_num(uint32_t source_tags) {
 	tag = 0;
 
 	if (!source_tags) {
-		return selmon->pertag->curtag;
+		return server.selmon->pertag->curtag;
 	}
 
 	for (i = 0; !(tag & 1) && source_tags != 0 && i < LENGTH(tags); i++) {
@@ -76,7 +77,7 @@ uint32_t get_tags_first_tag(uint32_t source_tags) {
 	tag = 0;
 
 	if (!source_tags) {
-		return selmon->pertag->curtag;
+		return server.selmon->pertag->curtag;
 	}
 
 	for (i = 0; !(tag & 1) && source_tags != 0 && i < LENGTH(tags); i++) {
@@ -93,6 +94,7 @@ uint32_t get_tags_first_tag(uint32_t source_tags) {
 }
 
 Monitor *xytomon(double x, double y) {
-	struct wlr_output *o = wlr_output_layout_output_at(output_layout, x, y);
+	struct wlr_output *o =
+		wlr_output_layout_output_at(server.output_layout, x, y);
 	return o ? o->data : NULL;
 }

@@ -2667,8 +2667,8 @@ void parse_config_file(Config *config, const char *file_path) {
 	if (file_path[0] == '.' && file_path[1] == '/') {
 		// Relative path
 
-		if (cli_config_path) {
-			char *config_path = strdup(cli_config_path);
+		if (server.cli_config_path) {
+			char *config_path = strdup(server.cli_config_path);
 			char *config_dir = dirname(config_path);
 			snprintf(full_path, sizeof(full_path), "%s/%s", config_dir,
 					 file_path + 1);
@@ -2750,33 +2750,33 @@ void free_circle_layout(Config *config) {
 }
 
 void free_baked_points(void) {
-	if (baked_points_move) {
-		free(baked_points_move);
-		baked_points_move = NULL;
+	if (server.baked_points_move) {
+		free(server.baked_points_move);
+		server.baked_points_move = NULL;
 	}
-	if (baked_points_open) {
-		free(baked_points_open);
-		baked_points_open = NULL;
+	if (server.baked_points_open) {
+		free(server.baked_points_open);
+		server.baked_points_open = NULL;
 	}
-	if (baked_points_close) {
-		free(baked_points_close);
-		baked_points_close = NULL;
+	if (server.baked_points_close) {
+		free(server.baked_points_close);
+		server.baked_points_close = NULL;
 	}
-	if (baked_points_tag) {
-		free(baked_points_tag);
-		baked_points_tag = NULL;
+	if (server.baked_points_tag) {
+		free(server.baked_points_tag);
+		server.baked_points_tag = NULL;
 	}
-	if (baked_points_focus) {
-		free(baked_points_focus);
-		baked_points_focus = NULL;
+	if (server.baked_points_focus) {
+		free(server.baked_points_focus);
+		server.baked_points_focus = NULL;
 	}
-	if (baked_points_opafadein) {
-		free(baked_points_opafadein);
-		baked_points_opafadein = NULL;
+	if (server.baked_points_opafadein) {
+		free(server.baked_points_opafadein);
+		server.baked_points_opafadein = NULL;
 	}
-	if (baked_points_opafadeout) {
-		free(baked_points_opafadeout);
-		baked_points_opafadeout = NULL;
+	if (server.baked_points_opafadeout) {
+		free(server.baked_points_opafadeout);
+		server.baked_points_opafadeout = NULL;
 	}
 }
 
@@ -3300,7 +3300,7 @@ void set_value_default() {
 	config.overviewgappo = overviewgappo; /* overview时 窗口与窗口 缝隙大小 */
 	config.cursor_hide_timeout = cursor_hide_timeout;
 
-	config.warpcursor = warpcursor; /* Warp cursor to focused client */
+	config.warpcursor = warpcursor; /* Warp server.cursor to focused client */
 	config.drag_corner = drag_corner;
 	config.drag_warp_cursor = drag_warp_cursor;
 
@@ -3453,8 +3453,8 @@ void parse_config(void) {
 
 	create_config_keymap();
 
-	if (cli_config_path) {
-		snprintf(filename, sizeof(filename), "%s", cli_config_path);
+	if (server.cli_config_path) {
+		snprintf(filename, sizeof(filename), "%s", server.cli_config_path);
 	} else {
 		// 获取当前用户家目录
 		const char *homedir = getenv("HOME");
@@ -3484,21 +3484,22 @@ void parse_config(void) {
 void reset_blur_params(void) {
 	if (blur) {
 		Monitor *m = NULL;
-		wl_list_for_each(m, &mons, link) {
+		wl_list_for_each(m, &server.mons, link) {
 			if (m->blur != NULL) {
 				wlr_scene_node_destroy(&m->blur->node);
 			}
-			m->blur = wlr_scene_optimized_blur_create(&scene->tree, 0, 0);
-			wlr_scene_node_reparent(&m->blur->node, layers[LyrBlur]);
+			m->blur =
+				wlr_scene_optimized_blur_create(&server.scene->tree, 0, 0);
+			wlr_scene_node_reparent(&m->blur->node, server.layers[LyrBlur]);
 			wlr_scene_optimized_blur_set_size(m->blur, m->m.width, m->m.height);
 			wlr_scene_set_blur_data(
-				scene, blur_params.num_passes, blur_params.radius,
+				server.scene, blur_params.num_passes, blur_params.radius,
 				blur_params.noise, blur_params.brightness, blur_params.contrast,
 				blur_params.saturation);
 		}
 	} else {
 		Monitor *m = NULL;
-		wl_list_for_each(m, &mons, link) {
+		wl_list_for_each(m, &server.mons, link) {
 
 			if (m->blur) {
 				wlr_scene_node_destroy(&m->blur->node);
@@ -3517,7 +3518,7 @@ void reapply_monitor_rules(void) {
 	struct wlr_output_mode *internal_mode = NULL;
 	wlr_output_state_init(&state);
 
-	wl_list_for_each(m, &mons, link) {
+	wl_list_for_each(m, &server.mons, link) {
 		if (!m->wlr_output->enabled) {
 			continue;
 		}
@@ -3553,7 +3554,8 @@ void reapply_monitor_rules(void) {
 
 				wlr_output_state_set_scale(&state, mr->scale);
 				wlr_output_state_set_transform(&state, mr->rr);
-				wlr_output_layout_add(output_layout, m->wlr_output, mx, my);
+				wlr_output_layout_add(server.output_layout, m->wlr_output, mx,
+									  my);
 			}
 		}
 
@@ -3564,36 +3566,38 @@ void reapply_monitor_rules(void) {
 }
 
 void reapply_cursor_style(void) {
-	if (hide_source) {
-		wl_event_source_timer_update(hide_source, 0);
-		wl_event_source_remove(hide_source);
-		hide_source = NULL;
+	if (server.hide_source) {
+		wl_event_source_timer_update(server.hide_source, 0);
+		wl_event_source_remove(server.hide_source);
+		server.hide_source = NULL;
 	}
 
-	wlr_cursor_unset_image(cursor);
+	wlr_cursor_unset_image(server.cursor);
 
-	wlr_cursor_set_surface(cursor, NULL, 0, 0);
+	wlr_cursor_set_surface(server.cursor, NULL, 0, 0);
 
-	if (cursor_mgr) {
-		wlr_xcursor_manager_destroy(cursor_mgr);
-		cursor_mgr = NULL;
+	if (server.cursor_mgr) {
+		wlr_xcursor_manager_destroy(server.cursor_mgr);
+		server.cursor_mgr = NULL;
 	}
 
-	cursor_mgr = wlr_xcursor_manager_create(config.cursor_theme, cursor_size);
+	server.cursor_mgr =
+		wlr_xcursor_manager_create(config.cursor_theme, cursor_size);
 
 	Monitor *m = NULL;
-	wl_list_for_each(m, &mons, link) {
-		wlr_xcursor_manager_load(cursor_mgr, m->wlr_output->scale);
+	wl_list_for_each(m, &server.mons, link) {
+		wlr_xcursor_manager_load(server.cursor_mgr, m->wlr_output->scale);
 	}
 
-	wlr_cursor_set_xcursor(cursor, cursor_mgr, "left_ptr");
+	wlr_cursor_set_xcursor(server.cursor, server.cursor_mgr, "left_ptr");
 
-	hide_source = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
-										  hidecursor, cursor);
-	if (cursor_hidden) {
-		wlr_cursor_unset_image(cursor);
+	server.hide_source = wl_event_loop_add_timer(
+		wl_display_get_event_loop(server.dpy), hidecursor, server.cursor);
+	if (server.cursor_hidden) {
+		wlr_cursor_unset_image(server.cursor);
 	} else {
-		wl_event_source_timer_update(hide_source, cursor_hide_timeout * 1000);
+		wl_event_source_timer_update(server.hide_source,
+									 cursor_hide_timeout * 1000);
 	}
 }
 
@@ -3601,7 +3605,7 @@ void reapply_border(void) {
 	Client *c = NULL;
 
 	// reset border width when config change
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (c && !c->iskilling) {
 			if (!c->isnoborder && !c->isfullscreen) {
 				c->bw = borderpx;
@@ -3612,7 +3616,7 @@ void reapply_border(void) {
 
 void reapply_keyboard(void) {
 	InputDevice *id;
-	wl_list_for_each(id, &inputdevices, link) {
+	wl_list_for_each(id, &server.inputdevices, link) {
 		if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
 			continue;
 		}
@@ -3624,7 +3628,7 @@ void reapply_keyboard(void) {
 void reapply_pointer(void) {
 	InputDevice *id;
 	struct libinput_device *device;
-	wl_list_for_each(id, &inputdevices, link) {
+	wl_list_for_each(id, &server.inputdevices, link) {
 
 		if (id->wlr_device->type != WLR_INPUT_DEVICE_POINTER) {
 			continue;
@@ -3642,7 +3646,7 @@ void reapply_master(void) {
 	int32_t i;
 	Monitor *m = NULL;
 	for (i = 0; i <= LENGTH(tags); i++) {
-		wl_list_for_each(m, &mons, link) {
+		wl_list_for_each(m, &server.mons, link) {
 			if (!m->wlr_output->enabled) {
 				continue;
 			}
@@ -3693,7 +3697,7 @@ void parse_tagrule(Monitor *m) {
 	}
 
 	for (i = 1; i <= LENGTH(tags); i++) {
-		wl_list_for_each(c, &clients, link) {
+		wl_list_for_each(c, &server.clients, link) {
 			if ((c->tags & (1 << (i - 1)) & TAGMASK) && ISTILED(c)) {
 				if (m->pertag->mfacts[i] > 0.0f)
 					c->master_mfact_per = m->pertag->mfacts[i];
@@ -3704,7 +3708,7 @@ void parse_tagrule(Monitor *m) {
 
 void reapply_tagrule(void) {
 	Monitor *m = NULL;
-	wl_list_for_each(m, &mons, link) {
+	wl_list_for_each(m, &server.mons, link) {
 		if (!m->wlr_output->enabled) {
 			continue;
 		}
@@ -3729,7 +3733,7 @@ void reset_option(void) {
 	reapply_tagrule();
 	reapply_monitor_rules();
 
-	arrange(selmon, false, false);
+	arrange(server.selmon, false, false);
 }
 
 int32_t reload_config(const Arg *arg) {

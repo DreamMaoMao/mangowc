@@ -69,7 +69,7 @@ void dwl_im_relay_set_focus(struct dwl_input_method_relay *relay,
 /*------------------协议内部代码------------------------------*/
 Monitor *output_from_wlr_output(struct wlr_output *wlr_output) {
 	Monitor *m = NULL;
-	wl_list_for_each(m, &mons, link) {
+	wl_list_for_each(m, &server.mons, link) {
 		if (m->wlr_output == wlr_output) {
 			return m;
 		}
@@ -79,11 +79,11 @@ Monitor *output_from_wlr_output(struct wlr_output *wlr_output) {
 
 Monitor *output_nearest_to(int32_t lx, int32_t ly) {
 	double closest_x, closest_y;
-	wlr_output_layout_closest_point(output_layout, NULL, lx, ly, &closest_x,
-									&closest_y);
+	wlr_output_layout_closest_point(server.output_layout, NULL, lx, ly,
+									&closest_x, &closest_y);
 
-	return output_from_wlr_output(
-		wlr_output_layout_output_at(output_layout, closest_x, closest_y));
+	return output_from_wlr_output(wlr_output_layout_output_at(
+		server.output_layout, closest_x, closest_y));
 }
 
 bool output_is_usable(Monitor *m) { return m && m->wlr_output->enabled; }
@@ -112,7 +112,7 @@ get_keyboard_grab(KeyboardGroup *keyboard) {
 	}
 
 	// kb_group是一个物理键盘组，它不应该被过滤掉
-	if (keyboard != kb_group)
+	if (keyboard != server.kb_group)
 		return NULL;
 
 	if (is_keyboard_emulated_by_input_method(&keyboard->wlr_group->keyboard,
@@ -259,7 +259,8 @@ static void update_popup_position(struct dwl_input_method_popup *popup) {
 	if (!output_is_usable(output)) {
 		return;
 	}
-	wlr_output_layout_get_box(output_layout, output->wlr_output, &output_box);
+	wlr_output_layout_get_box(server.output_layout, output->wlr_output,
+							  &output_box);
 
 	pointer_rules = (struct wlr_xdg_positioner_rules){
 		.anchor_rect = cursor_rect,
@@ -348,7 +349,7 @@ static void handle_input_method_grab_keyboard(struct wl_listener *listener,
 		wl_container_of(listener, relay, input_method_grab_keyboard);
 	struct wlr_input_method_keyboard_grab_v2 *keyboard_grab = data;
 
-	struct wlr_keyboard *active_keyboard = wlr_seat_get_keyboard(seat);
+	struct wlr_keyboard *active_keyboard = wlr_seat_get_keyboard(server.seat);
 
 	if (!is_keyboard_emulated_by_input_method(active_keyboard,
 											  relay->input_method)) {
@@ -411,7 +412,7 @@ static void handle_input_method_new_popup_surface(struct wl_listener *listener,
 	wl_signal_add(&popup->popup_surface->surface->events.commit,
 				  &popup->commit);
 
-	popup->tree = wlr_scene_tree_create(layers[LyrIMPopup]);
+	popup->tree = wlr_scene_tree_create(server.layers[LyrIMPopup]);
 	popup->scene_surface = wlr_scene_subsurface_tree_create(
 		popup->tree, popup->popup_surface->surface);
 	popup->scene_surface->node.data = popup;
@@ -425,7 +426,7 @@ static void handle_new_input_method(struct wl_listener *listener, void *data) {
 	struct dwl_input_method_relay *relay =
 		wl_container_of(listener, relay, new_input_method);
 	struct wlr_input_method_v2 *input_method = data;
-	if (seat != input_method->seat) {
+	if (server.seat != input_method->seat) {
 		return;
 	}
 
@@ -531,7 +532,7 @@ static void handle_new_text_input(struct wl_listener *listener, void *data) {
 	struct wlr_text_input_v3 *wlr_text_input = data;
 	struct text_input *text_input = ecalloc(1, sizeof(struct text_input));
 
-	if (seat != wlr_text_input->seat) {
+	if (server.seat != wlr_text_input->seat) {
 		return;
 	}
 
@@ -568,7 +569,7 @@ struct dwl_input_method_relay *dwl_im_relay_create() {
 		ecalloc(1, sizeof(struct dwl_input_method_relay));
 	wl_list_init(&relay->text_inputs);
 	wl_list_init(&relay->popups);
-	relay->popup_tree = wlr_scene_tree_create(&scene->tree);
+	relay->popup_tree = wlr_scene_tree_create(&server.scene->tree);
 
 	relay->new_text_input.notify = handle_new_text_input;
 	wl_signal_add(&text_input_manager->events.text_input,

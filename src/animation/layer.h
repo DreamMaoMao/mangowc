@@ -395,7 +395,7 @@ void init_fadeout_layers(LayerSurface *l) {
 
 	wlr_scene_node_set_enabled(&l->scene->node, true);
 	fadeout_layer->scene =
-		wlr_scene_tree_snapshot(&l->scene->node, layers[LyrFadeOut]);
+		wlr_scene_tree_snapshot(&l->scene->node, server.layers[LyrFadeOut]);
 	wlr_scene_node_set_enabled(&l->scene->node, false);
 
 	if (!fadeout_layer->scene) {
@@ -463,7 +463,7 @@ void init_fadeout_layers(LayerSurface *l) {
 
 	// 将节点插入到关闭动画链表中，屏幕刷新哪里会检查链表中是否有节点可以应用于动画
 	wlr_scene_node_set_enabled(&fadeout_layer->scene->node, true);
-	wl_list_insert(&fadeout_layers, &fadeout_layer->fadeout_link);
+	wl_list_insert(&server.fadeout_layers, &fadeout_layer->fadeout_link);
 
 	// 请求刷新屏幕
 	if (l->mon)

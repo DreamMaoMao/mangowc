@@ -1,7 +1,7 @@
 bool check_hit_no_border(Client *c) {
 	int32_t i;
 	bool hit_no_border = false;
-	if (!render_border) {
+	if (!server.render_border) {
 		hit_no_border = true;
 	}
 
@@ -25,7 +25,7 @@ Client *termforwin(Client *w) {
 	if (!w->pid || w->isterm || w->noswallow)
 		return NULL;
 
-	wl_list_for_each(c, &fstack, flink) {
+	wl_list_for_each(c, &server.fstack, flink) {
 		if (c->isterm && !c->swallowing && c->pid &&
 			isdescprocess(c->pid, w->pid)) {
 			return c;
@@ -38,8 +38,8 @@ Client *get_client_by_id_or_title(const char *arg_id, const char *arg_title) {
 	Client *target_client = NULL;
 	const char *appid, *title;
 	Client *c = NULL;
-	wl_list_for_each(c, &clients, link) {
-		if (!scratchpad_cross_monitor && c->mon != selmon) {
+	wl_list_for_each(c, &server.clients, link) {
+		if (!scratchpad_cross_monitor && c->mon != server.selmon) {
 			continue;
 		}
 
@@ -81,7 +81,7 @@ setclient_coordinate_center(Client *c, Monitor *tm, struct wlr_box geom,
 	struct wlr_box tempbox;
 	int32_t offset = 0;
 	int32_t len = 0;
-	Monitor *m = tm ? tm : selmon;
+	Monitor *m = tm ? tm : server.selmon;
 
 	uint32_t cbw = check_hit_no_border(c) ? c->bw : 0;
 
@@ -140,7 +140,7 @@ Client *center_tiled_select(Monitor *m) {
 	int64_t mini_distance = -1;
 	int32_t dirx, diry;
 	int64_t distance;
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (c && VISIBLEON(c, m) && ISSCROLLTILED(c) &&
 			client_surface(c)->mapped && !c->isfloating &&
 			!client_is_unmanaged(c)) {
@@ -162,7 +162,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 	int32_t last = -1;
 
 	// 第一次遍历，计算客户端数量
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (c && (findfloating || !c->isfloating) && !c->isunglobal &&
 			(focus_cross_monitor || c->mon == tc->mon) &&
 			(c->tags & c->mon->tagset[c->mon->seltags])) {
@@ -183,7 +183,7 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 
 	// 第二次遍历，填充 tempClients
 	last = -1;
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (c && (findfloating || !c->isfloating) && !c->isunglobal &&
 			(focus_cross_monitor || c->mon == tc->mon) &&
 			(c->tags & c->mon->tagset[c->mon->seltags])) {
@@ -444,20 +444,20 @@ Client *find_client_by_direction(Client *tc, const Arg *arg, bool findfloating,
 
 Client *direction_select(const Arg *arg) {
 
-	Client *tc = selmon->sel;
+	Client *tc = server.selmon->sel;
 
 	if (!tc)
 		return NULL;
 
 	if (tc && (tc->isfullscreen || tc->ismaximizescreen) &&
-		(!is_scroller_layout(selmon) || tc->isfloating)) {
+		(!is_scroller_layout(server.selmon) || tc->isfloating)) {
 		return NULL;
 	}
 
-	return find_client_by_direction(
-		tc, arg, true,
-		(is_scroller_layout(selmon) || is_centertile_layout(selmon)) &&
-			!selmon->isoverview);
+	return find_client_by_direction(tc, arg, true,
+									(is_scroller_layout(server.selmon) ||
+									 is_centertile_layout(server.selmon)) &&
+										!server.selmon->isoverview);
 }
 
 /* We probably should change the name of this, it sounds like
@@ -465,7 +465,7 @@ Client *direction_select(const Arg *arg) {
  * only return that client */
 Client *focustop(Monitor *m) {
 	Client *c = NULL;
-	wl_list_for_each(c, &fstack, flink) {
+	wl_list_for_each(c, &server.fstack, flink) {
 		if (c->iskilling || c->isunglobal)
 			continue;
 		if (VISIBLEON(c, m))
@@ -481,7 +481,7 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 	Client *next = NULL;
 	if (reverse) {
 		wl_list_for_each_reverse(next, &c->link, link) {
-			if (&next->link == &clients)
+			if (&next->link == &server.clients)
 				continue; /* wrap past the sentinel node */
 
 			if (next->isunglobal)
@@ -492,7 +492,7 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 		}
 	} else {
 		wl_list_for_each(next, &c->link, link) {
-			if (&next->link == &clients)
+			if (&next->link == &server.clients)
 				continue; /* wrap past the sentinel node */
 
 			if (next->isunglobal)
@@ -507,19 +507,21 @@ Client *get_next_stack_client(Client *c, bool reverse) {
 
 float *get_border_color(Client *c) {
 
-	if (c->mon != selmon) {
+	if (c->mon != server.selmon) {
 		return bordercolor;
 	} else if (c->isurgent) {
 		return urgentcolor;
-	} else if (c->is_in_scratchpad && selmon && c == selmon->sel) {
+	} else if (c->is_in_scratchpad && server.selmon &&
+			   c == server.selmon->sel) {
 		return scratchpadcolor;
-	} else if (c->isglobal && selmon && c == selmon->sel) {
+	} else if (c->isglobal && server.selmon && c == server.selmon->sel) {
 		return globalcolor;
-	} else if (c->isoverlay && selmon && c == selmon->sel) {
+	} else if (c->isoverlay && server.selmon && c == server.selmon->sel) {
 		return overlaycolor;
-	} else if (c->ismaximizescreen && selmon && c == selmon->sel) {
+	} else if (c->ismaximizescreen && server.selmon &&
+			   c == server.selmon->sel) {
 		return maximizescreencolor;
-	} else if (selmon && c == selmon->sel) {
+	} else if (server.selmon && c == server.selmon->sel) {
 		return focuscolor;
 	} else {
 		return bordercolor;
@@ -609,7 +611,7 @@ Client *get_focused_stack_client(Client *sc) {
 	if (fc->isfloating || sc->isfloating)
 		return sc;
 
-	wl_list_for_each(tc, &fstack, flink) {
+	wl_list_for_each(tc, &server.fstack, flink) {
 		if (tc->iskilling || tc->isunglobal)
 			continue;
 		if (!VISIBLEON(tc, sc->mon))

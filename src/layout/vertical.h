@@ -1,5 +1,5 @@
 void vertical_tile(Monitor *m) {
-	int32_t i, n = 0, w, r, ie = enablegaps, mh, mx, tx;
+	int32_t i, n = 0, w, r, ie = server.enablegaps, mh, mx, tx;
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
@@ -14,17 +14,17 @@ void vertical_tile(Monitor *m) {
 	if (n == 0)
 		return;
 
-	int32_t cur_gapih = enablegaps ? m->gappih : 0;
-	int32_t cur_gapiv = enablegaps ? m->gappiv : 0;
-	int32_t cur_gapoh = enablegaps ? m->gappoh : 0;
-	int32_t cur_gapov = enablegaps ? m->gappov : 0;
+	int32_t cur_gapih = server.enablegaps ? m->gappih : 0;
+	int32_t cur_gapiv = server.enablegaps ? m->gappiv : 0;
+	int32_t cur_gapoh = server.enablegaps ? m->gappoh : 0;
+	int32_t cur_gapov = server.enablegaps ? m->gappov : 0;
 
 	cur_gapih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gapih;
 	cur_gapiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gapiv;
 	cur_gapoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gapoh;
 	cur_gapov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gapov;
 
-	wl_list_for_each(fc, &clients, link) {
+	wl_list_for_each(fc, &server.clients, link) {
 		if (VISIBLEON(fc, m) && ISTILED(fc))
 			break;
 	}
@@ -50,7 +50,7 @@ void vertical_tile(Monitor *m) {
 		(m->w.width - 2 * cur_gapoh - cur_gapih * ie * (stack_num - 1));
 	float slave_surplus_ratio = 1.0;
 
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
 		if (i < m->pertag->nmasters[m->pertag->curtag]) {
@@ -112,9 +112,9 @@ void vertical_deck(Monitor *m) {
 	float mfact;
 	uint32_t nmasters = m->pertag->nmasters[m->pertag->curtag];
 
-	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
-	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
-	int32_t cur_gappov = enablegaps ? m->gappov : 0;
+	int32_t cur_gappiv = server.enablegaps ? m->gappiv : 0;
+	int32_t cur_gappoh = server.enablegaps ? m->gappoh : 0;
+	int32_t cur_gappov = server.enablegaps ? m->gappov : 0;
 
 	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
@@ -125,7 +125,7 @@ void vertical_deck(Monitor *m) {
 	if (n == 0)
 		return;
 
-	wl_list_for_each(fc, &clients, link) {
+	wl_list_for_each(fc, &server.clients, link) {
 
 		if (VISIBLEON(fc, m) && ISTILED(fc))
 			break;
@@ -141,7 +141,7 @@ void vertical_deck(Monitor *m) {
 		mh = m->w.height - 2 * cur_gappov;
 
 	i = mx = 0;
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
 		if (i < nmasters) {
@@ -171,9 +171,9 @@ void vertical_deck(Monitor *m) {
 
 void vertical_scroll_adjust_fullandmax(Client *c, struct wlr_box *target_geom) {
 	Monitor *m = c->mon;
-	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
-	int32_t cur_gappov = enablegaps ? m->gappov : 0;
-	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+	int32_t cur_gappiv = server.enablegaps ? m->gappiv : 0;
+	int32_t cur_gappov = server.enablegaps ? m->gappov : 0;
+	int32_t cur_gappoh = server.enablegaps ? m->gappoh : 0;
 
 	cur_gappiv =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappiv;
@@ -270,10 +270,10 @@ void vertical_scroller(Monitor *m) {
 	struct wlr_box target_geom;
 	int32_t focus_client_index = 0;
 	bool need_scroller = false;
-	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
-	int32_t cur_gappov = enablegaps ? m->gappov : 0;
-	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
-	int32_t cur_gappih = enablegaps ? m->gappih : 0;
+	int32_t cur_gappiv = server.enablegaps ? m->gappiv : 0;
+	int32_t cur_gappov = server.enablegaps ? m->gappov : 0;
+	int32_t cur_gappoh = server.enablegaps ? m->gappoh : 0;
+	int32_t cur_gappih = server.enablegaps ? m->gappih : 0;
 
 	cur_gappiv =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappiv;
@@ -296,7 +296,7 @@ void vertical_scroller(Monitor *m) {
 	}
 
 	j = 0;
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (VISIBLEON(c, m) && ISSCROLLTILED(c) && !c->prev_in_stack) {
 			tempClients[j] = c;
 			j++;
@@ -359,7 +359,7 @@ void vertical_scroller(Monitor *m) {
 		need_scroller = true;
 	}
 
-	if (start_drag_window)
+	if (server.start_drag_window)
 		need_scroller = false;
 
 	target_geom.width = m->w.width - 2 * cur_gappoh;
@@ -439,9 +439,9 @@ void vertical_grid(Monitor *m) {
 	int32_t rows, cols, overrows;
 	Client *c = NULL;
 	int32_t target_gappo =
-		enablegaps ? m->isoverview ? overviewgappo : gappov : 0;
+		server.enablegaps ? m->isoverview ? overviewgappo : gappov : 0;
 	int32_t target_gappi =
-		enablegaps ? m->isoverview ? overviewgappi : gappiv : 0;
+		server.enablegaps ? m->isoverview ? overviewgappi : gappiv : 0;
 	float single_width_ratio = m->isoverview ? 0.7 : 0.9;
 	float single_height_ratio = m->isoverview ? 0.8 : 0.9;
 
@@ -452,7 +452,7 @@ void vertical_grid(Monitor *m) {
 	}
 
 	if (n == 1) {
-		wl_list_for_each(c, &clients, link) {
+		wl_list_for_each(c, &server.clients, link) {
 
 			if (c->mon != m)
 				continue;
@@ -475,7 +475,7 @@ void vertical_grid(Monitor *m) {
 		ch = (m->w.height - 2 * target_gappo - target_gappi) / 2;
 		cw = (m->w.width - 2 * target_gappo) * 0.65;
 		i = 0;
-		wl_list_for_each(c, &clients, link) {
+		wl_list_for_each(c, &server.clients, link) {
 
 			if (c->mon != m)
 				continue;
@@ -518,7 +518,7 @@ void vertical_grid(Monitor *m) {
 	}
 
 	i = 0;
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (c->mon != m)
 			continue;
 

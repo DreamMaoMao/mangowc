@@ -90,7 +90,8 @@ void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
 		if (layer == LyrFadeOut)
 			continue;
 
-		if (!(node = wlr_scene_node_at(&layers[layer]->node, x, y, nx, ny)))
+		if (!(node =
+				  wlr_scene_node_at(&server.layers[layer]->node, x, y, nx, ny)))
 			continue;
 
 		if (!node->enabled)

@@ -116,14 +116,15 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	const char *title, *appid, *symbol;
 	char kb_layout[32];
 	focused = focustop(monitor);
-	zdwl_ipc_output_v2_send_active(ipc_output->resource, monitor == selmon);
+	zdwl_ipc_output_v2_send_active(ipc_output->resource,
+								   monitor == server.selmon);
 
 	for (tag = 0; tag < LENGTH(tags); tag++) {
 		numclients = state = focused_client = 0;
 		tagmask = 1 << tag;
 		if ((tagmask & monitor->tagset[monitor->seltags]) != 0)
 			state |= ZDWL_IPC_OUTPUT_V2_TAG_STATE_ACTIVE;
-		wl_list_for_each(c, &clients, link) {
+		wl_list_for_each(c, &server.clients, link) {
 			if (c->mon != monitor)
 				continue;
 			if (!(c->tags & tagmask))
@@ -147,7 +148,7 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 		symbol = monitor->pertag->ltidxs[monitor->pertag->curtag]->symbol;
 	}
 
-	keyboard = &kb_group->wlr_group->keyboard;
+	keyboard = &server.kb_group->wlr_group->keyboard;
 	current = xkb_state_serialize_layout(keyboard->xkb_state,
 										 XKB_STATE_LAYOUT_EFFECTIVE);
 	get_layout_abbr(kb_layout,
@@ -202,7 +203,8 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 
 	if (wl_resource_get_version(ipc_output->resource) >=
 		ZDWL_IPC_OUTPUT_V2_KEYMODE_SINCE_VERSION) {
-		zdwl_ipc_output_v2_send_keymode(ipc_output->resource, server.keymode.name);
+		zdwl_ipc_output_v2_send_keymode(ipc_output->resource,
+										server.keymode.name);
 	}
 
 	if (wl_resource_get_version(ipc_output->resource) >=
@@ -236,9 +238,9 @@ void dwl_ipc_output_set_client_tags(struct wl_client *client,
 		return;
 
 	selected_client->tags = newtags;
-	if (selmon == monitor)
+	if (server.selmon == monitor)
 		focusclient(focustop(monitor), 1);
-	arrange(selmon, false, false);
+	arrange(server.selmon, false, false);
 	printstatus();
 }
 

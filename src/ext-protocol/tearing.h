@@ -64,7 +64,7 @@ bool check_tearing_frame_allow(Monitor *m) {
 		return false;
 	}
 
-	Client *c = selmon->sel;
+	Client *c = server.selmon->sel;
 
 	/* tearing is only allowed for the output with the active client */
 	if (!c || c->mon != m) {

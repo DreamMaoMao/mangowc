@@ -279,10 +279,10 @@ static inline int32_t client_is_unmanaged(Client *c) {
 static inline void client_notify_enter(struct wlr_surface *s,
 									   struct wlr_keyboard *kb) {
 	if (kb)
-		wlr_seat_keyboard_notify_enter(seat, s, kb->keycodes, kb->num_keycodes,
-									   &kb->modifiers);
+		wlr_seat_keyboard_notify_enter(server.seat, s, kb->keycodes,
+									   kb->num_keycodes, &kb->modifiers);
 	else
-		wlr_seat_keyboard_notify_enter(seat, s, NULL, 0, NULL);
+		wlr_seat_keyboard_notify_enter(server.seat, s, NULL, 0, NULL);
 }
 
 static inline void client_send_close(Client *c) {

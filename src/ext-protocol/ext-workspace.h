@@ -180,8 +180,8 @@ void refresh_monitors_workspaces_status(Monitor *m) {
 }
 
 void workspaces_init() {
-	/* Create the global workspace manager with activation capability */
-	ext_manager = wlr_ext_workspace_manager_v1_create(dpy, 1);
+	/* Create the global workspace manager with server.activation capability */
+	ext_manager = wlr_ext_workspace_manager_v1_create(server.dpy, 1);
 	/* Initialize the global workspaces list */
 	wl_list_init(&workspaces);
 }

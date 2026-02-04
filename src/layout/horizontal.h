@@ -7,9 +7,9 @@ void grid(Monitor *m) {
 	Client *c = NULL;
 	n = 0;
 	int32_t target_gappo =
-		enablegaps ? m->isoverview ? overviewgappo : gappoh : 0;
+		server.enablegaps ? m->isoverview ? overviewgappo : gappoh : 0;
 	int32_t target_gappi =
-		enablegaps ? m->isoverview ? overviewgappi : gappih : 0;
+		server.enablegaps ? m->isoverview ? overviewgappi : gappih : 0;
 	float single_width_ratio = m->isoverview ? 0.7 : 0.9;
 	float single_height_ratio = m->isoverview ? 0.8 : 0.9;
 
@@ -20,7 +20,7 @@ void grid(Monitor *m) {
 	}
 
 	if (n == 1) {
-		wl_list_for_each(c, &clients, link) {
+		wl_list_for_each(c, &server.clients, link) {
 
 			if (c->mon != m)
 				continue;
@@ -43,7 +43,7 @@ void grid(Monitor *m) {
 		cw = (m->w.width - 2 * target_gappo - target_gappi) / 2;
 		ch = (m->w.height - 2 * target_gappo) * 0.65;
 		i = 0;
-		wl_list_for_each(c, &clients, link) {
+		wl_list_for_each(c, &server.clients, link) {
 			if (c->mon != m)
 				continue;
 
@@ -89,7 +89,7 @@ void grid(Monitor *m) {
 
 	// 调整每个客户端的位置和大小
 	i = 0;
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 
 		if (c->mon != m)
 			continue;
@@ -119,9 +119,9 @@ void deck(Monitor *m) {
 	float mfact;
 	uint32_t nmasters = m->pertag->nmasters[m->pertag->curtag];
 
-	int32_t cur_gappih = enablegaps ? m->gappih : 0;
-	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
-	int32_t cur_gappov = enablegaps ? m->gappov : 0;
+	int32_t cur_gappih = server.enablegaps ? m->gappih : 0;
+	int32_t cur_gappoh = server.enablegaps ? m->gappoh : 0;
+	int32_t cur_gappov = server.enablegaps ? m->gappov : 0;
 
 	cur_gappih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappih;
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
@@ -132,7 +132,7 @@ void deck(Monitor *m) {
 	if (n == 0)
 		return;
 
-	wl_list_for_each(fc, &clients, link) {
+	wl_list_for_each(fc, &server.clients, link) {
 
 		if (VISIBLEON(fc, m) && ISTILED(fc))
 			break;
@@ -149,12 +149,12 @@ void deck(Monitor *m) {
 		mw = m->w.width - 2 * cur_gappoh;
 
 	i = my = 0;
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
 		if (i < nmasters) {
 			c->master_mfact_per = mfact;
-			// Master area clients
+			// Master area server.clients
 			resize(
 				c,
 				(struct wlr_box){.x = m->w.x + cur_gappoh,
@@ -165,7 +165,7 @@ void deck(Monitor *m) {
 				0);
 			my += c->geom.height;
 		} else {
-			// Stack area clients
+			// Stack area server.clients
 			c->master_mfact_per = mfact;
 			resize(c,
 				   (struct wlr_box){.x = m->w.x + mw + cur_gappoh + cur_gappih,
@@ -184,9 +184,9 @@ void deck(Monitor *m) {
 void horizontal_scroll_adjust_fullandmax(Client *c,
 										 struct wlr_box *target_geom) {
 	Monitor *m = c->mon;
-	int32_t cur_gappih = enablegaps ? m->gappih : 0;
-	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
-	int32_t cur_gappov = enablegaps ? m->gappov : 0;
+	int32_t cur_gappih = server.enablegaps ? m->gappih : 0;
+	int32_t cur_gappoh = server.enablegaps ? m->gappoh : 0;
+	int32_t cur_gappov = server.enablegaps ? m->gappov : 0;
 
 	cur_gappih =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappih;
@@ -283,10 +283,10 @@ void scroller(Monitor *m) {
 	struct wlr_box target_geom;
 	int32_t focus_client_index = 0;
 	bool need_scroller = false;
-	int32_t cur_gappih = enablegaps ? m->gappih : 0;
-	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
-	int32_t cur_gappov = enablegaps ? m->gappov : 0;
-	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
+	int32_t cur_gappih = server.enablegaps ? m->gappih : 0;
+	int32_t cur_gappoh = server.enablegaps ? m->gappoh : 0;
+	int32_t cur_gappov = server.enablegaps ? m->gappov : 0;
+	int32_t cur_gappiv = server.enablegaps ? m->gappiv : 0;
 
 	cur_gappih =
 		smartgaps && m->visible_scroll_tiling_clients == 1 ? 0 : cur_gappih;
@@ -312,7 +312,7 @@ void scroller(Monitor *m) {
 
 	// 第二次遍历，填充 tempClients
 	j = 0;
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (VISIBLEON(c, m) && ISSCROLLTILED(c) && !c->prev_in_stack) {
 			tempClients[j] = c;
 			j++;
@@ -375,7 +375,7 @@ void scroller(Monitor *m) {
 		need_scroller = true;
 	}
 
-	if (start_drag_window)
+	if (server.start_drag_window)
 		need_scroller = false;
 
 	target_geom.height = m->w.height - 2 * cur_gappov;
@@ -444,7 +444,7 @@ void scroller(Monitor *m) {
 }
 
 void center_tile(Monitor *m) {
-	int32_t i, n = 0, h, r, ie = enablegaps, mw, mx, my, oty, ety, tw;
+	int32_t i, n = 0, h, r, ie = server.enablegaps, mw, mx, my, oty, ety, tw;
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
@@ -461,16 +461,16 @@ void center_tile(Monitor *m) {
 		return;
 
 	// 获取第一个可见的平铺客户端用于主区域宽度百分比
-	wl_list_for_each(fc, &clients, link) {
+	wl_list_for_each(fc, &server.clients, link) {
 		if (VISIBLEON(fc, m) && ISTILED(fc))
 			break;
 	}
 
 	// 间隙参数处理
-	int32_t cur_gappiv = enablegaps ? m->gappiv : 0; // 内部垂直间隙
-	int32_t cur_gappih = enablegaps ? m->gappih : 0; // 内部水平间隙
-	int32_t cur_gappov = enablegaps ? m->gappov : 0; // 外部垂直间隙
-	int32_t cur_gappoh = enablegaps ? m->gappoh : 0; // 外部水平间隙
+	int32_t cur_gappiv = server.enablegaps ? m->gappiv : 0; // 内部垂直间隙
+	int32_t cur_gappih = server.enablegaps ? m->gappih : 0; // 内部水平间隙
+	int32_t cur_gappov = server.enablegaps ? m->gappov : 0; // 外部垂直间隙
+	int32_t cur_gappoh = server.enablegaps ? m->gappoh : 0; // 外部水平间隙
 
 	// 智能间隙处理
 	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
@@ -540,7 +540,7 @@ void center_tile(Monitor *m) {
 	ety = cur_gappov;
 
 	i = 0;
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
 
@@ -676,7 +676,7 @@ void center_tile(Monitor *m) {
 }
 
 void tile(Monitor *m) {
-	int32_t i, n = 0, h, r, ie = enablegaps, mw, my, ty;
+	int32_t i, n = 0, h, r, ie = server.enablegaps, mw, my, ty;
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
@@ -691,17 +691,17 @@ void tile(Monitor *m) {
 	if (n == 0)
 		return;
 
-	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
-	int32_t cur_gappih = enablegaps ? m->gappih : 0;
-	int32_t cur_gappov = enablegaps ? m->gappov : 0;
-	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+	int32_t cur_gappiv = server.enablegaps ? m->gappiv : 0;
+	int32_t cur_gappih = server.enablegaps ? m->gappih : 0;
+	int32_t cur_gappov = server.enablegaps ? m->gappov : 0;
+	int32_t cur_gappoh = server.enablegaps ? m->gappoh : 0;
 
 	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
 	cur_gappih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappih;
 	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 
-	wl_list_for_each(fc, &clients, link) {
+	wl_list_for_each(fc, &server.clients, link) {
 
 		if (VISIBLEON(fc, m) && ISTILED(fc))
 			break;
@@ -727,7 +727,7 @@ void tile(Monitor *m) {
 		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (stack_num - 1));
 	float slave_surplus_ratio = 1.0;
 
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
 		if (i < m->pertag->nmasters[m->pertag->curtag]) {
@@ -786,7 +786,7 @@ void tile(Monitor *m) {
 }
 
 void right_tile(Monitor *m) {
-	int32_t i, n = 0, h, r, ie = enablegaps, mw, my, ty;
+	int32_t i, n = 0, h, r, ie = server.enablegaps, mw, my, ty;
 	Client *c = NULL;
 	Client *fc = NULL;
 	double mfact = 0;
@@ -801,17 +801,17 @@ void right_tile(Monitor *m) {
 	if (n == 0)
 		return;
 
-	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
-	int32_t cur_gappih = enablegaps ? m->gappih : 0;
-	int32_t cur_gappov = enablegaps ? m->gappov : 0;
-	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+	int32_t cur_gappiv = server.enablegaps ? m->gappiv : 0;
+	int32_t cur_gappih = server.enablegaps ? m->gappih : 0;
+	int32_t cur_gappov = server.enablegaps ? m->gappov : 0;
+	int32_t cur_gappoh = server.enablegaps ? m->gappoh : 0;
 
 	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
 	cur_gappih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappih;
 	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 
-	wl_list_for_each(fc, &clients, link) {
+	wl_list_for_each(fc, &server.clients, link) {
 
 		if (VISIBLEON(fc, m) && ISTILED(fc))
 			break;
@@ -837,7 +837,7 @@ void right_tile(Monitor *m) {
 		(m->w.height - 2 * cur_gappov - cur_gappiv * ie * (stack_num - 1));
 	float slave_surplus_ratio = 1.0;
 
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
 		if (i < m->pertag->nmasters[m->pertag->curtag]) {
@@ -901,13 +901,13 @@ monocle(Monitor *m) {
 	Client *c = NULL;
 	struct wlr_box geom;
 
-	int32_t cur_gappov = enablegaps ? m->gappov : 0;
-	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+	int32_t cur_gappov = server.enablegaps ? m->gappov : 0;
+	int32_t cur_gappoh = server.enablegaps ? m->gappoh : 0;
 
 	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
 	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
 
-	wl_list_for_each(c, &clients, link) {
+	wl_list_for_each(c, &server.clients, link) {
 		if (!VISIBLEON(c, m) || !ISTILED(c))
 			continue;
 		geom.x = m->w.x + cur_gappoh;

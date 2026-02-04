@@ -237,7 +237,7 @@ void buffer_set_effect(Client *c, BufferData data) {
 		data.should_scale = false;
 	}
 
-	if (c == grabc)
+	if (c == server.grabc)
 		data.should_scale = false;
 
 	if (c->isnoradius || c->isfullscreen ||
@@ -315,7 +315,7 @@ void client_draw_shadow(Client *c) {
 
 	int32_t right_offset, bottom_offset, left_offset, top_offset;
 
-	if (c == grabc) {
+	if (c == server.grabc) {
 		right_offset = 0;
 		bottom_offset = 0;
 		left_offset = 0;
@@ -382,7 +382,7 @@ void apply_border(Client *c) {
 
 	int32_t right_offset, bottom_offset, left_offset, top_offset;
 
-	if (c == grabc) {
+	if (c == server.grabc) {
 		right_offset = 0;
 		bottom_offset = 0;
 		left_offset = 0;
@@ -741,12 +741,13 @@ void client_animation_next_tick(Client *c) {
 			c->animation.current = c->geom;
 		}
 
-		xytonode(cursor->x, cursor->y, NULL, &pointer_c, NULL, &sx, &sy);
+		xytonode(server.cursor->x, server.cursor->y, NULL, &pointer_c, NULL,
+				 &sx, &sy);
 
 		surface =
 			pointer_c && pointer_c == c ? client_surface(pointer_c) : NULL;
-		if (surface && pointer_c == selmon->sel) {
-			wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+		if (surface && pointer_c == server.selmon->sel) {
+			wlr_seat_pointer_notify_enter(server.seat, surface, sx, sy);
 		}
 
 		// end flush in next frame, not the current frame
@@ -777,7 +778,7 @@ void init_fadeout_client(Client *c) {
 	wlr_scene_node_set_enabled(&c->scene->node, true);
 	client_set_border_color(c, bordercolor);
 	fadeout_cient->scene =
-		wlr_scene_tree_snapshot(&c->scene->node, layers[LyrFadeOut]);
+		wlr_scene_tree_snapshot(&c->scene->node, server.layers[LyrFadeOut]);
 	wlr_scene_node_set_enabled(&c->scene->node, false);
 
 	if (!fadeout_cient->scene) {
@@ -836,7 +837,7 @@ void init_fadeout_client(Client *c) {
 
 	fadeout_cient->animation.time_started = get_now_in_ms();
 	wlr_scene_node_set_enabled(&fadeout_cient->scene->node, true);
-	wl_list_insert(&fadeout_clients, &fadeout_cient->fadeout_link);
+	wl_list_insert(&server.fadeout_clients, &fadeout_cient->fadeout_link);
 
 	// 请求刷新屏幕
 	request_fresh_all_monitors();
@@ -871,7 +872,7 @@ void client_set_pending_state(Client *c) {
 		c->animation.should_animate = false;
 	} else if (animations && c->animation.tagining) {
 		c->animation.should_animate = true;
-	} else if (!animations || c == grabc ||
+	} else if (!animations || c == server.grabc ||
 			   (!c->is_pending_open_animation &&
 				wlr_box_equal(&c->current, &c->pending))) {
 		c->animation.should_animate = false;
@@ -892,7 +893,7 @@ void client_set_pending_state(Client *c) {
 		c->istagswitching = 0;
 	}
 
-	if (start_drag_window) {
+	if (server.start_drag_window) {
 		c->animation.should_animate = false;
 		c->animation.duration = 0;
 	}
@@ -925,9 +926,10 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 	c->dirty = true;
 
 	// float_geom = c->geom;
-	bbox = (interact || c->isfloating || c->isfullscreen) ? &sgeom : &c->mon->w;
+	bbox = (interact || c->isfloating || c->isfullscreen) ? &server.sgeom
+														  : &c->mon->w;
 
-	if (is_scroller_layout(c->mon) && (!c->isfloating || c == grabc)) {
+	if (is_scroller_layout(c->mon) && (!c->isfloating || c == server.grabc)) {
 		c->geom = geo;
 		c->geom.width = MAX(1 + 2 * (int32_t)c->bw, c->geom.width);
 		c->geom.height = MAX(1 + 2 * (int32_t)c->bw, c->geom.height);
@@ -990,7 +992,7 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 	c->configure_serial = client_set_size(c, c->geom.width - 2 * c->bw,
 										  c->geom.height - 2 * c->bw);
 
-	if (c == grabc) {
+	if (c == server.grabc) {
 		c->animation.running = false;
 		c->need_output_flush = false;
 
@@ -1109,7 +1111,7 @@ bool client_apply_focus_opacity(Client *c) {
 		float percent =
 			animation_fade_in && !c->nofadein ? opacity_eased_progress : 1.0;
 		float opacity =
-			c == selmon->sel ? c->focused_opacity : c->unfocused_opacity;
+			c == server.selmon->sel ? c->focused_opacity : c->unfocused_opacity;
 
 		float target_opacity =
 			percent * (1.0 - fadein_begin_opacity) + fadein_begin_opacity;
@@ -1157,7 +1159,7 @@ bool client_apply_focus_opacity(Client *c) {
 		} else {
 			return true;
 		}
-	} else if (c == selmon->sel) {
+	} else if (c == server.selmon->sel) {
 		c->opacity_animation.running = false;
 		c->opacity_animation.current_opacity = c->focused_opacity;
 		memcpy(c->opacity_animation.current_border_color, border_color,
