@@ -1080,6 +1080,9 @@ void swallow(Client *c, Client *w) {
 	c->tags = w->tags;
 	c->geom = w->geom;
 	c->float_geom = w->float_geom;
+	c->stack_inner_per = w->stack_inner_per;
+	c->master_inner_per = w->master_inner_per;
+	c->master_mfact_per = w->master_mfact_per;
 	c->scroller_proportion = w->scroller_proportion;
 	c->next_in_stack = w->next_in_stack;
 	c->prev_in_stack = w->prev_in_stack;
@@ -4618,6 +4621,7 @@ setfloating(Client *c, int32_t floating) {
 
 	Client *fc = NULL;
 	struct wlr_box target_box;
+	int32_t old_floating_state = c->isfloating;
 	c->isfloating = floating;
 	bool window_size_outofrange = false;
 
@@ -4687,7 +4691,7 @@ setfloating(Client *c, int32_t floating) {
 								layers[c->isfloating ? LyrTop : LyrTile]);
 	}
 
-	if (!c->isfloating) {
+	if (!c->isfloating && old_floating_state) {
 		set_size_per(c->mon, c);
 	}
 
@@ -4736,6 +4740,7 @@ void setmaximizescreen(Client *c, int32_t maximizescreen) {
 	if (c->mon->isoverview)
 		return;
 
+	int32_t old_maximizescreen_state = c->ismaximizescreen;
 	c->ismaximizescreen = maximizescreen;
 
 	if (maximizescreen) {
@@ -4765,7 +4770,7 @@ void setmaximizescreen(Client *c, int32_t maximizescreen) {
 
 	wlr_scene_node_reparent(&c->scene->node,
 							layers[c->isfloating ? LyrTop : LyrTile]);
-	if (!c->ismaximizescreen) {
+	if (!c->ismaximizescreen && old_maximizescreen_state) {
 		set_size_per(c->mon, c);
 	}
 
@@ -4798,6 +4803,7 @@ void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自
 	if (c->mon->isoverview)
 		return;
 
+	int32_t old_fullscreen_state = c->isfullscreen;
 	c->isfullscreen = fullscreen;
 
 	client_set_fullscreen(c, fullscreen);
@@ -4835,7 +4841,7 @@ void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自
 			layers[fullscreen || c->isfloating ? LyrTop : LyrTile]);
 	}
 
-	if (!c->isfullscreen) {
+	if (!c->isfullscreen && old_fullscreen_state) {
 		set_size_per(c->mon, c);
 	}
 
