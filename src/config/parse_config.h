@@ -2600,7 +2600,10 @@ void parse_config_file(Config *config, const char *file_path) {
 	}
 
 	if (!file) {
-		perror("Error opening file");
+		fprintf(stderr,
+				"\033[1;31m\033[1;33m[ERROR]:\033[0m Failed to open "
+				"config file: %s\n",
+				file_path);
 		return;
 	}
 
