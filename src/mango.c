@@ -235,16 +235,17 @@ typedef struct {
 } Arg;
 
 typedef struct {
+	char *name;		 // keymode名称
+	bool is_default; // 是否为默认模式
+	bool is_common;	 // 是否为公共模式
+} KeyMode;
+
+typedef struct {
 	uint32_t mod;
 	uint32_t button;
 	int32_t (*func)(const Arg *);
 	const Arg arg;
 } Button; // 鼠标按键
-
-typedef struct {
-	char mode[28];
-	bool isdefault;
-} KeyMode;
 
 typedef struct {
 	uint32_t mod;
@@ -538,7 +539,13 @@ typedef struct {
 	struct wl_listener destroy;
 } SessionLock;
 
+typedef struct {
+	KeyMode keymode;
+} Server;
+
 /* function declarations */
+static void init_server(void);
+static void free_server(void);
 static void applybounds(
 	Client *c,
 	struct wlr_box *bbox); // 设置边界规则,能让一些窗口拥有比较适合的大小
@@ -785,6 +792,7 @@ static bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc);
 #include "layout/layout.h"
 
 /* variables */
+Server server;
 static const char broken[] = "broken";
 static pid_t child_pid = -1;
 static int32_t locked;
@@ -879,10 +887,7 @@ static struct wl_event_source *hide_source;
 static bool cursor_hidden = false;
 static bool tag_combo = false;
 static const char *cli_config_path = NULL;
-static KeyMode keymode = {
-	.mode = {'d', 'e', 'f', 'a', 'u', 'l', 't', '\0'},
-	.isdefault = true,
-};
+
 static struct {
 	enum wp_cursor_shape_device_v1_shape shape;
 	struct wlr_surface *surface;
@@ -966,6 +971,16 @@ static struct wlr_xwayland *xwayland;
 #include "layout/arrange.h"
 #include "layout/horizontal.h"
 #include "layout/vertical.h"
+
+void init_server() {
+	server.keymode = (KeyMode){
+		.is_default = true,
+		.is_common = false,
+		.name = strdup("default"),
+	};
+}
+
+void free_server() { free(server.keymode.name); }
 
 void client_change_mon(Client *c, Monitor *m) {
 	setmon(c, m, c->tags, true);
@@ -2162,6 +2177,8 @@ void cleanup(void) {
 	/* Destroy after the wayland display (when the monitors are already
 	   destroyed) to avoid destroying them with an invalid scene output. */
 	wlr_scene_node_destroy(&scene->tree.node);
+
+	free_server();
 }
 
 void cleanupmon(struct wl_listener *listener, void *data) {
@@ -3489,6 +3506,7 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 	const KeyBinding *k;
 	int32_t ji;
 	int32_t isbreak = 0;
+	KeyMode bind_keymode;
 
 	// not allow modifier keys to be used as a keybinding
 	if (keycode == 50 || keycode == 37 || keycode == 133 || keycode == 64 ||
@@ -3519,8 +3537,11 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 			continue;
 
 		k = &config.key_bindings[ji];
-		if ((k->iscommonmode || (k->isdefaultmode && keymode.isdefault) ||
-			 (strcmp(keymode.mode, k->mode) == 0)) &&
+		bind_keymode = config.keymodes[k->keymode_idx];
+
+		if ((bind_keymode.is_common ||
+			 (bind_keymode.is_default && server.keymode.is_default) ||
+			 (strcmp(server.keymode.name, bind_keymode.name) == 0)) &&
 			CLEANMASK(mods) == CLEANMASK(k->mod) &&
 			((k->keysymcode.type == KEY_TYPE_SYM &&
 			  xkb_keysym_to_lower(sym) ==
@@ -5119,6 +5140,7 @@ void setup(void) {
 
 	setenv("XCURSOR_SIZE", "24", 1);
 	setenv("XDG_CURRENT_DESKTOP", "mango", 1);
+	init_server();
 	parse_config();
 	init_baked_points();
 

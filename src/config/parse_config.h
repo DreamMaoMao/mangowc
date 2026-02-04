@@ -27,7 +27,6 @@ typedef struct {
 	uint32_t keycode2;
 	uint32_t keycode3;
 } MultiKeycode;
-
 typedef struct {
 	xkb_keysym_t keysym;
 	MultiKeycode keycode;
@@ -39,9 +38,7 @@ typedef struct {
 	KeySymCode keysymcode;
 	int32_t (*func)(const Arg *);
 	Arg arg;
-	char mode[28];
-	bool iscommonmode;
-	bool isdefaultmode;
+	int32_t keymode_idx; // 改为索引，指向config.keymodes数组
 	bool islockapply;
 	bool isreleaseapply;
 	bool ispassapply;
@@ -353,7 +350,9 @@ typedef struct {
 
 	struct xkb_rule_names xkb_rules;
 
-	char keymode[28];
+	KeyMode *keymodes;			 // 动态数组，存储所有keymode
+	int32_t keymodes_count;		 // keymode数量
+	int32_t current_keymode_idx; // 当前使用的keymode索引
 
 	struct xkb_context *ctx;
 	struct xkb_keymap *keymap;
@@ -363,6 +362,39 @@ typedef int32_t (*FuncType)(const Arg *);
 Config config;
 
 void parse_config_file(Config *config, const char *file_path);
+
+// 查找或添加keymode，返回索引
+int32_t find_or_add_keymode(Config *config, const char *name) {
+	// 检查是否已存在
+	for (int32_t i = 0; i < config->keymodes_count; i++) {
+		if (strcmp(config->keymodes[i].name, name) == 0) {
+			return i;
+		}
+	}
+
+	// 添加新的keymode
+	config->keymodes = realloc(config->keymodes,
+							   (config->keymodes_count + 1) * sizeof(KeyMode));
+	if (!config->keymodes) {
+		fprintf(stderr, "Failed to allocate memory for keymodes\n");
+		return -1;
+	}
+
+	KeyMode *new_mode = &config->keymodes[config->keymodes_count];
+	new_mode->name = strdup(name);
+	new_mode->is_default = (strcmp(name, "default") == 0);
+	new_mode->is_common = (strcmp(name, "common") == 0);
+
+	return config->keymodes_count++; // 返回索引，然后增加计数
+}
+
+// 设置当前keymode
+void set_current_keymode(Config *config, const char *name) {
+	int32_t idx = find_or_add_keymode(config, name);
+	if (idx >= 0) {
+		config->current_keymode_idx = idx;
+	}
+}
 
 // Helper function to trim whitespace from start and end of a string
 void trim_whitespace(char *str) {
@@ -1204,7 +1236,7 @@ void run_exec_once() {
 
 bool parse_option(Config *config, char *key, char *value) {
 	if (strcmp(key, "keymode") == 0) {
-		snprintf(config->keymode, sizeof(config->keymode), "%.27s", value);
+		set_current_keymode(config, value);
 	} else if (strcmp(key, "animations") == 0) {
 		config->animations = atoi(value);
 	} else if (strcmp(key, "layer_animations") == 0) {
@@ -2252,17 +2284,7 @@ bool parse_option(Config *config, char *key, char *value) {
 		trim_whitespace(arg_value4);
 		trim_whitespace(arg_value5);
 
-		strcpy(binding->mode, config->keymode);
-		if (strcmp(binding->mode, "common") == 0) {
-			binding->iscommonmode = true;
-			binding->isdefaultmode = false;
-		} else if (strcmp(binding->mode, "default") == 0) {
-			binding->isdefaultmode = true;
-			binding->iscommonmode = false;
-		} else {
-			binding->isdefaultmode = false;
-			binding->iscommonmode = false;
-		}
+		binding->keymode_idx = config->current_keymode_idx;
 
 		parse_bind_flags(key, binding);
 		binding->keysymcode =
@@ -2983,6 +3005,16 @@ void free_config(void) {
 		config.cursor_theme = NULL;
 	}
 
+	if (config.keymodes) {
+		for (int32_t i = 0; i < config.keymodes_count; i++) {
+			free(config.keymodes[i].name);
+		}
+		free(config.keymodes);
+		config.keymodes = NULL;
+		config.keymodes_count = 0;
+		config.current_keymode_idx = -1;
+	}
+
 	// 释放 circle_layout
 	free_circle_layout(&config);
 
@@ -3342,6 +3374,9 @@ void set_value_default() {
 }
 
 void set_default_key_bindings(Config *config) {
+	// 确保common模式存在
+	int32_t common_idx = find_or_add_keymode(config, "common");
+
 	// 计算默认按键绑定的数量
 	size_t default_key_bindings_count =
 		sizeof(default_key_bindings) / sizeof(KeyBinding);
@@ -3359,8 +3394,10 @@ void set_default_key_bindings(Config *config) {
 	for (size_t i = 0; i < default_key_bindings_count; i++) {
 		config->key_bindings[config->key_bindings_count + i] =
 			default_key_bindings[i];
-		config->key_bindings[config->key_bindings_count + i].iscommonmode =
-			true;
+		// 设置keymode为common模式
+		config->key_bindings[config->key_bindings_count + i].keymode_idx =
+			common_idx;
+		// 设置其他标志
 		config->key_bindings[config->key_bindings_count + i].islockapply = true;
 	}
 
@@ -3383,6 +3420,9 @@ void parse_config(void) {
 	memset(&xkb_rules_options, 0, sizeof(xkb_rules_options));
 
 	// 初始化动态数组的指针为NULL，避免野指针
+	config.keymodes = NULL;
+	config.keymodes_count = 0;
+	config.current_keymode_idx = -1;
 	config.window_rules = NULL;
 	config.window_rules_count = 0;
 	config.monitor_rules = NULL;
@@ -3410,7 +3450,6 @@ void parse_config(void) {
 	config.tag_rules = NULL;
 	config.tag_rules_count = 0;
 	config.cursor_theme = NULL;
-	strcpy(config.keymode, "default");
 
 	create_config_keymap();
 
@@ -3437,6 +3476,7 @@ void parse_config(void) {
 
 	set_value_default();
 	parse_config_file(&config, filename);
+	set_current_keymode(&config, "default");
 	set_default_key_bindings(&config);
 	override_config();
 }

@@ -560,11 +560,17 @@ int32_t setlayout(const Arg *arg) {
 }
 
 int32_t setkeymode(const Arg *arg) {
-	snprintf(keymode.mode, sizeof(keymode.mode), "%.27s", arg->v);
-	if (strcmp(keymode.mode, "default") == 0) {
-		keymode.isdefault = true;
+	free(server.keymode.name);
+	server.keymode.name = strdup(arg->v);
+	if (strcmp(server.keymode.name, "default") == 0) {
+		server.keymode.is_default = true;
 	} else {
-		keymode.isdefault = false;
+		server.keymode.is_default = false;
+	}
+	if (strcmp(server.keymode.name, "common") == 0) {
+		server.keymode.is_common = true;
+	} else {
+		server.keymode.is_common = false;
 	}
 	printstatus();
 	return 1;

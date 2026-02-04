@@ -202,7 +202,7 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 
 	if (wl_resource_get_version(ipc_output->resource) >=
 		ZDWL_IPC_OUTPUT_V2_KEYMODE_SINCE_VERSION) {
-		zdwl_ipc_output_v2_send_keymode(ipc_output->resource, keymode.mode);
+		zdwl_ipc_output_v2_send_keymode(ipc_output->resource, server.keymode.name);
 	}
 
 	if (wl_resource_get_version(ipc_output->resource) >=
