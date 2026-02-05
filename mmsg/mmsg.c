@@ -18,71 +18,71 @@
 
 char *argv0;
 
-static enum {
+enum {
 	NONE = 0,
 	SET = 1 << 0,
 	GET = 1 << 1,
 	WATCH = 1 << 2 | GET,
 } mode = NONE;
 
-static int32_t Oflag;
-static int32_t Tflag;
-static int32_t Lflag;
-static int32_t oflag;
-static int32_t tflag;
-static int32_t lflag;
-static int32_t cflag;
-static int32_t vflag;
-static int32_t mflag;
-static int32_t fflag;
-static int32_t qflag;
-static int32_t dflag;
-static int32_t xflag;
-static int32_t eflag;
-static int32_t kflag;
-static int32_t bflag;
-static int32_t Aflag;
+int32_t Oflag;
+int32_t Tflag;
+int32_t Lflag;
+int32_t oflag;
+int32_t tflag;
+int32_t lflag;
+int32_t cflag;
+int32_t vflag;
+int32_t mflag;
+int32_t fflag;
+int32_t qflag;
+int32_t dflag;
+int32_t xflag;
+int32_t eflag;
+int32_t kflag;
+int32_t bflag;
+int32_t Aflag;
 
-static uint32_t occ, seltags, total_clients, urg;
+uint32_t occ, seltags, total_clients, urg;
 
-static char *output_name;
-static int32_t tagcount;
-static char *tagset;
-static char *layout_name;
-static int32_t layoutcount, layout_idx;
-static char *client_tags;
-static char *dispatch_cmd;
-static char *dispatch_arg1;
-static char *dispatch_arg2;
-static char *dispatch_arg3;
-static char *dispatch_arg4;
-static char *dispatch_arg5;
+char *output_name;
+int32_t tagcount;
+char *tagset;
+char *layout_name;
+int32_t layoutcount, layout_idx;
+char *client_tags;
+char *dispatch_cmd;
+char *dispatch_arg1;
+char *dispatch_arg2;
+char *dispatch_arg3;
+char *dispatch_arg4;
+char *dispatch_arg5;
 
 struct output {
 	char *output_name;
 	uint32_t name;
 };
-static DYNARR_DEF(struct output) outputs;
+DYNARR_DEF(struct output) outputs;
 
-static struct wl_display *display;
-static struct zdwl_ipc_manager_v2 *dwl_ipc_manager;
+struct wl_display *display;
+struct zdwl_ipc_manager_v2 *dwl_ipc_manager;
 
 // 为每个回调定义专用的空函数
-static void noop_geometry(void *data, struct wl_output *wl_output, int32_t x,
+void noop_geometry(void *data, struct wl_output *wl_output, int32_t x,
 						  int32_t y, int32_t physical_width,
 						  int32_t physical_height, int32_t subpixel,
 						  const char *make, const char *model,
 						  int32_t transform) {}
 
-static void noop_mode(void *data, struct wl_output *wl_output, uint32_t flags,
+void noop_mode(void *data, struct wl_output *wl_output, uint32_t flags,
 					  int32_t width, int32_t height, int32_t refresh) {}
 
-static void noop_done(void *data, struct wl_output *wl_output) {}
+void noop_done(void *data, struct wl_output *wl_output) {}
 
-static void noop_scale(void *data, struct wl_output *wl_output,
+void noop_scale(void *data, struct wl_output *wl_output,
 					   int32_t factor) {}
 
-static void noop_description(void *data, struct wl_output *wl_output,
+void noop_description(void *data, struct wl_output *wl_output,
 							 const char *description) {}
 
 // 将 n 转换为 9 位二进制字符串，结果存入 buf（至少长度 10）
@@ -93,7 +93,7 @@ void bin_str_9bits(char *buf, uint32_t n) {
 	*buf = '\0'; // 字符串结尾
 }
 
-static void dwl_ipc_tags(void *data,
+void dwl_ipc_tags(void *data,
 						 struct zdwl_ipc_manager_v2 *dwl_ipc_manager,
 						 uint32_t count) {
 	tagcount = count;
@@ -101,7 +101,7 @@ static void dwl_ipc_tags(void *data,
 		printf("%d\n", tagcount);
 }
 
-static void dwl_ipc_layout(void *data,
+void dwl_ipc_layout(void *data,
 						   struct zdwl_ipc_manager_v2 *dwl_ipc_manager,
 						   const char *name) {
 	if (lflag && mode & SET && strcmp(layout_name, name) == 0)
@@ -111,10 +111,10 @@ static void dwl_ipc_layout(void *data,
 	layoutcount++;
 }
 
-static const struct zdwl_ipc_manager_v2_listener dwl_ipc_listener = {
+const struct zdwl_ipc_manager_v2_listener dwl_ipc_listener = {
 	.tags = dwl_ipc_tags, .layout = dwl_ipc_layout};
 
-static void
+void
 dwl_ipc_output_toggle_visibility(void *data,
 								 struct zdwl_ipc_output_v2 *dwl_ipc_output) {
 	if (!vflag)
@@ -125,7 +125,7 @@ dwl_ipc_output_toggle_visibility(void *data,
 	printf("toggle\n");
 }
 
-static void dwl_ipc_output_active(void *data,
+void dwl_ipc_output_active(void *data,
 								  struct zdwl_ipc_output_v2 *dwl_ipc_output,
 								  uint32_t active) {
 	if (!oflag) {
@@ -139,7 +139,7 @@ static void dwl_ipc_output_active(void *data,
 	printf("selmon %u\n", active ? 1 : 0);
 }
 
-static void dwl_ipc_output_tag(void *data,
+void dwl_ipc_output_tag(void *data,
 							   struct zdwl_ipc_output_v2 *dwl_ipc_output,
 							   uint32_t tag, uint32_t state, uint32_t clients,
 							   uint32_t focused) {
@@ -163,11 +163,11 @@ static void dwl_ipc_output_tag(void *data,
 	printf("tag %u %u %u %u\n", tag + 1, state, clients, focused);
 }
 
-static void dwl_ipc_output_layout(void *data,
+void dwl_ipc_output_layout(void *data,
 								  struct zdwl_ipc_output_v2 *dwl_ipc_output,
 								  uint32_t layout) {}
 
-static void dwl_ipc_output_layout_symbol(
+void dwl_ipc_output_layout_symbol(
 	void *data, struct zdwl_ipc_output_v2 *dwl_ipc_output, const char *layout) {
 	if (!(lflag && mode & GET))
 		return;
@@ -177,7 +177,7 @@ static void dwl_ipc_output_layout_symbol(
 	printf("layout %s\n", layout);
 }
 
-static void dwl_ipc_output_title(void *data,
+void dwl_ipc_output_title(void *data,
 								 struct zdwl_ipc_output_v2 *dwl_ipc_output,
 								 const char *title) {
 	if (!(cflag && mode & GET))
@@ -188,7 +188,7 @@ static void dwl_ipc_output_title(void *data,
 	printf("title %s\n", title);
 }
 
-static void dwl_ipc_output_appid(void *data,
+void dwl_ipc_output_appid(void *data,
 								 struct zdwl_ipc_output_v2 *dwl_ipc_output,
 								 const char *appid) {
 	if (!(cflag && mode & GET))
@@ -199,7 +199,7 @@ static void dwl_ipc_output_appid(void *data,
 	printf("appid %s\n", appid);
 }
 
-static void dwl_ipc_output_x(void *data,
+void dwl_ipc_output_x(void *data,
 							 struct zdwl_ipc_output_v2 *dwl_ipc_output,
 							 int32_t x) {
 	if (!xflag)
@@ -210,7 +210,7 @@ static void dwl_ipc_output_x(void *data,
 	printf("x %d\n", x);
 }
 
-static void dwl_ipc_output_y(void *data,
+void dwl_ipc_output_y(void *data,
 							 struct zdwl_ipc_output_v2 *dwl_ipc_output,
 							 int32_t y) {
 	if (!xflag)
@@ -221,7 +221,7 @@ static void dwl_ipc_output_y(void *data,
 	printf("y %d\n", y);
 }
 
-static void dwl_ipc_output_width(void *data,
+void dwl_ipc_output_width(void *data,
 								 struct zdwl_ipc_output_v2 *dwl_ipc_output,
 								 int32_t width) {
 	if (!xflag)
@@ -232,7 +232,7 @@ static void dwl_ipc_output_width(void *data,
 	printf("width %d\n", width);
 }
 
-static void dwl_ipc_output_height(void *data,
+void dwl_ipc_output_height(void *data,
 								  struct zdwl_ipc_output_v2 *dwl_ipc_output,
 								  int32_t height) {
 	if (!xflag)
@@ -243,7 +243,7 @@ static void dwl_ipc_output_height(void *data,
 	printf("height %d\n", height);
 }
 
-static void dwl_ipc_output_last_layer(void *data,
+void dwl_ipc_output_last_layer(void *data,
 									  struct zdwl_ipc_output_v2 *dwl_ipc_output,
 									  const char *last_layer) {
 	if (!eflag)
@@ -254,7 +254,7 @@ static void dwl_ipc_output_last_layer(void *data,
 	printf("last_layer %s\n", last_layer);
 }
 
-static void dwl_ipc_output_kb_layout(void *data,
+void dwl_ipc_output_kb_layout(void *data,
 									 struct zdwl_ipc_output_v2 *dwl_ipc_output,
 									 const char *kb_layout) {
 	if (!kflag)
@@ -265,7 +265,7 @@ static void dwl_ipc_output_kb_layout(void *data,
 	printf("kb_layout %s\n", kb_layout);
 }
 
-static void
+void
 dwl_ipc_output_scalefactor(void *data,
 						   struct zdwl_ipc_output_v2 *dwl_ipc_output,
 						   const uint32_t scalefactor) {
@@ -277,7 +277,7 @@ dwl_ipc_output_scalefactor(void *data,
 	printf("scale_factor %f\n", scalefactor / 100.0f);
 }
 
-static void dwl_ipc_output_keymode(void *data,
+void dwl_ipc_output_keymode(void *data,
 								   struct zdwl_ipc_output_v2 *dwl_ipc_output,
 								   const char *keymode) {
 	if (!bflag)
@@ -288,7 +288,7 @@ static void dwl_ipc_output_keymode(void *data,
 	printf("keymode %s\n", keymode);
 }
 
-static void dwl_ipc_output_fullscreen(void *data,
+void dwl_ipc_output_fullscreen(void *data,
 									  struct zdwl_ipc_output_v2 *dwl_ipc_output,
 									  uint32_t is_fullscreen) {
 	if (!mflag)
@@ -299,7 +299,7 @@ static void dwl_ipc_output_fullscreen(void *data,
 	printf("fullscreen %u\n", is_fullscreen);
 }
 
-static void dwl_ipc_output_floating(void *data,
+void dwl_ipc_output_floating(void *data,
 									struct zdwl_ipc_output_v2 *dwl_ipc_output,
 									uint32_t is_floating) {
 	if (!fflag)
@@ -310,7 +310,7 @@ static void dwl_ipc_output_floating(void *data,
 	printf("floating %u\n", is_floating);
 }
 
-static void dwl_ipc_output_frame(void *data,
+void dwl_ipc_output_frame(void *data,
 								 struct zdwl_ipc_output_v2 *dwl_ipc_output) {
 	if (mode & SET) {
 		if (data && (!output_name || strcmp(output_name, (char *)data)))
@@ -409,7 +409,7 @@ static void dwl_ipc_output_frame(void *data,
 	fflush(stdout);
 }
 
-static const struct zdwl_ipc_output_v2_listener dwl_ipc_output_listener = {
+const struct zdwl_ipc_output_v2_listener dwl_ipc_output_listener = {
 	.toggle_visibility = dwl_ipc_output_toggle_visibility,
 	.active = dwl_ipc_output_active,
 	.tag = dwl_ipc_output_tag,
@@ -430,7 +430,7 @@ static const struct zdwl_ipc_output_v2_listener dwl_ipc_output_listener = {
 	.frame = dwl_ipc_output_frame,
 };
 
-static void wl_output_name(void *data, struct wl_output *output,
+void wl_output_name(void *data, struct wl_output *output,
 						   const char *name) {
 	if (outputs.arr) {
 		struct output *o = (struct output *)data;
@@ -449,7 +449,7 @@ static void wl_output_name(void *data, struct wl_output *output,
 									output_name ? NULL : strdup(name));
 }
 
-static const struct wl_output_listener output_listener = {
+const struct wl_output_listener output_listener = {
 	.geometry = noop_geometry,
 	.mode = noop_mode,
 	.done = noop_done,
@@ -458,7 +458,7 @@ static const struct wl_output_listener output_listener = {
 	.description = noop_description,
 };
 
-static void global_add(void *data, struct wl_registry *wl_registry,
+void global_add(void *data, struct wl_registry *wl_registry,
 					   uint32_t name, const char *interface, uint32_t version) {
 	if (strcmp(interface, wl_output_interface.name) == 0) {
 		struct wl_output *o =
@@ -479,7 +479,7 @@ static void global_add(void *data, struct wl_registry *wl_registry,
 	}
 }
 
-static void global_remove(void *data, struct wl_registry *wl_registry,
+void global_remove(void *data, struct wl_registry *wl_registry,
 						  uint32_t name) {
 	if (!outputs.arr)
 		return;
@@ -493,12 +493,12 @@ static void global_remove(void *data, struct wl_registry *wl_registry,
 	}
 }
 
-static const struct wl_registry_listener registry_listener = {
+const struct wl_registry_listener registry_listener = {
 	.global = global_add,
 	.global_remove = global_remove,
 };
 
-static void usage(void) {
+void usage(void) {
 	fprintf(stderr,
 			"usage:"
 			"\t%s [-OTLq]\n"

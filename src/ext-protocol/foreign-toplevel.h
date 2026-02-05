@@ -1,6 +1,6 @@
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 
-static struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
+struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 
 void handle_foreign_activate_request(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, foreign_activate_request);

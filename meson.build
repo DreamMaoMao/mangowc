@@ -96,7 +96,16 @@ endif
 
 executable('mango',
   'src/mango.c',
+  'src/animation/client.c',
+  'src/animation/common.c',
+  'src/animation/layer.c',
+  'src/animation/tag.c',
+  'src/client/client.c',
+  'src/layout/arrange.c',
+  'src/layout/layout.c',
   'src/common/util.c',
+  'src/config/parse_config.c',
+  'src/dispatch/bind_define.c',
   'src/ext-protocol/wlr_ext_workspace_v1.c',
   wayland_sources,
   dependencies : [

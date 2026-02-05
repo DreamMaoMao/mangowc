@@ -88,7 +88,7 @@ Monitor *output_nearest_to(int32_t lx, int32_t ly) {
 
 bool output_is_usable(Monitor *m) { return m && m->wlr_output->enabled; }
 
-static bool
+bool
 is_keyboard_emulated_by_input_method(struct wlr_keyboard *keyboard,
 									 struct wlr_input_method_v2 *input_method) {
 	struct wlr_virtual_keyboard_v1 *virtual_keyboard;
@@ -103,7 +103,7 @@ is_keyboard_emulated_by_input_method(struct wlr_keyboard *keyboard,
 			   wl_resource_get_client(input_method->resource);
 }
 
-static struct wlr_input_method_keyboard_grab_v2 *
+struct wlr_input_method_keyboard_grab_v2 *
 get_keyboard_grab(KeyboardGroup *keyboard) {
 	struct wlr_input_method_v2 *input_method =
 		dwl_input_method_relay->input_method;
@@ -157,7 +157,7 @@ bool dwl_im_keyboard_grab_forward_key(KeyboardGroup *keyboard,
 	}
 }
 
-static struct text_input *
+struct text_input *
 get_active_text_input(struct dwl_input_method_relay *relay) {
 	struct text_input *text_input;
 
@@ -173,7 +173,7 @@ get_active_text_input(struct dwl_input_method_relay *relay) {
 	return NULL;
 }
 
-static void update_active_text_input(struct dwl_input_method_relay *relay) {
+void update_active_text_input(struct dwl_input_method_relay *relay) {
 	struct text_input *active_text_input = get_active_text_input(relay);
 
 	if (relay->input_method && relay->active_text_input != active_text_input) {
@@ -188,7 +188,7 @@ static void update_active_text_input(struct dwl_input_method_relay *relay) {
 	relay->active_text_input = active_text_input;
 }
 
-static void
+void
 update_text_inputs_focused_surface(struct dwl_input_method_relay *relay) {
 	struct text_input *text_input;
 	wl_list_for_each(text_input, &relay->text_inputs, link) {
@@ -215,7 +215,7 @@ update_text_inputs_focused_surface(struct dwl_input_method_relay *relay) {
 	}
 }
 
-static void update_popup_position(struct dwl_input_method_popup *popup) {
+void update_popup_position(struct dwl_input_method_popup *popup) {
 	struct dwl_input_method_relay *relay = popup->relay;
 	struct text_input *text_input = relay->active_text_input;
 	struct wlr_box cursor_rect;
@@ -291,14 +291,14 @@ static void update_popup_position(struct dwl_input_method_popup *popup) {
 							  });
 }
 
-static void update_popups_position(struct dwl_input_method_relay *relay) {
+void update_popups_position(struct dwl_input_method_relay *relay) {
 	struct dwl_input_method_popup *popup;
 	wl_list_for_each(popup, &relay->popups, link) {
 		update_popup_position(popup);
 	}
 }
 
-static void handle_input_method_commit(struct wl_listener *listener,
+void handle_input_method_commit(struct wl_listener *listener,
 									   void *data) {
 	struct dwl_input_method_relay *relay =
 		wl_container_of(listener, relay, input_method_commit);
@@ -330,7 +330,7 @@ static void handle_input_method_commit(struct wl_listener *listener,
 	wlr_text_input_v3_send_done(text_input->input);
 }
 
-static void handle_keyboard_grab_destroy(struct wl_listener *listener,
+void handle_keyboard_grab_destroy(struct wl_listener *listener,
 										 void *data) {
 	struct dwl_input_method_relay *relay =
 		wl_container_of(listener, relay, keyboard_grab_destroy);
@@ -343,7 +343,7 @@ static void handle_keyboard_grab_destroy(struct wl_listener *listener,
 	}
 }
 
-static void handle_input_method_grab_keyboard(struct wl_listener *listener,
+void handle_input_method_grab_keyboard(struct wl_listener *listener,
 											  void *data) {
 	struct dwl_input_method_relay *relay =
 		wl_container_of(listener, relay, input_method_grab_keyboard);
@@ -362,7 +362,7 @@ static void handle_input_method_grab_keyboard(struct wl_listener *listener,
 				  &relay->keyboard_grab_destroy);
 }
 
-static void handle_input_method_destroy(struct wl_listener *listener,
+void handle_input_method_destroy(struct wl_listener *listener,
 										void *data) {
 	struct dwl_input_method_relay *relay =
 		wl_container_of(listener, relay, input_method_destroy);
@@ -377,7 +377,7 @@ static void handle_input_method_destroy(struct wl_listener *listener,
 	update_active_text_input(relay);
 }
 
-static void handle_popup_surface_destroy(struct wl_listener *listener,
+void handle_popup_surface_destroy(struct wl_listener *listener,
 										 void *data) {
 	struct dwl_input_method_popup *popup =
 		wl_container_of(listener, popup, destroy);
@@ -388,14 +388,14 @@ static void handle_popup_surface_destroy(struct wl_listener *listener,
 	free(popup);
 }
 
-static void handle_popup_surface_commit(struct wl_listener *listener,
+void handle_popup_surface_commit(struct wl_listener *listener,
 										void *data) {
 	struct dwl_input_method_popup *popup =
 		wl_container_of(listener, popup, commit);
 	update_popup_position(popup);
 }
 
-static void handle_input_method_new_popup_surface(struct wl_listener *listener,
+void handle_input_method_new_popup_surface(struct wl_listener *listener,
 												  void *data) {
 	struct dwl_input_method_relay *relay =
 		wl_container_of(listener, relay, input_method_new_popup_surface);
@@ -422,7 +422,7 @@ static void handle_input_method_new_popup_surface(struct wl_listener *listener,
 	update_popup_position(popup);
 }
 
-static void handle_new_input_method(struct wl_listener *listener, void *data) {
+void handle_new_input_method(struct wl_listener *listener, void *data) {
 	struct dwl_input_method_relay *relay =
 		wl_container_of(listener, relay, new_input_method);
 	struct wlr_input_method_v2 *input_method = data;
@@ -459,7 +459,7 @@ static void handle_new_input_method(struct wl_listener *listener, void *data) {
 	update_active_text_input(relay);
 }
 
-static void send_state_to_input_method(struct dwl_input_method_relay *relay) {
+void send_state_to_input_method(struct dwl_input_method_relay *relay) {
 
 	struct wlr_input_method_v2 *input_method = relay->input_method;
 	struct wlr_text_input_v3 *input = relay->active_text_input->input;
@@ -481,7 +481,7 @@ static void send_state_to_input_method(struct dwl_input_method_relay *relay) {
 	wlr_input_method_v2_send_done(input_method);
 }
 
-static void handle_text_input_enable(struct wl_listener *listener, void *data) {
+void handle_text_input_enable(struct wl_listener *listener, void *data) {
 	struct text_input *text_input =
 		wl_container_of(listener, text_input, enable);
 	struct dwl_input_method_relay *relay = text_input->relay;
@@ -494,7 +494,7 @@ static void handle_text_input_enable(struct wl_listener *listener, void *data) {
 	wlr_text_input_v3_send_done(text_input->input);
 }
 
-static void handle_text_input_disable(struct wl_listener *listener,
+void handle_text_input_disable(struct wl_listener *listener,
 									  void *data) {
 	struct text_input *text_input =
 		wl_container_of(listener, text_input, disable);
@@ -502,7 +502,7 @@ static void handle_text_input_disable(struct wl_listener *listener,
 	update_active_text_input(text_input->relay);
 }
 
-static void handle_text_input_commit(struct wl_listener *listener, void *data) {
+void handle_text_input_commit(struct wl_listener *listener, void *data) {
 	struct text_input *text_input =
 		wl_container_of(listener, text_input, commit);
 	struct dwl_input_method_relay *relay = text_input->relay;
@@ -513,7 +513,7 @@ static void handle_text_input_commit(struct wl_listener *listener, void *data) {
 	}
 }
 
-static void handle_text_input_destroy(struct wl_listener *listener,
+void handle_text_input_destroy(struct wl_listener *listener,
 									  void *data) {
 	struct text_input *text_input =
 		wl_container_of(listener, text_input, destroy);
@@ -526,7 +526,7 @@ static void handle_text_input_destroy(struct wl_listener *listener,
 	free(text_input);
 }
 
-static void handle_new_text_input(struct wl_listener *listener, void *data) {
+void handle_new_text_input(struct wl_listener *listener, void *data) {
 	struct dwl_input_method_relay *relay =
 		wl_container_of(listener, relay, new_text_input);
 	struct wlr_text_input_v3 *wlr_text_input = data;
@@ -555,7 +555,7 @@ static void handle_new_text_input(struct wl_listener *listener, void *data) {
 	update_text_inputs_focused_surface(relay);
 }
 
-static void handle_focused_surface_destroy(struct wl_listener *listener,
+void handle_focused_surface_destroy(struct wl_listener *listener,
 										   void *data) {
 	struct dwl_input_method_relay *relay =
 		wl_container_of(listener, relay, focused_surface_destroy);

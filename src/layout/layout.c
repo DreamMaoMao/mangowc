@@ -1,0 +1,26 @@
+
+#include "../type.h"
+#include "layout.h"
+
+Layout overviewlayout = {"󰃇", overview, "overview"};
+
+
+Layout layouts[] = {
+	// 最少两个,不能删除少于两个
+	/* symbol     arrange function   name */
+	{"T", tile, "tile", TILE},						 // 平铺布局
+	{"S", scroller, "scroller", SCROLLER},			 // 滚动布局
+	{"G", grid, "grid", GRID},						 // 格子布局
+	{"M", monocle, "monocle", MONOCLE},				 // 单屏布局
+	{"K", deck, "deck", DECK},						 // 卡片布局
+	{"CT", center_tile, "center_tile", CENTER_TILE}, // 居中布局
+	{"RT", right_tile, "right_tile", RIGHT_TILE},	 // 右布局
+	{"VS", vertical_scroller, "vertical_scroller",
+	 VERTICAL_SCROLLER},								   // 垂直滚动布局
+	{"VT", vertical_tile, "vertical_tile", VERTICAL_TILE}, // 垂直平铺布局
+	{"VG", vertical_grid, "vertical_grid", VERTICAL_GRID}, // 垂直格子布局
+	{"VK", vertical_deck, "vertical_deck", VERTICAL_DECK}, // 垂直卡片布局
+	{"TG", tgmix, "tgmix", TGMIX},						   // 混合布局
+};
+
+const uint32_t layouts_len = sizeof(layouts) / sizeof(layouts[0]);

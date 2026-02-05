@@ -1,41 +1,41 @@
 #include "dwl-ipc-unstable-v2-protocol.h"
 
-static void dwl_ipc_manager_bind(struct wl_client *client, void *data,
+void dwl_ipc_manager_bind(struct wl_client *client, void *data,
 								 uint32_t version, uint32_t id);
-static void dwl_ipc_manager_destroy(struct wl_resource *resource);
-static void dwl_ipc_manager_get_output(struct wl_client *client,
+void dwl_ipc_manager_destroy(struct wl_resource *resource);
+void dwl_ipc_manager_get_output(struct wl_client *client,
 									   struct wl_resource *resource,
 									   uint32_t id, struct wl_resource *output);
-static void dwl_ipc_manager_release(struct wl_client *client,
+void dwl_ipc_manager_release(struct wl_client *client,
 									struct wl_resource *resource);
-static void dwl_ipc_output_destroy(struct wl_resource *resource);
-static void dwl_ipc_output_printstatus(Monitor *monitor);
-static void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output);
-static void dwl_ipc_output_set_client_tags(struct wl_client *client,
+void dwl_ipc_output_destroy(struct wl_resource *resource);
+void dwl_ipc_output_printstatus(Monitor *monitor);
+void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output);
+void dwl_ipc_output_set_client_tags(struct wl_client *client,
 										   struct wl_resource *resource,
 										   uint32_t and_tags,
 										   uint32_t xor_tags);
-static void dwl_ipc_output_set_layout(struct wl_client *client,
+void dwl_ipc_output_set_layout(struct wl_client *client,
 									  struct wl_resource *resource,
 									  uint32_t index);
-static void dwl_ipc_output_set_tags(struct wl_client *client,
+void dwl_ipc_output_set_tags(struct wl_client *client,
 									struct wl_resource *resource,
 									uint32_t tagmask, uint32_t toggle_tagset);
-static void dwl_ipc_output_quit(struct wl_client *client,
+void dwl_ipc_output_quit(struct wl_client *client,
 								struct wl_resource *resource);
-static void dwl_ipc_output_dispatch(struct wl_client *client,
+void dwl_ipc_output_dispatch(struct wl_client *client,
 									struct wl_resource *resource,
 									const char *dispatch, const char *arg1,
 									const char *arg2, const char *arg3,
 									const char *arg4, const char *arg5);
-static void dwl_ipc_output_release(struct wl_client *client,
+void dwl_ipc_output_release(struct wl_client *client,
 								   struct wl_resource *resource);
 
 /* global event handlers */
-static struct zdwl_ipc_manager_v2_interface dwl_manager_implementation = {
+struct zdwl_ipc_manager_v2_interface dwl_manager_implementation = {
 	.release = dwl_ipc_manager_release,
 	.get_output = dwl_ipc_manager_get_output};
-static struct zdwl_ipc_output_v2_interface dwl_output_implementation = {
+struct zdwl_ipc_output_v2_interface dwl_output_implementation = {
 	.release = dwl_ipc_output_release,
 	.set_tags = dwl_ipc_output_set_tags,
 	.quit = dwl_ipc_output_quit,
@@ -57,7 +57,7 @@ void dwl_ipc_manager_bind(struct wl_client *client, void *data,
 
 	zdwl_ipc_manager_v2_send_tags(manager_resource, LENGTH(tags));
 
-	for (uint32_t i = 0; i < LENGTH(layouts); i++)
+	for (uint32_t i = 0; i < layouts_len; i++) {
 		zdwl_ipc_manager_v2_send_layout(manager_resource, layouts[i].symbol);
 }
 
@@ -93,7 +93,7 @@ void dwl_ipc_manager_release(struct wl_client *client,
 	wl_resource_destroy(resource);
 }
 
-static void dwl_ipc_output_destroy(struct wl_resource *resource) {
+void dwl_ipc_output_destroy(struct wl_resource *resource) {
 	DwlIpcOutput *ipc_output = wl_resource_get_user_data(resource);
 	wl_list_remove(&ipc_output->link);
 	free(ipc_output);
@@ -254,7 +254,7 @@ void dwl_ipc_output_set_layout(struct wl_client *client,
 		return;
 
 	monitor = ipc_output->mon;
-	if (index >= LENGTH(layouts))
+	if (index >= layouts_len)
 		index = 0;
 
 	monitor->pertag->ltidxs[monitor->pertag->curtag] = &layouts[index];

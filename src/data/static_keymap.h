@@ -3,7 +3,7 @@ typedef struct {
 	const char *abbr; // 全部使用小写
 } LayoutMapping;
 
-static const LayoutMapping layout_mappings[] = {
+const LayoutMapping layout_mappings[] = {
 	{"English (US)", "us"},
 	{"English (UK)", "gb"},
 	{"Russian", "ru"},

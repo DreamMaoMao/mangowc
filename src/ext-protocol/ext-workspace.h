@@ -43,7 +43,7 @@ void toggle_workspace(struct workspace *target) {
 	}
 }
 
-static void handle_ext_workspace_activate(struct wl_listener *listener,
+void handle_ext_workspace_activate(struct wl_listener *listener,
 										  void *data) {
 	struct workspace *workspace =
 		wl_container_of(listener, workspace, activate);
@@ -56,7 +56,7 @@ static void handle_ext_workspace_activate(struct wl_listener *listener,
 	wlr_log(WLR_INFO, "ext activating workspace %d", workspace->tag);
 }
 
-static void handle_ext_workspace_deactivate(struct wl_listener *listener,
+void handle_ext_workspace_deactivate(struct wl_listener *listener,
 											void *data) {
 	struct workspace *workspace =
 		wl_container_of(listener, workspace, deactivate);
@@ -69,8 +69,8 @@ static void handle_ext_workspace_deactivate(struct wl_listener *listener,
 	wlr_log(WLR_INFO, "ext deactivating workspace %d", workspace->tag);
 }
 
-static const char *get_name_from_tag(uint32_t tag) {
-	static const char *names[] = {"overview", "1", "2", "3", "4",
+const char *get_name_from_tag(uint32_t tag) {
+	const char *names[] = {"overview", "1", "2", "3", "4",
 								  "5",		  "6", "7", "8", "9"};
 	return (tag < sizeof(names) / sizeof(names[0])) ? names[tag] : NULL;
 }
@@ -92,7 +92,7 @@ void cleanup_workspaces_by_monitor(Monitor *m) {
 	}
 }
 
-static void remove_workspace_by_tag(uint32_t tag, Monitor *m) {
+void remove_workspace_by_tag(uint32_t tag, Monitor *m) {
 	struct workspace *workspace, *tmp;
 	wl_list_for_each_safe(workspace, tmp, &workspaces, link) {
 		if (workspace->tag == tag && workspace->m == m) {
@@ -102,7 +102,7 @@ static void remove_workspace_by_tag(uint32_t tag, Monitor *m) {
 	}
 }
 
-static void add_workspace_by_tag(int32_t tag, Monitor *m) {
+void add_workspace_by_tag(int32_t tag, Monitor *m) {
 	const char *name = get_name_from_tag(tag);
 
 	struct workspace *workspace = ecalloc(1, sizeof(*workspace));

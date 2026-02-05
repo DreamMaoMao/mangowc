@@ -126,7 +126,7 @@ char xkb_rules_variant[256];
 char xkb_rules_options[256];
 
 /* keyboard */
-static const struct xkb_rule_names xkb_fallback_rules = {
+const struct xkb_rule_names xkb_fallback_rules = {
 	.layout = "us",
 	.variant = NULL,
 	.model = NULL,
@@ -134,7 +134,7 @@ static const struct xkb_rule_names xkb_fallback_rules = {
 	.options = NULL,
 };
 
-static const struct xkb_rule_names xkb_default_rules = {
+const struct xkb_rule_names xkb_default_rules = {
 	.options = NULL,
 };
 
@@ -206,7 +206,7 @@ enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TAP_MAP_LRM;
 /* If you want to use the windows key for MODKEY, use WLR_MODIFIER_LOGO */
 #define MODKEY WLR_MODIFIER_ALT
 
-static const char *tags[] = {
+const char *tags[] = {
 	"1", "2", "3", "4", "5", "6", "7", "8", "9",
 };
 
