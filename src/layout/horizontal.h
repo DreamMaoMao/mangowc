@@ -930,3 +930,148 @@ void tgmix(Monitor *m) {
 		return;
 	}
 }
+
+// Dwindle layout
+// Each new window splits the space in half, alternating between
+// horizontal and vertical splits based on aspect ratio
+typedef struct DwindleNode {
+	struct wlr_box box;
+	Client *client;				 // NULL if internal node
+	struct DwindleNode *children[2]; // NULL for leaf nodes
+	bool split_horizontal;		 // true = left/right, false = top/bottom
+} DwindleNode;
+
+void dwindle(Monitor *m) {
+	int32_t i, n = 0;
+	Client *c = NULL;
+	Client **tempClients = NULL;
+	DwindleNode *nodes = NULL;
+	int32_t nodeCount = 0;
+
+	
+	int32_t cur_gappiv = enablegaps ? m->gappiv : 0;
+	int32_t cur_gappih = enablegaps ? m->gappih : 0;
+	int32_t cur_gappov = enablegaps ? m->gappov : 0;
+	int32_t cur_gappoh = enablegaps ? m->gappoh : 0;
+
+	
+	cur_gappiv = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappiv;
+	cur_gappih = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappih;
+	cur_gappov = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappov;
+	cur_gappoh = smartgaps && m->visible_tiling_clients == 1 ? 0 : cur_gappoh;
+
+	const float split_width_multiplier = 1.0f;
+
+	n = m->visible_tiling_clients;
+
+	if (n == 0)
+		return;
+
+	if (n == 1) {
+		wl_list_for_each(c, &clients, link) {
+			if (!VISIBLEON(c, m) || !ISTILED(c))
+				continue;
+
+			resize(c,
+				   (struct wlr_box){.x = m->w.x + cur_gappoh,
+									.y = m->w.y + cur_gappov,
+									.width = m->w.width - 2 * cur_gappoh,
+									.height = m->w.height - 2 * cur_gappov},
+				   0);
+			return;
+		}
+	}
+
+	tempClients = malloc(n * sizeof(Client *));
+	if (!tempClients)
+		return;
+
+	i = 0;
+	wl_list_for_each(c, &clients, link) {
+		if (!VISIBLEON(c, m) || !ISTILED(c))
+			continue;
+		tempClients[i++] = c;
+	}
+
+	nodes = calloc(2 * n - 1, sizeof(DwindleNode));
+	if (!nodes) {
+		free(tempClients);
+		return;
+	}
+
+	nodes[0].box.x = m->w.x + cur_gappoh;
+	nodes[0].box.y = m->w.y + cur_gappov;
+	nodes[0].box.width = m->w.width - 2 * cur_gappoh;
+	nodes[0].box.height = m->w.height - 2 * cur_gappov;
+	nodes[0].client = tempClients[0];
+	nodes[0].children[0] = NULL;
+	nodes[0].children[1] = NULL;
+	nodeCount = 1;
+
+	for (i = 1; i < n; i++) {
+		DwindleNode *leafToSplit = NULL;
+		for (int32_t j = nodeCount - 1; j >= 0; j--) {
+			if (nodes[j].client != NULL) {
+				leafToSplit = &nodes[j];
+				break;
+			}
+		}
+
+		if (!leafToSplit)
+			break;
+
+		bool splitHorizontal =
+			leafToSplit->box.width > leafToSplit->box.height * split_width_multiplier;
+
+		DwindleNode *child0 = &nodes[nodeCount++];
+		DwindleNode *child1 = &nodes[nodeCount++];
+
+		if (splitHorizontal) {
+			int32_t halfWidth = (leafToSplit->box.width - cur_gappih) / 2;
+
+			child0->box.x = leafToSplit->box.x;
+			child0->box.y = leafToSplit->box.y;
+			child0->box.width = halfWidth;
+			child0->box.height = leafToSplit->box.height;
+
+			child1->box.x = leafToSplit->box.x + halfWidth + cur_gappih;
+			child1->box.y = leafToSplit->box.y;
+			child1->box.width = leafToSplit->box.width - halfWidth - cur_gappih;
+			child1->box.height = leafToSplit->box.height;
+		} else {
+			int32_t halfHeight = (leafToSplit->box.height - cur_gappiv) / 2;
+
+			child0->box.x = leafToSplit->box.x;
+			child0->box.y = leafToSplit->box.y;
+			child0->box.width = leafToSplit->box.width;
+			child0->box.height = halfHeight;
+
+			child1->box.x = leafToSplit->box.x;
+			child1->box.y = leafToSplit->box.y + halfHeight + cur_gappiv;
+			child1->box.width = leafToSplit->box.width;
+			child1->box.height = leafToSplit->box.height - halfHeight - cur_gappiv;
+		}
+
+		child0->client = leafToSplit->client;
+		child0->children[0] = NULL;
+		child0->children[1] = NULL;
+
+		child1->client = tempClients[i];
+		child1->children[0] = NULL;
+		child1->children[1] = NULL;
+
+		leafToSplit->client = NULL;
+		leafToSplit->children[0] = child0;
+		leafToSplit->children[1] = child1;
+		leafToSplit->split_horizontal = splitHorizontal;
+	}
+
+	for (i = 0; i < nodeCount; i++) {
+		if (nodes[i].client != NULL) {
+			resize(nodes[i].client, nodes[i].box, 0);
+		}
+	}
+
+	free(nodes);
+	free(tempClients);
+}
