@@ -759,8 +759,9 @@ KeySymCode parse_key(const char *key_str, bool isbindsym) {
 		return kc;
 	}
 
-	// 普通键名直接转换
-	xkb_keysym_t sym = xkb_keysym_from_name(key_str, XKB_KEYSYM_NO_FLAGS);
+	// change key string to keysym, case insensitive
+	xkb_keysym_t sym =
+		xkb_keysym_from_name(key_str, XKB_KEYSYM_CASE_INSENSITIVE);
 
 	if (isbindsym) {
 		kc.type = KEY_TYPE_SYM;
