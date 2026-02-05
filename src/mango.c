@@ -969,7 +969,6 @@ static struct wlr_xwayland *xwayland;
 
 void client_change_mon(Client *c, Monitor *m) {
 	setmon(c, m, c->tags, true);
-	reset_foreign_tolevel(c);
 	if (c->isfloating) {
 		c->float_geom = c->geom =
 			setclient_coordinate_center(c, c->mon, c->geom, 0, 0);
@@ -1071,6 +1070,9 @@ void swallow(Client *c, Client *w) {
 	c->tags = w->tags;
 	c->geom = w->geom;
 	c->float_geom = w->float_geom;
+	c->stack_inner_per = w->stack_inner_per;
+	c->master_inner_per = w->master_inner_per;
+	c->master_mfact_per = w->master_mfact_per;
 	c->scroller_proportion = w->scroller_proportion;
 	c->next_in_stack = w->next_in_stack;
 	c->prev_in_stack = w->prev_in_stack;
@@ -2023,7 +2025,6 @@ buttonpress(struct wl_listener *listener, void *data) {
 			selmon = xytomon(cursor->x, cursor->y);
 			client_update_oldmonname_record(grabc, selmon);
 			setmon(grabc, selmon, 0, true);
-			reset_foreign_tolevel(grabc);
 			selmon->prevsel = ISTILED(selmon->sel) ? selmon->sel : NULL;
 			selmon->sel = grabc;
 			tmpc = grabc;
@@ -3825,6 +3826,12 @@ void init_client_properties(Client *c) {
 	c->stack_proportion = 0.0f;
 	c->next_in_stack = NULL;
 	c->prev_in_stack = NULL;
+	memcpy(c->opacity_animation.initial_border_color, bordercolor,
+		   sizeof(c->opacity_animation.initial_border_color));
+	memcpy(c->opacity_animation.current_border_color, bordercolor,
+		   sizeof(c->opacity_animation.current_border_color));
+	c->opacity_animation.initial_opacity = c->unfocused_opacity;
+	c->opacity_animation.current_opacity = c->unfocused_opacity;
 }
 
 void // old fix to 0.5
@@ -4672,6 +4679,7 @@ setfloating(Client *c, int32_t floating) {
 
 	Client *fc = NULL;
 	struct wlr_box target_box;
+	int32_t old_floating_state = c->isfloating;
 	c->isfloating = floating;
 	bool window_size_outofrange = false;
 
@@ -4741,7 +4749,7 @@ setfloating(Client *c, int32_t floating) {
 								layers[c->isfloating ? LyrTop : LyrTile]);
 	}
 
-	if (!c->isfloating) {
+	if (!c->isfloating && old_floating_state) {
 		set_size_per(c->mon, c);
 	}
 
@@ -4790,6 +4798,7 @@ void setmaximizescreen(Client *c, int32_t maximizescreen) {
 	if (c->mon->isoverview)
 		return;
 
+	int32_t old_maximizescreen_state = c->ismaximizescreen;
 	c->ismaximizescreen = maximizescreen;
 
 	if (maximizescreen) {
@@ -4819,7 +4828,7 @@ void setmaximizescreen(Client *c, int32_t maximizescreen) {
 
 	wlr_scene_node_reparent(&c->scene->node,
 							layers[c->isfloating ? LyrTop : LyrTile]);
-	if (!c->ismaximizescreen) {
+	if (!c->ismaximizescreen && old_maximizescreen_state) {
 		set_size_per(c->mon, c);
 	}
 
@@ -4852,6 +4861,7 @@ void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自
 	if (c->mon->isoverview)
 		return;
 
+	int32_t old_fullscreen_state = c->isfullscreen;
 	c->isfullscreen = fullscreen;
 
 	client_set_fullscreen(c, fullscreen);
@@ -4889,7 +4899,7 @@ void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自
 			layers[fullscreen || c->isfloating ? LyrTop : LyrTile]);
 	}
 
-	if (!c->isfullscreen) {
+	if (!c->isfullscreen && old_fullscreen_state) {
 		set_size_per(c->mon, c);
 	}
 
@@ -5018,6 +5028,7 @@ void setmon(Client *c, Monitor *m, uint32_t newtags, bool focus) {
 		arrange(oldmon, false, false);
 	if (m) {
 		/* Make sure window actually overlaps with the monitor */
+		reset_foreign_tolevel(c);
 		resize(c, c->geom, 0);
 		c->tags =
 			newtags ? newtags
@@ -5028,21 +5039,6 @@ void setmon(Client *c, Monitor *m, uint32_t newtags, bool focus) {
 
 	if (focus && !client_is_x11_popup(c)) {
 		focusclient(focustop(selmon), 1);
-	}
-
-	if (m) {
-
-		if (c->foreign_toplevel) {
-			remove_foreign_topleve(c);
-		}
-
-		add_foreign_toplevel(c);
-		if (m->sel && m->sel->foreign_toplevel)
-			wlr_foreign_toplevel_handle_v1_set_activated(
-				m->sel->foreign_toplevel, false);
-		if (c->foreign_toplevel)
-			wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel,
-														 true);
 	}
 }
 
@@ -5798,7 +5794,8 @@ void updatemons(struct wl_listener *listener, void *data) {
 	if (selmon && selmon->wlr_output->enabled) {
 		wl_list_for_each(c, &clients, link) {
 			if (!c->mon && client_surface(c)->mapped) {
-				client_change_mon(c, selmon);
+				c->mon = selmon;
+				reset_foreign_tolevel(c);
 			}
 		}
 		focusclient(focustop(selmon), 1);

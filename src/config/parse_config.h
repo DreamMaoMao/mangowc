@@ -822,8 +822,9 @@ KeySymCode parse_key(const char *key_str, bool isbindsym) {
 		return kc;
 	}
 
-	// 普通键名直接转换
-	xkb_keysym_t sym = xkb_keysym_from_name(key_str, XKB_KEYSYM_NO_FLAGS);
+	// change key string to keysym, case insensitive
+	xkb_keysym_t sym =
+		xkb_keysym_from_name(key_str, XKB_KEYSYM_CASE_INSENSITIVE);
 
 	if (isbindsym) {
 		kc.type = KEY_TYPE_SYM;
@@ -940,6 +941,12 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 						 char *arg_value5) {
 
 	FuncType func = NULL;
+	(*arg).i = 0;
+	(*arg).i2 = 0;
+	(*arg).f = 0.0f;
+	(*arg).f2 = 0.0f;
+	(*arg).ui = 0;
+	(*arg).ui2 = 0;
 	(*arg).v = NULL;
 	(*arg).v2 = NULL;
 	(*arg).v3 = NULL;
@@ -2869,7 +2876,10 @@ void parse_config_file(Config *config, const char *file_path) {
 	}
 
 	if (!file) {
-		perror("Error opening file");
+		fprintf(stderr,
+				"\033[1;31m\033[1;33m[ERROR]:\033[0m Failed to open "
+				"config file: %s\n",
+				file_path);
 		return;
 	}
 
