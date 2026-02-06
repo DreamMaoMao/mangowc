@@ -3750,6 +3750,8 @@ void reapply_cursor_style(void) {
 	}
 }
 
+void reapply_rootbg(void) { wlr_scene_rect_set_color(root_bg, rootcolor); }
+
 void reapply_border(void) {
 	Client *c = NULL;
 
@@ -3875,6 +3877,7 @@ void reset_option(void) {
 
 	reapply_cursor_style();
 	reapply_border();
+	reapply_rootbg();
 	reapply_keyboard();
 	reapply_pointer();
 	reapply_master();
