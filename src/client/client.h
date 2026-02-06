@@ -254,7 +254,7 @@ static inline int32_t client_is_stopped(Client *c) {
 	wl_client_get_credentials(c->surface.xdg->client->client, &pid, NULL, NULL);
 	if (waitid(P_PID, pid, &in, WNOHANG | WCONTINUED | WSTOPPED | WNOWAIT) <
 		0) {
-		/* This process is not our child process, while is very unluckely that
+		/* This process is not our child process, while is very unlikely that
 		 * it is stopped, in order to do not skip frames assume that it is. */
 		if (errno == ECHILD)
 			return 1;
