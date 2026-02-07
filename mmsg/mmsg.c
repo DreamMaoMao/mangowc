@@ -504,7 +504,8 @@ static void usage(void) {
 			"\n"
 			"SYNOPSIS:\n"
 			"\tmmsg [-OTLq]\n"
-			"\tmmsg [-o <output>] -s [-t <tags>] [-l <layout>] [-c <tags>] [-d <cmd>,<arg1>,<arg2>,<arg3>,<arg4>,<arg5>]\n"
+			"\tmmsg [-o <output>] -s [-t <tags>] [-l <layout>] [-c <tags>] [-d "
+			"<cmd>,<arg1>,<arg2>,<arg3>,<arg4>,<arg5>]\n"
 			"\tmmsg [-o <output>] (-g | -w) [-OotlcvmfxekbA]\n"
 			"\n"
 			"OPERATION MODES:\n"
@@ -536,11 +537,11 @@ static void usage(void) {
 			"\n"
 			"SET OPTIONS (used with -s):\n"
 			"\t-o <output>         Select output (monitor)\n"
-			"\t-t <tags>           Set selected tags (can be used with [+-^.] modifiers)\n"
+			"\t-t <tags>           Set selected tags (can be used with [+-^.] "
+			"modifiers)\n"
 			"\t-l <layout>         Set current layout\n"
 			"\t-c <tags>           Get title and appid of focused client\n"
-			"\t-d <cmd>,<args...>  Dispatch internal command (max 5 args)\n"
-	);
+			"\t-d <cmd>,<args...>  Dispatch internal command (max 5 args)\n");
 	exit(2);
 }
 

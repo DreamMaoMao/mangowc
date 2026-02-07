@@ -3368,8 +3368,9 @@ void requestmonstate(struct wl_listener *listener, void *data) {
 
 void inputdevice(struct wl_listener *listener, void *data) {
 	/* This event is raised by the backend when a new input device becomes
-	 * available. 
-	 * when the backend is a headless backend, this event will never be triggered.
+	 * available.
+	 * when the backend is a headless backend, this event will never be
+	 * triggered.
 	 */
 	struct wlr_input_device *device = data;
 	uint32_t caps;
