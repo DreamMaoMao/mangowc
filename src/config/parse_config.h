@@ -362,7 +362,7 @@ typedef struct {
 typedef int32_t (*FuncType)(const Arg *);
 Config config;
 
-void parse_config_file(Config *config, const char *file_path);
+bool parse_config_file(Config *config, const char *file_path);
 
 // Helper function to trim whitespace from start and end of a string
 void trim_whitespace(char *str) {
@@ -2639,7 +2639,7 @@ bool parse_config_line(Config *config, const char *line) {
 	return parse_option(config, key, value);
 }
 
-void parse_config_file(Config *config, const char *file_path) {
+bool parse_config_file(Config *config, const char *file_path) {
 	FILE *file;
 	char full_path[1024];
 
@@ -2658,7 +2658,7 @@ void parse_config_file(Config *config, const char *file_path) {
 				fprintf(stderr,
 						"\033[1m\033[31m[ERROR]:\033[33m HOME environment "
 						"variable not set.\n");
-				return;
+				return false;
 			}
 			snprintf(full_path, sizeof(full_path), "%s/.config/mango/%s", home,
 					 file_path + 1);
@@ -2673,7 +2673,7 @@ void parse_config_file(Config *config, const char *file_path) {
 		if (!home) {
 			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m HOME environment "
 							"variable not set.\n");
-			return;
+			return false;
 		}
 		snprintf(full_path, sizeof(full_path), "%s%s", home, file_path + 1);
 		file = fopen(full_path, "r");
@@ -2688,19 +2688,21 @@ void parse_config_file(Config *config, const char *file_path) {
 				"\033[1;31m\033[1;33m[ERROR]:\033[0m Failed to open "
 				"config file: %s\n",
 				file_path);
-		return;
+		return false;
 	}
 
 	char line[512];
 	bool parse_correct = true;
+	bool parse_line_correct = true;
 	uint32_t line_count = 0;
 	while (fgets(line, sizeof(line), file)) {
 		line_count++;
 		if (line[0] == '#' || line[0] == '\n') {
 			continue;
 		}
-		parse_correct = parse_config_line(config, line);
-		if (!parse_correct) {
+		parse_line_correct = parse_config_line(config, line);
+		if (!parse_line_correct) {
+			parse_correct = false;
 			fprintf(stderr,
 					"\033[1;31m╰─\033[1;33m[Index]\033[0m "
 					"\033[1;36m%s\033[0m:\033[1;35m%d\033[0m\n"
@@ -2710,6 +2712,7 @@ void parse_config_file(Config *config, const char *file_path) {
 	}
 
 	fclose(file);
+	return parse_correct;
 }
 
 void free_circle_layout(Config *config) {
@@ -3369,7 +3372,7 @@ void set_default_key_bindings(Config *config) {
 	config->key_bindings_count += default_key_bindings_count;
 }
 
-void parse_config(void) {
+bool parse_config(void) {
 
 	char filename[1024];
 
@@ -3422,7 +3425,7 @@ void parse_config(void) {
 		const char *homedir = getenv("HOME");
 		if (!homedir) {
 			// 如果获取失败，则无法继续
-			return;
+			return false;
 		}
 		// 构建日志文件路径
 		snprintf(filename, sizeof(filename), "%s/.config/mango/config.conf",
@@ -3436,10 +3439,12 @@ void parse_config(void) {
 		}
 	}
 
+	bool parse_correct = true;
 	set_value_default();
-	parse_config_file(&config, filename);
+	parse_correct = parse_config_file(&config, filename);
 	set_default_key_bindings(&config);
 	override_config();
+	return parse_correct;
 }
 
 void reset_blur_params(void) {
