@@ -6168,8 +6168,7 @@ int32_t main(int32_t argc, char *argv[]) {
 		} else if (c == 'c') {
 			cli_config_path = optarg;
 		} else if (c == 'p') {
-			parse_config();
-			return EXIT_SUCCESS;
+			return parse_config() ? EXIT_SUCCESS : EXIT_FAILURE;
 		} else {
 			goto usage;
 		}
