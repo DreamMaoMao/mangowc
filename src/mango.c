@@ -3419,7 +3419,9 @@ void requestmonstate(struct wl_listener *listener, void *data) {
 
 void inputdevice(struct wl_listener *listener, void *data) {
 	/* This event is raised by the backend when a new input device becomes
-	 * available. */
+	 * available. 
+	 * when the backend is a headless backend, this event will never be triggered.
+	 */
 	struct wlr_input_device *device = data;
 	uint32_t caps;
 
@@ -5973,6 +5975,8 @@ void handle_keyboard_shortcuts_inhibit_new_inhibitor(
 void virtualkeyboard(struct wl_listener *listener, void *data) {
 	struct wlr_virtual_keyboard_v1 *kb = data;
 	/* virtual keyboards shouldn't share keyboard group */
+	wlr_seat_set_capabilities(seat,
+							  seat->capabilities | WL_SEAT_CAPABILITY_KEYBOARD);
 	KeyboardGroup *group = createkeyboardgroup();
 	/* Set the keymap to match the group keymap */
 	wlr_keyboard_set_keymap(&kb->keyboard, group->wlr_group->keyboard.keymap);
@@ -6003,7 +6007,8 @@ void warp_cursor_to_selmon(Monitor *m) {
 void virtualpointer(struct wl_listener *listener, void *data) {
 	struct wlr_virtual_pointer_v1_new_pointer_event *event = data;
 	struct wlr_input_device *device = &event->new_pointer->pointer.base;
-
+	wlr_seat_set_capabilities(seat,
+							  seat->capabilities | WL_SEAT_CAPABILITY_POINTER);
 	wlr_cursor_attach_input_device(cursor, device);
 	if (event->suggested_output)
 		wlr_cursor_map_input_to_output(cursor, device, event->suggested_output);
