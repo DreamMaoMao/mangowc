@@ -881,55 +881,70 @@ int32_t spawn_on_empty(const Arg *arg) {
 }
 
 int32_t switch_keyboard_layout(const Arg *arg) {
-	if (!kb_group || !kb_group->wlr_group || !seat) {
-		wlr_log(WLR_ERROR, "Invalid keyboard group or seat");
-		return 0;
-	}
+	KeyboardGroup *group = NULL;
+	wl_list_for_each(group, &keyboard_groups, link) {
+		struct wlr_keyboard *keyboard = group->is_virtual
+											? group->virtual_keyboard
+											: &group->wlr_group->keyboard;
+		if (!keyboard || !keyboard->keymap) {
+			wlr_log(WLR_ERROR, "Invalid keyboard or keymap");
+			continue;
+		}
+		// 1. 获取当前布局和计算下一个布局
+		xkb_layout_index_t current = xkb_state_serialize_layout(
+			keyboard->xkb_state, XKB_STATE_LAYOUT_EFFECTIVE);
+		const int32_t num_layouts = xkb_keymap_num_layouts(keyboard->keymap);
+		if (num_layouts < 2) {
+			wlr_log(WLR_INFO, "Only one layout available");
+			continue;
+		}
+		xkb_layout_index_t next = (current + 1) % num_layouts;
 
-	struct wlr_keyboard *keyboard = &kb_group->wlr_group->keyboard;
-	if (!keyboard || !keyboard->keymap) {
-		wlr_log(WLR_ERROR, "Invalid keyboard or keymap");
-		return 0;
-	}
+		// 6. 应用新 keymap
+		uint32_t depressed = keyboard->modifiers.depressed;
+		uint32_t latched = keyboard->modifiers.latched;
+		uint32_t locked = keyboard->modifiers.locked;
 
-	// 1. 获取当前布局和计算下一个布局
-	xkb_layout_index_t current = xkb_state_serialize_layout(
-		keyboard->xkb_state, XKB_STATE_LAYOUT_EFFECTIVE);
-	const int32_t num_layouts = xkb_keymap_num_layouts(keyboard->keymap);
-	if (num_layouts < 2) {
-		wlr_log(WLR_INFO, "Only one layout available");
-		return 0;
-	}
-	xkb_layout_index_t next = (current + 1) % num_layouts;
+		wlr_keyboard_set_keymap(keyboard, keyboard->keymap);
+		wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked,
+									  next);
+		keyboard->modifiers.group = 0;
 
-	// 6. 应用新 keymap
-	uint32_t depressed = keyboard->modifiers.depressed;
-	uint32_t latched = keyboard->modifiers.latched;
-	uint32_t locked = keyboard->modifiers.locked;
+		// 7. 更新 seat
+		wlr_seat_set_keyboard(seat, keyboard);
+		wlr_seat_keyboard_notify_modifiers(seat, &keyboard->modifiers);
 
-	wlr_keyboard_set_keymap(keyboard, keyboard->keymap);
-	wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked, next);
-	keyboard->modifiers.group = 0;
+		if (group->is_virtual && group->virtual_keyboard) {
 
-	// 7. 更新 seat
-	wlr_seat_set_keyboard(seat, keyboard);
-	wlr_seat_keyboard_notify_modifiers(seat, &keyboard->modifiers);
+			wlr_keyboard_set_keymap(group->virtual_keyboard, keyboard->keymap);
+			wlr_keyboard_notify_modifiers(group->virtual_keyboard, depressed,
+										  latched, locked, next);
+			group->virtual_keyboard->modifiers.group = 0;
 
-	InputDevice *id;
-	wl_list_for_each(id, &inputdevices, link) {
-		if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+			// 7. 更新 seat
+			wlr_seat_set_keyboard(seat, group->virtual_keyboard);
+			wlr_seat_keyboard_notify_modifiers(
+				seat, &group->virtual_keyboard->modifiers);
 			continue;
 		}
 
-		struct wlr_keyboard *tkb = (struct wlr_keyboard *)id->device_data;
+		InputDevice *id;
+		wl_list_for_each(id, &inputdevices, link) {
+			if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+				continue;
+			}
 
-		wlr_keyboard_set_keymap(tkb, keyboard->keymap);
-		wlr_keyboard_notify_modifiers(tkb, depressed, latched, locked, next);
-		tkb->modifiers.group = 0;
+			struct wlr_keyboard *tkb = (struct wlr_keyboard *)id->device_data;
 
-		// 7. 更新 seat
-		wlr_seat_set_keyboard(seat, tkb);
-		wlr_seat_keyboard_notify_modifiers(seat, &tkb->modifiers);
+			wlr_keyboard_set_keymap(tkb, keyboard->keymap);
+			wlr_keyboard_notify_modifiers(tkb, depressed, latched, locked,
+										  next);
+			tkb->modifiers.group = 0;
+
+			// 7. 更新 seat
+			wlr_seat_set_keyboard(seat, tkb);
+			wlr_seat_keyboard_notify_modifiers(seat, &tkb->modifiers);
+		}
 	}
 
 	printstatus();

@@ -435,6 +435,7 @@ typedef struct {
 
 typedef struct {
 	struct wlr_keyboard_group *wlr_group;
+	struct wl_list link;
 
 	int32_t nsyms;
 	const xkb_keysym_t *keysyms; /* invalid if nsyms == 0 */
@@ -445,6 +446,8 @@ typedef struct {
 	struct wl_listener modifiers;
 	struct wl_listener key;
 	struct wl_listener destroy;
+	struct wlr_keyboard *virtual_keyboard;
+	bool is_virtual;
 } KeyboardGroup;
 
 typedef struct {
@@ -838,6 +841,7 @@ static struct wlr_pointer_constraint_v1 *active_constraint;
 static struct wlr_seat *seat;
 static KeyboardGroup *kb_group;
 static struct wl_list inputdevices;
+static struct wl_list keyboard_groups;
 static struct wl_list keyboard_shortcut_inhibitors;
 static uint32_t cursor_mode;
 static Client *grabc;
@@ -2571,13 +2575,14 @@ void createkeyboard(struct wlr_keyboard *keyboard) {
 	wlr_keyboard_group_add_keyboard(kb_group->wlr_group, keyboard);
 }
 
-KeyboardGroup *createkeyboardgroup(void) {
+KeyboardGroup *createkeyboardgroup(bool is_virtual) {
 	KeyboardGroup *group = ecalloc(1, sizeof(*group));
 	struct xkb_context *context;
 	struct xkb_keymap *keymap;
 
 	group->wlr_group = wlr_keyboard_group_create();
 	group->wlr_group->data = group;
+	group->is_virtual = is_virtual;
 
 	/* Prepare an XKB keymap and assign it to the keyboard group. */
 	context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
@@ -2625,6 +2630,8 @@ KeyboardGroup *createkeyboardgroup(void) {
 	 * for all of them. Set this combined wlr_keyboard as the seat keyboard.
 	 */
 	wlr_seat_set_keyboard(seat, &group->wlr_group->keyboard);
+
+	wl_list_insert(&keyboard_groups, &group->link);
 	return group;
 }
 
@@ -3238,6 +3245,7 @@ void destroykeyboardgroup(struct wl_listener *listener, void *data) {
 	wl_list_remove(&group->key.link);
 	wl_list_remove(&group->modifiers.link);
 	wl_list_remove(&group->destroy.link);
+	wl_list_remove(&group->link);
 	wlr_keyboard_group_destroy(group->wlr_group);
 	free(group);
 }
@@ -3419,8 +3427,9 @@ void requestmonstate(struct wl_listener *listener, void *data) {
 
 void inputdevice(struct wl_listener *listener, void *data) {
 	/* This event is raised by the backend when a new input device becomes
-	 * available. 
-	 * when the backend is a headless backend, this event will never be triggered.
+	 * available.
+	 * when the backend is a headless backend, this event will never be
+	 * triggered.
 	 */
 	struct wlr_input_device *device = data;
 	uint32_t caps;
@@ -4917,96 +4926,109 @@ void setgaps(int32_t oh, int32_t ov, int32_t ih, int32_t iv) {
 }
 
 void reset_keyboard_layout(void) {
-	if (!kb_group || !kb_group->wlr_group || !seat) {
-		wlr_log(WLR_ERROR, "Invalid keyboard group or seat");
-		return;
-	}
 
-	struct wlr_keyboard *keyboard = &kb_group->wlr_group->keyboard;
-	if (!keyboard || !keyboard->keymap) {
-		wlr_log(WLR_ERROR, "Invalid keyboard or keymap");
-		return;
-	}
+	KeyboardGroup *group = NULL;
 
-	// Get current layout
-	xkb_layout_index_t current = xkb_state_serialize_layout(
-		keyboard->xkb_state, XKB_STATE_LAYOUT_EFFECTIVE);
-	const int32_t num_layouts = xkb_keymap_num_layouts(keyboard->keymap);
-	if (num_layouts < 1) {
-		wlr_log(WLR_INFO, "No layouts available");
-		return;
-	}
-
-	// Create context
-	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	if (!context) {
-		wlr_log(WLR_ERROR, "Failed to create XKB context");
-		return;
-	}
-
-	// 现在安全地创建真正的keymap
-	struct xkb_keymap *new_keymap = xkb_keymap_new_from_names(
-		context, &xkb_rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
-	if (!new_keymap) {
-		// 理论上这里不应该失败，因为前面已经验证过了
-		wlr_log(WLR_ERROR,
-				"Unexpected failure to create keymap after validation");
-		goto cleanup_context;
-	}
-
-	// 验证新keymap是否有布局
-	const int32_t new_num_layouts = xkb_keymap_num_layouts(new_keymap);
-	if (new_num_layouts < 1) {
-		wlr_log(WLR_ERROR, "New keymap has no layouts");
-		xkb_keymap_unref(new_keymap);
-		goto cleanup_context;
-	}
-
-	// 确保当前布局索引在新keymap中有效
-	if (current >= new_num_layouts) {
-		wlr_log(WLR_INFO,
-				"Current layout index %u out of range for new keymap, "
-				"resetting to 0",
-				current);
-		current = 0;
-	}
-
-	// Apply the new keymap
-	uint32_t depressed = keyboard->modifiers.depressed;
-	uint32_t latched = keyboard->modifiers.latched;
-	uint32_t locked = keyboard->modifiers.locked;
-
-	wlr_keyboard_set_keymap(keyboard, new_keymap);
-
-	wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked, 0);
-	keyboard->modifiers.group = current; // Keep the same layout index
-
-	// Update seat
-	wlr_seat_set_keyboard(seat, keyboard);
-	wlr_seat_keyboard_notify_modifiers(seat, &keyboard->modifiers);
-
-	InputDevice *id;
-	wl_list_for_each(id, &inputdevices, link) {
-		if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+	wl_list_for_each(group, &keyboard_groups, link) {
+		struct wlr_keyboard *keyboard = group->is_virtual
+											? group->virtual_keyboard
+											: &group->wlr_group->keyboard;
+		if (!keyboard || !keyboard->keymap) {
+			wlr_log(WLR_ERROR, "Invalid keyboard or keymap");
 			continue;
 		}
 
-		struct wlr_keyboard *tkb = (struct wlr_keyboard *)id->device_data;
+		// Get current layout
+		xkb_layout_index_t current = xkb_state_serialize_layout(
+			keyboard->xkb_state, XKB_STATE_LAYOUT_EFFECTIVE);
+		const int32_t num_layouts = xkb_keymap_num_layouts(keyboard->keymap);
+		if (num_layouts < 1) {
+			wlr_log(WLR_INFO, "No layouts available");
+			continue;
+		}
 
-		wlr_keyboard_set_keymap(tkb, keyboard->keymap);
-		wlr_keyboard_notify_modifiers(tkb, depressed, latched, locked, 0);
-		tkb->modifiers.group = 0;
+		// Create context
+		struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+		if (!context) {
+			wlr_log(WLR_ERROR, "Failed to create XKB context");
+			continue;
+		}
 
-		// 7. 更新 seat
-		wlr_seat_set_keyboard(seat, tkb);
-		wlr_seat_keyboard_notify_modifiers(seat, &tkb->modifiers);
+		// 创建keymap
+		struct xkb_keymap *new_keymap = xkb_keymap_new_from_names(
+			context, &xkb_rules, XKB_KEYMAP_COMPILE_NO_FLAGS);
+		if (!new_keymap) {
+			// 理论上这里不应该失败，因为前面已经验证过了
+			wlr_log(WLR_ERROR,
+					"Unexpected failure to create keymap after validation");
+			goto cleanup_context;
+		}
+
+		// 验证新keymap是否有布局
+		const int32_t new_num_layouts = xkb_keymap_num_layouts(new_keymap);
+		if (new_num_layouts < 1) {
+			wlr_log(WLR_ERROR, "New keymap has no layouts");
+			goto cleanup_context;
+		}
+
+		// 确保当前布局索引在新keymap中有效
+		if (current >= new_num_layouts) {
+			wlr_log(WLR_INFO,
+					"Current layout index %u out of range for new keymap, "
+					"resetting to 0",
+					current);
+			current = 0;
+		}
+
+		// Apply the new keymap
+		uint32_t depressed = keyboard->modifiers.depressed;
+		uint32_t latched = keyboard->modifiers.latched;
+		uint32_t locked = keyboard->modifiers.locked;
+
+		wlr_keyboard_set_keymap(keyboard, new_keymap);
+
+		wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked, 0);
+		keyboard->modifiers.group = current; // Keep the same layout index
+
+		// Update seat
+		wlr_seat_set_keyboard(seat, keyboard);
+		wlr_seat_keyboard_notify_modifiers(seat, &keyboard->modifiers);
+
+		if (group->is_virtual && group->virtual_keyboard) {
+
+			wlr_keyboard_set_keymap(group->virtual_keyboard, keyboard->keymap);
+			wlr_keyboard_notify_modifiers(group->virtual_keyboard, depressed,
+										  latched, locked, 0);
+			group->virtual_keyboard->modifiers.group = 0;
+
+			// 7. 更新 seat
+			wlr_seat_set_keyboard(seat, group->virtual_keyboard);
+			wlr_seat_keyboard_notify_modifiers(
+				seat, &group->virtual_keyboard->modifiers);
+			goto cleanup_context;
+		}
+
+		InputDevice *id;
+		wl_list_for_each(id, &inputdevices, link) {
+			if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+				continue;
+			}
+
+			struct wlr_keyboard *tkb = (struct wlr_keyboard *)id->device_data;
+
+			wlr_keyboard_set_keymap(tkb, keyboard->keymap);
+			wlr_keyboard_notify_modifiers(tkb, depressed, latched, locked, 0);
+			tkb->modifiers.group = 0;
+
+			// 7. 更新 seat
+			wlr_seat_set_keyboard(seat, tkb);
+			wlr_seat_keyboard_notify_modifiers(seat, &tkb->modifiers);
+		}
+	cleanup_context:
+		// Cleanup
+		xkb_keymap_unref(new_keymap);
+		xkb_context_unref(context);
 	}
-
-	// Cleanup
-	xkb_keymap_unref(new_keymap);
-
-cleanup_context:
-	xkb_context_unref(context);
 }
 
 void setmon(Client *c, Monitor *m, uint32_t newtags, bool focus) {
@@ -5334,6 +5356,7 @@ void setup(void) {
 	 * to let us know when new input devices are available on the backend.
 	 */
 	wl_list_init(&inputdevices);
+	wl_list_init(&keyboard_groups);
 	wl_list_init(&keyboard_shortcut_inhibitors);
 	wl_signal_add(&backend->events.new_input, &new_input_device);
 	virtual_keyboard_mgr = wlr_virtual_keyboard_manager_v1_create(dpy);
@@ -5361,7 +5384,8 @@ void setup(void) {
 	wl_signal_add(&seat->events.request_start_drag, &request_start_drag);
 	wl_signal_add(&seat->events.start_drag, &start_drag);
 
-	kb_group = createkeyboardgroup();
+	kb_group = createkeyboardgroup(false);
+	kb_group->virtual_keyboard = NULL;
 	wl_list_init(&kb_group->destroy.link);
 
 	keyboard_shortcuts_inhibit = wlr_keyboard_shortcuts_inhibit_v1_create(dpy);
@@ -5977,7 +6001,8 @@ void virtualkeyboard(struct wl_listener *listener, void *data) {
 	/* virtual keyboards shouldn't share keyboard group */
 	wlr_seat_set_capabilities(seat,
 							  seat->capabilities | WL_SEAT_CAPABILITY_KEYBOARD);
-	KeyboardGroup *group = createkeyboardgroup();
+	KeyboardGroup *group = createkeyboardgroup(true);
+	group->virtual_keyboard = &kb->keyboard;
 	/* Set the keymap to match the group keymap */
 	wlr_keyboard_set_keymap(&kb->keyboard, group->wlr_group->keyboard.keymap);
 	LISTEN(&kb->keyboard.base.events.destroy, &group->destroy,
