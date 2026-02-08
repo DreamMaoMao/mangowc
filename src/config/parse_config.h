@@ -342,7 +342,7 @@ typedef struct {
 typedef int32_t (*FuncType)(const Arg *);
 Config config;
 
-bool parse_config_file(Config *config, const char *file_path);
+bool parse_config_file(Config *config, const char *file_path, bool must_exist);
 
 // Helper function to trim whitespace from start and end of a string
 void trim_whitespace(char *str) {
@@ -2527,8 +2527,10 @@ bool parse_option(Config *config, char *key, char *value) {
 			config->gesture_bindings_count++;
 		}
 
+	} else if (strncmp(key, "source-optional", 15) == 0) {
+		parse_config_file(config, value, false);
 	} else if (strncmp(key, "source", 6) == 0) {
-		parse_config_file(config, value);
+		parse_config_file(config, value, true);
 	} else {
 		fprintf(stderr,
 				"\033[1m\033[31m[ERROR]:\033[33m Unknown keyword: "
@@ -2556,7 +2558,7 @@ bool parse_config_line(Config *config, const char *line) {
 	return parse_option(config, key, value);
 }
 
-bool parse_config_file(Config *config, const char *file_path) {
+bool parse_config_file(Config *config, const char *file_path, bool must_exist) {
 	FILE *file;
 	char full_path[1024];
 
@@ -2601,11 +2603,15 @@ bool parse_config_file(Config *config, const char *file_path) {
 	}
 
 	if (!file) {
-		fprintf(stderr,
-				"\033[1;31m\033[1;33m[ERROR]:\033[0m Failed to open "
-				"config file: %s\n",
-				file_path);
-		return false;
+		if (must_exist) {
+			fprintf(stderr,
+					"\033[1;31m\033[1;33m[ERROR]:\033[0m Failed to open "
+					"config file: %s\n",
+					file_path);
+			return false;
+		} else {
+			return true;
+		}
 	}
 
 	char line[512];
@@ -3320,7 +3326,7 @@ bool parse_config(void) {
 
 	bool parse_correct = true;
 	set_value_default();
-	parse_correct = parse_config_file(&config, filename);
+	parse_correct = parse_config_file(&config, filename, true);
 	set_default_key_bindings(&config);
 	override_config();
 	return parse_correct;
