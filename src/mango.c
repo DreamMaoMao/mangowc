@@ -736,6 +736,7 @@ static void set_rect_size(struct wlr_scene_rect *rect, int32_t width,
 static Client *center_tiled_select(Monitor *m);
 static void handlecursoractivity(void);
 static int32_t hidecursor(void *data);
+static int32_t synckeymap(void *data);
 static bool check_hit_no_border(Client *c);
 static void reset_keyboard_layout(void);
 static void client_update_oldmonname_record(Client *c, Monitor *m);
@@ -886,6 +887,7 @@ struct dvec2 *baked_points_opafadein;
 struct dvec2 *baked_points_opafadeout;
 
 static struct wl_event_source *hide_source;
+static struct wl_event_source *sync_keymap;
 static bool cursor_hidden = false;
 static bool tag_combo = false;
 static const char *cli_config_path = NULL;
@@ -5278,7 +5280,8 @@ void setup(void) {
 				  &request_set_cursor_shape);
 	hide_source = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
 										  hidecursor, cursor);
-
+	sync_keymap = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
+										  synckeymap, NULL);
 	/*
 	 * Configures a seat, which is a single "seat" at which a user sits and
 	 * operates the computer. This conceptually includes up to one keyboard,
@@ -5499,6 +5502,13 @@ void handlecursoractivity(void) {
 int32_t hidecursor(void *data) {
 	wlr_cursor_unset_image(cursor);
 	cursor_hidden = true;
+	return 1;
+}
+
+int32_t synckeymap(void *data) {
+	reset_keyboard_layout();
+	// we only need to sync keymap once
+	wl_event_source_timer_update(sync_keymap, 0);
 	return 1;
 }
 
@@ -6097,13 +6107,17 @@ void xwaylandready(struct wl_listener *listener, void *data) {
 	wlr_xwayland_set_seat(xwayland, seat);
 
 	/* Set the default XWayland cursor to match the rest of dwl. */
-
 	if ((xcursor = wlr_xcursor_manager_get_xcursor(cursor_mgr, "default", 1))) {
 		struct wlr_xcursor_image *image = xcursor->images[0];
 		struct wlr_buffer *buffer = wlr_xcursor_image_get_buffer(image);
 		wlr_xwayland_set_cursor(xwayland, buffer, xcursor->images[0]->hotspot_x,
 								xcursor->images[0]->hotspot_y);
 	}
+
+	/* xwayland can't auto sync the keymap, so we do it manually
+	  and we need to wait the xwayland completely inited
+	*/
+	wl_event_source_timer_update(sync_keymap, 500);
 }
 
 static void setgeometrynotify(struct wl_listener *listener, void *data) {
