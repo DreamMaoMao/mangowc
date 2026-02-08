@@ -24,18 +24,7 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Hycov-like overview
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
 
-Master-Stack Layout
-
-https://github.com/user-attachments/assets/a9d4776e-b50b-48fb-94ce-651d8a749b8a
-
-Scroller Layout
-
-https://github.com/user-attachments/assets/c9bf9415-fad1-4400-bcdc-3ad2d76de85a
-
-Layer animation
-
-https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
-
+https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f
 
 # Our discord
 [mangowc](https://discord.gg/CPjbDxesh5)
