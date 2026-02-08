@@ -40,7 +40,7 @@ void set_arrange_visible(Monitor *m, Client *c, bool want_animation) {
 
 	if (!c->animation.tag_from_rule && want_animation &&
 		m->pertag->prevtag != 0 && m->pertag->curtag != 0 && animations) {
-		c->animation.tagining = true;
+		c->animation.tagging_in = true;
 		set_tagin_animation(m, c);
 	} else {
 		c->animainit_geom.x = c->animation.current.x;
@@ -48,8 +48,8 @@ void set_arrange_visible(Monitor *m, Client *c, bool want_animation) {
 	}
 
 	c->animation.tag_from_rule = false;
-	c->animation.tagouting = false;
-	c->animation.tagouted = false;
+	c->animation.tagging_out = false;
+	c->animation.tagging_out = false;
 	resize(c, c->geom, 0);
 }
 
@@ -83,8 +83,8 @@ void set_tagout_animation(Monitor *m, Client *c) {
 void set_arrange_hidden(Monitor *m, Client *c, bool want_animation) {
 	if ((c->tags & (1 << (m->pertag->prevtag - 1))) &&
 		m->pertag->prevtag != 0 && m->pertag->curtag != 0 && animations) {
-		c->animation.tagouting = true;
-		c->animation.tagining = false;
+		c->animation.tagging_out = true;
+		c->animation.tagging_in = false;
 		set_tagout_animation(m, c);
 	} else {
 		wlr_scene_node_set_enabled(&c->scene->node, false);

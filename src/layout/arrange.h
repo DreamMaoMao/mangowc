@@ -754,8 +754,8 @@ arrange(Monitor *m, bool want_animation, bool from_view) {
 			}
 		}
 
-		if (c->mon == m && c->ismaximizescreen && !c->animation.tagouted &&
-			!c->animation.tagouting && VISIBLEON(c, m)) {
+		if (c->mon == m && c->ismaximizescreen && !c->animation.tagged_out &&
+			!c->animation.tagging_out && VISIBLEON(c, m)) {
 			reset_maximizescreen_size(c);
 		}
 	}

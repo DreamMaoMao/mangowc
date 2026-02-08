@@ -232,8 +232,8 @@ void buffer_set_effect(Client *c, BufferData data) {
 	if (!c || c->iskilling)
 		return;
 
-	if (c->animation.tagouting || c->animation.tagouted ||
-		c->animation.tagining) {
+	if (c->animation.tagging_out || c->animation.tagging_out ||
+		c->animation.tagging_in) {
 		data.should_scale = false;
 	}
 
@@ -450,8 +450,8 @@ struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
 	int32_t offsetx = 0, offsety = 0, offsetw = 0, offseth = 0;
 	struct ivec2 offset = {0, 0, 0, 0};
 
-	if (!ISSCROLLTILED(c) && !c->animation.tagining && !c->animation.tagouted &&
-		!c->animation.tagouting)
+	if (!ISSCROLLTILED(c) && !c->animation.tagging_in && !c->animation.tagging_out &&
+		!c->animation.tagging_out)
 		return offset;
 
 	int32_t bottom_out_offset =
@@ -471,8 +471,8 @@ struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
 	  需要主要border超出屏幕的时候不计算如偏差之内而是
 	  要等窗口表面超出才开始计算偏差
 	*/
-	if (ISSCROLLTILED(c) || c->animation.tagining || c->animation.tagouted ||
-		c->animation.tagouting) {
+	if (ISSCROLLTILED(c) || c->animation.tagging_in || c->animation.tagging_out ||
+		c->animation.tagging_out) {
 		if (left_out_offset > 0) {
 			offsetx = GEZERO(left_out_offset - bw);
 			clip_box->x = clip_box->x + offsetx;
@@ -499,7 +499,7 @@ struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
 	offset.height = offseth;
 
 	if ((clip_box->width + bw <= 0 || clip_box->height + bw <= 0) &&
-		(ISSCROLLTILED(c) || c->animation.tagouting || c->animation.tagining)) {
+		(ISSCROLLTILED(c) || c->animation.tagging_out || c->animation.tagging_in)) {
 		c->is_clip_to_hide = true;
 		wlr_scene_node_set_enabled(&c->scene->node, false);
 	} else if (c->is_clip_to_hide && VISIBLEON(c, c->mon)) {
@@ -730,14 +730,14 @@ void client_animation_next_tick(Client *c) {
 		// it's still in the opening animation in resize
 		c->animation.action = MOVE;
 
-		c->animation.tagining = false;
+		c->animation.tagging_in = false;
 		c->animation.running = false;
 
-		if (c->animation.tagouting) {
-			c->animation.tagouting = false;
+		if (c->animation.tagging_out) {
+			c->animation.tagging_out = false;
 			wlr_scene_node_set_enabled(&c->scene->node, false);
 			client_set_suspended(c, true);
-			c->animation.tagouted = true;
+			c->animation.tagging_out = true;
 			c->animation.current = c->geom;
 		}
 
@@ -869,7 +869,7 @@ void client_set_pending_state(Client *c) {
 	// 判断是否需要动画
 	if (!animations) {
 		c->animation.should_animate = false;
-	} else if (animations && c->animation.tagining) {
+	} else if (animations && c->animation.tagging_in) {
 		c->animation.should_animate = true;
 	} else if (!animations || c == grabc ||
 			   (!c->is_pending_open_animation &&
@@ -947,13 +947,13 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 		c->animation.begin_fade_in = false;
 	}
 
-	if (c->animation.action == OPEN && !c->animation.tagining &&
-		!c->animation.tagouting && wlr_box_equal(&c->geom, &c->current)) {
+	if (c->animation.action == OPEN && !c->animation.tagging_in &&
+		!c->animation.tagging_out && wlr_box_equal(&c->geom, &c->current)) {
 		c->animation.action = c->animation.action;
-	} else if (c->animation.tagouting) {
+	} else if (c->animation.tagging_out) {
 		c->animation.duration = animation_duration_tag;
 		c->animation.action = TAG;
-	} else if (c->animation.tagining) {
+	} else if (c->animation.tagging_in) {
 		c->animation.duration = animation_duration_tag;
 		c->animation.action = TAG;
 	} else if (c->is_pending_open_animation) {
@@ -965,9 +965,9 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 	}
 
 	// 动画起始位置大小设置
-	if (c->animation.tagouting) {
+	if (c->animation.tagging_out) {
 		c->animainit_geom = c->animation.current;
-	} else if (c->animation.tagining) {
+	} else if (c->animation.tagging_in) {
 		c->animainit_geom.height = c->animation.current.height;
 		c->animainit_geom.width = c->animation.current.width;
 	} else if (c->is_pending_open_animation) {
@@ -1006,7 +1006,7 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 	}
 	// 如果不是工作区切换时划出去的窗口，就让动画的结束位置，就是上面的真实位置和大小
 	// c->pending 决定动画的终点，一般在其他调用resize的函数的附近设置了
-	if (!c->animation.tagouting && !c->iskilling) {
+	if (!c->animation.tagging_out && !c->iskilling) {
 		c->pending = c->geom;
 	}
 

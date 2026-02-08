@@ -271,9 +271,9 @@ typedef struct {
 struct dwl_animation {
 	bool should_animate;
 	bool running;
-	bool tagining;
-	bool tagouted;
-	bool tagouting;
+	bool tagging_in;
+	bool tagged_out;
+	bool tagging_out;
 	bool begin_fade_in;
 	bool tag_from_rule;
 	uint32_t time_started;
@@ -2070,7 +2070,7 @@ void checkidleinhibitor(struct wlr_surface *exclude) {
 		}
 
 		struct wlr_scene_tree *tree = surface->data;
-		if (!tree || (tree->node.enabled && (!c || !c->animation.tagouting))) {
+		if (!tree || (tree->node.enabled && (!c || !c->animation.tagging_out))) {
 			inhibited = 1;
 			break;
 		}
@@ -2458,8 +2458,8 @@ void commitnotify(struct wl_listener *listener, void *data) {
 		return;
 	}
 
-	if (!c || c->iskilling || c->animation.tagouting || c->animation.tagouted ||
-		c->animation.tagining)
+	if (!c || c->iskilling || c->animation.tagging_out || c->animation.tagged_out ||
+		c->animation.tagging_in)
 		return;
 
 	if (c->configure_serial &&
@@ -4283,7 +4283,7 @@ void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 	struct timespec now;
 
 	if (sloppyfocus && !start_drag_window && c && time &&
-		c->scene->node.enabled && !c->animation.tagining &&
+		c->scene->node.enabled && !c->animation.tagging_in &&
 		(surface != seat->pointer_state.focused_surface) &&
 		!client_is_unmanaged(c) && VISIBLEON(c, c->mon))
 		focusclient(c, 0);
@@ -5477,9 +5477,9 @@ void overview_backup(Client *c) {
 	c->overview_isfullscreenbak = c->isfullscreen;
 	c->overview_ismaximizescreenbak = c->ismaximizescreen;
 	c->overview_isfullscreenbak = c->isfullscreen;
-	c->animation.tagining = false;
-	c->animation.tagouted = false;
-	c->animation.tagouting = false;
+	c->animation.tagging_in = false;
+	c->animation.tagged_out = false;
+	c->animation.tagging_out = false;
 	c->overview_backup_geom = c->geom;
 	c->overview_backup_bw = c->bw;
 	if (c->isfloating) {
@@ -5502,7 +5502,7 @@ void overview_restore(Client *c, const Arg *arg) {
 	c->overview_ismaximizescreenbak = 0;
 	c->geom = c->overview_backup_geom;
 	c->bw = c->overview_backup_bw;
-	c->animation.tagining = false;
+	c->animation.tagging_in = false;
 	c->is_restoring_from_ov = (arg->ui & c->tags & TAGMASK) == 0 ? true : false;
 
 	if (c->isfloating) {
