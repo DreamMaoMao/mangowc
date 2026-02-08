@@ -730,7 +730,6 @@ static void set_rect_size(struct wlr_scene_rect *rect, int32_t width,
 static Client *center_tiled_select(Monitor *m);
 static void handlecursoractivity(void);
 static int32_t hidecursor(void *data);
-static int32_t synckeymap(void *data);
 static bool check_hit_no_border(Client *c);
 static void reset_keyboard_layout(void);
 static void client_update_oldmonname_record(Client *c, Monitor *m);
@@ -877,7 +876,6 @@ struct dvec2 *baked_points_opafadein;
 struct dvec2 *baked_points_opafadeout;
 
 static struct wl_event_source *hide_source;
-static struct wl_event_source *sync_keymap;
 static bool cursor_hidden = false;
 static bool tag_combo = false;
 static const char *cli_config_path = NULL;
@@ -944,6 +942,7 @@ static struct wl_listener keyboard_shortcuts_inhibit_new_inhibitor = {
 	.notify = handle_keyboard_shortcuts_inhibit_new_inhibitor};
 
 #ifdef XWAYLAND
+static int32_t synckeymap(void *data);
 static void activatex11(struct wl_listener *listener, void *data);
 static void configurex11(struct wl_listener *listener, void *data);
 static void createnotifyx11(struct wl_listener *listener, void *data);
@@ -955,6 +954,7 @@ static void setgeometrynotify(struct wl_listener *listener, void *data);
 static struct wl_listener new_xwayland_surface = {.notify = createnotifyx11};
 static struct wl_listener xwayland_ready = {.notify = xwaylandready};
 static struct wlr_xwayland *xwayland;
+static struct wl_event_source *sync_keymap;
 #endif
 
 #include "animation/client.h"
@@ -5324,8 +5324,6 @@ void setup(void) {
 				  &request_set_cursor_shape);
 	hide_source = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
 										  hidecursor, cursor);
-	sync_keymap = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
-										  synckeymap, NULL);
 	/*
 	 * Configures a seat, which is a single "seat" at which a user sits and
 	 * operates the computer. This conceptually includes up to one keyboard,
@@ -5417,6 +5415,8 @@ void setup(void) {
 		fprintf(stderr,
 				"failed to setup XWayland X server, continuing without it\n");
 	}
+	sync_keymap = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
+										  synckeymap, NULL);
 #endif
 }
 
@@ -5551,13 +5551,6 @@ void handlecursoractivity(void) {
 int32_t hidecursor(void *data) {
 	wlr_cursor_unset_image(cursor);
 	cursor_hidden = true;
-	return 1;
-}
-
-int32_t synckeymap(void *data) {
-	reset_keyboard_layout();
-	// we only need to sync keymap once
-	wl_event_source_timer_update(sync_keymap, 0);
 	return 1;
 }
 
@@ -6022,6 +6015,13 @@ void virtualpointer(struct wl_listener *listener, void *data) {
 }
 
 #ifdef XWAYLAND
+int32_t synckeymap(void *data) {
+	reset_keyboard_layout();
+	// we only need to sync keymap once
+	wl_event_source_timer_update(sync_keymap, 0);
+	return 1;
+}
+
 void activatex11(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, activate);
 	bool need_arrange = false;
