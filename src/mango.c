@@ -1998,14 +1998,21 @@ buttonpress(struct wl_listener *listener, void *data) {
 			if (config.mouse_bindings_count < 1)
 				break;
 			m = &config.mouse_bindings[ji];
+
+			if (selmon->isoverview && event->button == BTN_LEFT && c) {
+				toggleoverview(&(Arg){.i = 1});
+				return;
+			}
+
+			if (selmon->isoverview && event->button == BTN_RIGHT && c) {
+				pending_kill_client(c);
+				return;
+			}
+
 			if (CLEANMASK(mods) == CLEANMASK(m->mod) &&
 				event->button == m->button && m->func &&
-				(selmon->isoverview == 1 || m->button == BTN_MIDDLE) && c) {
-				m->func(&m->arg);
-				return;
-			} else if (CLEANMASK(mods) == CLEANMASK(m->mod) &&
-					   event->button == m->button && m->func &&
-					   CLEANMASK(m->mod) != 0) {
+				(CLEANMASK(m->mod) != 0 ||
+				 (event->button != BTN_LEFT && event->button != BTN_RIGHT))) {
 				m->func(&m->arg);
 				return;
 			}
