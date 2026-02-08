@@ -58,6 +58,7 @@ typedef struct {
 	uint32_t tags;
 	int32_t isfloating;
 	int32_t isfullscreen;
+	int32_t isfakefullscreen;
 	float scroller_proportion;
 	const char *animation_type_open;
 	const char *animation_type_close;
@@ -1918,6 +1919,7 @@ bool parse_option(Config *config, char *key, char *value) {
 		// int32_t rule value, relay to a client property
 		rule->isfloating = -1;
 		rule->isfullscreen = -1;
+		rule->isfakefullscreen = -1;
 		rule->isnoborder = -1;
 		rule->isnoshadow = -1;
 		rule->isnoanimation = -1;
@@ -2054,6 +2056,8 @@ bool parse_option(Config *config, char *key, char *value) {
 					rule->scroller_proportion = atof(val);
 				} else if (strcmp(key, "isfullscreen") == 0) {
 					rule->isfullscreen = atoi(val);
+				} else if (strcmp(key, "isfakefullscreen") == 0) {
+					rule->isfakefullscreen = atoi(val);
 				} else if (strcmp(key, "globalkeybinding") == 0) {
 					char mod_str[256], keysym_str[256];
 					sscanf(val, "%255[^-]-%255[a-zA-Z]", mod_str, keysym_str);
