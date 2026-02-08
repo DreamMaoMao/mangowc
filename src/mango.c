@@ -3445,11 +3445,6 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 	int32_t ji;
 	int32_t isbreak = 0;
 
-	// not allow modifier keys to be used as a keybinding
-	if (keycode == 50 || keycode == 37 || keycode == 133 || keycode == 64 ||
-		keycode == 62 || keycode == 108 || keycode == 105 || keycode == 134)
-		return false;
-
 	if (is_keyboard_shortcut_inhibitor(seat->keyboard_state.focused_surface)) {
 		return false;
 	}
