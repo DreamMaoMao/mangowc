@@ -1289,6 +1289,7 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, no_force_center);
 	APPLY_INT_PROP(c, r, isfloating);
 	APPLY_INT_PROP(c, r, isfullscreen);
+	APPLY_INT_PROP(c, r, isfakefullscreen);
 	APPLY_INT_PROP(c, r, isnoborder);
 	APPLY_INT_PROP(c, r, isnoshadow);
 	APPLY_INT_PROP(c, r, isnoradius);
@@ -1481,6 +1482,10 @@ void applyrules(Client *c) {
 	}
 
 	setfullscreen(c, fullscreen_state_backup);
+
+	if (c->isfakefullscreen) {
+		setfakefullscreen(c, 1);
+	}
 
 	/*
 	if there is a new non-floating window in the current tag, the fullscreen
