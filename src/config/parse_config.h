@@ -101,13 +101,14 @@ typedef struct {
 } ConfigWinRule;
 
 typedef struct {
-	const char *name;	   // Monitor name
-	int32_t rr;			   // Rotate and flip (assume integer)
-	float scale;		   // Monitor scale factor
-	int32_t x, y;		   // Monitor position
-	int32_t width, height; // Monitor resolution
-	float refresh;		   // Refresh rate
-	int32_t vrr;		   // variable refresh rate
+	const char *name;			 // Monitor name
+	char *make, *model, *serial; // may be NULL
+	int32_t rr;					 // Rotate and flip (assume integer)
+	float scale;				 // Monitor scale factor
+	int32_t x, y;				 // Monitor position
+	int32_t width, height;		 // Monitor resolution
+	float refresh;				 // Refresh rate
+	int32_t vrr;				 // variable refresh rate
 } ConfigMonitorRule;
 
 // 修改后的宏定义
@@ -157,6 +158,9 @@ typedef struct {
 	int32_t id;
 	char *layout_name;
 	char *monitor_name;
+	char *monitor_make;
+	char *monitor_model;
+	char *monitor_serial;
 	float mfact;
 	int32_t nmaster;
 	int32_t no_render_border;
@@ -1774,6 +1778,9 @@ bool parse_option(Config *config, char *key, char *value) {
 
 		// 设置默认值
 		rule->name = NULL;
+		rule->make = NULL;
+		rule->model = NULL;
+		rule->serial = NULL;
 		rule->rr = 0;
 		rule->scale = 1.0f;
 		rule->x = INT32_MAX;
@@ -1797,6 +1804,12 @@ bool parse_option(Config *config, char *key, char *value) {
 
 				if (strcmp(key, "name") == 0) {
 					rule->name = strdup(val);
+				} else if (strcmp(key, "make") == 0) {
+					rule->make = strdup(val);
+				} else if (strcmp(key, "model") == 0) {
+					rule->model = strdup(val);
+				} else if (strcmp(key, "serial") == 0) {
+					rule->serial = strdup(val);
 				} else if (strcmp(key, "rr") == 0) {
 					rule->rr = CLAMP_INT(atoi(val), 0, 7);
 				} else if (strcmp(key, "scale") == 0) {
@@ -1845,6 +1858,9 @@ bool parse_option(Config *config, char *key, char *value) {
 		rule->id = 0;
 		rule->layout_name = NULL;
 		rule->monitor_name = NULL;
+		rule->monitor_make = NULL;
+		rule->monitor_model = NULL;
+		rule->monitor_serial = NULL;
 		rule->nmaster = 0;
 		rule->mfact = 0.0f;
 		rule->no_render_border = 0;
@@ -1868,6 +1884,12 @@ bool parse_option(Config *config, char *key, char *value) {
 					rule->layout_name = strdup(val);
 				} else if (strcmp(key, "monitor_name") == 0) {
 					rule->monitor_name = strdup(val);
+				} else if (strcmp(key, "monitor_make") == 0) {
+					rule->monitor_make = strdup(val);
+				} else if (strcmp(key, "monitor_model") == 0) {
+					rule->monitor_model = strdup(val);
+				} else if (strcmp(key, "monitor_serial") == 0) {
+					rule->monitor_serial = strdup(val);
 				} else if (strcmp(key, "no_render_border") == 0) {
 					rule->no_render_border = CLAMP_INT(atoi(val), 0, 1);
 				} else if (strcmp(key, "no_hide") == 0) {
@@ -2925,6 +2947,12 @@ void free_config(void) {
 				free((void *)config.tag_rules[i].layout_name);
 			if (config.tag_rules[i].monitor_name)
 				free((void *)config.tag_rules[i].monitor_name);
+			if (config.tag_rules[i].monitor_make)
+				free((void *)config.tag_rules[i].monitor_make);
+			if (config.tag_rules[i].monitor_model)
+				free((void *)config.tag_rules[i].monitor_model);
+			if (config.tag_rules[i].monitor_serial)
+				free((void *)config.tag_rules[i].monitor_serial);
 		}
 		free(config.tag_rules);
 		config.tag_rules = NULL;
@@ -2936,6 +2964,12 @@ void free_config(void) {
 		for (int32_t i = 0; i < config.monitor_rules_count; i++) {
 			if (config.monitor_rules[i].name)
 				free((void *)config.monitor_rules[i].name);
+			if (config.monitor_rules[i].make)
+				free((void *)config.monitor_rules[i].make);
+			if (config.monitor_rules[i].model)
+				free((void *)config.monitor_rules[i].model);
+			if (config.monitor_rules[i].serial)
+				free((void *)config.monitor_rules[i].serial);
 		}
 		free(config.monitor_rules);
 		config.monitor_rules = NULL;
@@ -3500,6 +3534,7 @@ void reapply_monitor_rules(void) {
 	struct wlr_output_state state;
 	struct wlr_output_mode *internal_mode = NULL;
 	wlr_output_state_init(&state);
+	bool match_rule = false;
 
 	wl_list_for_each(m, &mons, link) {
 		if (!m->wlr_output->enabled) {
@@ -3511,8 +3546,40 @@ void reapply_monitor_rules(void) {
 				break;
 
 			mr = &config.monitor_rules[ji];
-			if (regex_match(mr->name, m->wlr_output->name)) {
 
+			// 检查是否匹配的变量
+			match_rule = true;
+
+			// 检查四个标识字段的匹配
+			if (mr->name != NULL) {
+				if (!regex_match(mr->name, m->wlr_output->name)) {
+					match_rule = false;
+				}
+			}
+
+			if (mr->make != NULL) {
+				if (m->wlr_output->make == NULL ||
+					strcmp(mr->make, m->wlr_output->make) != 0) {
+					match_rule = false;
+				}
+			}
+
+			if (mr->model != NULL) {
+				if (m->wlr_output->model == NULL ||
+					strcmp(mr->model, m->wlr_output->model) != 0) {
+					match_rule = false;
+				}
+			}
+
+			if (mr->serial != NULL) {
+				if (m->wlr_output->serial == NULL ||
+					strcmp(mr->serial, m->wlr_output->serial) != 0) {
+					match_rule = false;
+				}
+			}
+
+			// 只有当所有指定的标识都匹配时才应用规则
+			if (match_rule) {
 				mx = mr->x == INT32_MAX ? m->m.x : mr->x;
 				my = mr->y == INT32_MAX ? m->m.y : mr->y;
 				vrr = mr->vrr >= 0 ? mr->vrr : 0;
@@ -3646,6 +3713,7 @@ void parse_tagrule(Monitor *m) {
 	int32_t i, jk;
 	ConfigTagRule tr;
 	Client *c = NULL;
+	bool match_rule = false;
 
 	for (i = 0; i <= LENGTH(tags); i++) {
 		m->pertag->nmasters[i] = default_nmaster;
@@ -3656,9 +3724,36 @@ void parse_tagrule(Monitor *m) {
 
 		tr = config.tag_rules[i];
 
-		if (config.tag_rules_count > 0 &&
-			(!tr.monitor_name ||
-			 regex_match(tr.monitor_name, m->wlr_output->name))) {
+		match_rule = true;
+
+		if (tr.monitor_name != NULL) {
+			if (!regex_match(tr.monitor_name, m->wlr_output->name)) {
+				match_rule = false;
+			}
+		}
+
+		if (tr.monitor_make != NULL) {
+			if (m->wlr_output->make == NULL ||
+				strcmp(tr.monitor_make, m->wlr_output->make) != 0) {
+				match_rule = false;
+			}
+		}
+
+		if (tr.monitor_model != NULL) {
+			if (m->wlr_output->model == NULL ||
+				strcmp(tr.monitor_model, m->wlr_output->model) != 0) {
+				match_rule = false;
+			}
+		}
+
+		if (tr.monitor_serial != NULL) {
+			if (m->wlr_output->serial == NULL ||
+				strcmp(tr.monitor_serial, m->wlr_output->serial) != 0) {
+				match_rule = false;
+			}
+		}
+
+		if (config.tag_rules_count > 0 && match_rule) {
 
 			for (jk = 0; jk < LENGTH(layouts); jk++) {
 				if (tr.layout_name &&

@@ -2737,6 +2737,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	Monitor *m = NULL;
 	struct wlr_output_mode *internal_mode = NULL;
 	bool custom_monitor_mode = false;
+	bool match_rule = false;
 
 	if (!wlr_output_init_render(wlr_output, alloc, drw))
 		return;
@@ -2777,7 +2778,39 @@ void createmon(struct wl_listener *listener, void *data) {
 			break;
 
 		r = &config.monitor_rules[ji];
-		if (regex_match(r->name, wlr_output->name)) {
+
+		// 检查是否匹配的变量
+		match_rule = true;
+
+		// 检查四个标识字段的匹配
+		if (r->name != NULL) {
+			if (!regex_match(r->name, m->wlr_output->name)) {
+				match_rule = false;
+			}
+		}
+
+		if (r->make != NULL) {
+			if (m->wlr_output->make == NULL ||
+				strcmp(r->make, m->wlr_output->make) != 0) {
+				match_rule = false;
+			}
+		}
+
+		if (r->model != NULL) {
+			if (m->wlr_output->model == NULL ||
+				strcmp(r->model, m->wlr_output->model) != 0) {
+				match_rule = false;
+			}
+		}
+
+		if (r->serial != NULL) {
+			if (m->wlr_output->serial == NULL ||
+				strcmp(r->serial, m->wlr_output->serial) != 0) {
+				match_rule = false;
+			}
+		}
+
+		if (match_rule) {
 			m->m.x = r->x == INT32_MAX ? INT32_MAX : r->x;
 			m->m.y = r->y == INT32_MAX ? INT32_MAX : r->y;
 			vrr = r->vrr >= 0 ? r->vrr : 0;
