@@ -114,7 +114,9 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	xkb_layout_index_t current;
 	int32_t tagmask, state, numclients, focused_client, tag;
 	const char *title, *appid, *symbol;
+	InputDevice *active_kb;
 	char kb_layout[32];
+	char active_kb_name[256];
 	focused = focustop(monitor);
 	zdwl_ipc_output_v2_send_active(ipc_output->resource, monitor == selmon);
 
@@ -147,11 +149,20 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 		symbol = monitor->pertag->ltidxs[monitor->pertag->curtag]->symbol;
 	}
 
-	keyboard = &kb_group->wlr_group->keyboard;
+	active_kb = get_active_keyboard_device();
+	if(active_kb) {
+		sprintf(active_kb_name, "vendor:%d,product:%d,name:%s", active_kb->vendor, active_kb->product, active_kb->name);
+	} else {
+		sprintf(active_kb_name, "-1 -1 unknown");
+	}
+
+
+	keyboard = active_kb ? (struct wlr_keyboard*)active_kb->device_data:  &kb_group->wlr_group->keyboard;
 	current = xkb_state_serialize_layout(keyboard->xkb_state,
 										 XKB_STATE_LAYOUT_EFFECTIVE);
 	get_layout_abbr(kb_layout,
 					xkb_keymap_layout_get_name(keyboard->keymap, current));
+
 
 	zdwl_ipc_output_v2_send_layout(
 		ipc_output->resource,
@@ -209,6 +220,10 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 		ZDWL_IPC_OUTPUT_V2_SCALEFACTOR_SINCE_VERSION) {
 		zdwl_ipc_output_v2_send_scalefactor(ipc_output->resource,
 											monitor->wlr_output->scale * 100);
+	}
+	if (wl_resource_get_version(ipc_output->resource) >=
+		ZDWL_IPC_OUTPUT_V2_ACTIVE_KB_SINCE_VERSION) {
+		zdwl_ipc_output_v2_send_active_kb(ipc_output->resource, active_kb_name);
 	}
 
 	zdwl_ipc_output_v2_send_frame(ipc_output->resource);

@@ -265,6 +265,17 @@ static void dwl_ipc_output_kb_layout(void *data,
 	printf("kb_layout %s\n", kb_layout);
 }
 
+static void dwl_ipc_output_active_kb(void *data,
+									 struct zdwl_ipc_output_v2 *dwl_ipc_output,
+									 const char *active_kb) {
+	if (!kflag)
+		return;
+	char *output_name = data;
+	if (output_name)
+		printf("%s ", output_name);
+	printf("active_kb %s\n", active_kb);
+}
+
 static void
 dwl_ipc_output_scalefactor(void *data,
 						   struct zdwl_ipc_output_v2 *dwl_ipc_output,
@@ -425,6 +436,7 @@ static const struct zdwl_ipc_output_v2_listener dwl_ipc_output_listener = {
 	.height = dwl_ipc_output_height,
 	.last_layer = dwl_ipc_output_last_layer,
 	.kb_layout = dwl_ipc_output_kb_layout,
+	.active_kb = dwl_ipc_output_active_kb,
 	.keymode = dwl_ipc_output_keymode,
 	.scalefactor = dwl_ipc_output_scalefactor,
 	.frame = dwl_ipc_output_frame,

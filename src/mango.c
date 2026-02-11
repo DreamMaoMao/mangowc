@@ -786,6 +786,7 @@ static Client *get_scroll_stack_head(Client *c);
 static bool client_only_in_one_tag(Client *c);
 static Client *get_focused_stack_client(Client *sc);
 static bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc);
+static InputDevice * get_active_keyboard_device(void);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -2577,12 +2578,11 @@ void createkeyboard(struct wlr_keyboard *keyboard) {
 		int32_t vendor = libinput_device_get_id_vendor(device);
 		int32_t product = libinput_device_get_id_product(device);
 		const char *name = libinput_device_get_name(device);
+		name = name ? name : "unknown";
 
-		if (name) {
-			input_dev->vendor = vendor;
-			input_dev->product = product;
-			input_dev->name = strdup(name);
-		}
+		input_dev->vendor = vendor;
+		input_dev->product = product;
+		input_dev->name = strdup(name);
 
 		input_dev->destroy_listener.notify = destroyinputdevice;
 		wl_signal_add(&keyboard->base.events.destroy,

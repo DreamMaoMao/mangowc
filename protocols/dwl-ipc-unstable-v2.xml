@@ -234,6 +234,13 @@ I would probably just submit raphi's patchset but I don't think that would be po
       <arg name="kb_layout" type="string" summary="current keyboard layout."/>
     </event>
 
+      <event name="active_kb" since="2">
+      <description summary="current active keyboard.">
+        current active keyboard.
+      </description>
+      <arg name="active_kb" type="string" summary="current active keyboard."/>
+    </event>
+
     <event name="keymode" since="2">
       <description summary="current keybind mode.">
         current keybind mode.
