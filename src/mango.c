@@ -258,7 +258,12 @@ typedef struct {
 	struct wlr_input_device *wlr_device;
 	struct libinput_device *libinput_device;
 	struct wl_listener destroy_listener; // 用于监听设备销毁事件
-	void *device_data;					 // 新增：指向设备特定数据（如 Switch）
+	struct wl_listener source_keyboard_key;
+	void *device_data; // 新增：指向设备特定数据（如 Switch）
+	bool isactivate;
+	int32_t vendor;
+	int32_t product;
+	const char *name;
 } InputDevice;
 
 typedef struct {
@@ -582,6 +587,8 @@ static void createnotify(struct wl_listener *listener, void *data);
 static void createpointer(struct wlr_pointer *pointer);
 static void configure_pointer(struct libinput_device *device);
 static void destroyinputdevice(struct wl_listener *listener, void *data);
+static void handle_source_keyboard_key_event(struct wl_listener *listener,
+											 void *data);
 static void createswitch(struct wlr_switch *switch_device);
 static void switch_toggle(struct wl_listener *listener, void *data);
 static void createpointerconstraint(struct wl_listener *listener, void *data);
@@ -2563,10 +2570,26 @@ void createkeyboard(struct wlr_keyboard *keyboard) {
 		input_dev->wlr_device = &keyboard->base;
 		input_dev->libinput_device = device;
 		input_dev->device_data = keyboard;
+		input_dev->vendor = -1;
+		input_dev->product = -1;
+		input_dev->name = NULL;
+
+		int32_t vendor = libinput_device_get_id_vendor(device);
+		int32_t product = libinput_device_get_id_product(device);
+		const char *name = libinput_device_get_name(device);
+
+		if (name) {
+			input_dev->vendor = vendor;
+			input_dev->product = product;
+			input_dev->name = strdup(name);
+		}
 
 		input_dev->destroy_listener.notify = destroyinputdevice;
 		wl_signal_add(&keyboard->base.events.destroy,
 					  &input_dev->destroy_listener);
+		input_dev->source_keyboard_key.notify =
+			handle_source_keyboard_key_event;
+		wl_signal_add(&keyboard->events.key, &input_dev->source_keyboard_key);
 
 		wl_list_insert(&inputdevices, &input_dev->link);
 	}
@@ -2948,6 +2971,24 @@ createnotify(struct wl_listener *listener, void *data) {
 	LISTEN(&toplevel->events.set_title, &c->set_title, updatetitle);
 }
 
+void handle_source_keyboard_key_event(struct wl_listener *listener,
+									  void *data) {
+	InputDevice *input_dev =
+		wl_container_of(listener, input_dev, source_keyboard_key);
+
+	InputDevice *id;
+	wl_list_for_each(id, &inputdevices, link) {
+		if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+			continue;
+		}
+		if (id == input_dev) {
+			id->isactivate = true;
+		} else {
+			id->isactivate = false;
+		}
+	}
+}
+
 void destroyinputdevice(struct wl_listener *listener, void *data) {
 	InputDevice *input_dev =
 		wl_container_of(listener, input_dev, destroy_listener);
@@ -2964,10 +3005,16 @@ void destroyinputdevice(struct wl_listener *listener, void *data) {
 			free(sw);
 			break;
 		}
+		case WLR_INPUT_DEVICE_KEYBOARD: {
+			wl_list_remove(&input_dev->source_keyboard_key.link);
+			break;
+		}
 		// 可以添加其他设备类型的清理代码
 		default:
 			break;
 		}
+		if (input_dev->name)
+			free((void *)input_dev->name);
 		input_dev->device_data = NULL;
 	}
 
@@ -3039,6 +3086,9 @@ void createpointer(struct wlr_pointer *pointer) {
 		InputDevice *input_dev = calloc(1, sizeof(InputDevice));
 		input_dev->wlr_device = &pointer->base;
 		input_dev->libinput_device = device;
+		input_dev->vendor = -1;
+		input_dev->product = -1;
+		input_dev->name = NULL;
 
 		input_dev->destroy_listener.notify = destroyinputdevice;
 		wl_signal_add(&pointer->base.events.destroy,
@@ -3080,6 +3130,9 @@ void createswitch(struct wlr_switch *switch_device) {
 		input_dev->wlr_device = &switch_device->base;
 		input_dev->libinput_device = device;
 		input_dev->device_data = NULL; // 初始化为 NULL
+		input_dev->vendor = -1;
+		input_dev->product = -1;
+		input_dev->name = NULL;
 
 		input_dev->destroy_listener.notify = destroyinputdevice;
 		wl_signal_add(&switch_device->base.events.destroy,
