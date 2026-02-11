@@ -129,13 +129,13 @@ void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
 		*pl = l;
 }
 
-InputDevice * get_active_keyboard_device(void) {
+InputDevice *get_active_keyboard_device(void) {
 	InputDevice *id;
 	wl_list_for_each(id, &inputdevices, link) {
 		if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
 			continue;
 		}
-		
+
 		if (id->isactivate) {
 			return id;
 		}

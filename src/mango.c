@@ -786,7 +786,9 @@ static Client *get_scroll_stack_head(Client *c);
 static bool client_only_in_one_tag(Client *c);
 static Client *get_focused_stack_client(Client *sc);
 static bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc);
-static InputDevice * get_active_keyboard_device(void);
+static InputDevice *get_active_keyboard_device(void);
+static bool apply_keyboard_rules(InputDevice *id,
+								 struct wlr_keyboard *keyboard);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -2560,9 +2562,52 @@ void createidleinhibitor(struct wl_listener *listener, void *data) {
 	checkidleinhibitor(NULL);
 }
 
+bool apply_keyboard_rules(InputDevice *id, struct wlr_keyboard *keyboard) {
+	int ji = 0;
+	ConfigKeyboardRule *r;
+	bool match_rule = true;
+
+	if (id->wlr_device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+		return false;
+	}
+
+	for (ji = 0; ji < config.keyboard_rules_count; ji++) {
+		if (config.keyboard_rules_count < 1)
+			break;
+
+		r = &config.keyboard_rules[ji];
+
+		if (r->vendor != -1) {
+			if (r->vendor != id->vendor) {
+				match_rule = false;
+			}
+		}
+
+		if (r->product != -1) {
+			if (r->product != id->product) {
+				match_rule = false;
+			}
+		}
+
+		if (r->name != NULL) {
+			if (strcmp(r->name, id->name) != 0) {
+				match_rule = false;
+			}
+		}
+
+		if (match_rule) {
+			wlr_keyboard_set_keymap(keyboard, r->keymap);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void createkeyboard(struct wlr_keyboard *keyboard) {
 
 	struct libinput_device *device = NULL;
+	bool hit_rule = false;
 
 	if (wlr_input_device_is_libinput(&keyboard->base) &&
 		(device = wlr_libinput_get_device_handle(&keyboard->base))) {
@@ -2592,10 +2637,13 @@ void createkeyboard(struct wlr_keyboard *keyboard) {
 		wl_signal_add(&keyboard->events.key, &input_dev->source_keyboard_key);
 
 		wl_list_insert(&inputdevices, &input_dev->link);
+
+		hit_rule = apply_keyboard_rules(input_dev, keyboard);
 	}
 
 	/* Set the keymap to match the group keymap */
-	wlr_keyboard_set_keymap(keyboard, kb_group->wlr_group->keyboard.keymap);
+	if (!hit_rule)
+		wlr_keyboard_set_keymap(keyboard, kb_group->wlr_group->keyboard.keymap);
 
 	wlr_keyboard_notify_modifiers(keyboard, 0, 0, locked_mods, 0);
 
@@ -5084,7 +5132,11 @@ void reset_keyboard_layout(void) {
 
 		struct wlr_keyboard *tkb = (struct wlr_keyboard *)id->device_data;
 
-		wlr_keyboard_set_keymap(tkb, keyboard->keymap);
+		bool hit_rules = apply_keyboard_rules(id, tkb);
+
+		if (!hit_rules)
+			wlr_keyboard_set_keymap(tkb, keyboard->keymap);
+
 		wlr_keyboard_notify_modifiers(tkb, depressed, latched, locked, 0);
 		tkb->modifiers.group = 0;
 

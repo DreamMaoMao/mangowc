@@ -150,19 +150,19 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	}
 
 	active_kb = get_active_keyboard_device();
-	if(active_kb) {
-		sprintf(active_kb_name, "vendor:%d,product:%d,name:%s", active_kb->vendor, active_kb->product, active_kb->name);
+	if (active_kb) {
+		sprintf(active_kb_name, "vendor:%d,product:%d,name:%s",
+				active_kb->vendor, active_kb->product, active_kb->name);
 	} else {
 		sprintf(active_kb_name, "-1 -1 unknown");
 	}
 
-
-	keyboard = active_kb ? (struct wlr_keyboard*)active_kb->device_data:  &kb_group->wlr_group->keyboard;
+	keyboard = active_kb ? (struct wlr_keyboard *)active_kb->device_data
+						 : &kb_group->wlr_group->keyboard;
 	current = xkb_state_serialize_layout(keyboard->xkb_state,
 										 XKB_STATE_LAYOUT_EFFECTIVE);
 	get_layout_abbr(kb_layout,
 					xkb_keymap_layout_get_name(keyboard->keymap, current));
-
 
 	zdwl_ipc_output_v2_send_layout(
 		ipc_output->resource,

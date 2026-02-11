@@ -111,6 +111,13 @@ typedef struct {
 	int32_t vrr;				 // variable refresh rate
 } ConfigMonitorRule;
 
+typedef struct {
+	const char *name;
+	int32_t vendor, product;
+	struct xkb_keymap *keymap;
+	struct xkb_context *ctx;
+} ConfigKeyboardRule;
+
 // 修改后的宏定义
 #define CHVT(n)                                                                \
 	{                                                                          \
@@ -320,6 +327,9 @@ typedef struct {
 
 	ConfigMonitorRule *monitor_rules; // 动态数组
 	int32_t monitor_rules_count;	  // 条数
+
+	ConfigKeyboardRule *keyboard_rules; // 动态数组
+	int32_t keyboard_rules_count;		// 条数
 
 	KeyBinding *key_bindings;
 	int32_t key_bindings_count;
@@ -1840,6 +1850,113 @@ bool parse_option(Config *config, char *key, char *value) {
 
 		config->monitor_rules_count++;
 		return !parse_error;
+	} else if (strcmp(key, "keyboardrule") == 0) {
+		config->keyboard_rules =
+			realloc(config->keyboard_rules, (config->keyboard_rules_count + 1) *
+												sizeof(ConfigKeyboardRule));
+		if (!config->keyboard_rules) {
+			fprintf(stderr,
+					"\033[1m\033[31m[ERROR]:\033[33m Failed to allocate "
+					"memory for keyboard rules\n");
+			return false;
+		}
+
+		ConfigKeyboardRule *rule =
+			&config->keyboard_rules[config->keyboard_rules_count];
+		memset(rule, 0, sizeof(ConfigKeyboardRule));
+
+		// 设置默认值
+		rule->vendor = -1;
+		rule->product = -1;
+		rule->keymap = NULL;
+
+		char rule_xkb_rules_rules[256];
+		char rule_xkb_rules_model[256];
+		char rule_xkb_rules_layout[256];
+		char rule_xkb_rules_variant[256];
+		char rule_xkb_rules_options[256];
+
+		strcpy(rule_xkb_rules_rules, xkb_rules_rules);
+		strcpy(rule_xkb_rules_model, xkb_rules_model);
+		strcpy(rule_xkb_rules_layout, xkb_rules_layout);
+		strcpy(rule_xkb_rules_variant, xkb_rules_variant);
+		strcpy(rule_xkb_rules_options, xkb_rules_options);
+
+		bool parse_error = false;
+		char *token = strtok(value, ",");
+		while (token != NULL) {
+			char *colon = strchr(token, ':');
+			if (colon != NULL) {
+				*colon = '\0';
+				char *key = token;
+				char *val = colon + 1;
+
+				trim_whitespace(key);
+				trim_whitespace(val);
+
+				if (strcmp(key, "vendor") == 0) {
+					rule->vendor = atoi(val);
+				} else if (strcmp(key, "product") == 0) {
+					rule->product = atoi(val);
+				} else if (strcmp(key, "name") == 0) {
+					rule->name = strdup(val);
+				} else if (strcmp(key, "xkb_rules_rules") == 0) {
+					strcpy(rule_xkb_rules_rules, val);
+					rule_xkb_rules_rules[sizeof(rule_xkb_rules_rules) - 1] =
+						'\0'; // 确保字符串以 null 结尾
+				} else if (strcmp(key, "xkb_rules_model") == 0) {
+					strcpy(rule_xkb_rules_model, val);
+					rule_xkb_rules_model[sizeof(rule_xkb_rules_model) - 1] =
+						'\0'; // 确保字符串以 null 结尾
+				} else if (strcmp(key, "xkb_rules_layout") == 0) {
+					strcpy(rule_xkb_rules_layout, val);
+					rule_xkb_rules_layout[sizeof(rule_xkb_rules_layout) - 1] =
+						'\0'; // 确保字符串以 null 结尾
+				} else if (strcmp(key, "xkb_rules_variant") == 0) {
+					strcpy(rule_xkb_rules_variant, val);
+					rule_xkb_rules_variant[sizeof(rule_xkb_rules_variant) - 1] =
+						'\0'; // 确保字符串以 null 结尾
+				} else if (strcmp(key, "xkb_rules_options") == 0) {
+					strcpy(rule_xkb_rules_options, val);
+					rule_xkb_rules_options[sizeof(rule_xkb_rules_options) - 1] =
+						'\0'; // 确保字符串以 null 结尾
+				} else {
+					fprintf(stderr,
+							"\033[1m\033[31m[ERROR]:\033[33m Unknown "
+							"keyboard rule "
+							"option:\033[1m\033[31m %s\n",
+							key);
+					parse_error = true;
+				}
+			}
+			token = strtok(NULL, ",");
+		}
+
+		struct xkb_rule_names rule_xkb_rules = {
+		    .rules = (rule_xkb_rules_rules[0] == '\0') ? NULL : rule_xkb_rules_rules,
+		    .model = (rule_xkb_rules_model[0] == '\0') ? NULL : rule_xkb_rules_model,
+		    .layout = (rule_xkb_rules_layout[0] == '\0') ? NULL : rule_xkb_rules_layout,
+		    .variant = (rule_xkb_rules_variant[0] == '\0') ? NULL : rule_xkb_rules_variant,
+		    .options = (rule_xkb_rules_options[0] == '\0') ? NULL : rule_xkb_rules_options,
+		};
+
+		rule->ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+		rule->keymap = xkb_keymap_new_from_names(rule->ctx, &rule_xkb_rules,
+												 XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+// 添加调试信息
+fprintf(stderr, "\033[1m\033[32m[DEBUG]:\033[0m Created keymap: %p\n", (void*)rule->keymap);
+if (rule->keymap) {
+    fprintf(stderr, "  Keymap created successfully.\n");
+} else {
+    fprintf(stderr, "  Failed to create keymap.\n");
+    // 可以尝试获取更多错误信息
+    // xkb_context_get_log_string(rule->ctx) 可能会提供错误信息
+}
+
+
+		config->keyboard_rules_count++;
+		return !parse_error;
 	} else if (strcmp(key, "tagrule") == 0) {
 		config->tag_rules =
 			realloc(config->tag_rules,
@@ -2976,6 +3093,21 @@ void free_config(void) {
 		config.monitor_rules_count = 0;
 	}
 
+	// 释放 keyboard_rules
+	if (config.keyboard_rules) {
+		for (int32_t i = 0; i < config.keyboard_rules_count; i++) {
+			if (config.keyboard_rules[i].name)
+				free((void *)config.keyboard_rules[i].name);
+			if (config.keyboard_rules[i].ctx)
+				xkb_context_unref(config.keyboard_rules[i].ctx);
+			if (config.keyboard_rules[i].keymap)
+				xkb_keymap_unref(config.keyboard_rules[i].keymap);
+		}
+		free(config.keyboard_rules);
+		config.keyboard_rules = NULL;
+		config.keyboard_rules_count = 0;
+	}
+
 	// 释放 layer_rules
 	if (config.layer_rules) {
 		for (int32_t i = 0; i < config.layer_rules_count; i++) {
@@ -3443,6 +3575,8 @@ bool parse_config(void) {
 	config.window_rules_count = 0;
 	config.monitor_rules = NULL;
 	config.monitor_rules_count = 0;
+	config.keyboard_rules = NULL;
+	config.keyboard_rules_count = 0;
 	config.key_bindings = NULL;
 	config.key_bindings_count = 0;
 	config.mouse_bindings = NULL;
