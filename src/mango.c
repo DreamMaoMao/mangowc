@@ -6013,8 +6013,9 @@ void virtualpointer(struct wl_listener *listener, void *data) {
 int32_t synckeymap(void *data) {
 	reset_keyboard_layout();
 	// we only need to sync keymap once
+	wlr_log(WLR_INFO, "timer to synckeymap done");
 	wl_event_source_timer_update(sync_keymap, 0);
-	return 1;
+	return 0;
 }
 
 void activatex11(struct wl_listener *listener, void *data) {
