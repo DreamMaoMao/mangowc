@@ -17,12 +17,7 @@ self: {
     ${cfg.settings}
     EOF
 
-    output=$(${cfg.package}/bin/mango -c "$out" -p 2>&1 || true)
-
-    if echo "$output" | grep -Fq '[ERROR]:'; then
-      echo "$output"
-      exit 1
-    fi
+    ${cfg.package}/bin/mango -c "$out" -p || exit 1
   '';
 in {
   options = {
