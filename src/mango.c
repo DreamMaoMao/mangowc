@@ -1375,6 +1375,14 @@ void applyrules(Client *c) {
 	Monitor *mon = parent && parent->mon ? parent->mon : selmon;
 
 	c->isfloating = client_is_float_type(c) || parent;
+
+#ifdef XWAYLAND
+	if (c->isfloating && client_is_x11(c)) {
+		fix_xwayland_unmanaged_coordinate(&c->geom);
+		c->float_geom = c->geom;
+	}
+#endif
+
 	if (!(appid = client_get_appid(c)))
 		appid = broken;
 	if (!(title = client_get_title(c)))
