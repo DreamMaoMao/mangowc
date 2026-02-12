@@ -954,6 +954,7 @@ static struct wl_listener keyboard_shortcuts_inhibit_new_inhibitor = {
 	.notify = handle_keyboard_shortcuts_inhibit_new_inhibitor};
 
 #ifdef XWAYLAND
+static void fix_xwayland_unmanaged_coordinate(struct wlr_box *box);
 static int32_t synckeymap(void *data);
 static void activatex11(struct wl_listener *listener, void *data);
 static void configurex11(struct wl_listener *listener, void *data);
@@ -3848,18 +3849,19 @@ mapnotify(struct wl_listener *listener, void *data) {
 
 	if (client_is_unmanaged(c)) {
 		/* Unmanaged clients always are floating */
+#ifdef XWAYLAND
+		if (client_is_x11(c)) {
+			fix_xwayland_unmanaged_coordinate(&c->geom);
+			LISTEN(&c->surface.xwayland->events.set_geometry, &c->set_geometry,
+				   setgeometrynotify);
+		}
+#endif
 		wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
 		wlr_scene_node_set_position(&c->scene->node, c->geom.x, c->geom.y);
 		if (client_wants_focus(c)) {
 			focusclient(c, 1);
 			exclusive_focus = c;
 		}
-#ifdef XWAYLAND
-		if (client_is_x11(c)) {
-			LISTEN(&c->surface.xwayland->events.set_geometry, &c->set_geometry,
-				   setgeometrynotify);
-		}
-#endif
 		return;
 	}
 
@@ -6027,6 +6029,25 @@ void virtualpointer(struct wl_listener *listener, void *data) {
 }
 
 #ifdef XWAYLAND
+void fix_xwayland_unmanaged_coordinate(struct wlr_box *box) {
+	if (!selmon)
+		return;
+	if (box->x >= selmon->m.x && box->x <= selmon->m.x + selmon->m.width &&
+		box->y >= selmon->m.y && box->y <= selmon->m.y + selmon->m.height)
+		return;
+
+	Monitor *source_monitor = xytomon(box->x, box->y);
+
+	if (!source_monitor)
+		return;
+
+	int xoffset = box->x - source_monitor->m.x;
+	int yoffset = box->y - source_monitor->m.y;
+
+	box->x = selmon->m.x + xoffset;
+	box->y = selmon->m.y + yoffset;
+}
+
 int32_t synckeymap(void *data) {
 	reset_keyboard_layout();
 	// we only need to sync keymap once
