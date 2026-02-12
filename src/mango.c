@@ -3,6 +3,7 @@
  */
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "wlr/util/box.h"
+#include "wlr/util/edges.h"
 #include <getopt.h>
 #include <libinput.h>
 #include <limits.h>
@@ -390,6 +391,7 @@ struct Client {
 	int32_t isterm, noswallow;
 	int32_t allow_csd;
 	int32_t force_maximize;
+	int32_t force_tiled_state;
 	pid_t pid;
 	Client *swallowing, *swallowedby;
 	bool is_clip_to_hide;
@@ -942,6 +944,8 @@ static struct wl_listener keyboard_shortcuts_inhibit_new_inhibitor = {
 	.notify = handle_keyboard_shortcuts_inhibit_new_inhibitor};
 
 #ifdef XWAYLAND
+static void fix_xwayland_unmanaged_coordinate(Client *c);
+static int32_t synckeymap(void *data);
 static void activatex11(struct wl_listener *listener, void *data);
 static void configurex11(struct wl_listener *listener, void *data);
 static void createnotifyx11(struct wl_listener *listener, void *data);
@@ -953,6 +957,7 @@ static void setgeometrynotify(struct wl_listener *listener, void *data);
 static struct wl_listener new_xwayland_surface = {.notify = createnotifyx11};
 static struct wl_listener xwayland_ready = {.notify = xwaylandready};
 static struct wlr_xwayland *xwayland;
+static struct wl_event_source *sync_keymap;
 #endif
 
 #include "animation/client.h"
@@ -1281,6 +1286,7 @@ static void apply_rule_properties(Client *c, const ConfigWinRule *r) {
 	APPLY_INT_PROP(c, r, isterm);
 	APPLY_INT_PROP(c, r, allow_csd);
 	APPLY_INT_PROP(c, r, force_maximize);
+	APPLY_INT_PROP(c, r, force_tiled_state);
 	APPLY_INT_PROP(c, r, force_tearing);
 	APPLY_INT_PROP(c, r, noswallow);
 	APPLY_INT_PROP(c, r, nofocus);
@@ -1369,6 +1375,14 @@ void applyrules(Client *c) {
 	Monitor *mon = parent && parent->mon ? parent->mon : selmon;
 
 	c->isfloating = client_is_float_type(c) || parent;
+
+#ifdef XWAYLAND
+	if (c->isfloating && client_is_x11(c)) {
+		fix_xwayland_unmanaged_coordinate(c);
+		c->float_geom = c->geom;
+	}
+#endif
+
 	if (!(appid = client_get_appid(c)))
 		appid = broken;
 	if (!(title = client_get_title(c)))
@@ -1996,14 +2010,21 @@ buttonpress(struct wl_listener *listener, void *data) {
 			if (config.mouse_bindings_count < 1)
 				break;
 			m = &config.mouse_bindings[ji];
+
+			if (selmon->isoverview && event->button == BTN_LEFT && c) {
+				toggleoverview(&(Arg){.i = 1});
+				return;
+			}
+
+			if (selmon->isoverview && event->button == BTN_RIGHT && c) {
+				pending_kill_client(c);
+				return;
+			}
+
 			if (CLEANMASK(mods) == CLEANMASK(m->mod) &&
 				event->button == m->button && m->func &&
-				(selmon->isoverview == 1 || m->button == BTN_MIDDLE) && c) {
-				m->func(&m->arg);
-				return;
-			} else if (CLEANMASK(mods) == CLEANMASK(m->mod) &&
-					   event->button == m->button && m->func &&
-					   CLEANMASK(m->mod) != 0) {
+				(CLEANMASK(m->mod) != 0 ||
+				 (event->button != BTN_LEFT && event->button != BTN_RIGHT))) {
 				m->func(&m->arg);
 				return;
 			}
@@ -2429,9 +2450,6 @@ void commitnotify(struct wl_listener *listener, void *data) {
 		setmon(c, NULL, 0,
 			   true); /* Make sure to reapply rules in mapnotify() */
 
-		client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
-								WLR_EDGE_RIGHT);
-
 		uint32_t serial = wlr_xdg_surface_schedule_configure(c->surface.xdg);
 		if (serial > 0) {
 			c->configure_serial = serial;
@@ -2728,6 +2746,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	Monitor *m = NULL;
 	struct wlr_output_mode *internal_mode = NULL;
 	bool custom_monitor_mode = false;
+	bool match_rule = false;
 
 	if (!wlr_output_init_render(wlr_output, alloc, drw))
 		return;
@@ -2768,7 +2787,39 @@ void createmon(struct wl_listener *listener, void *data) {
 			break;
 
 		r = &config.monitor_rules[ji];
-		if (regex_match(r->name, wlr_output->name)) {
+
+		// 检查是否匹配的变量
+		match_rule = true;
+
+		// 检查四个标识字段的匹配
+		if (r->name != NULL) {
+			if (!regex_match(r->name, m->wlr_output->name)) {
+				match_rule = false;
+			}
+		}
+
+		if (r->make != NULL) {
+			if (m->wlr_output->make == NULL ||
+				strcmp(r->make, m->wlr_output->make) != 0) {
+				match_rule = false;
+			}
+		}
+
+		if (r->model != NULL) {
+			if (m->wlr_output->model == NULL ||
+				strcmp(r->model, m->wlr_output->model) != 0) {
+				match_rule = false;
+			}
+		}
+
+		if (r->serial != NULL) {
+			if (m->wlr_output->serial == NULL ||
+				strcmp(r->serial, m->wlr_output->serial) != 0) {
+				match_rule = false;
+			}
+		}
+
+		if (match_rule) {
 			m->m.x = r->x == INT32_MAX ? INT32_MAX : r->x;
 			m->m.y = r->y == INT32_MAX ? INT32_MAX : r->y;
 			vrr = r->vrr >= 0 ? r->vrr : 0;
@@ -3419,7 +3470,10 @@ void requestmonstate(struct wl_listener *listener, void *data) {
 
 void inputdevice(struct wl_listener *listener, void *data) {
 	/* This event is raised by the backend when a new input device becomes
-	 * available. */
+	 * available.
+	 * when the backend is a headless backend, this event will never be
+	 * triggered.
+	 */
 	struct wlr_input_device *device = data;
 	uint32_t caps;
 
@@ -3489,11 +3543,6 @@ keybinding(uint32_t state, bool locked, uint32_t mods, xkb_keysym_t sym,
 	const KeyBinding *k;
 	int32_t ji;
 	int32_t isbreak = 0;
-
-	// not allow modifier keys to be used as a keybinding
-	if (keycode == 50 || keycode == 37 || keycode == 133 || keycode == 64 ||
-		keycode == 62 || keycode == 108 || keycode == 105 || keycode == 134)
-		return false;
 
 	if (is_keyboard_shortcut_inhibitor(seat->keyboard_state.focused_surface)) {
 		return false;
@@ -3816,6 +3865,7 @@ void init_client_properties(Client *c) {
 	c->isterm = 0;
 	c->allow_csd = 0;
 	c->force_maximize = 0;
+	c->force_tiled_state = 1;
 	c->force_tearing = 0;
 	c->allow_shortcuts_inhibit = SHORTCUTS_INHIBIT_ENABLE;
 	c->scroller_proportion_single = 0.0f;
@@ -3873,18 +3923,19 @@ mapnotify(struct wl_listener *listener, void *data) {
 	 */
 	if (client_is_unmanaged(c)) {
 		/* Unmanaged clients always are floating */
+#ifdef XWAYLAND
+		if (client_is_x11(c)) {
+			fix_xwayland_unmanaged_coordinate(c);
+			LISTEN(&c->surface.xwayland->events.set_geometry, &c->set_geometry,
+				   setgeometrynotify);
+		}
+#endif
 		wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
 		wlr_scene_node_set_position(&c->scene->node, c->geom.x, c->geom.y);
 		if (client_wants_focus(c)) {
 			focusclient(c, 1);
 			exclusive_focus = c;
 		}
-#ifdef XWAYLAND
-		if (client_is_x11(c)) {
-			LISTEN(&c->surface.xwayland->events.set_geometry, &c->set_geometry,
-				   setgeometrynotify);
-		}
-#endif
 		return;
 	}
 
@@ -3930,8 +3981,10 @@ mapnotify(struct wl_listener *listener, void *data) {
 
 	applyrules(c);
 
-	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
-							WLR_EDGE_RIGHT);
+	if (!c->isfloating || c->force_tiled_state) {
+		client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
+								WLR_EDGE_RIGHT);
+	}
 
 	// apply buffer effects of client
 	wlr_scene_node_for_each_buffer(&c->scene_surface->node,
@@ -4282,8 +4335,8 @@ void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy,
 				  uint32_t time) {
 	struct timespec now;
 
-	if (sloppyfocus && !start_drag_window && c && time &&
-		c->scene->node.enabled && !c->animation.tagging_in &&
+	if (sloppyfocus && !start_drag_window && c && time && c->scene &&
+		c->scene->node.enabled && !c->animation.tagining &&
 		(surface != seat->pointer_state.focused_surface) &&
 		!client_is_unmanaged(c) && VISIBLEON(c, c->mon))
 		focusclient(c, 0);
@@ -4756,6 +4809,13 @@ setfloating(Client *c, int32_t floating) {
 	if (!c->force_maximize)
 		client_set_maximized(c, false);
 
+	if (!c->isfloating || c->force_tiled_state) {
+		client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
+								WLR_EDGE_RIGHT);
+	} else {
+		client_set_tiled(c, WLR_EDGE_NONE);
+	}
+
 	arrange(c->mon, false, false);
 	setborder_color(c);
 	printstatus();
@@ -5177,7 +5237,7 @@ void setup(void) {
 	if (wlr_renderer_get_texture_formats(drw, WLR_BUFFER_CAP_DMABUF)) {
 		wlr_drm_create(dpy, drw);
 		wlr_scene_set_linux_dmabuf_v1(
-			scene, wlr_linux_dmabuf_v1_create_with_renderer(dpy, 5, drw));
+			scene, wlr_linux_dmabuf_v1_create_with_renderer(dpy, 4, drw));
 	}
 
 	if (syncobj_enable && (drm_fd = wlr_renderer_get_drm_fd(drw)) >= 0 &&
@@ -5324,7 +5384,6 @@ void setup(void) {
 				  &request_set_cursor_shape);
 	hide_source = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
 										  hidecursor, cursor);
-
 	/*
 	 * Configures a seat, which is a single "seat" at which a user sits and
 	 * operates the computer. This conceptually includes up to one keyboard,
@@ -5416,6 +5475,8 @@ void setup(void) {
 		fprintf(stderr,
 				"failed to setup XWayland X server, continuing without it\n");
 	}
+	sync_keymap = wl_event_loop_add_timer(wl_display_get_event_loop(dpy),
+										  synckeymap, NULL);
 #endif
 }
 
@@ -5490,6 +5551,9 @@ void overview_backup(Client *c) {
 		c->ismaximizescreen = 0;
 	}
 	c->bw = c->isnoborder ? 0 : borderpx;
+
+	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
+							WLR_EDGE_RIGHT);
 }
 
 // overview切回到普通视图还原窗口的状态
@@ -5528,6 +5592,10 @@ void overview_restore(Client *c, const Arg *arg) {
 	if (c->bw == 0 &&
 		!c->isfullscreen) { // 如果是在ov模式中创建的窗口,没有bw记录
 		c->bw = c->isnoborder ? 0 : borderpx;
+	}
+
+	if (c->isfloating && !c->force_tiled_state) {
+		client_set_tiled(c, WLR_EDGE_NONE);
 	}
 }
 
@@ -5973,6 +6041,8 @@ void handle_keyboard_shortcuts_inhibit_new_inhibitor(
 void virtualkeyboard(struct wl_listener *listener, void *data) {
 	struct wlr_virtual_keyboard_v1 *kb = data;
 	/* virtual keyboards shouldn't share keyboard group */
+	wlr_seat_set_capabilities(seat,
+							  seat->capabilities | WL_SEAT_CAPABILITY_KEYBOARD);
 	KeyboardGroup *group = createkeyboardgroup();
 	/* Set the keymap to match the group keymap */
 	wlr_keyboard_set_keymap(&kb->keyboard, group->wlr_group->keyboard.keymap);
@@ -5984,8 +6054,7 @@ void virtualkeyboard(struct wl_listener *listener, void *data) {
 }
 
 void warp_cursor(const Client *c) {
-	if (cursor->x < c->geom.x || cursor->x > c->geom.x + c->geom.width ||
-		cursor->y < c->geom.y || cursor->y > c->geom.y + c->geom.height) {
+	if (INSIDEMON(c)) {
 		wlr_cursor_warp_closest(cursor, NULL, c->geom.x + c->geom.width / 2.0,
 								c->geom.y + c->geom.height / 2.0);
 		motionnotify(0, NULL, 0, 0, 0, 0);
@@ -6003,7 +6072,8 @@ void warp_cursor_to_selmon(Monitor *m) {
 void virtualpointer(struct wl_listener *listener, void *data) {
 	struct wlr_virtual_pointer_v1_new_pointer_event *event = data;
 	struct wlr_input_device *device = &event->new_pointer->pointer.base;
-
+	wlr_seat_set_capabilities(seat,
+							  seat->capabilities | WL_SEAT_CAPABILITY_POINTER);
 	wlr_cursor_attach_input_device(cursor, device);
 	if (event->suggested_output)
 		wlr_cursor_map_input_to_output(cursor, device, event->suggested_output);
@@ -6012,6 +6082,26 @@ void virtualpointer(struct wl_listener *listener, void *data) {
 }
 
 #ifdef XWAYLAND
+void fix_xwayland_unmanaged_coordinate(Client *c) {
+	if (!selmon)
+		return;
+
+	// 1. 如果窗口已经在当前活动显示器内，直接返回
+	if (c->geom.x >= selmon->m.x && c->geom.x < selmon->m.x + selmon->m.width &&
+		c->geom.y >= selmon->m.y && c->geom.y < selmon->m.y + selmon->m.height)
+		return;
+
+	c->geom = setclient_coordinate_center(c, selmon, c->geom, 0, 0);
+}
+
+int32_t synckeymap(void *data) {
+	reset_keyboard_layout();
+	// we only need to sync keymap once
+	wlr_log(WLR_INFO, "timer to synckeymap done");
+	wl_event_source_timer_update(sync_keymap, 0);
+	return 0;
+}
+
 void activatex11(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, activate);
 	bool need_arrange = false;
@@ -6142,6 +6232,10 @@ void xwaylandready(struct wl_listener *listener, void *data) {
 			xwayland, xcursor->images[0]->buffer, xcursor->images[0]->width * 4,
 			xcursor->images[0]->width, xcursor->images[0]->height,
 			xcursor->images[0]->hotspot_x, xcursor->images[0]->hotspot_y);
+	/* xwayland can't auto sync the keymap, so we do it manually
+	  and we need to wait the xwayland completely inited
+	*/
+	wl_event_source_timer_update(sync_keymap, 500);
 }
 
 static void setgeometrynotify(struct wl_listener *listener, void *data) {
@@ -6168,8 +6262,7 @@ int32_t main(int32_t argc, char *argv[]) {
 		} else if (c == 'c') {
 			cli_config_path = optarg;
 		} else if (c == 'p') {
-			parse_config();
-			return EXIT_SUCCESS;
+			return parse_config() ? EXIT_SUCCESS : EXIT_FAILURE;
 		} else {
 			goto usage;
 		}

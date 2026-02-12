@@ -907,9 +907,7 @@ int32_t switch_keyboard_layout(const Arg *arg) {
 	uint32_t latched = keyboard->modifiers.latched;
 	uint32_t locked = keyboard->modifiers.locked;
 
-	wlr_keyboard_set_keymap(keyboard, keyboard->keymap);
 	wlr_keyboard_notify_modifiers(keyboard, depressed, latched, locked, next);
-	keyboard->modifiers.group = 0;
 
 	// 7. 更新 seat
 	wlr_seat_set_keyboard(seat, keyboard);
@@ -923,10 +921,7 @@ int32_t switch_keyboard_layout(const Arg *arg) {
 
 		struct wlr_keyboard *tkb = (struct wlr_keyboard *)id->device_data;
 
-		wlr_keyboard_set_keymap(tkb, keyboard->keymap);
 		wlr_keyboard_notify_modifiers(tkb, depressed, latched, locked, next);
-		tkb->modifiers.group = 0;
-
 		// 7. 更新 seat
 		wlr_seat_set_keyboard(seat, tkb);
 		wlr_seat_keyboard_notify_modifiers(seat, &tkb->modifiers);
