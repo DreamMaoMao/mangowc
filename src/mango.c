@@ -944,7 +944,7 @@ static struct wl_listener keyboard_shortcuts_inhibit_new_inhibitor = {
 	.notify = handle_keyboard_shortcuts_inhibit_new_inhibitor};
 
 #ifdef XWAYLAND
-static void fix_xwayland_unmanaged_coordinate(struct wlr_box *box);
+static void fix_xwayland_unmanaged_coordinate(Client *c);
 static int32_t synckeymap(void *data);
 static void activatex11(struct wl_listener *listener, void *data);
 static void configurex11(struct wl_listener *listener, void *data);
@@ -1378,7 +1378,7 @@ void applyrules(Client *c) {
 
 #ifdef XWAYLAND
 	if (c->isfloating && client_is_x11(c)) {
-		fix_xwayland_unmanaged_coordinate(&c->geom);
+		fix_xwayland_unmanaged_coordinate(c);
 		c->float_geom = c->geom;
 	}
 #endif
@@ -3925,7 +3925,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 		/* Unmanaged clients always are floating */
 #ifdef XWAYLAND
 		if (client_is_x11(c)) {
-			fix_xwayland_unmanaged_coordinate(&c->geom);
+			fix_xwayland_unmanaged_coordinate(c);
 			LISTEN(&c->surface.xwayland->events.set_geometry, &c->set_geometry,
 				   setgeometrynotify);
 		}
@@ -6082,23 +6082,16 @@ void virtualpointer(struct wl_listener *listener, void *data) {
 }
 
 #ifdef XWAYLAND
-void fix_xwayland_unmanaged_coordinate(struct wlr_box *box) {
+void fix_xwayland_unmanaged_coordinate(Client *c) {
 	if (!selmon)
 		return;
-	if (box->x >= selmon->m.x && box->x <= selmon->m.x + selmon->m.width &&
-		box->y >= selmon->m.y && box->y <= selmon->m.y + selmon->m.height)
+
+	// 1. 如果窗口已经在当前活动显示器内，直接返回
+	if (c->geom.x >= selmon->m.x && c->geom.x < selmon->m.x + selmon->m.width &&
+		c->geom.y >= selmon->m.y && c->geom.y < selmon->m.y + selmon->m.height)
 		return;
 
-	Monitor *source_monitor = xytomon(box->x, box->y);
-
-	if (!source_monitor)
-		return;
-
-	int xoffset = box->x - source_monitor->m.x;
-	int yoffset = box->y - source_monitor->m.y;
-
-	box->x = selmon->m.x + xoffset;
-	box->y = selmon->m.y + yoffset;
+	c->geom = setclient_coordinate_center(c, selmon, c->geom, 0, 0);
 }
 
 int32_t synckeymap(void *data) {
