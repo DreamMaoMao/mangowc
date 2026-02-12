@@ -88,6 +88,7 @@ typedef struct {
 	int32_t isterm;
 	int32_t allow_csd;
 	int32_t force_maximize;
+	int32_t force_tiled_state;
 	int32_t force_tearing;
 	int32_t noswallow;
 	float focused_opacity;
@@ -1933,6 +1934,7 @@ bool parse_option(Config *config, char *key, char *value) {
 		rule->isterm = -1;
 		rule->allow_csd = -1;
 		rule->force_maximize = -1;
+		rule->force_tiled_state = -1;
 		rule->force_tearing = -1;
 		rule->noswallow = -1;
 		rule->nofocus = -1;
@@ -2042,6 +2044,8 @@ bool parse_option(Config *config, char *key, char *value) {
 					rule->allow_csd = atoi(val);
 				} else if (strcmp(key, "force_maximize") == 0) {
 					rule->force_maximize = atoi(val);
+				} else if (strcmp(key, "force_tiled_state") == 0) {
+					rule->force_tiled_state = atoi(val);
 				} else if (strcmp(key, "force_tearing") == 0) {
 					rule->force_tearing = atoi(val);
 				} else if (strcmp(key, "noswallow") == 0) {
