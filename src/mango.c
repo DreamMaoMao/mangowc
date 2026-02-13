@@ -511,6 +511,8 @@ struct Monitor {
 	int32_t gappoh; /* horizontal outer gaps */
 	int32_t gappov; /* vertical outer gaps */
 	Pertag *pertag;
+	uint32_t ovbk_current_tagset;
+	uint32_t ovbk_prev_tagset;
 	Client *sel, *prevsel;
 	int32_t isoverview;
 	int32_t is_in_hotarea;
