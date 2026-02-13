@@ -1521,6 +1521,16 @@ int32_t minimized(const Arg *arg) {
 	return 0;
 }
 
+void fix_mon_tagset_from_overview(Monitor *m) {
+	if (m->tagset[m->seltags] == (m->ovbk_prev_tagset & TAGMASK)) {
+		m->tagset[m->seltags ^ 1] = m->ovbk_current_tagset;
+		m->pertag->prevtag = get_tags_first_tag_num(m->ovbk_current_tagset);
+	} else {
+		m->tagset[m->seltags ^ 1] = m->ovbk_prev_tagset;
+		m->pertag->prevtag = get_tags_first_tag_num(m->ovbk_prev_tagset);
+	}
+}
+
 int32_t toggleoverview(const Arg *arg) {
 	Client *c = NULL;
 
@@ -1542,6 +1552,8 @@ int32_t toggleoverview(const Arg *arg) {
 			visible_client_number++;
 		}
 		if (visible_client_number > 0) {
+			selmon->ovbk_current_tagset = selmon->tagset[selmon->seltags];
+			selmon->ovbk_prev_tagset = selmon->tagset[selmon->seltags ^ 1];
 			target = ~0 & TAGMASK;
 		} else {
 			selmon->isoverview ^= 1;
@@ -1552,6 +1564,7 @@ int32_t toggleoverview(const Arg *arg) {
 	} else if (!selmon->isoverview && !selmon->sel) {
 		target = (1 << (selmon->pertag->prevtag - 1));
 		view(&(Arg){.ui = target}, false);
+		fix_mon_tagset_from_overview(selmon);
 		refresh_monitors_workspaces_status(selmon);
 		return 0;
 	}
@@ -1574,7 +1587,7 @@ int32_t toggleoverview(const Arg *arg) {
 	}
 
 	view(&(Arg){.ui = target}, false);
-
+	fix_mon_tagset_from_overview(selmon);
 	refresh_monitors_workspaces_status(selmon);
 	return 0;
 }
