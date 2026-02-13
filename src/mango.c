@@ -5097,9 +5097,15 @@ void setmon(Client *c, Monitor *m, uint32_t newtags, bool focus) {
 		/* Make sure window actually overlaps with the monitor */
 		reset_foreign_tolevel(c);
 		resize(c, c->geom, 0);
-		c->tags =
-			newtags ? newtags
-					: m->tagset[m->seltags]; /* assign tags of target monitor */
+		if (!newtags && !m->isoverview) {
+			c->tags = m->tagset[m->seltags];
+		} else if (!newtags && m->isoverview) {
+			c->tags = m->ovbk_current_tagset;
+		} else if (newtags) {
+			c->tags = newtags;
+		} else {
+			c->tags = m->tagset[m->seltags];
+		}
 		setfloating(c, c->isfloating);
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
 	}
