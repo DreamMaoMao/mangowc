@@ -204,7 +204,6 @@ float focused_opacity = 1.0;
 float unfocused_opacity = 1.0;
 
 int border_radius = 0;
-int border_radius_location_default = CORNER_LOCATION_ALL;
 int blur = 0;
 int blur_layer = 0;
 int blur_optimized = 1;

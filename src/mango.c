@@ -262,7 +262,7 @@ typedef struct {
 	float height_scale;
 	int width;
 	int height;
-	enum corner_location corner_location;
+	struct fx_corner_radii corner_location;
 	bool should_scale;
 } BufferData;
 
@@ -369,6 +369,7 @@ struct Client {
 	bool isleftstack;
 	int tearing_hint;
 	int force_tearing;
+	int border_radius;
 };
 
 typedef struct {
@@ -694,7 +695,7 @@ static double find_animation_curve_at(double t, int type);
 
 static void apply_opacity_to_rect_nodes(Client *c, struct wlr_scene_node *node,
 										double animation_passed);
-static enum corner_location set_client_corner_location(Client *c);
+static struct fx_corner_radii set_client_corner_location(Client *c);
 static double all_output_frame_duration_ms();
 static struct wlr_scene_tree *
 wlr_scene_tree_snapshot(struct wlr_scene_node *node,
@@ -2086,8 +2087,7 @@ static void iter_layer_scene_buffers(struct wlr_scene_buffer *buffer, int sx,
 	LayerSurface *l = (LayerSurface *)user_data;
 
 	wlr_scene_node_set_enabled(&l->blur->node, true);
-	wlr_scene_blur_set_mask_source(l->blur, &buffer->node,
-								   BLUR_MASK_IGNORE_TRANSPARENCY);
+	wlr_scene_blur_set_transparency_mask_source(l->blur, buffer);
 	wlr_scene_blur_set_size(l->blur, l->geom.width, l->geom.height);
 
 	if (blur_optimized) {
@@ -3646,8 +3646,7 @@ mapnotify(struct wl_listener *listener, void *data) {
 									  c->isurgent ? urgentcolor : bordercolor);
 	wlr_scene_node_lower_to_bottom(&c->border->node);
 	wlr_scene_node_set_position(&c->border->node, 0, 0);
-	wlr_scene_rect_set_corner_radius(c->border, border_radius,
-									 border_radius_location_default);
+	wlr_scene_rect_set_corner_radii(c->border, corner_radii_all(border_radius));
 	wlr_scene_node_set_enabled(&c->border->node, true);
 
 	c->shadow = wlr_scene_shadow_create(c->scene, 0, 0, border_radius,
