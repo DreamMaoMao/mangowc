@@ -1,3 +1,42 @@
+void restore_size_per(Monitor *m, Client *c) {
+	Client *fc = NULL;
+	double total_master_inner_per = 0;
+	double total_stack_inner_per = 0;
+
+	if (!m || !c)
+		return;
+
+	const Layout *current_layout = m->pertag->ltidxs[m->pertag->curtag];
+
+	if (current_layout->id == SCROLLER ||
+		current_layout->id == VERTICAL_SCROLLER || current_layout->id == GRID ||
+		current_layout->id == VERTICAL_GRID || current_layout->id == DECK ||
+		current_layout->id == VERTICAL_DECK ||
+		current_layout->id == CENTER_TILE || current_layout->id == MONOCLE) {
+		return;
+	}
+
+	if (current_layout->id == CENTER_TILE || c->ismaster) {
+		set_size_per(m, c);
+		return;
+	}
+
+	wl_list_for_each(fc, &clients, link) {
+		if (VISIBLEON(fc, m) && ISTILED(fc) && fc != c) {
+			if (fc->ismaster) {
+				total_master_inner_per += fc->master_inner_per;
+			} else {
+				total_stack_inner_per += fc->stack_inner_per;
+			}
+		}
+	}
+
+	if (!c->ismaster && total_stack_inner_per) {
+		c->stack_inner_per = total_stack_inner_per * c->stack_inner_per /
+							 (1 - c->stack_inner_per);
+	}
+}
+
 void set_size_per(Monitor *m, Client *c) {
 	Client *fc = NULL;
 	bool found = false;

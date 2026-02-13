@@ -4810,7 +4810,7 @@ setfloating(Client *c, int32_t floating) {
 	}
 
 	if (!c->isfloating && old_floating_state) {
-		set_size_per(c->mon, c);
+		restore_size_per(c->mon, c);
 	}
 
 	if (!c->force_maximize)
@@ -4896,7 +4896,7 @@ void setmaximizescreen(Client *c, int32_t maximizescreen) {
 	wlr_scene_node_reparent(&c->scene->node,
 							layers[c->isfloating ? LyrTop : LyrTile]);
 	if (!c->ismaximizescreen && old_maximizescreen_state) {
-		set_size_per(c->mon, c);
+		restore_size_per(c->mon, c);
 	}
 
 	if (!c->force_maximize && !c->ismaximizescreen) {
@@ -4967,7 +4967,7 @@ void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自
 	}
 
 	if (!c->isfullscreen && old_fullscreen_state) {
-		set_size_per(c->mon, c);
+		restore_size_per(c->mon, c);
 	}
 
 	arrange(c->mon, false, false);

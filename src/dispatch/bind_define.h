@@ -1217,13 +1217,15 @@ int32_t togglefloating(const Arg *arg) {
 	if (!sel)
 		return 0;
 
+	bool isfloating = sel->isfloating;
+
 	if ((sel->isfullscreen || sel->ismaximizescreen)) {
-		sel->isfloating = 1;
+		isfloating = 1;
 	} else {
-		sel->isfloating = !sel->isfloating;
+		isfloating = !sel->isfloating;
 	}
 
-	setfloating(sel, sel->isfloating);
+	setfloating(sel, isfloating);
 	return 0;
 }
 
