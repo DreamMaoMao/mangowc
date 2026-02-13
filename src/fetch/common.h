@@ -1,5 +1,5 @@
 pid_t getparentprocess(pid_t p) {
-	unsigned int v = 0;
+	uint32_t v = 0;
 
 	FILE *f;
 	char buf[256];
@@ -19,29 +19,11 @@ pid_t getparentprocess(pid_t p) {
 	return (pid_t)v;
 }
 
-int isdescprocess(pid_t p, pid_t c) {
+int32_t isdescprocess(pid_t p, pid_t c) {
 	while (p != c && c != 0)
 		c = getparentprocess(c);
 
-	return (int)c;
-}
-
-char *get_autostart_path(char *autostart_path, unsigned int buf_size) {
-	const char *mangoconfig = getenv("MANGOCONFIG");
-
-	if (mangoconfig && mangoconfig[0] != '\0') {
-		snprintf(autostart_path, buf_size, "%s/autostart.sh", mangoconfig);
-	} else {
-		const char *homedir = getenv("HOME");
-		if (!homedir) {
-			fprintf(stderr, "Error: HOME environment variable not set.\n");
-			return NULL;
-		}
-		snprintf(autostart_path, buf_size, "%s/.config/mango/autostart.sh",
-				 homedir);
-	}
-
-	return autostart_path;
+	return (int32_t)c;
 }
 
 void get_layout_abbr(char *abbr, const char *full_name) {
@@ -49,7 +31,7 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 	abbr[0] = '\0';
 
 	// 1. 尝试在映射表中查找
-	for (int i = 0; layout_mappings[i].full_name != NULL; i++) {
+	for (int32_t i = 0; layout_mappings[i].full_name != NULL; i++) {
 		if (strcmp(full_name, layout_mappings[i].full_name) == 0) {
 			strcpy(abbr, layout_mappings[i].abbr);
 			return;
@@ -60,10 +42,10 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 	const char *open = strrchr(full_name, '(');
 	const char *close = strrchr(full_name, ')');
 	if (open && close && close > open) {
-		unsigned int len = close - open - 1;
+		uint32_t len = close - open - 1;
 		if (len > 0 && len <= 4) {
 			// 提取并转换为小写
-			for (unsigned int j = 0; j < len; j++) {
+			for (uint32_t j = 0; j < len; j++) {
 				abbr[j] = tolower(open[j + 1]);
 			}
 			abbr[len] = '\0';
@@ -72,8 +54,8 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 	}
 
 	// 3. 提取前2-3个字母并转换为小写
-	unsigned int j = 0;
-	for (unsigned int i = 0; full_name[i] != '\0' && j < 3; i++) {
+	uint32_t j = 0;
+	for (uint32_t i = 0; full_name[i] != '\0' && j < 3; i++) {
 		if (isalpha(full_name[i])) {
 			abbr[j++] = tolower(full_name[i]);
 		}
@@ -101,7 +83,7 @@ void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
 	struct wlr_surface *surface = NULL;
 	Client *c = NULL;
 	LayerSurface *l = NULL;
-	int layer;
+	int32_t layer;
 
 	for (layer = NUM_LAYERS - 1; !surface && layer >= 0; layer--) {
 
@@ -111,10 +93,17 @@ void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
 		if (!(node = wlr_scene_node_at(&layers[layer]->node, x, y, nx, ny)))
 			continue;
 
+		if (!node->enabled)
+			continue;
+
 		if (node->type == WLR_SCENE_NODE_BUFFER)
 			surface = wlr_scene_surface_try_from_buffer(
 						  wlr_scene_buffer_from_node(node))
 						  ->surface;
+		else if (node->type == WLR_SCENE_NODE_RECT) {
+			surface = NULL;
+			break;
+		}
 
 		/*  start from the topmost layer,
 			find a sureface that can be focused by pointer,

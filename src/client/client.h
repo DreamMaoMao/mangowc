@@ -6,7 +6,7 @@
  */
 
 /* Leave these functions first; they're used in the others */
-static inline int client_is_x11(Client *c) {
+static inline int32_t client_is_x11(Client *c) {
 #ifdef XWAYLAND
 	return c->type == X11;
 #endif
@@ -21,14 +21,15 @@ static inline struct wlr_surface *client_surface(Client *c) {
 	return c->surface.xdg->surface;
 }
 
-static inline int toplevel_from_wlr_surface(struct wlr_surface *s, Client **pc,
-											LayerSurface **pl) {
+static inline int32_t toplevel_from_wlr_surface(struct wlr_surface *s,
+												Client **pc,
+												LayerSurface **pl) {
 	struct wlr_xdg_surface *xdg_surface, *tmp_xdg_surface;
 	struct wlr_surface *root_surface;
 	struct wlr_layer_surface_v1 *layer_surface;
 	Client *c = NULL;
 	LayerSurface *l = NULL;
-	int type = -1;
+	int32_t type = -1;
 #ifdef XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
 #endif
@@ -88,7 +89,7 @@ end:
 
 /* The others */
 static inline void client_activate_surface(struct wlr_surface *s,
-										   int activated) {
+										   int32_t activated) {
 	struct wlr_xdg_toplevel *toplevel;
 #ifdef XWAYLAND
 	struct wlr_xwayland_surface *xsurface;
@@ -113,7 +114,7 @@ static inline const char *client_get_appid(Client *c) {
 											: "broken";
 }
 
-static inline int client_get_pid(Client *c) {
+static inline int32_t client_get_pid(Client *c) {
 	pid_t pid;
 #ifdef XWAYLAND
 	if (client_is_x11(c))
@@ -127,8 +128,8 @@ static inline void client_get_clip(Client *c, struct wlr_box *clip) {
 	*clip = (struct wlr_box){
 		.x = 0,
 		.y = 0,
-		.width = c->geom.width - c->bw,
-		.height = c->geom.height - c->bw,
+		.width = c->geom.width - 2 * c->bw,
+		.height = c->geom.height - 2 * c->bw,
 	};
 
 #ifdef XWAYLAND
@@ -153,20 +154,6 @@ static inline void client_get_geometry(Client *c, struct wlr_box *geom) {
 	*geom = c->surface.xdg->geometry;
 }
 
-static inline Client *get_client_from_surface(struct wlr_surface *surface) {
-	if (!surface)
-		return NULL;
-
-	// 从 surface 的 data 指针获取 scene tree
-	struct wlr_scene_tree *scene_tree = surface->data;
-	if (!scene_tree)
-		return NULL;
-
-	// 从 scene tree 的 node data 获取 Client
-	Client *c = scene_tree->node.data;
-	return c;
-}
-
 static inline Client *client_get_parent(Client *c) {
 	Client *p = NULL;
 #ifdef XWAYLAND
@@ -183,7 +170,7 @@ static inline Client *client_get_parent(Client *c) {
 	return p;
 }
 
-static inline int client_has_children(Client *c) {
+static inline int32_t client_has_children(Client *c) {
 #ifdef XWAYLAND
 	if (client_is_x11(c))
 		return !wl_list_empty(&c->surface.xwayland->children);
@@ -203,7 +190,7 @@ static inline const char *client_get_title(Client *c) {
 										   : "broken";
 }
 
-static inline int client_is_float_type(Client *c) {
+static inline int32_t client_is_float_type(Client *c) {
 	struct wlr_xdg_toplevel *toplevel;
 	struct wlr_xdg_toplevel_state state;
 
@@ -243,12 +230,12 @@ static inline int client_is_float_type(Client *c) {
 								 state.min_height == state.max_height));
 }
 
-static inline int client_is_rendered_on_mon(Client *c, Monitor *m) {
+static inline int32_t client_is_rendered_on_mon(Client *c, Monitor *m) {
 	/* This is needed for when you don't want to check formal assignment,
 	 * but rather actual displaying of the pixels.
 	 * Usually VISIBLEON suffices and is also faster. */
 	struct wlr_surface_output *s;
-	int unused_lx, unused_ly;
+	int32_t unused_lx, unused_ly;
 	if (!wlr_scene_node_coords(&c->scene->node, &unused_lx, &unused_ly))
 		return 0;
 	wl_list_for_each(s, &client_surface(c)->current_outputs,
@@ -256,8 +243,8 @@ static inline int client_is_rendered_on_mon(Client *c, Monitor *m) {
 	return 0;
 }
 
-static inline int client_is_stopped(Client *c) {
-	int pid;
+static inline int32_t client_is_stopped(Client *c) {
+	int32_t pid;
 	siginfo_t in = {0};
 #ifdef XWAYLAND
 	if (client_is_x11(c))
@@ -267,7 +254,7 @@ static inline int client_is_stopped(Client *c) {
 	wl_client_get_credentials(c->surface.xdg->client->client, &pid, NULL, NULL);
 	if (waitid(P_PID, pid, &in, WNOHANG | WCONTINUED | WSTOPPED | WNOWAIT) <
 		0) {
-		/* This process is not our child process, while is very unluckely that
+		/* This process is not our child process, while is very unlikely that
 		 * it is stopped, in order to do not skip frames assume that it is. */
 		if (errno == ECHILD)
 			return 1;
@@ -281,7 +268,7 @@ static inline int client_is_stopped(Client *c) {
 	return 0;
 }
 
-static inline int client_is_unmanaged(Client *c) {
+static inline int32_t client_is_unmanaged(Client *c) {
 #ifdef XWAYLAND
 	if (client_is_x11(c))
 		return c->surface.xwayland->override_redirect;
@@ -313,7 +300,7 @@ static inline void client_set_border_color(Client *c,
 	wlr_scene_rect_set_color(c->border, color);
 }
 
-static inline void client_set_fullscreen(Client *c, int fullscreen) {
+static inline void client_set_fullscreen(Client *c, int32_t fullscreen) {
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
 		wlr_xwayland_surface_set_fullscreen(c->surface.xwayland, fullscreen);
@@ -393,7 +380,7 @@ static inline void client_set_tiled(Client *c, uint32_t edges) {
 	}
 }
 
-static inline void client_set_suspended(Client *c, int suspended) {
+static inline void client_set_suspended(Client *c, int32_t suspended) {
 #ifdef XWAYLAND
 	if (client_is_x11(c))
 		return;
@@ -402,7 +389,7 @@ static inline void client_set_suspended(Client *c, int suspended) {
 	wlr_xdg_toplevel_set_suspended(c->surface.xdg->toplevel, suspended);
 }
 
-static inline int client_should_ignore_focus(Client *c) {
+static inline int32_t client_should_ignore_focus(Client *c) {
 
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
@@ -417,7 +404,7 @@ static inline int client_should_ignore_focus(Client *c) {
 	return 0;
 }
 
-static inline int client_is_x11_popup(Client *c) {
+static inline int32_t client_is_x11_popup(Client *c) {
 
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
@@ -446,7 +433,7 @@ static inline int client_is_x11_popup(Client *c) {
 	return 0;
 }
 
-static inline int client_should_global(Client *c) {
+static inline int32_t client_should_global(Client *c) {
 
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
@@ -459,7 +446,7 @@ static inline int client_should_global(Client *c) {
 	return 0;
 }
 
-static inline int client_should_overtop(Client *c) {
+static inline int32_t client_should_overtop(Client *c) {
 
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
@@ -471,7 +458,7 @@ static inline int client_should_overtop(Client *c) {
 	return 0;
 }
 
-static inline int client_wants_focus(Client *c) {
+static inline int32_t client_wants_focus(Client *c) {
 #ifdef XWAYLAND
 	return client_is_unmanaged(c) &&
 		   wlr_xwayland_surface_override_redirect_wants_focus(
@@ -482,7 +469,7 @@ static inline int client_wants_focus(Client *c) {
 	return 0;
 }
 
-static inline int client_wants_fullscreen(Client *c) {
+static inline int32_t client_wants_fullscreen(Client *c) {
 #ifdef XWAYLAND
 	if (client_is_x11(c))
 		return c->surface.xwayland->fullscreen;
@@ -526,16 +513,16 @@ static inline void client_set_size_bound(Client *c) {
 		if (!size_hints)
 			return;
 
-		if ((unsigned int)c->geom.width - 2 * c->bw < size_hints->min_width &&
+		if ((uint32_t)c->geom.width - 2 * c->bw < size_hints->min_width &&
 			size_hints->min_width > 0)
 			c->geom.width = size_hints->min_width + 2 * c->bw;
-		if ((unsigned int)c->geom.height - 2 * c->bw < size_hints->min_height &&
+		if ((uint32_t)c->geom.height - 2 * c->bw < size_hints->min_height &&
 			size_hints->min_height > 0)
 			c->geom.height = size_hints->min_height + 2 * c->bw;
-		if ((unsigned int)c->geom.width - 2 * c->bw > size_hints->max_width &&
+		if ((uint32_t)c->geom.width - 2 * c->bw > size_hints->max_width &&
 			size_hints->max_width > 0)
 			c->geom.width = size_hints->max_width + 2 * c->bw;
-		if ((unsigned int)c->geom.height - 2 * c->bw > size_hints->max_height &&
+		if ((uint32_t)c->geom.height - 2 * c->bw > size_hints->max_height &&
 			size_hints->max_height > 0)
 			c->geom.height = size_hints->max_height + 2 * c->bw;
 		return;
@@ -544,19 +531,19 @@ static inline void client_set_size_bound(Client *c) {
 
 	toplevel = c->surface.xdg->toplevel;
 	state = toplevel->current;
-	if ((unsigned int)c->geom.width - 2 * c->bw < state.min_width &&
+	if ((uint32_t)c->geom.width - 2 * c->bw < state.min_width &&
 		state.min_width > 0) {
 		c->geom.width = state.min_width + 2 * c->bw;
 	}
-	if ((unsigned int)c->geom.height - 2 * c->bw < state.min_height &&
+	if ((uint32_t)c->geom.height - 2 * c->bw < state.min_height &&
 		state.min_height > 0) {
 		c->geom.height = state.min_height + 2 * c->bw;
 	}
-	if ((unsigned int)c->geom.width - 2 * c->bw > state.max_width &&
+	if ((uint32_t)c->geom.width - 2 * c->bw > state.max_width &&
 		state.max_width > 0) {
 		c->geom.width = state.max_width + 2 * c->bw;
 	}
-	if ((unsigned int)c->geom.height - 2 * c->bw > state.max_height &&
+	if ((uint32_t)c->geom.height - 2 * c->bw > state.max_height &&
 		state.max_height > 0) {
 		c->geom.height = state.max_height + 2 * c->bw;
 	}

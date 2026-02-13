@@ -1,7 +1,7 @@
-# MangoWC
-
-<img width="255" height="256" alt="mango-transparency-256" src="https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png" />
-
+# Mango Wayland Compositor
+<div>
+  <img src="https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png" alt="MangoWC Logo" width="120"/>
+</div>
 
 This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
@@ -24,18 +24,7 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Hycov-like overview
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
 
-Master-Stack Layout
-
-https://github.com/user-attachments/assets/a9d4776e-b50b-48fb-94ce-651d8a749b8a
-
-Scroller Layout
-
-https://github.com/user-attachments/assets/c9bf9415-fad1-4400-bcdc-3ad2d76de85a
-
-Layer animaiton
-
-https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
-
+https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f
 
 # Our discord
 [mangowc](https://discord.gg/CPjbDxesh5)
@@ -71,16 +60,17 @@ https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
 - hwdata
 - seatd
 - pcre2
+- xorg-xwayland
+- libxcb
 
 ## Arch Linux
-The package is in the Arch User Repository and is availble for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper like yay:
+The package is in the Arch User Repository and is available for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper like yay:
 ```bash
 yay -S mangowc-git
 
 ```
 
 ## Gentoo Linux
-
 The package is in the community-maintained repository called GURU.
 First, add GURU repository:
 
@@ -98,15 +88,25 @@ Finally, install the package:
 emerge --ask --verbose gui-wm/mangowc
 ```
 
+## Fedora Linux
+The package is in the third-party Terra repository.
+First, add the [Terra Repository](https://terra.fyralabs.com/).
+
+Then, install the package:
+
+```bash
+dnf install mangowc
+```
+
 ## Other
 
 ```bash
-git clone -b 0.19.1 https://gitlab.freedesktop.org/wlroots/wlroots.git
+git clone -b 0.19.2 https://gitlab.freedesktop.org/wlroots/wlroots.git
 cd wlroots
 meson build -Dprefix=/usr
 sudo ninja -C build install
 
-git clone https://github.com/wlrfx/scenefx.git
+git clone -b 0.4.1 https://github.com/wlrfx/scenefx.git
 cd scenefx
 meson build -Dprefix=/usr
 sudo ninja -C build install
@@ -119,7 +119,7 @@ sudo ninja -C build install
 
 ## Suggested Tools
 
-### integrated component
+### Hybrid component
 - [dms-shell](https://github.com/AvengeMedia/DankMaterialShell)
 
 ### Independent component
@@ -170,7 +170,9 @@ git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 
 ## Config Documentation
 
-Refer to the [wiki](https://github.com/DreamMaoMao/mango/wiki/)
+Refer to the repo wiki [wiki](https://github.com/DreamMaoMao/mango/wiki/)
+
+or the website docs [docs](https://mangowc.vercel.app/docs)
 
 # NixOS + Home-manager
 
@@ -189,7 +191,10 @@ Here's an example of using the modules in a flake:
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-parts.url = "github:hercules-ci/flake-parts";
-    mango.url = "github:DreamMaoMao/mango";
+    mango = {
+      url = "github:DreamMaoMao/mango";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs =
     inputs@{ self, flake-parts, ... }:
@@ -245,14 +250,6 @@ Here's an example of using the modules in a flake:
 }
 ```
 
-
-# Sponsor
-
-My current device is a bit outdated and doesn't support certain features like HDR or VRR. If you'd like to support this project, here's how you can help. Thanks!
-
-![Screenshot_2025-10-13-20-06-49-26_ee1cec40dcf6eb3](https://github.com/user-attachments/assets/240a0727-9eb5-4212-a84c-10fa9f093147)
-
-
 # Packaging mango
 
 To package mango for other distributions, you can check the reference setup for:
@@ -277,3 +274,15 @@ Read The Friendly Manual on packaging software in your distribution first.
 - https://github.com/swaywm/sway - Sample of Wayland protocol
 
 - https://github.com/wlrfx/scenefx - Make it simple to add window effect.
+
+
+# Sponsor
+At present, I can only accept sponsorship through an encrypted connection.
+If you find this project helpful to you, you can offer sponsorship in the following ways.
+
+<img width="650" height="870" alt="image" src="https://github.com/user-attachments/assets/8c860317-90d2-4071-971d-f1a92b674469" />
+
+
+Thanks to the following friends for their sponsorship of this project
+
+[@tonybanters](https://github.com/tonybanters)

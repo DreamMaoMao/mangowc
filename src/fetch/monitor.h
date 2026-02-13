@@ -26,9 +26,17 @@ bool is_scroller_layout(Monitor *m) {
 	return false;
 }
 
-unsigned int get_tag_status(unsigned int tag, Monitor *m) {
+bool is_centertile_layout(Monitor *m) {
+
+	if (m->pertag->ltidxs[m->pertag->curtag]->id == CENTER_TILE)
+		return true;
+
+	return false;
+}
+
+uint32_t get_tag_status(uint32_t tag, Monitor *m) {
 	Client *c = NULL;
-	unsigned int status = 0;
+	uint32_t status = 0;
 	wl_list_for_each(c, &clients, link) {
 		if (c->mon == m && c->tags & 1 << (tag - 1) & TAGMASK) {
 			if (c->isurgent) {
@@ -41,8 +49,8 @@ unsigned int get_tag_status(unsigned int tag, Monitor *m) {
 	return status;
 }
 
-unsigned int get_tags_first_tag_num(unsigned int source_tags) {
-	unsigned int i, tag;
+uint32_t get_tags_first_tag_num(uint32_t source_tags) {
+	uint32_t i, tag;
 	tag = 0;
 
 	if (!source_tags) {
@@ -63,8 +71,8 @@ unsigned int get_tags_first_tag_num(unsigned int source_tags) {
 }
 
 // 获取tags中最前面的tag的tagmask
-unsigned int get_tags_first_tag(unsigned int source_tags) {
-	unsigned int i, tag;
+uint32_t get_tags_first_tag(uint32_t source_tags) {
+	uint32_t i, tag;
 	tag = 0;
 
 	if (!source_tags) {
