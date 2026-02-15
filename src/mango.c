@@ -338,6 +338,7 @@ struct Client {
 	struct wl_listener configure;
 	struct wl_listener set_hints;
 	struct wl_listener set_geometry;
+	struct wl_listener commmitx11;
 #endif
 	uint32_t bw;
 	uint32_t tags, oldtags, mini_restore_tag;
@@ -956,6 +957,7 @@ static void activatex11(struct wl_listener *listener, void *data);
 static void configurex11(struct wl_listener *listener, void *data);
 static void createnotifyx11(struct wl_listener *listener, void *data);
 static void dissociatex11(struct wl_listener *listener, void *data);
+static void commitx11(struct wl_listener *listener, void *data);
 static void associatex11(struct wl_listener *listener, void *data);
 static void sethints(struct wl_listener *listener, void *data);
 static void xwaylandready(struct wl_listener *listener, void *data);
@@ -6280,17 +6282,33 @@ void createnotifyx11(struct wl_listener *listener, void *data) {
 	LISTEN(&xsurface->events.request_minimize, &c->minimize, minimizenotify);
 }
 
+void commitx11(struct wl_listener *listener, void *data) {
+	Client *c = wl_container_of(listener, c, commmitx11);
+	struct wlr_surface_state *state = &c->surface.xwayland->surface->current;
+	struct wlr_box new_geo = {0};
+	new_geo.width = state->width;
+	new_geo.height = state->height;
+	if (c->geom.width - 2 * c->bw == new_geo.width &&
+		c->geom.height - 2 * c->bw == new_geo.height &&
+		c->surface.xwayland->x == c->geom.x + c->bw &&
+		c->surface.xwayland->y == c->geom.y + c->bw) {
+		c->configure_serial = 0;
+	}
+}
+
 void associatex11(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, associate);
 
 	LISTEN(&client_surface(c)->events.map, &c->map, mapnotify);
 	LISTEN(&client_surface(c)->events.unmap, &c->unmap, unmapnotify);
+	LISTEN(&client_surface(c)->events.commit, &c->commmitx11, commitx11);
 }
 
 void dissociatex11(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, dissociate);
 	wl_list_remove(&c->map.link);
 	wl_list_remove(&c->unmap.link);
+	wl_list_remove(&c->commmitx11.link);
 }
 
 void sethints(struct wl_listener *listener, void *data) {

@@ -319,9 +319,23 @@ static inline uint32_t client_set_size(Client *c, uint32_t width,
 									   uint32_t height) {
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
+
+		struct wlr_surface_state *state =
+			&c->surface.xwayland->surface->current;
+		struct wlr_box new_geo = {0};
+		new_geo.width = state->width;
+		new_geo.height = state->height;
+		if (c->geom.width - 2 * c->bw == new_geo.width &&
+			c->geom.height - 2 * c->bw == new_geo.height &&
+			c->surface.xwayland->x == c->geom.x + c->bw &&
+			c->surface.xwayland->y == c->geom.y + c->bw) {
+			c->configure_serial = 0;
+			return 0;
+		}
+
 		wlr_xwayland_surface_configure(c->surface.xwayland, c->geom.x + c->bw,
 									   c->geom.y + c->bw, width, height);
-		return 0;
+		return 1;
 	}
 #endif
 	if ((int32_t)width == c->surface.xdg->toplevel->current.width &&
