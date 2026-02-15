@@ -3835,6 +3835,7 @@ static void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int32_t sx,
 
 void init_client_properties(Client *c) {
 	c->isfocusing = false;
+	c->isfloating = 0;
 	c->ismaximizescreen = 0;
 	c->isfullscreen = 0;
 	c->need_float_size_reduce = 0;
@@ -4441,8 +4442,8 @@ void rendermon(struct wl_listener *listener, void *data) {
 	wl_list_for_each(c, &clients, link) {
 		need_more_frames = client_draw_frame(c) || need_more_frames;
 		if (!animations && !(allow_tearing && frame_allow_tearing) &&
-			c->configure_serial && !c->isfloating &&
-			client_is_rendered_on_mon(c, m) && !client_is_stopped(c)) {
+			c->configure_serial && client_is_rendered_on_mon(c, m) &&
+			!client_is_stopped(c)) {
 			goto skip;
 		}
 	}
