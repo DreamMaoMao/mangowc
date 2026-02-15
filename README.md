@@ -23,6 +23,7 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Ipc support(get/send message from/to compositor by external program)
      - Hycov-like overview
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
+     - Zero flickering - every frame is perfect.
 
 https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f
 
