@@ -505,6 +505,7 @@ struct Monitor {
 	struct wl_list layers[4]; /* LayerSurface::link */
 	uint32_t seltags;
 	uint32_t tagset[2];
+	bool skiping_frame;
 
 	struct wl_list dwl_ipc_outputs;
 	int32_t gappih; /* horizontal gap between windows */
@@ -789,7 +790,8 @@ static Client *get_scroll_stack_head(Client *c);
 static bool client_only_in_one_tag(Client *c);
 static Client *get_focused_stack_client(Client *sc);
 static bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc);
-static void destroy_monitor_skip_timer(Monitor *m);
+static void monitor_stop_skip_timer(Monitor *m);
+static int monitor_skip_frame_timeout_callback(void *data);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -2234,7 +2236,9 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 	closemon(m);
 
 	if (m->skip_timeout) {
-		destroy_monitor_skip_timer(m);
+		monitor_stop_skip_timer(m);
+		wl_event_source_remove(m->skip_timeout);
+		m->skip_timeout = NULL;
 	}
 
 	m->wlr_output->data = NULL;
@@ -2730,10 +2734,15 @@ void createmon(struct wl_listener *listener, void *data) {
 		return;
 	}
 
+	struct wl_event_loop *loop = wl_display_get_event_loop(dpy);
 	m = wlr_output->data = ecalloc(1, sizeof(*m));
+
+	m->skip_timeout =
+		wl_event_loop_add_timer(loop, monitor_skip_frame_timeout_callback, m);
+	m->skiping_frame = false;
+
 	m->wlr_output = wlr_output;
 	m->wlr_output->data = m;
-	m->skip_timeout = NULL;
 
 	wl_list_init(&m->dwl_ipc_outputs);
 
@@ -4362,34 +4371,32 @@ void client_set_opacity(Client *c, double opacity) {
 								   scene_buffer_apply_opacity, &opacity);
 }
 
-void destroy_monitor_skip_timer(Monitor *m) {
-	if (m->skip_timeout) {
+void monitor_stop_skip_timer(Monitor *m) {
+	if (m->skip_timeout)
 		wl_event_source_timer_update(m->skip_timeout, 0);
-		wl_event_source_remove(m->skip_timeout);
-		m->skip_timeout = NULL;
-	}
+	m->skiping_frame = false;
 }
 
-static int skip_timeout_callback(void *data) {
+static int monitor_skip_frame_timeout_callback(void *data) {
 	Monitor *m = data;
 	Client *c, *tmp;
 
 	wl_list_for_each_safe(c, tmp, &clients, link) { c->configure_serial = 0; }
 
-	if (m->skip_timeout) {
-		destroy_monitor_skip_timer(m);
-	}
-	return 0;
+	monitor_stop_skip_timer(m);
+	wlr_output_schedule_frame(m->wlr_output);
+
+	return 1;
 }
 
-void check_skip_timeout(Monitor *m) {
-	if (m->skip_timeout) {
+void monitor_check_skip_frame_timeout(Monitor *m) {
+	if (m->skiping_frame) {
 		return;
 	}
-	struct wl_event_loop *loop = wl_display_get_event_loop(dpy);
-	m->skip_timeout = wl_event_loop_add_timer(loop, skip_timeout_callback, m);
+
 	if (m->skip_timeout) {
 		wl_event_source_timer_update(m->skip_timeout, 100); // 100ms
+		m->skiping_frame = true;
 	}
 }
 
@@ -4435,13 +4442,13 @@ void rendermon(struct wl_listener *listener, void *data) {
 		if (!animations && !(allow_tearing && frame_allow_tearing) &&
 			c->configure_serial && client_is_rendered_on_mon(c, m) &&
 			!client_is_stopped(c)) {
-			check_skip_timeout(m);
+			monitor_check_skip_frame_timeout(m);
 			goto skip;
 		}
 	}
 
-	if (m->skip_timeout) {
-		destroy_monitor_skip_timer(m);
+	if (m->skiping_frame) {
+		monitor_stop_skip_timer(m);
 	}
 
 	// 只有在需要帧时才构建和提交状态
