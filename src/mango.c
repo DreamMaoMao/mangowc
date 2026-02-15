@@ -499,6 +499,7 @@ struct Monitor {
 	struct wl_listener request_state;
 	struct wl_listener destroy_lock_surface;
 	struct wlr_session_lock_surface_v1 *lock_surface;
+	struct wl_event_source *skip_timeout;
 	struct wlr_box m;		  /* monitor area, layout-relative */
 	struct wlr_box w;		  /* window area, layout-relative */
 	struct wl_list layers[4]; /* LayerSurface::link */
@@ -788,6 +789,7 @@ static Client *get_scroll_stack_head(Client *c);
 static bool client_only_in_one_tag(Client *c);
 static Client *get_focused_stack_client(Client *sc);
 static bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc);
+static void destroy_monitor_skip_timer(Monitor *m);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -2230,6 +2232,11 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 	wlr_scene_output_destroy(m->scene_output);
 
 	closemon(m);
+
+	if (m->skip_timeout) {
+		destroy_monitor_skip_timer(m);
+	}
+
 	m->wlr_output->data = NULL;
 	free(m->pertag);
 	free(m);
@@ -2726,6 +2733,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	m = wlr_output->data = ecalloc(1, sizeof(*m));
 	m->wlr_output = wlr_output;
 	m->wlr_output->data = m;
+	m->skip_timeout = NULL;
 
 	wl_list_init(&m->dwl_ipc_outputs);
 
@@ -3759,7 +3767,6 @@ void init_client_properties(Client *c) {
 	c->istagsilent = 0;
 	c->noswallow = 0;
 	c->isterm = 0;
-	c->noblur = 0;
 	c->tearing_hint = 0;
 	c->overview_isfullscreenbak = 0;
 	c->overview_ismaximizescreenbak = 0;
@@ -4355,6 +4362,37 @@ void client_set_opacity(Client *c, double opacity) {
 								   scene_buffer_apply_opacity, &opacity);
 }
 
+void destroy_monitor_skip_timer(Monitor *m) {
+	if (m->skip_timeout) {
+		wl_event_source_timer_update(m->skip_timeout, 0);
+		wl_event_source_remove(m->skip_timeout);
+		m->skip_timeout = NULL;
+	}
+}
+
+static int skip_timeout_callback(void *data) {
+	Monitor *m = data;
+	Client *c, *tmp;
+
+	wl_list_for_each_safe(c, tmp, &clients, link) { c->configure_serial = 0; }
+
+	if (m->skip_timeout) {
+		destroy_monitor_skip_timer(m);
+	}
+	return 0;
+}
+
+void check_skip_timeout(Monitor *m) {
+	if (m->skip_timeout) {
+		return;
+	}
+	struct wl_event_loop *loop = wl_display_get_event_loop(dpy);
+	m->skip_timeout = wl_event_loop_add_timer(loop, skip_timeout_callback, m);
+	if (m->skip_timeout) {
+		wl_event_source_timer_update(m->skip_timeout, 100); // 100ms
+	}
+}
+
 void rendermon(struct wl_listener *listener, void *data) {
 	Monitor *m = wl_container_of(listener, m, frame);
 	Client *c = NULL, *tmp = NULL;
@@ -4397,8 +4435,13 @@ void rendermon(struct wl_listener *listener, void *data) {
 		if (!animations && !(allow_tearing && frame_allow_tearing) &&
 			c->configure_serial && client_is_rendered_on_mon(c, m) &&
 			!client_is_stopped(c)) {
+			check_skip_timeout(m);
 			goto skip;
 		}
+	}
+
+	if (m->skip_timeout) {
+		destroy_monitor_skip_timer(m);
 	}
 
 	// 只有在需要帧时才构建和提交状态
