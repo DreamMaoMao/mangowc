@@ -4506,7 +4506,7 @@ void rendermon(struct wl_listener *listener, void *data) {
 		need_more_frames = client_draw_frame(c) || need_more_frames;
 		if (!animations && !(allow_tearing && frame_allow_tearing) &&
 			c->configure_serial && client_is_rendered_on_mon(c, m) &&
-			!client_is_stopped(c)) {
+			!client_is_stopped(c) && !grabc) {
 			monitor_check_skip_frame_timeout(m);
 			goto skip;
 		}
