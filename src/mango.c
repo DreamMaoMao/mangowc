@@ -3836,6 +3836,22 @@ static void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int32_t sx,
 void init_client_properties(Client *c) {
 	c->isfocusing = false;
 	c->isfloating = 0;
+	c->isfakefullscreen = 0;
+	c->isnoanimation = 0;
+	c->isopensilent = 0;
+	c->istagsilent = 0;
+	c->noswallow = 0;
+	c->isterm = 0;
+	c->noblur = 0;
+	c->tearing_hint = 0;
+	c->overview_isfullscreenbak = 0;
+	c->overview_ismaximizescreenbak = 0;
+	c->overview_isfloatingbak = 0;
+	c->pid = 0;
+	c->swallowing = NULL;
+	c->swallowedby = NULL;
+	c->ismaster = 0;
+	c->isleftstack = 0;
 	c->ismaximizescreen = 0;
 	c->isfullscreen = 0;
 	c->need_float_size_reduce = 0;
@@ -3889,6 +3905,7 @@ void init_client_properties(Client *c) {
 	c->stack_proportion = 0.0f;
 	c->next_in_stack = NULL;
 	c->prev_in_stack = NULL;
+	memset(c->oldmonname, 0, sizeof(c->oldmonname));
 	memcpy(c->opacity_animation.initial_border_color, bordercolor,
 		   sizeof(c->opacity_animation.initial_border_color));
 	memcpy(c->opacity_animation.current_border_color, bordercolor,
