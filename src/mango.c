@@ -6285,13 +6285,14 @@ void createnotifyx11(struct wl_listener *listener, void *data) {
 void commitx11(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, commmitx11);
 	struct wlr_surface_state *state = &c->surface.xwayland->surface->current;
-	struct wlr_box new_geo = {0};
-	new_geo.width = state->width;
-	new_geo.height = state->height;
-	if (c->geom.width - 2 * c->bw == new_geo.width &&
-		c->geom.height - 2 * c->bw == new_geo.height &&
-		c->surface.xwayland->x == c->geom.x + c->bw &&
-		c->surface.xwayland->y == c->geom.y + c->bw) {
+
+	if ((int32_t)c->geom.width - 2 * (int32_t)c->bw == (int32_t)state->width &&
+		(int32_t)c->geom.height - 2 * (int32_t)c->bw ==
+			(int32_t)state->height &&
+		(int32_t)c->surface.xwayland->x ==
+			(int32_t)c->geom.x + (int32_t)c->bw &&
+		(int32_t)c->surface.xwayland->y ==
+			(int32_t)c->geom.y + (int32_t)c->bw) {
 		c->configure_serial = 0;
 	}
 }
