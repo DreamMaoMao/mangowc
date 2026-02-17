@@ -56,7 +56,7 @@ endif
 if is_git_repo
   # 如果是 Git 目录，获取 Commit Hash 和最新的 tag
   commit_hash = run_command(git, 'rev-parse', '--short', 'HEAD', check : false).stdout().strip()
-  latest_tag = run_command(git, 'describe', '--tags', '--abbrev=0', check : false).stdout().strip()
+  latest_tag = meson.project_version()
   version_with_hash = '@0@(@1@)'.format(latest_tag, commit_hash)
 else
   # 如果不是 Git 目录，使用项目版本号和 "release" 字符串
