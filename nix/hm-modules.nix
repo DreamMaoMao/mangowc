@@ -212,17 +212,31 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # Backwards compatibility warning for old string-based config
+    warnings = lib.optional (builtins.isString cfg.settings) ''
+      wayland.windowManager.mango.settings: Using a string for settings is deprecated.
+      Please migrate to the new structured attribute set format.
+      See the module documentation for examples, or use the 'extraConfig' option for raw config strings.
+      The old string format will be removed in a future release.
+    '';
+
     home.packages = [ cfg.package ];
     xdg.configFile = {
       "mango/config.conf" =
         lib.mkIf (cfg.settings != { } || cfg.extraConfig != "" || cfg.autostart_sh != "")
           {
             text =
-              lib.optionalString (cfg.settings != { }) (
-                selflib.toMango {
-                  topCommandsPrefixes = cfg.topPrefixes;
-                  bottomCommandsPrefixes = cfg.bottomPrefixes;
-                } cfg.settings
+              # Support old string-based config during transition period
+              (
+                if builtins.isString cfg.settings then
+                  cfg.settings
+                else
+                  lib.optionalString (cfg.settings != { }) (
+                    selflib.toMango {
+                      topCommandsPrefixes = cfg.topPrefixes;
+                      bottomCommandsPrefixes = cfg.bottomPrefixes;
+                    } cfg.settings
+                  )
               )
               + lib.optionalString (cfg.extraConfig != "") cfg.extraConfig
               + lib.optionalString (cfg.autostart_sh != "") "\nexec-once=~/.config/mango/autostart.sh\n";
