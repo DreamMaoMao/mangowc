@@ -250,369 +250,299 @@ void buffer_set_effect(Client *c, BufferData data) {
 								   scene_buffer_apply_effect, &data);
 }
 
-void client_draw_shadow(Client *c) {
+void client_draw_shadow(Client *c, int32_t left_offset, int32_t top_offset,
+                        int32_t right_offset, int32_t bottom_offset,
+                        enum corner_location current_corner_location) {
+    if (c->iskilling || !client_surface(c)->mapped || c->isnoshadow)
+        return;
 
-	if (c->iskilling || !client_surface(c)->mapped || c->isnoshadow)
-		return;
+    if (!shadows || (!c->isfloating && shadow_only_floating)) {
+        if (c->shadow->node.enabled)
+            wlr_scene_node_set_enabled(&c->shadow->node, false);
+        return;
+    } else {
+        if (c->scene_surface->node.enabled && !c->shadow->node.enabled)
+            wlr_scene_node_set_enabled(&c->shadow->node, true);
+    }
 
-	if (!shadows || (!c->isfloating && shadow_only_floating)) {
-		if (c->shadow->node.enabled)
-			wlr_scene_node_set_enabled(&c->shadow->node, false);
-		return;
-	} else {
-		if (c->scene_surface->node.enabled && !c->shadow->node.enabled)
-			wlr_scene_node_set_enabled(&c->shadow->node, true);
-	}
+    bool hit_no_border = check_hit_no_border(c);
+    if (c->isfullscreen || (no_radius_when_single && c->mon &&
+                            c->mon->visible_tiling_clients == 1)) {
+        current_corner_location = CORNER_LOCATION_NONE;
+    }
 
-	bool hit_no_border = check_hit_no_border(c);
-	enum corner_location current_corner_location =
-		c->isfullscreen || (no_radius_when_single && c->mon &&
-							c->mon->visible_tiling_clients == 1)
-			? CORNER_LOCATION_NONE
-			: CORNER_LOCATION_ALL;
+    int32_t bwoffset = c->bw != 0 && hit_no_border ? (int32_t)c->bw : 0;
 
-	int32_t bwoffset = c->bw != 0 && hit_no_border ? (int32_t)c->bw : 0;
+    int32_t width, height;
+    client_actual_size(c, &width, &height);
 
-	int32_t width, height;
-	client_actual_size(c, &width, &height);
+    int32_t delta = shadows_size + (int32_t)c->bw - bwoffset;
 
-	int32_t delta = shadows_size + (int32_t)c->bw - bwoffset;
+    struct wlr_box client_box = {
+        .x = bwoffset,
+        .y = bwoffset,
+        .width = width + (int32_t)c->bw - bwoffset,
+        .height = height + (int32_t)c->bw - bwoffset,
+    };
 
-	/* we calculate where to clip the shadow */
-	struct wlr_box client_box = {
-		.x = bwoffset,
-		.y = bwoffset,
-		.width = width + (int32_t)c->bw - bwoffset,
-		.height = height + (int32_t)c->bw - bwoffset,
-	};
+    struct wlr_box shadow_box = {
+        .x = shadows_position_x + bwoffset,
+        .y = shadows_position_y + bwoffset,
+        .width = width + 2 * delta,
+        .height = height + 2 * delta,
+    };
 
-	struct wlr_box shadow_box = {
-		.x = shadows_position_x + bwoffset,
-		.y = shadows_position_y + bwoffset,
-		.width = width + 2 * delta,
-		.height = height + 2 * delta,
-	};
+    struct wlr_box intersection_box;
+    wlr_box_intersection(&intersection_box, &client_box, &shadow_box);
+    intersection_box.x -= shadows_position_x + bwoffset;
+    intersection_box.y -= shadows_position_y + bwoffset;
 
-	struct wlr_box intersection_box;
-	wlr_box_intersection(&intersection_box, &client_box, &shadow_box);
-	/* clipped region takes shadow relative coords, so we translate everything
-	 * by its position */
-	intersection_box.x -= shadows_position_x + bwoffset;
-	intersection_box.y -= shadows_position_y + bwoffset;
+    struct clipped_region clipped_region = {
+        .area = intersection_box,
+        .corner_radius = border_radius,
+        .corners = current_corner_location,
+    };
 
-	struct clipped_region clipped_region = {
-		.area = intersection_box,
-		.corner_radius = border_radius,
-		.corners = current_corner_location,
-	};
+    struct wlr_box absolute_shadow_box = {
+        .x = shadow_box.x + c->animation.current.x,
+        .y = shadow_box.y + c->animation.current.y,
+        .width = shadow_box.width,
+        .height = shadow_box.height,
+    };
 
-	struct wlr_box absolute_shadow_box = {
-		.x = shadow_box.x + c->animation.current.x,
-		.y = shadow_box.y + c->animation.current.y,
-		.width = shadow_box.width,
-		.height = shadow_box.height,
-	};
+    int32_t right_out, bottom_out, left_out, top_out;
+    if (c == grabc) {
+        right_out = 0; bottom_out = 0; left_out = 0; top_out = 0;
+    } else {
+        right_out = GEZERO(absolute_shadow_box.x + absolute_shadow_box.width -
+                           c->mon->m.x - c->mon->m.width);
+        bottom_out = GEZERO(absolute_shadow_box.y + absolute_shadow_box.height -
+                            c->mon->m.y - c->mon->m.height);
+        left_out = GEZERO(c->mon->m.x - absolute_shadow_box.x);
+        top_out = GEZERO(c->mon->m.y - absolute_shadow_box.y);
+    }
 
-	int32_t right_offset, bottom_offset, left_offset, top_offset;
+    left_out = MIN(left_out, shadow_box.width);
+    right_out = MIN(right_out, shadow_box.width);
+    top_out = MIN(top_out, shadow_box.height);
+    bottom_out = MIN(bottom_out, shadow_box.height);
 
-	if (c == grabc) {
-		right_offset = 0;
-		bottom_offset = 0;
-		left_offset = 0;
-		top_offset = 0;
-	} else {
-		right_offset =
-			GEZERO(absolute_shadow_box.x + absolute_shadow_box.width -
-				   c->mon->m.x - c->mon->m.width);
-		bottom_offset =
-			GEZERO(absolute_shadow_box.y + absolute_shadow_box.height -
-				   c->mon->m.y - c->mon->m.height);
+    wlr_scene_node_set_position(&c->shadow->node, shadow_box.x + left_out,
+                                shadow_box.y + top_out);
 
-		left_offset = GEZERO(c->mon->m.x - absolute_shadow_box.x);
-		top_offset = GEZERO(c->mon->m.y - absolute_shadow_box.y);
-	}
+    wlr_scene_shadow_set_size(c->shadow,
+                               GEZERO(shadow_box.width - left_out - right_out),
+                               GEZERO(shadow_box.height - top_out - bottom_out));
 
-	left_offset = MIN(left_offset, shadow_box.width);
-	right_offset = MIN(right_offset, shadow_box.width);
-	top_offset = MIN(top_offset, shadow_box.height);
-	bottom_offset = MIN(bottom_offset, shadow_box.height);
-
-	wlr_scene_node_set_position(&c->shadow->node, shadow_box.x + left_offset,
-								shadow_box.y + top_offset);
-
-	wlr_scene_shadow_set_size(
-		c->shadow, GEZERO(shadow_box.width - left_offset - right_offset),
-		GEZERO(shadow_box.height - top_offset - bottom_offset));
-
-	clipped_region.area.x = clipped_region.area.x - left_offset;
-	clipped_region.area.y = clipped_region.area.y - top_offset;
-
-	wlr_scene_shadow_set_clipped_region(c->shadow, clipped_region);
+    clipped_region.area.x -= left_out;
+    clipped_region.area.y -= top_out;
+    wlr_scene_shadow_set_clipped_region(c->shadow, clipped_region);
 }
 
-void apply_border(Client *c) {
-	if (!c || c->iskilling || !client_surface(c)->mapped)
-		return;
+void apply_border(Client *c, int32_t left_offset, int32_t top_offset,
+                  int32_t right_offset, int32_t bottom_offset,
+                  enum corner_location current_corner_location) {
+    if (!c || c->iskilling || !client_surface(c)->mapped)
+        return;
 
-	bool hit_no_border = check_hit_no_border(c);
-	enum corner_location current_corner_location;
-	if (c->isfullscreen || (no_radius_when_single && c->mon &&
-							c->mon->visible_tiling_clients == 1)) {
-		current_corner_location = CORNER_LOCATION_NONE;
-	} else {
-		current_corner_location = set_client_corner_location(c);
-	}
+    bool hit_no_border = check_hit_no_border(c);
+    if (c->isfullscreen || (no_radius_when_single && c->mon &&
+                             c->mon->visible_tiling_clients == 1)) {
+        current_corner_location = CORNER_LOCATION_NONE;
+    }
 
-	if (hit_no_border && smartgaps) {
-		c->bw = 0;
-		c->fake_no_border = true;
-	} else if (hit_no_border && !smartgaps) {
-		wlr_scene_rect_set_size(c->border, 0, 0);
-		wlr_scene_node_set_position(&c->scene_surface->node, c->bw, c->bw);
-		c->fake_no_border = true;
-		return;
-	} else if (!c->isfullscreen && VISIBLEON(c, c->mon)) {
-		c->bw = c->isnoborder ? 0 : borderpx;
-		c->fake_no_border = false;
-	}
+    if (hit_no_border && smartgaps) {
+        c->bw = 0;
+        c->fake_no_border = true;
+    } else if (hit_no_border && !smartgaps) {
+        wlr_scene_rect_set_size(c->border, 0, 0);
+        wlr_scene_node_set_position(&c->scene_surface->node, c->bw, c->bw);
+        c->fake_no_border = true;
+        return;
+    } else if (!c->isfullscreen && VISIBLEON(c, c->mon)) {
+        c->bw = c->isnoborder ? 0 : borderpx;
+        c->fake_no_border = false;
+    }
 
-	struct wlr_box clip_box = c->animation.current;
-	// 一但在GEZERO如果使用无符号，那么其他数据也会转换为无符号导致没有负数出错
-	int32_t bw = (int32_t)c->bw;
+    struct wlr_box clip_box = c->animation.current;
+    int32_t bw = (int32_t)c->bw;
 
-	int32_t right_offset, bottom_offset, left_offset, top_offset;
+    int32_t inner_surface_width = GEZERO(clip_box.width - 2 * bw);
+    int32_t inner_surface_height = GEZERO(clip_box.height - 2 * bw);
 
-	if (c == grabc) {
-		right_offset = 0;
-		bottom_offset = 0;
-		left_offset = 0;
-		top_offset = 0;
-	} else {
-		right_offset =
-			GEZERO(c->animation.current.x + c->animation.current.width -
-				   c->mon->m.x - c->mon->m.width);
-		bottom_offset =
-			GEZERO(c->animation.current.y + c->animation.current.height -
-				   c->mon->m.y - c->mon->m.height);
+    int32_t inner_surface_x = GEZERO(bw - left_offset);
+    int32_t inner_surface_y = GEZERO(bw - top_offset);
 
-		left_offset = GEZERO(c->mon->m.x - c->animation.current.x);
-		top_offset = GEZERO(c->mon->m.y - c->animation.current.y);
-	}
+    int32_t rect_x = left_offset;
+    int32_t rect_y = top_offset;
 
-	int32_t inner_surface_width = GEZERO(clip_box.width - 2 * bw);
-	int32_t inner_surface_height = GEZERO(clip_box.height - 2 * bw);
+    int32_t rect_width = GEZERO(c->animation.current.width - left_offset - right_offset);
+    int32_t rect_height = GEZERO(c->animation.current.height - top_offset - bottom_offset);
 
-	int32_t inner_surface_x = GEZERO(bw - left_offset);
-	int32_t inner_surface_y = GEZERO(bw - top_offset);
+    if (left_offset > c->bw)
+        inner_surface_width = inner_surface_width - left_offset + (int32_t)c->bw;
+    if (top_offset > c->bw)
+        inner_surface_height = inner_surface_height - top_offset + (int32_t)c->bw;
+    if (right_offset > 0)
+        inner_surface_width = MIN(clip_box.width, inner_surface_width + right_offset);
+    if (bottom_offset > 0)
+        inner_surface_height = MIN(clip_box.height, inner_surface_height + bottom_offset);
 
-	int32_t rect_x = left_offset;
-	int32_t rect_y = top_offset;
+    struct clipped_region clipped_region = {
+        .area = {inner_surface_x, inner_surface_y, inner_surface_width,
+                 inner_surface_height},
+        .corner_radius = border_radius,
+        .corners = current_corner_location,
+    };
 
-	int32_t rect_width =
-		GEZERO(c->animation.current.width - left_offset - right_offset);
-	int32_t rect_height =
-		GEZERO(c->animation.current.height - top_offset - bottom_offset);
-
-	if (left_offset > c->bw)
-		inner_surface_width =
-			inner_surface_width - left_offset + (int32_t)c->bw;
-
-	if (top_offset > c->bw)
-		inner_surface_height =
-			inner_surface_height - top_offset + (int32_t)c->bw;
-
-	if (right_offset > 0) {
-		inner_surface_width =
-			MIN(clip_box.width, inner_surface_width + right_offset);
-	}
-
-	if (bottom_offset > 0) {
-		inner_surface_height =
-			MIN(clip_box.height, inner_surface_height + bottom_offset);
-	}
-
-	struct clipped_region clipped_region = {
-		.area = {inner_surface_x, inner_surface_y, inner_surface_width,
-				 inner_surface_height},
-		.corner_radius = border_radius,
-		.corners = current_corner_location,
-	};
-
-	wlr_scene_node_set_position(&c->scene_surface->node, c->bw, c->bw);
-	wlr_scene_rect_set_size(c->border, rect_width, rect_height);
-	wlr_scene_node_set_position(&c->border->node, rect_x, rect_y);
-	wlr_scene_rect_set_corner_radius(c->border, border_radius,
-									 current_corner_location);
-	wlr_scene_rect_set_clipped_region(c->border, clipped_region);
+    wlr_scene_node_set_position(&c->scene_surface->node, c->bw, c->bw);
+    wlr_scene_node_set_position(&c->border->node, rect_x, rect_y);
+    wlr_scene_rect_set_size(c->border, rect_width, rect_height);
+    wlr_scene_rect_set_corner_radius(c->border, border_radius,
+                                     current_corner_location);
+    wlr_scene_rect_set_clipped_region(c->border, clipped_region);
 }
 
-struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
-	int32_t offsetx = 0, offsety = 0, offsetw = 0, offseth = 0;
-	struct ivec2 offset = {0, 0, 0, 0};
+struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box,
+                          int32_t left_offset, int32_t top_offset,
+                          int32_t right_offset, int32_t bottom_offset) {
+    int32_t offsetx = 0, offsety = 0, offsetw = 0, offseth = 0;
+    struct ivec2 offset = {0, 0, 0, 0};
 
-	if (!ISSCROLLTILED(c) && !c->animation.tagining && !c->animation.tagouted &&
-		!c->animation.tagouting)
-		return offset;
+    if (!ISSCROLLTILED(c) && !c->animation.tagining && !c->animation.tagouted &&
+        !c->animation.tagouting)
+        return offset;
 
-	int32_t bottom_out_offset =
-		GEZERO(c->animation.current.y + c->animation.current.height -
-			   c->mon->m.y - c->mon->m.height);
-	int32_t right_out_offset =
-		GEZERO(c->animation.current.x + c->animation.current.width -
-			   c->mon->m.x - c->mon->m.width);
-	int32_t left_out_offset = GEZERO(c->mon->m.x - c->animation.current.x);
-	int32_t top_out_offset = GEZERO(c->mon->m.y - c->animation.current.y);
+    int32_t bw = (int32_t)c->bw;
 
-	// 必须转换为int，否计算会没有负数导致判断错误
-	int32_t bw = (int32_t)c->bw;
+    if (ISSCROLLTILED(c) || c->animation.tagining || c->animation.tagouted ||
+        c->animation.tagouting) {
+        if (left_offset > 0) {
+            offsetx = GEZERO(left_offset - bw);
+            clip_box->x = clip_box->x + offsetx;
+            clip_box->width = clip_box->width - offsetx;
+        } else if (right_offset > 0) {
+            offsetw = GEZERO(right_offset - bw);
+            clip_box->width = clip_box->width - offsetw;
+        }
 
-	/*
-	  计算窗口表面超出屏幕四个方向的偏差，避免窗口超出屏幕
-	  需要主要border超出屏幕的时候不计算如偏差之内而是
-	  要等窗口表面超出才开始计算偏差
-	*/
-	if (ISSCROLLTILED(c) || c->animation.tagining || c->animation.tagouted ||
-		c->animation.tagouting) {
-		if (left_out_offset > 0) {
-			offsetx = GEZERO(left_out_offset - bw);
-			clip_box->x = clip_box->x + offsetx;
-			clip_box->width = clip_box->width - offsetx;
-		} else if (right_out_offset > 0) {
-			offsetw = GEZERO(right_out_offset - bw);
-			clip_box->width = clip_box->width - offsetw;
-		}
+        if (top_offset > 0) {
+            offsety = GEZERO(top_offset - bw);
+            clip_box->y = clip_box->y + offsety;
+            clip_box->height = clip_box->height - offsety;
+        } else if (bottom_offset > 0) {
+            offseth = GEZERO(bottom_offset - bw);
+            clip_box->height = clip_box->height - offseth;
+        }
+    }
 
-		if (top_out_offset > 0) {
-			offsety = GEZERO(top_out_offset - bw);
-			clip_box->y = clip_box->y + offsety;
-			clip_box->height = clip_box->height - offsety;
-		} else if (bottom_out_offset > 0) {
-			offseth = GEZERO(bottom_out_offset - bw);
-			clip_box->height = clip_box->height - offseth;
-		}
-	}
+    offset.x = offsetx;
+    offset.y = offsety;
+    offset.width = offsetw;
+    offset.height = offseth;
 
-	// 窗口表面超出屏幕四个方向的偏差
-	offset.x = offsetx;
-	offset.y = offsety;
-	offset.width = offsetw;
-	offset.height = offseth;
+    if ((clip_box->width + bw <= 0 || clip_box->height + bw <= 0) &&
+        (ISSCROLLTILED(c) || c->animation.tagouting || c->animation.tagining)) {
+        c->is_clip_to_hide = true;
+        wlr_scene_node_set_enabled(&c->scene->node, false);
+    } else if (c->is_clip_to_hide && VISIBLEON(c, c->mon)) {
+        c->is_clip_to_hide = false;
+        wlr_scene_node_set_enabled(&c->scene->node, true);
+    }
 
-	if ((clip_box->width + bw <= 0 || clip_box->height + bw <= 0) &&
-		(ISSCROLLTILED(c) || c->animation.tagouting || c->animation.tagining)) {
-		c->is_clip_to_hide = true;
-		wlr_scene_node_set_enabled(&c->scene->node, false);
-	} else if (c->is_clip_to_hide && VISIBLEON(c, c->mon)) {
-		c->is_clip_to_hide = false;
-		wlr_scene_node_set_enabled(&c->scene->node, true);
-	}
-
-	return offset;
+    return offset;
 }
 
 void client_apply_clip(Client *c, float factor) {
+    if (c->iskilling || !client_surface(c)->mapped)
+        return;
 
-	if (c->iskilling || !client_surface(c)->mapped)
-		return;
+    struct wlr_box clip_box;
+    bool should_render_client_surface = false;
+    struct ivec2 offset;
+    BufferData buffer_data;
 
-	struct wlr_box clip_box;
-	bool should_render_client_surface = false;
-	struct ivec2 offset;
-	BufferData buffer_data;
+    // 一次性计算四个方向的溢出偏移量
+    int32_t left_offset = GEZERO(c->mon->m.x - c->animation.current.x);
+    int32_t top_offset = GEZERO(c->mon->m.y - c->animation.current.y);
+    int32_t right_offset = GEZERO(c->animation.current.x + c->animation.current.width -
+                                   c->mon->m.x - c->mon->m.width);
+    int32_t bottom_offset = GEZERO(c->animation.current.y + c->animation.current.height -
+                                    c->mon->m.y - c->mon->m.height);
 
-	enum corner_location current_corner_location =
-		set_client_corner_location(c);
+    // 计算圆角位置（只一次）
+    enum corner_location current_corner_location = set_client_corner_location(c);
 
-	if (!animations) {
-		c->animation.running = false;
-		c->need_output_flush = false;
-		c->animainit_geom = c->current = c->pending = c->animation.current =
-			c->geom;
+    if (!animations) {
+        c->animation.running = false;
+        c->need_output_flush = false;
+        c->animainit_geom = c->current = c->pending = c->animation.current = c->geom;
 
-		client_get_clip(c, &clip_box);
+        client_get_clip(c, &clip_box);
+        offset = clip_to_hide(c, &clip_box, left_offset, top_offset, right_offset, bottom_offset);
 
-		offset = clip_to_hide(c, &clip_box);
+        apply_border(c, left_offset, top_offset, right_offset, bottom_offset, current_corner_location);
+        client_draw_shadow(c, left_offset, top_offset, right_offset, bottom_offset, current_corner_location);
 
-		apply_border(c);
-		client_draw_shadow(c);
+        if (clip_box.width <= 0 || clip_box.height <= 0) return;
 
-		if (clip_box.width <= 0 || clip_box.height <= 0) {
-			return;
-		}
+        wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
+        buffer_set_effect(c, (BufferData){1.0f, 1.0f, clip_box.width,
+                                          clip_box.height,
+                                          current_corner_location, true});
+        return;
+    }
 
-		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
-		buffer_set_effect(c, (BufferData){1.0f, 1.0f, clip_box.width,
-										  clip_box.height,
-										  current_corner_location, true});
-		return;
-	}
+    int32_t width, height;
+    client_actual_size(c, &width, &height);
+    struct wlr_box geometry;
+    client_get_geometry(c, &geometry);
+    clip_box = (struct wlr_box){
+        .x = geometry.x,
+        .y = geometry.y,
+        .width = width,
+        .height = height,
+    };
+    if (client_is_x11(c)) {
+        clip_box.x = 0;
+        clip_box.y = 0;
+    }
 
-	// 获取窗口动画实时位置矩形
-	int32_t width, height;
-	client_actual_size(c, &width, &height);
+    offset = clip_to_hide(c, &clip_box, left_offset, top_offset, right_offset, bottom_offset);
 
-	// 计算出除了边框的窗口实际剪切大小
-	struct wlr_box geometry;
-	client_get_geometry(c, &geometry);
-	clip_box = (struct wlr_box){
-		.x = geometry.x,
-		.y = geometry.y,
-		.width = width,
-		.height = height,
-	};
+    apply_border(c, left_offset, top_offset, right_offset, bottom_offset, current_corner_location);
+    client_draw_shadow(c, left_offset, top_offset, right_offset, bottom_offset, current_corner_location);
 
-	if (client_is_x11(c)) {
-		clip_box.x = 0;
-		clip_box.y = 0;
-	}
+    if (clip_box.width <= 0 || clip_box.height <= 0) {
+        should_render_client_surface = false;
+        wlr_scene_node_set_enabled(&c->scene_surface->node, false);
+    } else {
+        should_render_client_surface = true;
+        wlr_scene_node_set_enabled(&c->scene_surface->node, true);
+    }
 
-	// 检测窗口是否需要剪切超出屏幕部分，如果需要就调整实际要剪切的矩形
-	offset = clip_to_hide(c, &clip_box);
+    if (!should_render_client_surface) return;
 
-	// 应用窗口装饰
-	apply_border(c);
-	client_draw_shadow(c);
+    wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
 
-	// 如果窗口剪切区域已经剪切到0，则不渲染窗口表面
-	if (clip_box.width <= 0 || clip_box.height <= 0) {
-		should_render_client_surface = false;
-		wlr_scene_node_set_enabled(&c->scene_surface->node, false);
-	} else {
-		should_render_client_surface = true;
-		wlr_scene_node_set_enabled(&c->scene_surface->node, true);
-	}
+    int32_t acutal_surface_width = geometry.width - offset.x - offset.width;
+    int32_t acutal_surface_height = geometry.height - offset.y - offset.height;
+    if (acutal_surface_width <= 0 || acutal_surface_height <= 0) return;
 
-	// 不用在执行下面的窗口表面剪切和缩放等效果操作
-	if (!should_render_client_surface) {
-		return;
-	}
+    buffer_data.should_scale = true;
+    buffer_data.width = clip_box.width;
+    buffer_data.height = clip_box.height;
+    buffer_data.corner_location = current_corner_location;
 
-	// 应用窗口表面剪切
-	wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
+    if (factor == 1.0) {
+        buffer_data.width_scale = 1.0;
+        buffer_data.height_scale = 1.0;
+    } else {
+        buffer_data.width_scale = (float)buffer_data.width / acutal_surface_width;
+        buffer_data.height_scale = (float)buffer_data.height / acutal_surface_height;
+    }
 
-	// 获取剪切后的表面的实际大小用于计算缩放
-	int32_t acutal_surface_width = geometry.width - offset.x - offset.width;
-	int32_t acutal_surface_height = geometry.height - offset.y - offset.height;
-
-	if (acutal_surface_width <= 0 || acutal_surface_height <= 0)
-		return;
-
-	buffer_data.should_scale = true;
-	buffer_data.width = clip_box.width;
-	buffer_data.height = clip_box.height;
-	buffer_data.corner_location = current_corner_location;
-
-	if (factor == 1.0) {
-		buffer_data.width_scale = 1.0;
-		buffer_data.height_scale = 1.0;
-	} else {
-		buffer_data.width_scale =
-			(float)buffer_data.width / acutal_surface_width;
-		buffer_data.height_scale =
-			(float)buffer_data.height / acutal_surface_height;
-	}
-
-	buffer_set_effect(c, buffer_data);
+    buffer_set_effect(c, buffer_data);
 }
 
 void fadeout_client_animation_next_tick(Client *c) {
@@ -908,129 +838,138 @@ void client_set_pending_state(Client *c) {
 }
 
 void resize(Client *c, struct wlr_box geo, int32_t interact) {
+    // 动画设置的起始函数，这里用来计算一些动画的起始值
+    // 动画起始位置大小是由于c->animainit_geom确定的
 
-	// 动画设置的起始函数，这里用来计算一些动画的起始值
-	// 动画起始位置大小是由于c->animainit_geom确定的
+    if (!c || !c->mon || !client_surface(c)->mapped)
+        return;
 
-	if (!c || !c->mon || !client_surface(c)->mapped)
-		return;
+    struct wlr_box *bbox;
+    struct wlr_box clip;
 
-	struct wlr_box *bbox;
-	struct wlr_box clip;
+    if (!c->mon)
+        return;
 
-	if (!c->mon)
-		return;
+    c->need_output_flush = true;
+    c->dirty = true;
 
-	c->need_output_flush = true;
-	c->dirty = true;
+    // float_geom = c->geom;
+    bbox = (interact || c->isfloating || c->isfullscreen) ? &sgeom : &c->mon->w;
 
-	// float_geom = c->geom;
-	bbox = (interact || c->isfloating || c->isfullscreen) ? &sgeom : &c->mon->w;
+    if (is_scroller_layout(c->mon) && (!c->isfloating || c == grabc)) {
+        c->geom = geo;
+        c->geom.width = MAX(1 + 2 * (int32_t)c->bw, c->geom.width);
+        c->geom.height = MAX(1 + 2 * (int32_t)c->bw, c->geom.height);
+    } else { // 这里会限制不允许窗口划出屏幕
+        c->geom = geo;
+        applybounds(c, bbox);
+    }
 
-	if (is_scroller_layout(c->mon) && (!c->isfloating || c == grabc)) {
-		c->geom = geo;
-		c->geom.width = MAX(1 + 2 * (int32_t)c->bw, c->geom.width);
-		c->geom.height = MAX(1 + 2 * (int32_t)c->bw, c->geom.height);
-	} else { // 这里会限制不允许窗口划出屏幕
-		c->geom = geo;
-		applybounds(
-			c,
-			bbox); // 去掉这个推荐的窗口大小,因为有时推荐的窗口特别大导致平铺异常
-	}
+    if (!c->isnosizehint && !c->ismaximizescreen && !c->isfullscreen &&
+        c->isfloating) {
+        client_set_size_bound(c);
+    }
 
-	if (!c->isnosizehint && !c->ismaximizescreen && !c->isfullscreen &&
-		c->isfloating) {
-		client_set_size_bound(c);
-	}
+    if (!c->is_pending_open_animation) {
+        c->animation.begin_fade_in = false;
+    }
 
-	if (!c->is_pending_open_animation) {
-		c->animation.begin_fade_in = false;
-	}
+    if (c->animation.action == OPEN && !c->animation.tagining &&
+        !c->animation.tagouting && wlr_box_equal(&c->geom, &c->current)) {
+        c->animation.action = c->animation.action;
+    } else if (c->animation.tagouting) {
+        c->animation.duration = animation_duration_tag;
+        c->animation.action = TAG;
+    } else if (c->animation.tagining) {
+        c->animation.duration = animation_duration_tag;
+        c->animation.action = TAG;
+    } else if (c->is_pending_open_animation) {
+        c->animation.duration = animation_duration_open;
+        c->animation.action = OPEN;
+    } else {
+        c->animation.duration = animation_duration_move;
+        c->animation.action = MOVE;
+    }
 
-	if (c->animation.action == OPEN && !c->animation.tagining &&
-		!c->animation.tagouting && wlr_box_equal(&c->geom, &c->current)) {
-		c->animation.action = c->animation.action;
-	} else if (c->animation.tagouting) {
-		c->animation.duration = animation_duration_tag;
-		c->animation.action = TAG;
-	} else if (c->animation.tagining) {
-		c->animation.duration = animation_duration_tag;
-		c->animation.action = TAG;
-	} else if (c->is_pending_open_animation) {
-		c->animation.duration = animation_duration_open;
-		c->animation.action = OPEN;
-	} else {
-		c->animation.duration = animation_duration_move;
-		c->animation.action = MOVE;
-	}
+    // 动画起始位置大小设置
+    if (c->animation.tagouting) {
+        c->animainit_geom = c->animation.current;
+    } else if (c->animation.tagining) {
+        c->animainit_geom.height = c->animation.current.height;
+        c->animainit_geom.width = c->animation.current.width;
+    } else if (c->is_pending_open_animation) {
+        set_client_open_animation(c, c->geom);
+    } else {
+        c->animainit_geom = c->animation.current;
+    }
 
-	// 动画起始位置大小设置
-	if (c->animation.tagouting) {
-		c->animainit_geom = c->animation.current;
-	} else if (c->animation.tagining) {
-		c->animainit_geom.height = c->animation.current.height;
-		c->animainit_geom.width = c->animation.current.width;
-	} else if (c->is_pending_open_animation) {
-		set_client_open_animation(c, c->geom);
-	} else {
-		c->animainit_geom = c->animation.current;
-	}
+    if (c->isnoborder || c->iskilling) {
+        c->bw = 0;
+    }
 
-	if (c->isnoborder || c->iskilling) {
-		c->bw = 0;
-	}
+    bool hit_no_border = check_hit_no_border(c);
+    if (hit_no_border && smartgaps) {
+        c->bw = 0;
+        c->fake_no_border = true;
+    }
 
-	bool hit_no_border = check_hit_no_border(c);
-	if (hit_no_border && smartgaps) {
-		c->bw = 0;
-		c->fake_no_border = true;
-	}
+    // c->geom 是真实的窗口大小和位置，跟过度的动画无关，用于计算布局
+    c->configure_serial = client_set_size(c, c->geom.width - 2 * c->bw,
+                                          c->geom.height - 2 * c->bw);
 
-	// c->geom 是真实的窗口大小和位置，跟过度的动画无关，用于计算布局
-	c->configure_serial = client_set_size(c, c->geom.width - 2 * c->bw,
-										  c->geom.height - 2 * c->bw);
+    if (c == grabc) {
+        c->animation.running = false;
+        c->need_output_flush = false;
 
-	if (c == grabc) {
-		c->animation.running = false;
-		c->need_output_flush = false;
+        c->animainit_geom = c->current = c->pending = c->animation.current = c->geom;
+        wlr_scene_node_set_position(&c->scene->node, c->geom.x, c->geom.y);
 
-		c->animainit_geom = c->current = c->pending = c->animation.current =
-			c->geom;
-		wlr_scene_node_set_position(&c->scene->node, c->geom.x, c->geom.y);
+        // 计算当前窗口相对于显示器的偏移量（用于边框和阴影）
+        int32_t left_offset = GEZERO(c->mon->m.x - c->geom.x);
+        int32_t top_offset = GEZERO(c->mon->m.y - c->geom.y);
+        int32_t right_offset = GEZERO(c->geom.x + c->geom.width -
+                                      c->mon->m.x - c->mon->m.width);
+        int32_t bottom_offset = GEZERO(c->geom.y + c->geom.height -
+                                       c->mon->m.y - c->mon->m.height);
+        enum corner_location current_corner_location = set_client_corner_location(c);
 
-		client_draw_shadow(c);
-		apply_border(c);
-		client_get_clip(c, &clip);
-		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip);
-		return;
-	}
-	// 如果不是工作区切换时划出去的窗口，就让动画的结束位置，就是上面的真实位置和大小
-	// c->pending 决定动画的终点，一般在其他调用resize的函数的附近设置了
-	if (!c->animation.tagouting && !c->iskilling) {
-		c->pending = c->geom;
-	}
+        // 传入偏移量和圆角位置
+        client_draw_shadow(c, left_offset, top_offset, right_offset, bottom_offset,
+                           current_corner_location);
+        apply_border(c, left_offset, top_offset, right_offset, bottom_offset,
+                     current_corner_location);
+        client_get_clip(c, &clip);
+        wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip);
+        return;
+    }
 
-	if (c->swallowedby && c->animation.action == OPEN) {
-		c->animainit_geom = c->swallowedby->animation.current;
-	}
+    // 如果不是工作区切换时划出去的窗口，就让动画的结束位置，就是上面的真实位置和大小
+    // c->pending 决定动画的终点，一般在其他调用resize的函数的附近设置了
+    if (!c->animation.tagouting && !c->iskilling) {
+        c->pending = c->geom;
+    }
 
-	if (c->swallowing) {
-		c->animainit_geom = c->geom;
-	}
+    if (c->swallowedby && c->animation.action == OPEN) {
+        c->animainit_geom = c->swallowedby->animation.current;
+    }
 
-	if ((c->isglobal || c->isunglobal) && c->isfloating &&
-		c->animation.action == TAG) {
-		c->animainit_geom = c->geom;
-	}
+    if (c->swallowing) {
+        c->animainit_geom = c->geom;
+    }
 
-	if (c->scratchpad_switching_mon && c->isfloating) {
-		c->animainit_geom = c->geom;
-	}
+    if ((c->isglobal || c->isunglobal) && c->isfloating &&
+        c->animation.action == TAG) {
+        c->animainit_geom = c->geom;
+    }
 
-	// 开始应用动画设置
-	client_set_pending_state(c);
+    if (c->scratchpad_switching_mon && c->isfloating) {
+        c->animainit_geom = c->geom;
+    }
 
-	setborder_color(c);
+    // 开始应用动画设置
+    client_set_pending_state(c);
+
+    setborder_color(c);
 }
 
 bool client_draw_fadeout_frame(Client *c) {

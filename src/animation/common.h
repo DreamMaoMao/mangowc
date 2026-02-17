@@ -72,10 +72,10 @@ void init_baked_points(void) {
 }
 
 double find_animation_curve_at(double t, int32_t type) {
-	int32_t down = 0;
-	int32_t up = BAKED_POINTS_COUNT - 1;
+	uint32_t down = 0;
+	uint32_t up = BAKED_POINTS_COUNT - 1;
 
-	int32_t middle = (up + down) / 2;
+	uint32_t middle = (up + down) / 2;
 	struct dvec2 *baked_points;
 	if (type == MOVE) {
 		baked_points = baked_points_move;
