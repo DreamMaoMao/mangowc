@@ -336,7 +336,6 @@ static inline uint32_t client_set_size(Client *c, uint32_t width,
 				(int32_t)c->geom.x + (int32_t)c->bw &&
 			(int32_t)c->surface.xwayland->y ==
 				(int32_t)c->geom.y + (int32_t)c->bw) {
-			c->configure_serial = 0;
 			return 0;
 		}
 
