@@ -65,7 +65,7 @@ jobs:
             libdisplay-info \
             seatd \
             mesa \
-            wlroots \
+            wlroots0.19 \
             pkg-config
 
       - name: Install scenefx from AUR
