@@ -863,9 +863,9 @@ int32_t spawn(const Arg *arg) {
 		execvp(argv[0], argv);
 
 		// 4. execvp 失败时：清理分配的字符串并打印错误
-		for (int i = 0; i < argc; i++) {
-			if (argv_allocated[i]) {
-				free(argv[i]);
+		for (int arg_idx = 0; arg_idx < argc; arg_idx++) {
+			if (argv_allocated[arg_idx]) {
+				free(argv[arg_idx]);
 			}
 		}
 		wlr_log(WLR_ERROR, "mango: execvp '%s' failed: %s\n", argv[0],
