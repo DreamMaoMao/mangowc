@@ -59,6 +59,8 @@ jobs:
             libffi-dev \
             libexpat1-dev \
             libxml2-dev \
+            libgles2-mesa-dev \
+            libegl1-mesa-dev \
             pkg-config
 
       - name: Build and install wayland 1.23.1
