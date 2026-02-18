@@ -44,7 +44,6 @@ jobs:
             meson \
             ninja-build \
             wayland-protocols \
-            libinput-dev \
             libxkbcommon-dev \
             libpcre2-dev \
             libpixman-1-dev \
@@ -62,7 +61,24 @@ jobs:
             libgles2-mesa-dev \
             libegl1-mesa-dev \
             libgbm-dev \
+            libevdev-dev \
+            libmtdev-dev \
+            libudev-dev \
+            libsystemd-dev \
             pkg-config
+
+      - name: Build and install libinput 1.27.1
+        run: |
+          # Build libinput 1.27.1 from source since Ubuntu has older version
+          git clone https://gitlab.freedesktop.org/libinput/libinput.git
+          cd libinput
+          git checkout 1.27.1
+          # Download meson subprojects if needed
+          meson subprojects download || true
+          meson setup build/ --prefix=/usr
+          sudo ninja -C build/ install
+          sudo ldconfig
+          cd ..
 
       - name: Build and install wayland 1.23.1
         run: |

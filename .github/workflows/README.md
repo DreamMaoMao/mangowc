@@ -23,26 +23,31 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 
 **What it does**:
 
-1. Installs system dependencies (libinput, libdrm, etc.)
-2. Builds wayland 1.23.1 from source
-3. Builds wlroots 0.19.0 from source
-4. Builds scenefx 0.4.1 from source
-5. Uses `meson subprojects download` to fetch any required subproject dependencies
-6. Configures the project with meson
-7. Builds the project with ninja
-8. Verifies the executables were created
+1. Installs system dependencies (libdrm, libevdev, etc.)
+2. Builds libinput 1.27.1 from source
+3. Builds wayland 1.23.1 from source
+4. Builds wlroots 0.19.0 from source
+5. Builds scenefx 0.4.1 from source
+6. Uses `meson subprojects download` to fetch any required subproject dependencies
+7. Configures the project with meson
+8. Builds the project with ninja
+9. Verifies the executables were created
 
 **Build Strategy**:
 
-- All dependencies (wayland, wlroots, scenefx) are built from their source repositories
-- Uses `meson subprojects download` before each meson setup to fetch required subprojects
-- Allows meson wrap mode for automatic subproject handling (no --wrap-mode=nodownload)
+- All major dependencies (libinput, wayland, wlroots, scenefx) are built from
+  their source repositories
+- Uses `meson subprojects download` before each meson setup to fetch required
+  subprojects
+- Allows meson wrap mode for automatic subproject handling
+  (no --wrap-mode=nodownload)
 
 **Dependencies**:
 
 - Ubuntu latest runner
 - Meson build system
 - Ninja build tool
+- libinput 1.27.1 (built from source)
 - Wayland 1.23.1 (built from source)
 - wlroots 0.19.0 (built from source)
 - scenefx 0.4.1 (built from source)
