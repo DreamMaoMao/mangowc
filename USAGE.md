@@ -126,7 +126,7 @@ MangoWC includes 9 built-in layouts:
 └────────┴────┘
 ```
 **Best for:** General multitasking, coding with docs
-**Switch to:** `Super + T` or cycle with `Super + N`
+**Switch to:** Cycle with `Super + N` (or add `bind=Super,t,setlayout,tile` to config)
 
 #### 2. Scroller (Horizontal)
 ```
@@ -135,7 +135,7 @@ MangoWC includes 9 built-in layouts:
 └───┴────┴───┴───┘
 ```
 **Best for:** Terminals, wide content, many windows
-**Switch to:** `Super + S` or cycle with `Super + N`
+**Switch to:** Cycle with `Super + N` (or add `bind=Super,s,setlayout,scroller` to config)
 
 **Scroller-specific controls:**
 - `Alt + E` - Set current window to full width
@@ -150,7 +150,7 @@ MangoWC includes 9 built-in layouts:
 └──────────────┘
 ```
 **Best for:** Focus work, browsing, media
-**Switch to:** `Super + M` or cycle with `Super + N`
+**Switch to:** Cycle with `Super + N`
 **Navigate:** Use `Super + Tab` to cycle through windows
 
 #### 4. Grid
@@ -207,18 +207,18 @@ Super + N    → Next layout
 
 For **tile/center_tile** layouts:
 ```
-Super + H    → Decrease master size  (add to config)
-Super + L    → Increase master size  (add to config)
-Super + I    → More windows in master (add to config)
-Super + D    → Fewer windows in master (add to config)
+Super + H       → Decrease master size  (add to config)
+Super + L       → Increase master size  (add to config)
+Super + Equal   → More windows in master (add to config)
+Super + Minus   → Fewer windows in master (add to config)
 ```
 
 Add to config.conf:
 ```conf
 bind=Super,h,setmfact,-0.05
 bind=Super,l,setmfact,+0.05
-bind=Super,i,incnmaster,+1
-bind=Super,d,incnmaster,-1
+bind=Super,equal,incnmaster,+1
+bind=Super,minus,incnmaster,-1
 ```
 
 For **scroller** layout:
