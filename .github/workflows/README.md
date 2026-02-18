@@ -20,19 +20,26 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 
 **What it does**:
 1. Installs system dependencies (libinput, libdrm, etc.)
-2. Builds wayland 1.23.1 from source (Ubuntu has older 1.22)
-3. Builds wlroots 0.19 from source
-4. Builds scenefx 0.4.1 from source
+2. Installs wayland (tries apt first, builds 1.23.1 from source if needed)
+3. Installs wlroots (tries apt first, builds 0.19 from source if needed)
+4. Builds scenefx 0.4.1 from source (not available in apt)
 5. Configures the project with meson
 6. Builds the project with ninja
 7. Verifies the executables were created
+
+**Install Strategy**:
+- Prefers apt packages when available and version requirements are met
+- Falls back to building from source only when necessary
+- wayland: requires >= 1.23.1 (Ubuntu apt has 1.22, builds from source)
+- wlroots: requires >= 0.19.0 (checks apt version, builds from source if too old)
+- scenefx: not in apt repositories (always builds from source)
 
 **Dependencies**:
 - Ubuntu latest runner
 - Meson build system
 - Ninja build tool
-- Wayland 1.23.1 (built from source)
-- wlroots 0.19
+- Wayland >= 1.23.1
+- wlroots >= 0.19.0
 - scenefx 0.4.1
 
 ### docs.yml
