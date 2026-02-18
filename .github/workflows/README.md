@@ -19,18 +19,19 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 - Workflow file itself: `.github/workflows/build.yml`
 
 **What it does**:
-1. Installs system dependencies (wayland, libinput, etc.)
-2. Builds wlroots 0.19 from source
-3. Builds scenefx 0.4 from source
-4. Configures the project with meson
-5. Builds the project with ninja
-6. Verifies the executables were created
+1. Installs system dependencies (libinput, libdrm, etc.)
+2. Builds wayland 1.23.1 from source (Ubuntu has older 1.22)
+3. Builds wlroots 0.19 from source
+4. Builds scenefx 0.4.1 from source
+5. Configures the project with meson
+6. Builds the project with ninja
+7. Verifies the executables were created
 
 **Dependencies**:
 - Ubuntu latest runner
 - Meson build system
 - Ninja build tool
-- Wayland ecosystem libraries
+- Wayland 1.23.1 (built from source)
 - wlroots 0.19
 - scenefx 0.4.1
 
