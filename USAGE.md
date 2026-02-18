@@ -50,6 +50,7 @@ Super + M            → Exit MangoWC
 Tags are like workspaces, but more flexible. Think of them as labels you can apply to windows.
 
 **Key differences from workspaces:**
+
 - A window can have multiple tags
 - You can view multiple tags at once
 - Each tag can have its own layout
@@ -57,6 +58,7 @@ Tags are like workspaces, but more flexible. Think of them as labels you can app
 ### Basic Tag Usage
 
 **Switch to a tag:**
+
 ```
 Ctrl + 1    → View tag 1
 Ctrl + 2    → View tag 2
@@ -64,12 +66,14 @@ Ctrl + 2    → View tag 2
 ```
 
 **Move window to a tag:**
+
 ```
 Alt + 1     → Move current window to tag 1 (and switch to it)
 Alt + 2     → Move current window to tag 2 (and switch to it)
 ```
 
 **Navigate through tags:**
+
 ```
 Super + Left/Right         → Previous/next tag
 Ctrl + Left/Right          → Previous/next tag that has windows
@@ -78,11 +82,13 @@ Ctrl + Left/Right          → Previous/next tag that has windows
 ### Advanced Tag Techniques
 
 **View multiple tags simultaneously:**
+
 1. Switch to tag 1: `Ctrl + 1`
 2. Toggle tag 2 visibility: `Super + 2` (if configured)
 3. Now you see windows from both tags
 
 **Silent tag movement** (move window without following):
+
 ```conf
 # In config.conf
 bind=Alt+Shift,1,tagsilent,1
@@ -91,6 +97,7 @@ bind=Alt+Shift,1,tagsilent,1
 ### Organizing Your Workflow with Tags
 
 **Example organization:**
+
 ```
 Tag 1: Browsers          (monocle layout)
 Tag 2: Code editors      (tile or center_tile layout)
@@ -101,6 +108,7 @@ Tag 6-9: Project-specific
 ```
 
 **Setting layouts per tag in config.conf:**
+
 ```conf
 tagrule=id:1,layout_name:monocle
 tagrule=id:2,layout_name:center_tile
@@ -118,6 +126,7 @@ tagrule=id:5,layout_name:monocle
 MangoWC includes 9 built-in layouts:
 
 #### 1. Tile (Master-Stack)
+
 ```
 ┌────────┬────┐
 │        │ 1  │
@@ -125,23 +134,28 @@ MangoWC includes 9 built-in layouts:
 │        │ 2  │
 └────────┴────┘
 ```
+
 **Best for:** General multitasking, coding with docs
 **Switch to:** Cycle with `Super + N` (or add `bind=Super,t,setlayout,tile` to config)
 
 #### 2. Scroller (Horizontal)
+
 ```
 ┌───┬────┬───┬───┐
 │ 1 │  2 │ 3 │ 4 │...
 └───┴────┴───┴───┘
 ```
+
 **Best for:** Terminals, wide content, many windows
 **Switch to:** Cycle with `Super + N` (or add `bind=Super,s,setlayout,scroller` to config)
 
 **Scroller-specific controls:**
+
 - `Alt + E` - Set current window to full width
 - `Alt + X` - Cycle through width presets (0.5, 0.8, 1.0)
 
 #### 3. Monocle (Fullscreen Stack)
+
 ```
 ┌──────────────┐
 │              │
@@ -149,11 +163,13 @@ MangoWC includes 9 built-in layouts:
 │   (fullscrn) │
 └──────────────┘
 ```
+
 **Best for:** Focus work, browsing, media
 **Switch to:** Cycle with `Super + N`
 **Navigate:** Use `Super + Tab` to cycle through windows
 
 #### 4. Grid
+
 ```
 ┌─────┬─────┐
 │  1  │  2  │
@@ -161,20 +177,24 @@ MangoWC includes 9 built-in layouts:
 │  3  │  4  │
 └─────┴─────┘
 ```
+
 **Best for:** Viewing many windows simultaneously
 **Switch to:** Cycle with `Super + N`
 
 #### 5. Deck (Card Stack)
+
 ```
 ┌──────────────┐
 │  Window 1    │  ← Visible
 │ (2, 3 hidden)│
 └──────────────┘
 ```
+
 **Best for:** Cycling through options
 **Switch to:** Cycle with `Super + N`
 
 #### 6. Center Tile
+
 ```
 ┌──┬──────┬──┐
 │1 │      │2 │
@@ -182,10 +202,12 @@ MangoWC includes 9 built-in layouts:
 │3 │      │4 │
 └──┴──────┴──┘
 ```
+
 **Best for:** Symmetrical workflow, coding
 **Switch to:** Cycle with `Super + N`
 
 #### 7. Vertical Tile
+
 ```
 ┌──────────────┐
 │    Master    │
@@ -193,12 +215,14 @@ MangoWC includes 9 built-in layouts:
 │1 │ 2 │ 3 │ 4 │
 └──┴───┴───┴───┘
 ```
+
 **Best for:** Ultra-wide monitors
 **Switch to:** Cycle with `Super + N`
 
 ### Layout Controls
 
 **Cycle through all layouts:**
+
 ```
 Super + N    → Next layout
 ```
@@ -206,6 +230,7 @@ Super + N    → Next layout
 **Adjust layout parameters:**
 
 For **tile/center_tile** layouts:
+
 ```
 Super + H       → Decrease master size  (add to config)
 Super + L       → Increase master size  (add to config)
@@ -214,6 +239,7 @@ Super + Minus   → Fewer windows in master (add to config)
 ```
 
 Add to config.conf:
+
 ```conf
 bind=Super,h,setmfact,-0.05
 bind=Super,l,setmfact,+0.05
@@ -222,6 +248,7 @@ bind=Super,minus,incnmaster,-1
 ```
 
 For **scroller** layout:
+
 ```
 Alt + E      → Set window to full width
 Alt + X      → Cycle width presets
@@ -234,17 +261,20 @@ Alt + X      → Cycle width presets
 ### Focus Management
 
 **Directional focus:**
+
 ```
 Alt + ←→↑↓   → Focus window in direction
 ```
 
 **Stack focus:**
+
 ```
 Super + Tab          → Next window in stack
 Super + Shift + Tab  → Previous window in stack
 ```
 
 **Focus last window:**
+
 ```
 Super + `    → Focus previously focused window (add to config)
 ```
@@ -252,21 +282,25 @@ Super + `    → Focus previously focused window (add to config)
 ### Moving Windows
 
 **Swap with neighbors:**
+
 ```
 Super + Shift + ←→↑↓   → Swap positions
 ```
 
 **Move to master:**
+
 ```
 Super + Return   → Move focused window to master position (add to config)
 ```
 
 Add to config:
+
 ```conf
 bind=Super,Return,zoom,
 ```
 
 **Move between tags:**
+
 ```
 Alt + 1-9              → Move to tag (and follow)
 Ctrl + Super + ←→      → Move to prev/next tag
@@ -275,28 +309,33 @@ Ctrl + Super + ←→      → Move to prev/next tag
 ### Floating Windows
 
 **Toggle floating:**
+
 ```
 Alt + \    → Toggle floating/tiling
 ```
 
 **Move floating windows:**
+
 ```
 Ctrl + Shift + ←→↑↓   → Move by pixels
 Super + Left-drag      → Move with mouse
 ```
 
 **Resize floating windows:**
+
 ```
 Ctrl + Alt + ←→↑↓     → Resize by pixels
 Super + Right-drag     → Resize with mouse
 ```
 
 **Center floating window:**
+
 ```
 Super + C    → Center window (add to config)
 ```
 
 Add to config:
+
 ```conf
 bind=Super,c,centerwin,
 ```
@@ -304,6 +343,7 @@ bind=Super,c,centerwin,
 ### Window States
 
 **Common states:**
+
 ```
 Alt + \              → Floating
 Alt + F              → Fullscreen
@@ -314,6 +354,7 @@ Super + O            → Overlay (always on top)
 ```
 
 **Minimize/Restore:**
+
 ```
 Super + I            → Minimize window
 Super + Shift + I    → Restore minimized
@@ -326,6 +367,7 @@ Super + Shift + I    → Restore minimized
 ### What is the Scratchpad?
 
 The scratchpad is a hidden workspace for temporary windows. It's perfect for:
+
 - Calculator
 - Music player
 - Notes/Todo list
@@ -335,12 +377,14 @@ The scratchpad is a hidden workspace for temporary windows. It's perfect for:
 ### Basic Scratchpad Usage
 
 1. **Open an application** (e.g., terminal with calculator)
+
    ```bash
    Alt + Return
    # Then run: qalc (or any calculator)
    ```
 
 2. **Move to scratchpad**
+
    ```
    Alt + Z
    ```
@@ -348,6 +392,7 @@ The scratchpad is a hidden workspace for temporary windows. It's perfect for:
 3. **Window disappears** - it's now in the scratchpad
 
 4. **Toggle scratchpad** to show/hide
+
    ```
    Alt + Z    → Shows scratchpad over current work
    Alt + Z    → Hides it again
@@ -358,6 +403,7 @@ The scratchpad is a hidden workspace for temporary windows. It's perfect for:
 You can have multiple named scratchpads:
 
 **Setup in config.conf:**
+
 ```conf
 bind=Super,p,toggle_named_scratchpad,music
 bind=Super,n,toggle_named_scratchpad,notes
@@ -365,6 +411,7 @@ bind=Super,c,toggle_named_scratchpad,calc
 ```
 
 **Usage:**
+
 1. Open application (e.g., spotify)
 2. Press `Super + P` - assigns it to "music" scratchpad
 3. Press `Super + P` again - shows/hides music scratchpad
@@ -387,6 +434,7 @@ mmsg -d toggle_scratchpad
 ```
 
 Bind it:
+
 ```conf
 bind=Super,equal,spawn_shell,~/.config/mango/scripts/scratchpad-calc.sh
 ```
@@ -394,6 +442,7 @@ bind=Super,equal,spawn_shell,~/.config/mango/scripts/scratchpad-calc.sh
 **Customize scratchpad appearance:**
 
 In config.conf:
+
 ```conf
 scratchpad_width_ratio=0.8    # 80% of screen width
 scratchpad_height_ratio=0.9   # 90% of screen height
@@ -411,11 +460,13 @@ Overview mode shows all windows at once, similar to GNOME's Activities or macOS 
 ### Using Overview
 
 **Toggle overview:**
+
 ```
 Alt + Tab    → Toggle overview mode
 ```
 
 **In overview mode:**
+
 - Click any window to focus it
 - Drag windows to rearrange
 - Windows are organized visually
@@ -425,6 +476,7 @@ Alt + Tab    → Toggle overview mode
 Move your mouse cursor to the top edge of the screen to automatically trigger overview.
 
 **Configure hotarea:**
+
 ```conf
 # In config.conf
 hotarea_size=10        # Pixels from edge to trigger
@@ -447,11 +499,13 @@ overviewgappo=30       # Gap from screen edges
 ### Basic Multi-Monitor Commands
 
 **Focus different monitor:**
+
 ```
 Alt + Shift + ←→    → Focus adjacent monitor
 ```
 
 **Move window to other monitor:**
+
 ```
 Super + Alt + ←→    → Move window to adjacent monitor
 ```
@@ -459,16 +513,19 @@ Super + Alt + ←→    → Move window to adjacent monitor
 ### Multi-Monitor Strategies
 
 **Strategy 1: Dedicated monitors per task**
+
 - Monitor 1: Development (Tag 1-3)
 - Monitor 2: Communication (Tag 4-6)
 - Monitor 3: Media/Reference (Tag 7-9)
 
 **Strategy 2: Mirror similar tags**
+
 - Both monitors show same tags
 - Each monitor has different layouts
 - Use global windows to span both
 
 **Strategy 3: Independent workspaces**
+
 - Each monitor is independent
 - Use monitor focus shortcuts frequently
 - Keep related work on same monitor
@@ -478,16 +535,19 @@ Super + Alt + ←→    → Move window to adjacent monitor
 MangoWC auto-detects monitors. For custom setup:
 
 **Disable a monitor:**
+
 ```bash
 mmsg -d disable_monitor HDMI-A-1
 ```
 
 **Enable a monitor:**
+
 ```bash
 mmsg -d enable_monitor HDMI-A-1
 ```
 
 **Find monitor names:**
+
 ```bash
 mmsg -o
 ```
@@ -566,6 +626,7 @@ unfocused_opacity=0.95         # Unfocused window opacity
 Create `~/.config/mango/scripts/` directory:
 
 **Example: Screenshot script**
+
 ```bash
 #!/bin/bash
 # ~/.config/mango/scripts/screenshot.sh
@@ -574,11 +635,13 @@ grim -g "$(slurp)" - | satty --filename - --fullscreen
 ```
 
 **Bind it:**
+
 ```conf
 bind=Print,none,spawn_shell,~/.config/mango/scripts/screenshot.sh
 ```
 
 **Example: Volume control**
+
 ```bash
 #!/bin/bash
 # ~/.config/mango/scripts/volume.sh
@@ -591,6 +654,7 @@ esac
 ```
 
 **Bind it:**
+
 ```conf
 bind=NONE,XF86AudioRaiseVolume,spawn_shell,~/.config/mango/scripts/volume.sh up
 bind=NONE,XF86AudioLowerVolume,spawn_shell,~/.config/mango/scripts/volume.sh down
@@ -604,6 +668,7 @@ bind=NONE,XF86AudioMute,spawn_shell,~/.config/mango/scripts/volume.sh mute
 ### Workflow 1: Web Development
 
 **Setup:**
+
 ```
 Tag 1: Browser (monocle)        → Testing
 Tag 2: Code editor (center_tile) → Development
@@ -612,6 +677,7 @@ Scratchpad: Documentation, notes
 ```
 
 **Workflow:**
+
 1. Start on Tag 2, write code
 2. `Ctrl + 1` → View in browser
 3. `Ctrl + 3` → Run build/dev server
@@ -621,6 +687,7 @@ Scratchpad: Documentation, notes
 ### Workflow 2: Writing and Research
 
 **Setup:**
+
 ```
 Tag 1: Writing app (monocle)
 Tag 2: Research browser (tile)
@@ -629,6 +696,7 @@ Scratchpad: Notes, citations
 ```
 
 **Workflow:**
+
 1. Research on Tags 2-3
 2. `Ctrl + 1` → Switch to writing
 3. `Super + G` on notes window → Make it global
@@ -637,6 +705,7 @@ Scratchpad: Notes, citations
 ### Workflow 3: Communication and Work
 
 **Setup:**
+
 ```
 Tag 1: Email (monocle)
 Tag 2: Slack/Discord (tile)
@@ -646,6 +715,7 @@ Global: Music player
 ```
 
 **Workflow:**
+
 1. Open music player → `Super + G` (make global)
 2. Start each app on its tag
 3. Use `Ctrl + Left/Right` to jump between active tags
@@ -654,6 +724,7 @@ Global: Music player
 ### Workflow 4: System Administration
 
 **Setup:**
+
 ```
 Tag 1: Terminals (scroller)     → Multiple SSH sessions
 Tag 2: Monitoring (grid)         → htop, iotop, etc.
@@ -662,6 +733,7 @@ Scratchpad: Calculator, quick commands
 ```
 
 **Workflow:**
+
 1. Open terminals in scroller layout
 2. `Alt + X` to adjust column widths
 3. `Ctrl + 2` for monitoring overview
@@ -670,6 +742,7 @@ Scratchpad: Calculator, quick commands
 ### Workflow 5: Video/Audio Editing
 
 **Setup:**
+
 ```
 Tag 1: Editor (monocle)          → Full-screen editing
 Tag 2: File browser (tile)       → Asset management
@@ -677,6 +750,7 @@ Tag 3: Preview (monocle)         → Testing output
 ```
 
 **Workflow:**
+
 1. Edit on Tag 1 in monocle (maximum space)
 2. `Ctrl + 2` → Grab assets
 3. `Ctrl + 3` → Preview output
@@ -687,6 +761,7 @@ Tag 3: Preview (monocle)         → Testing output
 ## Quick Reference Card
 
 ### Essential Shortcuts
+
 ```
 Alt + Return         Terminal
 Alt + Space          Launcher
@@ -710,6 +785,7 @@ Super + G            Global window
 ```
 
 ### When Things Go Wrong
+
 ```
 Super + R            Reload config (fixes most issues)
 Super + M            Exit MangoWC
@@ -729,6 +805,7 @@ Now that you understand the basics:
 5. **Join the community** - [Discord](https://discord.gg/CPjbDxesh5)
 
 **Additional Resources:**
+
 - [COMMANDS.md](COMMANDS.md) - Complete command reference
 - [config.conf](config.conf) - Commented configuration file
 - [MangoWC Wiki](https://github.com/DreamMaoMao/mango/wiki/) - Comprehensive documentation
