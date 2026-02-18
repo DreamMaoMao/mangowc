@@ -27,21 +27,21 @@ void get_layer_target_geometry(LayerSurface *l, struct wlr_box *target_box) {
 
 	const struct wlr_layer_surface_v1_state *state = &l->layer_surface->current;
 
-	// 限制区域
-	// waybar一般都是大于0,表示要占用多少区域，所以计算位置也要用全部区域作为基准
-	// 如果是-1可能表示独占所有可用空间
-	// 如果是0，应该是表示使用exclusive_zone外的可用区域
+	// Exclusive zone handling:
+	// Waybar typically uses > 0, indicating how much area to reserve (use full
+	// monitor bounds) If -1, may indicate exclusive use of all available space
+	// If 0, indicates use of available area outside exclusive zones
 	struct wlr_box bounds;
 	if (state->exclusive_zone > 0 || state->exclusive_zone == -1)
 		bounds = l->mon->m;
 	else
 		bounds = l->mon->w;
 
-	// 初始化几何位置
+	// Initialize geometry
 	struct wlr_box box = {.width = state->desired_width,
 						  .height = state->desired_height};
 
-	// 水平方向定位
+	// Horizontal positioning
 	const int32_t both_horiz =
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	if (box.width == 0) {
@@ -56,7 +56,7 @@ void get_layer_target_geometry(LayerSurface *l, struct wlr_box *target_box) {
 		box.x = bounds.x + ((bounds.width - box.width) / 2);
 	}
 
-	// 垂直方向定位
+	// Vertical positioning
 	const int32_t both_vert =
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
 	if (box.height == 0) {
@@ -71,7 +71,7 @@ void get_layer_target_geometry(LayerSurface *l, struct wlr_box *target_box) {
 		box.y = bounds.y + ((bounds.height - box.height) / 2);
 	}
 
-	// 应用边距
+	// Apply margins
 	if (box.width == 0) {
 		box.x += state->margin.left;
 		box.width = bounds.width - (state->margin.left + state->margin.right);
@@ -412,8 +412,8 @@ void init_fadeout_layers(LayerSurface *l) {
 	fadeout_layer->animation_type_close = l->animation_type_close;
 	fadeout_layer->animation_type_open = l->animation_type_open;
 
-	// 这里snap节点的坐标设置是使用的相对坐标，不能用绝对坐标
-	// 这跟普通node有区别
+	// Snapshot node coordinates use relative coordinates, not absolute
+	// This differs from regular nodes
 
 	fadeout_layer->animation.initial.x = 0;
 	fadeout_layer->animation.initial.y = 0;

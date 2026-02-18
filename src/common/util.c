@@ -59,7 +59,7 @@ int32_t regex_match(const char *pattern, const char *str) {
 	}
 
 	pcre2_code *re = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED,
-								   PCRE2_UTF, // 启用 UTF-8 支持
+								   PCRE2_UTF, // Enable UTF-8 support
 								   &errnum, &erroffset, NULL);
 	if (!re) {
 		PCRE2_UCHAR errbuf[256];

@@ -97,31 +97,43 @@
 /* macros */
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
+/* Get value if >= 0, otherwise return 0 */
 #define GEZERO(A) ((A) >= 0 ? (A) : 0)
+/* Remove caps lock modifier from mask */
 #define CLEANMASK(mask) (mask & ~WLR_MODIFIER_CAPS)
+/* Check if client A is fully inside its monitor bounds */
 #define INSIDEMON(A)                                                           \
 	(A->geom.x >= A->mon->m.x && A->geom.y >= A->mon->m.y &&                   \
 	 A->geom.x + A->geom.width <= A->mon->m.x + A->mon->m.width &&             \
 	 A->geom.y + A->geom.height <= A->mon->m.y + A->mon->m.height)
+/* Check if geometry A is fully inside monitor M bounds */
 #define GEOMINSIDEMON(A, M)                                                    \
 	(A->x >= M->m.x && A->y >= M->m.y &&                                       \
 	 A->x + A->width <= M->m.x + M->m.width &&                                 \
 	 A->y + A->height <= M->m.y + M->m.height)
+/* Check if client is in tiled state (not floating, minimized, killing, etc.) */
 #define ISTILED(A)                                                             \
 	(A && !(A)->isfloating && !(A)->isminimized && !(A)->iskilling &&          \
 	 !(A)->ismaximizescreen && !(A)->isfullscreen && !(A)->isunglobal)
+/* Check if client is tiled for scroller layout (less restrictive than ISTILED)
+ */
 #define ISSCROLLTILED(A)                                                       \
 	(A && !(A)->isfloating && !(A)->isminimized && !(A)->iskilling &&          \
 	 !(A)->isunglobal)
+/* Check if client C is visible on monitor M (matching tags) */
 #define VISIBLEON(C, M)                                                        \
 	((C) && (M) && (C)->mon == (M) && ((C)->tags & (M)->tagset[(M)->seltags]))
 #define LENGTH(X) (sizeof X / sizeof X[0])
 #define END(A) ((A) + LENGTH(A))
+/* Generate bitmask for all tags */
 #define TAGMASK ((1 << LENGTH(tags)) - 1)
+/* Register event listener: adds signal handler H to event E with listener L */
 #define LISTEN(E, L, H) wl_signal_add((E), ((L)->notify = (H), (L)))
+/* Check if client is in any fullscreen-like state */
 #define ISFULLSCREEN(A)                                                        \
 	((A)->isfullscreen || (A)->ismaximizescreen ||                             \
 	 (A)->overview_ismaximizescreenbak || (A)->overview_isfullscreenbak)
+/* Register static event listener (allocates listener internally) */
 #define LISTEN_STATIC(E, H)                                                    \
 	do {                                                                       \
 		struct wl_listener *_l = ecalloc(1, sizeof(*_l));                      \
@@ -129,18 +141,22 @@
 		wl_signal_add((E), _l);                                                \
 	} while (0)
 
+/* Apply integer property from rule to object if set (>= 0) */
 #define APPLY_INT_PROP(obj, rule, prop)                                        \
 	if (rule->prop >= 0)                                                       \
 	obj->prop = rule->prop
 
+/* Apply float property from rule to object if set (> 0.0) */
 #define APPLY_FLOAT_PROP(obj, rule, prop)                                      \
 	if (rule->prop > 0.0f)                                                     \
 	obj->prop = rule->prop
 
+/* Apply string property from rule to object if set (not NULL) */
 #define APPLY_STRING_PROP(obj, rule, prop)                                     \
 	if (rule->prop != NULL)                                                    \
 	obj->prop = rule->prop
 
+/* Number of pre-calculated animation curve points for performance */
 #define BAKED_POINTS_COUNT 256
 
 /* enums */
