@@ -48,7 +48,7 @@ jobs:
           sudo ldconfig
           cd ..
 
-      - name: Install scenefx 0.4
+      - name: Install scenefx 0.4.1
         run: |
           # Install scenefx from source
           git clone -b 0.4.1 https://github.com/wlrfx/scenefx.git

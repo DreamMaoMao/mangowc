@@ -26,7 +26,7 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 - Ninja build tool
 - Wayland ecosystem libraries
 - wlroots 0.19
-- scenefx 0.4
+- scenefx 0.4.1
 
 ### lock.yml
 **Purpose**: Automatically locks inactive issues and PRs to keep the repository clean.
