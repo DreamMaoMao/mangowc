@@ -67,11 +67,13 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 - Lints markdown files in the repository using markdownlint-cli2
 - Checks for common markdown formatting issues
 - Ensures documentation follows consistent style guidelines
-- Excludes dependency directories (wayland, wlroots, scenefx) to only lint repository files
+- Excludes dependency directories (wayland, wlroots, scenefx) to only lint
+  repository files
 
 ### lock.yml
 
-**Purpose**: Automatically locks inactive issues and PRs to keep the repository clean.
+**Purpose**: Automatically locks inactive issues and PRs to keep the repository 
+  clean.
 
 **Triggers**:
 
