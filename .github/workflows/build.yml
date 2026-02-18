@@ -74,7 +74,7 @@ jobs:
           sudo ldconfig
           cd ..
 
-      - name: Install wlroots 0.19
+      - name: Install wlroots 0.19.0
         run: |
           # Install wlroots 0.19 from source
           git clone https://gitlab.freedesktop.org/wlroots/wlroots.git

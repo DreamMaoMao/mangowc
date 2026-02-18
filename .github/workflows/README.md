@@ -21,7 +21,7 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 **What it does**:
 1. Installs system dependencies (libinput, libdrm, etc.)
 2. Builds wayland 1.23.1 from source
-3. Builds wlroots 0.19 from source
+3. Builds wlroots 0.19.0 from source
 4. Builds scenefx 0.4.1 from source
 5. Uses `meson subprojects download` to fetch any required subproject dependencies
 6. Configures the project with meson
@@ -38,7 +38,7 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 - Meson build system
 - Ninja build tool
 - Wayland 1.23.1 (built from source)
-- wlroots 0.19 (built from source)
+- wlroots 0.19.0 (built from source)
 - scenefx 0.4.1 (built from source)
 
 ### docs.yml
