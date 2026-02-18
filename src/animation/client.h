@@ -12,18 +12,18 @@ enum corner_location set_client_corner_location(Client *c) {
 	enum corner_location current_corner_location = CORNER_LOCATION_ALL;
 	struct wlr_box target_geom = animations ? c->animation.current : c->geom;
 	if (target_geom.x + border_radius <= c->mon->m.x) {
-		current_corner_location &= ~CORNER_LOCATION_LEFT; // 清除左标志位
+		current_corner_location &= ~CORNER_LOCATION_LEFT; // Clear left flag bit
 	}
 	if (target_geom.x + target_geom.width - border_radius >=
 		c->mon->m.x + c->mon->m.width) {
-		current_corner_location &= ~CORNER_LOCATION_RIGHT; // 清除右标志位
+		current_corner_location &= ~CORNER_LOCATION_RIGHT; // Clear right flag bit
 	}
 	if (target_geom.y + border_radius <= c->mon->m.y) {
-		current_corner_location &= ~CORNER_LOCATION_TOP; // 清除上标志位
+		current_corner_location &= ~CORNER_LOCATION_TOP; // Clear top flag bit
 	}
 	if (target_geom.y + target_geom.height - border_radius >=
 		c->mon->m.y + c->mon->m.height) {
-		current_corner_location &= ~CORNER_LOCATION_BOTTOM; // 清除下标志位
+		current_corner_location &= ~CORNER_LOCATION_BOTTOM; // Clear bottom flag bit
 	}
 	return current_corner_location;
 }
@@ -377,7 +377,7 @@ void apply_border(Client *c) {
 	}
 
 	struct wlr_box clip_box = c->animation.current;
-	// 一但在GEZERO如果使用无符号，那么其他数据也会转换为无符号导致没有负数出错
+	// Once in GEZERO if unsigned is used, other data will also be converted to unsigned resulting in no negative numbers causing errors
 	int32_t bw = (int32_t)c->bw;
 
 	int32_t right_offset, bottom_offset, left_offset, top_offset;
@@ -463,13 +463,13 @@ struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
 	int32_t left_out_offset = GEZERO(c->mon->m.x - c->animation.current.x);
 	int32_t top_out_offset = GEZERO(c->mon->m.y - c->animation.current.y);
 
-	// 必须转换为int，否计算会没有负数导致判断错误
+	// Must convert to int, otherwise the calculation will have no negative numbers leading to incorrect judgments
 	int32_t bw = (int32_t)c->bw;
 
 	/*
-	  计算窗口表面超出屏幕四个方向的偏差，避免窗口超出屏幕
-	  需要主要border超出屏幕的时候不计算如偏差之内而是
-	  要等窗口表面超出才开始计算偏差
+	  Calculate the offset of the window surface exceeding the screen in four directions to avoid the window going off-screen
+	  Need to note that when the border exceeds the screen, it is not counted as an offset,
+	  but we need to wait for the window surface to exceed before starting to calculate the offset
 	*/
 	if (ISSCROLLTILED(c) || c->animation.tagining || c->animation.tagouted ||
 		c->animation.tagouting) {
@@ -492,7 +492,7 @@ struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
 		}
 	}
 
-	// 窗口表面超出屏幕四个方向的偏差
+	// Offset of the window surface exceeding the screen in four directions
 	offset.x = offsetx;
 	offset.y = offsety;
 	offset.width = offsetw;
@@ -547,11 +547,11 @@ void client_apply_clip(Client *c, float factor) {
 		return;
 	}
 
-	// 获取窗口动画实时位置矩形
+	// Get the real-time window animation position rectangle
 	int32_t width, height;
 	client_actual_size(c, &width, &height);
 
-	// 计算出除了边框的窗口实际剪切大小
+	// Calculate the actual clipping size of the window excluding the border
 	struct wlr_box geometry;
 	client_get_geometry(c, &geometry);
 	clip_box = (struct wlr_box){
@@ -566,14 +566,14 @@ void client_apply_clip(Client *c, float factor) {
 		clip_box.y = 0;
 	}
 
-	// 检测窗口是否需要剪切超出屏幕部分，如果需要就调整实际要剪切的矩形
+	// Check if the window needs to clip the part exceeding the screen, and adjust the rectangle to be clipped if needed
 	offset = clip_to_hide(c, &clip_box);
 
-	// 应用窗口装饰
+	// Apply window decorations
 	apply_border(c);
 	client_draw_shadow(c);
 
-	// 如果窗口剪切区域已经剪切到0，则不渲染窗口表面
+	// If the window clipping region is already clipped to 0, don't render the window surface
 	if (clip_box.width <= 0 || clip_box.height <= 0) {
 		should_render_client_surface = false;
 		wlr_scene_node_set_enabled(&c->scene_surface->node, false);
@@ -582,15 +582,15 @@ void client_apply_clip(Client *c, float factor) {
 		wlr_scene_node_set_enabled(&c->scene_surface->node, true);
 	}
 
-	// 不用在执行下面的窗口表面剪切和缩放等效果操作
+	// No need to execute the following window surface clipping and scaling operations
 	if (!should_render_client_surface) {
 		return;
 	}
 
-	// 应用窗口表面剪切
+	// Apply window surface clipping
 	wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
 
-	// 获取剪切后的表面的实际大小用于计算缩放
+	// Get the actual size of the clipped surface for calculating scaling
 	int32_t acutal_surface_width = geometry.width - offset.x - offset.width;
 	int32_t acutal_surface_height = geometry.height - offset.y - offset.height;
 
@@ -795,8 +795,8 @@ void init_fadeout_client(Client *c) {
 	fadeout_client->bw = c->bw;
 	fadeout_client->nofadeout = c->nofadeout;
 
-	// 这里snap节点的坐标设置是使用的相对坐标，所以不能加上原来坐标
-	// 这跟普通node有区别
+	// Here the snap node's coordinate setting uses relative coordinates, so we cannot add the original coordinates
+	// This is different from normal nodes
 
 	fadeout_client->animation.initial.x = 0;
 	fadeout_client->animation.initial.y = 0;
@@ -818,7 +818,7 @@ void init_fadeout_client(Client *c) {
 				? c->mon->m.height -
 					  (c->animation.current.y - c->mon->m.y) // down out
 				: c->mon->m.y - c->geom.height;				 // up out
-		fadeout_client->current.x = 0; // x无偏差，垂直划出
+		fadeout_client->current.x = 0; // No x offset, slide out vertically
 	} else {
 		fadeout_client->current.y =
 			(fadeout_client->geom.height -
@@ -838,12 +838,12 @@ void init_fadeout_client(Client *c) {
 	wlr_scene_node_set_enabled(&fadeout_client->scene->node, true);
 	wl_list_insert(&fadeout_clients, &fadeout_client->fadeout_link);
 
-	// 请求刷新屏幕
+	// Request screen refresh
 	request_fresh_all_monitors();
 }
 
 void client_commit(Client *c) {
-	c->current = c->pending; // 设置动画的结束位置
+	c->current = c->pending; // Set animation end position
 
 	if (c->animation.should_animate) {
 		if (!c->animation.running) {
@@ -853,11 +853,11 @@ void client_commit(Client *c) {
 		c->animation.initial = c->animainit_geom;
 		c->animation.time_started = get_now_in_ms();
 
-		// 标记动画开始
+		// Mark animation start
 		c->animation.running = true;
 		c->animation.should_animate = false;
 	}
-	// 请求刷新屏幕
+	// Request screen refresh
 	request_fresh_all_monitors();
 }
 
@@ -866,7 +866,7 @@ void client_set_pending_state(Client *c) {
 	if (!c || c->iskilling)
 		return;
 
-	// 判断是否需要动画
+	// Check if animation is needed
 	if (!animations) {
 		c->animation.should_animate = false;
 	} else if (animations && c->animation.tagining) {
@@ -902,15 +902,15 @@ void client_set_pending_state(Client *c) {
 		c->animation.duration = 0;
 	}
 
-	// 开始动画
+	// Start animation
 	client_commit(c);
 	c->dirty = true;
 }
 
 void resize(Client *c, struct wlr_box geo, int32_t interact) {
 
-	// 动画设置的起始函数，这里用来计算一些动画的起始值
-	// 动画起始位置大小是由于c->animainit_geom确定的
+	// Animation setup starting function, used here to calculate some animation initial values
+	// Animation initial position and size are determined by c->animainit_geom
 
 	if (!c || !c->mon || !client_surface(c)->mapped)
 		return;
@@ -931,11 +931,11 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 		c->geom = geo;
 		c->geom.width = MAX(1 + 2 * (int32_t)c->bw, c->geom.width);
 		c->geom.height = MAX(1 + 2 * (int32_t)c->bw, c->geom.height);
-	} else { // 这里会限制不允许窗口划出屏幕
+	} else { // This will restrict windows from sliding off the screen
 		c->geom = geo;
 		applybounds(
 			c,
-			bbox); // 去掉这个推荐的窗口大小,因为有时推荐的窗口特别大导致平铺异常
+			bbox); // Remove this recommended window size, as sometimes the recommended window is too large causing tiling abnormalities
 	}
 
 	if (!c->isnosizehint && !c->ismaximizescreen && !c->isfullscreen &&
@@ -964,7 +964,7 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 		c->animation.action = MOVE;
 	}
 
-	// 动画起始位置大小设置
+	// Animation initial position and size settings
 	if (c->animation.tagouting) {
 		c->animainit_geom = c->animation.current;
 	} else if (c->animation.tagining) {
@@ -986,7 +986,7 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 		c->fake_no_border = true;
 	}
 
-	// c->geom 是真实的窗口大小和位置，跟过度的动画无关，用于计算布局
+	// c->geom is the real window size and position, independent of transition animation, used for calculating layout
 	c->configure_serial = client_set_size(c, c->geom.width - 2 * c->bw,
 										  c->geom.height - 2 * c->bw);
 
@@ -1004,8 +1004,8 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip);
 		return;
 	}
-	// 如果不是工作区切换时划出去的窗口，就让动画的结束位置，就是上面的真实位置和大小
-	// c->pending 决定动画的终点，一般在其他调用resize的函数的附近设置了
+	// If not a window sliding out during workspace switch, set the animation end position to the real position and size above
+	// c->pending determines the animation endpoint, usually set near other functions calling resize
 	if (!c->animation.tagouting && !c->iskilling) {
 		c->pending = c->geom;
 	}
@@ -1027,7 +1027,7 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 		c->animainit_geom = c->geom;
 	}
 
-	// 开始应用动画设置
+	// Start applying animation settings
 	client_set_pending_state(c);
 
 	setborder_color(c);
