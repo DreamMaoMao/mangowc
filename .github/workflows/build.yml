@@ -78,7 +78,7 @@ jobs:
           # Clone and build scenefx from AUR as builder user
           cd /home/builder
           su - builder -c "git clone https://aur.archlinux.org/scenefx0.4.git"
-          cd scenefx
+          cd scenefx0.4
           su - builder -c "cd /home/builder/scenefx0.4 && makepkg -si --noconfirm"
 
       - name: Configure meson
