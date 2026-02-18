@@ -4,6 +4,8 @@
 void die(const char *fmt, ...);
 void *ecalloc(size_t nmemb, size_t size);
 int32_t fd_set_nonblock(int32_t fd);
+/* Match string against regex pattern. Both pattern and string are multi-byte
+ * (mb) UTF-8 encoded. */
 int32_t regex_match(const char *pattern_mb, const char *str_mb);
 void wl_list_append(struct wl_list *list, struct wl_list *object);
 uint32_t get_now_in_ms(void);

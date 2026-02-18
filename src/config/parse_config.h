@@ -8,13 +8,13 @@
 #define SYSCONFDIR "/etc"
 #endif
 
-// 整数版本 - 截断小数部分
+// Integer version - truncates decimal part
 #define CLAMP_INT(x, min, max)                                                 \
 	((int32_t)(x) < (int32_t)(min)                                             \
 		 ? (int32_t)(min)                                                      \
 		 : ((int32_t)(x) > (int32_t)(max) ? (int32_t)(max) : (int32_t)(x)))
 
-// 浮点数版本 - 保留小数部分
+// Floating point version - preserves decimal part
 #define CLAMP_FLOAT(x, min, max)                                               \
 	((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
 
@@ -1485,7 +1485,7 @@ bool parse_option(Config *config, char *key, char *value) {
 					"scroller_proportion_preset format: %s\n",
 					value);
 			free(value_copy);
-			free(config->scroller_proportion_preset);  // 释放已分配的内存
+			free(config->scroller_proportion_preset); // 释放已分配的内存
 			config->scroller_proportion_preset = NULL; // 防止野指针
 			config->scroller_proportion_preset_count = 0;
 			return false;
@@ -3267,9 +3267,9 @@ void set_value_default() {
 	config.axis_bind_apply_timeout =
 		axis_bind_apply_timeout; // 滚轮绑定动作的触发的时间间隔
 	config.focus_on_activate =
-		focus_on_activate;				  // 收到窗口激活请求是否自动跳转聚焦
-	config.new_is_master = new_is_master; // 新窗口是否插在头部
-	config.default_mfact = default_mfact; // master 窗口比例
+		focus_on_activate; // 收到窗口激活请求是否自动跳转聚焦
+	config.new_is_master = new_is_master;	  // 新窗口是否插在头部
+	config.default_mfact = default_mfact;	  // master 窗口比例
 	config.default_nmaster = default_nmaster; // 默认master数量
 	config.center_master_overspread =
 		center_master_overspread; // 中心master时是否铺满

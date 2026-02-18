@@ -4,21 +4,27 @@
 /* speedie's mango config */
 
 #define COLOR(hex)                                                             \
-	{((hex >> 24) & 0xFF) / 255.0f, ((hex >> 16) & 0xFF) / 255.0f,             \
-	 ((hex >> 8) & 0xFF) / 255.0f, (hex & 0xFF) / 255.0f}
+	{                                                                          \
+		((hex >> 24) & 0xFF) / 255.0f, ((hex >> 16) & 0xFF) / 255.0f,          \
+			((hex >> 8) & 0xFF) / 255.0f, (hex & 0xFF) / 255.0f                \
+	}
 
-/* animaion */
-char *animation_type_open = "slide";		  // 是否启用动画 //slide,zoom
-char *animation_type_close = "slide";		  // 是否启用动画 //slide,zoom
-char *layer_animation_type_open = "slide";	  // 是否启用layer动画 //slide,zoom
-char *layer_animation_type_close = "slide";	  // 是否启用layer动画 //slide,zoom
-int32_t animations = 1;						  // 是否启用动画
-int32_t layer_animations = 0;				  // 是否启用layer动画
-int32_t tag_animation_direction = HORIZONTAL; // 标签动画方向
+/* animation */
+char *animation_type_open =
+	"slide"; // Animation type for window open: slide or zoom
+char *animation_type_close =
+	"slide"; // Animation type for window close: slide or zoom
+char *layer_animation_type_open =
+	"slide"; // Animation type for layer open: slide or zoom
+char *layer_animation_type_close =
+	"slide";				  // Animation type for layer close: slide or zoom
+int32_t animations = 1;		  // Enable window animations
+int32_t layer_animations = 0; // Enable layer animations
+int32_t tag_animation_direction = HORIZONTAL; // Tag animation direction
 int32_t animation_fade_in = 1;				  // Enable animation fade in
 int32_t animation_fade_out = 1;				  // Enable animation fade out
-float zoom_initial_ratio = 0.3;				  // 动画起始窗口比例
-float zoom_end_ratio = 0.8;					  // 动画结束窗口比例
+float zoom_initial_ratio = 0.3; // Initial window size ratio for zoom animation
+float zoom_end_ratio = 0.8;		// End window size ratio for zoom animation
 float fadein_begin_opacity = 0.5;  // Begin opac window ratio for animations
 float fadeout_begin_opacity = 0.5; // Begin opac window ratio for animations
 uint32_t animation_duration_move = 500;	 // Animation move speed
@@ -26,31 +32,42 @@ uint32_t animation_duration_open = 400;	 // Animation open speed
 uint32_t animation_duration_tag = 300;	 // Animation tag speed
 uint32_t animation_duration_close = 300; // Animation close speed
 uint32_t animation_duration_focus = 0;	 // Animation focus opacity speed
-double animation_curve_move[4] = {0.46, 1.0, 0.29, 0.99};	   // 动画曲线
-double animation_curve_open[4] = {0.46, 1.0, 0.29, 0.99};	   // 动画曲线
-double animation_curve_tag[4] = {0.46, 1.0, 0.29, 0.99};	   // 动画曲线
-double animation_curve_close[4] = {0.46, 1.0, 0.29, 0.99};	   // 动画曲线
-double animation_curve_focus[4] = {0.46, 1.0, 0.29, 0.99};	   // 动画曲线
-double animation_curve_opafadein[4] = {0.46, 1.0, 0.29, 0.99}; // 动画曲线
-double animation_curve_opafadeout[4] = {0.5, 0.5, 0.5, 0.5};   // 动画曲线
+double animation_curve_move[4] = {0.46, 1.0, 0.29,
+								  0.99}; // Animation curve for move
+double animation_curve_open[4] = {0.46, 1.0, 0.29,
+								  0.99}; // Animation curve for open
+double animation_curve_tag[4] = {0.46, 1.0, 0.29,
+								 0.99}; // Animation curve for tag
+double animation_curve_close[4] = {0.46, 1.0, 0.29,
+								   0.99}; // Animation curve for close
+double animation_curve_focus[4] = {0.46, 1.0, 0.29,
+								   0.99}; // Animation curve for focus
+double animation_curve_opafadein[4] = {
+	0.46, 1.0, 0.29, 0.99}; // Animation curve for opacity fade in
+double animation_curve_opafadeout[4] = {
+	0.5, 0.5, 0.5, 0.5}; // Animation curve for opacity fade out
 
 /* appearance */
-uint32_t axis_bind_apply_timeout = 100; // 滚轮绑定动作的触发的时间间隔
-uint32_t focus_on_activate = 1;			// 收到窗口激活请求是否自动跳转聚焦
-uint32_t new_is_master = 1;				// 新窗口是否插在头部
-double default_mfact = 0.55f;			// master 窗口比例
-uint32_t default_nmaster = 1;			// 默认master数量
-int32_t center_master_overspread = 0;	// 中心master时是否铺满
-int32_t center_when_single_stack = 1;	// 单个stack时是否居中
+uint32_t axis_bind_apply_timeout =
+	100; // Timeout interval for mouse wheel binding actions
+uint32_t focus_on_activate =
+	1; // Auto-focus when receiving window activation request
+uint32_t new_is_master = 1;	  // Insert new windows at the head
+double default_mfact = 0.55f; // Master window proportion
+uint32_t default_nmaster = 1; // Default number of master windows
+int32_t center_master_overspread =
+	0; // Whether to fill screen when center master
+int32_t center_when_single_stack =
+	1; // Whether to center when single stack window
 /* logging */
 int32_t log_level = WLR_ERROR;
-uint32_t numlockon = 0; // 是否打开右边小键盘
-uint32_t capslock = 0;	// 是否启用快捷键
+uint32_t numlockon = 0; // Enable numlock
+uint32_t capslock = 0;	// Enable capslock
 
-uint32_t ov_tab_mode = 0;	// alt tab切换模式
-uint32_t hotarea_size = 10; // 热区大小,10x10
+uint32_t ov_tab_mode = 0;	// Alt-tab switch mode
+uint32_t hotarea_size = 10; // Hot corner size in pixels (10x10)
 uint32_t hotarea_corner = BOTTOM_LEFT;
-uint32_t enable_hotarea = 1; // 是否启用鼠标热区
+uint32_t enable_hotarea = 1; // Enable mouse hot corner
 int32_t smartgaps = 0; /* 1 means no outer gap when there is only one window */
 int32_t sloppyfocus = 1; /* focus follows mouse */
 uint32_t gappih = 5;	 /* horiz inner gap between windows */
@@ -95,8 +112,9 @@ float globalcolor[] = COLOR(0xb153a7ff);
 float overlaycolor[] = COLOR(0x14a57cff);
 // char *cursor_theme = "Bibata-Modern-Ice";
 
-int32_t overviewgappi = 5;	/* overview时 窗口与边缘 缝隙大小 */
-int32_t overviewgappo = 30; /* overview时 窗口与窗口 缝隙大小 */
+int32_t overviewgappi =
+	5; /* Gap size between windows and edges in overview mode */
+int32_t overviewgappo = 30; /* Gap size between windows in overview mode */
 
 /* To conform the xdg-protocol, set the alpha to zero to restore the old
  * behavior */
