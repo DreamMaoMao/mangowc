@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <errno.h>
 #include <libgen.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -537,10 +538,19 @@ int32_t parse_fold_state(const char *str) {
 }
 int64_t parse_color(const char *hex_str) {
 	char *endptr;
+	errno = 0;
 	int64_t hex_num = strtol(hex_str, &endptr, 16);
-	if (*endptr != '\0') {
+	
+	// Check for conversion errors
+	if (*endptr != '\0' || errno == ERANGE) {
 		return -1;
 	}
+	
+	// Validate range for color values (0x00000000 to 0xFFFFFFFF)
+	if (hex_num < 0 || hex_num > 0xFFFFFFFF) {
+		return -1;
+	}
+	
 	return hex_num;
 }
 
@@ -588,11 +598,20 @@ static char *combine_args_until_empty(char *values[], int count) {
 	}
 
 	combined[0] = '\0';
+	size_t current_len = 0;
 	for (int i = 0; i < first_empty; i++) {
 		if (i > 0) {
-			strcat(combined, ",");
+			size_t remaining = total_len - current_len;
+			if (remaining > 0) {
+				strncat(combined, ",", remaining);
+				current_len += 1;
+			}
 		}
-		strcat(combined, values[i]);
+		size_t remaining = total_len - current_len;
+		if (remaining > 0) {
+			strncat(combined, values[i], remaining);
+			current_len += strlen(values[i]);
+		}
 	}
 
 	return combined;
@@ -626,8 +645,9 @@ uint32_t parse_mod(const char *mod_str) {
 		if (strncmp(token, "code:", 5) == 0) {
 			// 处理 code: 形式
 			char *endptr;
+			errno = 0;
 			long keycode = strtol(token + 5, &endptr, 10);
-			if (endptr != token + 5 && (*endptr == '\0' || *endptr == ' ')) {
+			if (endptr != token + 5 && (*endptr == '\0' || *endptr == ' ') && errno != ERANGE) {
 				switch (keycode) {
 				case 133:
 				case 134:
@@ -777,7 +797,16 @@ KeySymCode parse_key(const char *key_str, bool isbindsym) {
 	// 处理 code: 前缀的情况
 	if (strncmp(key_str, "code:", 5) == 0) {
 		char *endptr;
+		errno = 0;
 		xkb_keycode_t keycode = (xkb_keycode_t)strtol(key_str + 5, &endptr, 10);
+		
+		// Validate conversion
+		if (errno == ERANGE || *endptr != '\0') {
+			kc.type = KEY_TYPE_SYM;
+			kc.keysym = XKB_KEY_NoSymbol;
+			return kc;
+		}
+		
 		kc.type = KEY_TYPE_CODE;
 		kc.keycode.keycode1 = keycode; // 只设置第一个
 		kc.keycode.keycode2 = 0;
@@ -2283,7 +2312,8 @@ bool parse_option(Config *config, char *key, char *value) {
 		trim_whitespace(arg_value4);
 		trim_whitespace(arg_value5);
 
-		strcpy(binding->mode, config->keymode);
+		strncpy(binding->mode, config->keymode, sizeof(binding->mode) - 1);
+		binding->mode[sizeof(binding->mode) - 1] = '\0';
 		if (strcmp(binding->mode, "common") == 0) {
 			binding->iscommonmode = true;
 			binding->isdefaultmode = false;
@@ -3474,7 +3504,8 @@ bool parse_config(void) {
 	config.tag_rules = NULL;
 	config.tag_rules_count = 0;
 	config.cursor_theme = NULL;
-	strcpy(config.keymode, "default");
+	strncpy(config.keymode, "default", sizeof(config.keymode) - 1);
+	config.keymode[sizeof(config.keymode) - 1] = '\0';
 
 	create_config_keymap();
 

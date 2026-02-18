@@ -837,11 +837,15 @@ int32_t spawn(const Arg *arg) {
 		// 2. 解析参数
 		char *argv[64];
 		int32_t argc = 0;
+		wordexp_t wordexp_results[63]; // Track all wordexp results for cleanup
+		int32_t wordexp_count = 0;
+		
 		char *token = strtok((char *)arg->v, " ");
 		while (token != NULL && argc < 63) {
 			wordexp_t p;
 			if (wordexp(token, &p, 0) == 0) {
 				argv[argc++] = p.we_wordv[0];
+				wordexp_results[wordexp_count++] = p; // Store for cleanup
 			} else {
 				argv[argc++] = token;
 			}
@@ -852,7 +856,10 @@ int32_t spawn(const Arg *arg) {
 		// 3. 执行命令
 		execvp(argv[0], argv);
 
-		// 4. execvp 失败时：打印错误并直接退出（避免 coredump）
+		// 4. execvp 失败时：清理并打印错误
+		for (int i = 0; i < wordexp_count; i++) {
+			wordfree(&wordexp_results[i]);
+		}
 		wlr_log(WLR_ERROR, "mango: execvp '%s' failed: %s\n", argv[0],
 				strerror(errno));
 		_exit(EXIT_FAILURE); // 使用 _exit 避免缓冲区刷新等操作
