@@ -865,7 +865,7 @@ int32_t spawn(const Arg *arg) {
 		// 4. execvp 失败时：清理并退出
 		// If execvp succeeds, this code never runs (process replaced)
 		// If it fails, clean up allocated strings before exiting
-		for (int i = 0; i < alloc_count; i++) {
+		for (int32_t i = 0; i < alloc_count; i++) {
 			free(allocated_strings[i]);
 		}
 		wlr_log(WLR_ERROR, "mango: execvp '%s' failed: %s\n", argv[0],

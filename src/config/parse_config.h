@@ -607,10 +607,13 @@ static char *combine_args_until_empty(char *values[], int count) {
 		}
 		if (remaining > 1) {
 			size_t val_len = strlen(values[i]);
+			// Always leave space for null terminator
 			size_t to_copy = (val_len < remaining - 1) ? val_len : remaining - 1;
-			memcpy(ptr, values[i], to_copy);
-			ptr += to_copy;
-			remaining -= to_copy;
+			if (to_copy > 0) {
+				memcpy(ptr, values[i], to_copy);
+				ptr += to_copy;
+				remaining -= to_copy;
+			}
 		}
 	}
 	*ptr = '\0'; // Null terminate
@@ -648,6 +651,7 @@ uint32_t parse_mod(const char *mod_str) {
 			char *endptr;
 			errno = 0;
 			long keycode = strtol(token + 5, &endptr, 10);
+			// Check for conversion errors: overflow or no conversion
 			if (endptr != token + 5 && (*endptr == '\0' || *endptr == ' ') && errno != ERANGE) {
 				switch (keycode) {
 				case 133:
