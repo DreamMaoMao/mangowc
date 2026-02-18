@@ -79,7 +79,7 @@ jobs:
           cd /home/builder
           su - builder -c "git clone https://aur.archlinux.org/scenefx0.4.git"
           cd scenefx
-          su - builder -c "cd /home/builder/scenefx && makepkg -si --noconfirm"
+          su - builder -c "cd /home/builder/scenefx0.4 && makepkg -si --noconfirm"
 
       - name: Configure meson
         run: |
