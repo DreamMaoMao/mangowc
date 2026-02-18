@@ -61,9 +61,9 @@ jobs:
             libxml2-dev \
             pkg-config
 
-      - name: Build and install wayland 1.23
+      - name: Build and install wayland 1.23.1
         run: |
-          # Build wayland 1.23 from source since Ubuntu has older version
+          # Build wayland 1.23.1 from source since Ubuntu has older version
           git clone https://gitlab.freedesktop.org/wayland/wayland.git
           cd wayland
           git checkout 1.23.1
