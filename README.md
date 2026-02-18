@@ -105,7 +105,7 @@ MangoWC supports 9 different layouts:
 
 | Layout | Description | Best For |
 |--------|-------------|----------|
-| **tile** | Master-stack tiling (left master, right stack) | General multitasking |
+| **tile** | Master-stack tiling | General multitasking |
 | **scroller** | Horizontal scrolling columns | Wide content, terminals |
 | **monocle** | One window fullscreen at a time | Focus, presentations |
 | **grid** | Windows arranged in grid | Many small windows |
