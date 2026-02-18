@@ -211,6 +211,7 @@ typedef struct {
 	int32_t scroller_ignore_proportion_single;
 	int32_t scroller_focus_center;
 	int32_t scroller_prefer_center;
+	int32_t scroller_prefer_overspread;
 	int32_t edge_scroller_pointer_focus;
 	int32_t focus_cross_monitor;
 	int32_t exchange_cross_monitor;
@@ -1337,6 +1338,8 @@ bool parse_option(Config *config, char *key, char *value) {
 		config->scroller_focus_center = atoi(value);
 	} else if (strcmp(key, "scroller_prefer_center") == 0) {
 		config->scroller_prefer_center = atoi(value);
+	} else if (strcmp(key, "scroller_prefer_overspread") == 0) {
+		config->scroller_prefer_overspread = atoi(value);
 	} else if (strcmp(key, "edge_scroller_pointer_focus") == 0) {
 		config->edge_scroller_pointer_focus = atoi(value);
 	} else if (strcmp(key, "focus_cross_monitor") == 0) {
@@ -3102,6 +3105,8 @@ void override_config(void) {
 		CLAMP_INT(config.scroller_ignore_proportion_single, 0, 1);
 	scroller_focus_center = CLAMP_INT(config.scroller_focus_center, 0, 1);
 	scroller_prefer_center = CLAMP_INT(config.scroller_prefer_center, 0, 1);
+	scroller_prefer_overspread =
+		CLAMP_INT(config.scroller_prefer_overspread, 0, 1);
 	edge_scroller_pointer_focus =
 		CLAMP_INT(config.edge_scroller_pointer_focus, 0, 1);
 	scroller_structs = CLAMP_INT(config.scroller_structs, 0, 1000);
@@ -3301,6 +3306,7 @@ void set_value_default() {
 		scroller_ignore_proportion_single;
 	config.scroller_focus_center = scroller_focus_center;
 	config.scroller_prefer_center = scroller_prefer_center;
+	config.scroller_prefer_overspread = scroller_prefer_overspread;
 	config.edge_scroller_pointer_focus = edge_scroller_pointer_focus;
 	config.focus_cross_monitor = focus_cross_monitor;
 	config.exchange_cross_monitor = exchange_cross_monitor;
