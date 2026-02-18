@@ -8,16 +8,22 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
 1. **Lightweight & Fast Build**
 
-   - _Mango_ is as lightweight as _dwl_, and can be built completely within a few seconds. Despite this, _Mango_ does not compromise on functionality.
+   - _Mango_ is as lightweight as _dwl_, and can be built completely within
+     a few seconds. Despite this, _Mango_ does not compromise on
+     functionality.
 
 2. **Feature Highlights**
    - In addition to basic WM functionality, Mango provides:
      - Excellent xwayland support.
-     - Base tags not workspaces (supports separate window layouts for each tag)
-     - Smooth and customizable complete animations (window open/move/close, tag enter/leave,layer open/close/move)
+     - Base tags not workspaces (supports separate window layouts for each
+       tag)
+     - Smooth and customizable complete animations (window
+       open/move/close, tag enter/leave,layer open/close/move)
      - Excellent input method support (text input v2/v3)
-     - Flexible window layouts with easy switching (scroller, master-stack, monocle,center-master, etc.)
-     - Rich window states (swallow, minimize, maximize, unglobal, global, fakefullscreen, overlay, etc.)
+     - Flexible window layouts with easy switching (scroller,
+       master-stack, monocle,center-master, etc.)
+     - Rich window states (swallow, minimize, maximize, unglobal, global,
+       fakefullscreen, overlay, etc.)
      - Simple yet powerful external configuration(support shortcuts hot-reload)
      - Sway-like scratchpad and named scratchpad
      - Ipc support(get/send message from/to compositor by external program)
@@ -27,11 +33,15 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
 <https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f>
 
-# Quick Start Guide
+## Quick Start Guide
 
 ## What is MangoWC?
 
-MangoWC is a **Wayland compositor** - a program that manages windows and displays on modern Linux systems using the Wayland protocol. If you're familiar with window managers like i3, dwm, or awesome, MangoWC provides similar tiling window management functionality but for Wayland instead of X11.
+MangoWC is a **Wayland compositor** - a program that manages windows and
+displays on modern Linux systems using the Wayland protocol. If you're
+familiar with window managers like i3, dwm, or awesome, MangoWC provides
+similar tiling window management functionality but for Wayland instead of
+X11.
 
 ## First Steps After Installation
 
@@ -77,10 +87,13 @@ MangoWC is a **Wayland compositor** - a program that manages windows and display
 
 Unlike traditional workspaces, **tags** are more flexible:
 
-- **Workspaces**: A window belongs to one workspace. Switching workspaces shows a different set of windows.
-- **Tags**: A window can have multiple tags. You can view multiple tags at once or filter to specific tags.
+- **Workspaces**: A window belongs to one workspace. Switching workspaces
+  shows a different set of windows.
+- **Tags**: A window can have multiple tags. You can view multiple tags at
+  once or filter to specific tags.
 
-Think of tags as labels you can attach to windows. You can view windows with tag 1, or tag 2, or both tags 1 and 2 simultaneously.
+Think of tags as labels you can attach to windows. You can view windows with
+tag 1, or tag 2, or both tags 1 and 2 simultaneously.
 
 **Default behavior:**
 
@@ -92,17 +105,20 @@ Think of tags as labels you can attach to windows. You can view windows with tag
 
 MangoWC supports 9 different layouts:
 
-| Layout | Description | Best For |
-|--------|-------------|----------|
-| **tile** | Master-stack tiling (left master, right stack) | General multitasking |
-| **scroller** | Horizontal scrolling columns | Wide content, terminals |
-| **monocle** | One window fullscreen at a time | Focus, presentations |
-| **grid** | Windows arranged in grid | Many small windows |
-| **deck** | Stack of windows, one visible | Cycling through tasks |
-| **center_tile** | Master centered, stack on sides | Symmetrical layout |
-| **vertical_tile** | Master top, stack bottom | Wide monitors |
-| **vertical_scroller** | Vertical scrolling rows | Document review |
-| **vertical_grid** | Vertical grid arrangement | Vertical content |
+| Layout                | Description                     | Best For              |
+|-----------------------|---------------------------------|-----------------------|
+| **tile**              | Master-stack tiling             | General multitasking  |
+|                       | (left master, right stack)      |                       |
+| **scroller**          | Horizontal scrolling columns    | Wide content,         |
+|                       |                                 | terminals             |
+| **monocle**           | One window fullscreen at a time | Focus,                |
+|                       |                                 | presentations         |
+| **grid**              | Windows arranged in grid        | Many small windows    |
+| **deck**              | Stack of windows, one visible   | Cycling through tasks |
+| **center_tile**       | Master centered, stack on sides | Symmetrical layout    |
+| **vertical_tile**     | Master top, stack bottom        | Wide monitors         |
+| **vertical_scroller** | Vertical scrolling rows         | Document review       |
+| **vertical_grid**     | Vertical grid arrangement       | Vertical content      |
 
 **Switch layouts:**
 
@@ -168,21 +184,21 @@ Windows can have multiple states:
 
 1. **Open applications:**
 
-   ```
+   ```text
    Alt + Space          → Application launcher
    Alt + Return         → Terminal
    ```
 
 2. **Navigate windows:**
 
-   ```
+   ```text
    Alt + Arrow Keys     → Focus window in direction
    Super + Tab          → Focus next window in stack
    ```
 
 3. **Organize windows:**
 
-   ```
+   ```text
    Super + Shift + Arrows  → Swap window positions
    Alt + \                 → Toggle floating
    Alt + 1-9               → Move to specific tag
@@ -190,14 +206,14 @@ Windows can have multiple states:
 
 4. **Adjust layout:**
 
-   ```
+   ```text
    Super + N               → Change layout
    Alt + Shift + X/Z       → Increase/decrease gaps
    ```
 
 5. **Multi-monitor:**
 
-   ```
+   ```text
    Alt + Shift + Left/Right  → Focus other monitor
    Super + Alt + Left/Right  → Move window to other monitor
    ```
@@ -391,13 +407,13 @@ sudo pacman -S xdg-desktop-portal xdg-desktop-portal-wlr
 - **Website**: [mangowc.vercel.app/docs](https://mangowc.vercel.app/docs)
 - **Issues**: [GitHub Issues](https://github.com/DreamMaoMao/mangowc/issues)
 
-# Our discord
+## Our discord
 
 [mangowc](https://discord.gg/CPjbDxesh5)
 
 ---
 
-# Installation
+## Installation
 
 ## Dependencies
 
@@ -421,7 +437,10 @@ sudo pacman -S xdg-desktop-portal xdg-desktop-portal-wlr
 
 ## Arch Linux
 
-The package is in the Arch User Repository and is available for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper like yay:
+The package is in the Arch User Repository and is available for manual
+download from the
+[AUR package page](https://aur.archlinux.org/packages/mangowc-git) or
+through a AUR helper like yay:
 
 ```bash
 yay -S mangowc-git
@@ -530,74 +549,77 @@ sudo ninja -C build install
 
 ### Essential Shortcuts
 
-| Keybinding | Action | Description |
-|------------|--------|-------------|
-| `Alt + Return` | Open terminal | Launches foot terminal emulator |
-| `Alt + Space` | Open launcher | Launches rofi application launcher |
-| `Alt + Q` | Close window | Kill focused window |
-| `Super + M` | Exit | Quit MangoWC |
-| `Super + R` | Reload config | Apply config changes without restart |
+| Keybinding     | Action        | Description                      |
+|----------------|---------------|----------------------------------|
+| `Alt + Return` | Open terminal | Launches foot terminal emulator  |
+| `Alt + Space`  | Open launcher | Launches rofi application        |
+|                |               | launcher                         |
+| `Alt + Q`      | Close window  | Kill focused window              |
+| `Super + M`    | Exit          | Quit MangoWC                     |
+| `Super + R`    | Reload config | Apply config changes without     |
+|                |               | restart                          |
 
 ### Window Management
 
-| Keybinding | Action |
-|------------|--------|
-| `Alt + ←/→/↑/↓` | Focus window in direction |
-| `Super + Tab` | Focus next window |
-| `Super + Shift + ←/→/↑/↓` | Swap window with neighbor |
-| `Alt + \` | Toggle floating/tiling |
-| `Alt + F` | Toggle fullscreen |
-| `Alt + Shift + F` | Toggle fake fullscreen |
-| `Alt + A` | Toggle maximize |
-| `Super + I` | Minimize window |
-| `Super + Shift + I` | Restore minimized window |
-| `Super + G` | Toggle global (visible all tags) |
-| `Super + O` | Toggle overlay (always on top) |
+| Keybinding                | Action                              |
+|---------------------------|-------------------------------------|
+| `Alt + ←/→/↑/↓`           | Focus window in direction           |
+| `Super + Tab`             | Focus next window                   |
+| `Super + Shift + ←/→/↑/↓` | Swap window with neighbor           |
+| `Alt + \`                 | Toggle floating/tiling              |
+| `Alt + F`                 | Toggle fullscreen                   |
+| `Alt + Shift + F`         | Toggle fake fullscreen              |
+| `Alt + A`                 | Toggle maximize                     |
+| `Super + I`               | Minimize window                     |
+| `Super + Shift + I`       | Restore minimized window            |
+| `Super + G`               | Toggle global (visible all tags)    |
+| `Super + O`               | Toggle overlay (always on top)      |
 
 ### Tag (Workspace) Management
 
-| Keybinding | Action |
-|------------|--------|
-| `Ctrl + 1-9` | Switch to tag 1-9 |
-| `Alt + 1-9` | Move window to tag 1-9 (and follow) |
-| `Super + ←/→` | Previous/next tag |
-| `Ctrl + ←/→` | Previous/next tag with windows |
-| `Ctrl + Super + ←/→` | Move window to previous/next tag |
+| Keybinding          | Action                               |
+|---------------------|--------------------------------------|
+| `Ctrl + 1-9`        | Switch to tag 1-9                    |
+| `Alt + 1-9`         | Move window to tag 1-9 (and follow)  |
+| `Super + ←/→`       | Previous/next tag                    |
+| `Ctrl + ←/→`        | Previous/next tag with windows       |
+| `Ctrl + Super + ←/→`| Move window to previous/next tag     |
 
 ### Layout Control
 
-| Keybinding | Action |
-|------------|--------|
-| `Super + N` | Cycle through layouts |
-| `Alt + E` | Set window to full width (scroller) |
-| `Alt + X` | Cycle width presets (scroller) |
-| `Alt + Shift + X/Z` | Increase/decrease gaps |
-| `Alt + Shift + R` | Toggle gaps on/off |
+| Keybinding          | Action                               |
+|---------------------|--------------------------------------|
+| `Super + N`         | Cycle through layouts                |
+| `Alt + E`           | Set window to full width (scroller)  |
+| `Alt + X`           | Cycle width presets (scroller)       |
+| `Alt + Shift + X/Z` | Increase/decrease gaps               |
+| `Alt + Shift + R`   | Toggle gaps on/off                   |
 
 ### Special Features
 
-| Keybinding | Action |
-|------------|--------|
-| `Alt + Tab` | Toggle overview mode |
-| `Alt + Z` | Toggle scratchpad |
-| `Super + Scroll Up/Down` | Switch tags with scroll wheel |
+| Keybinding              | Action                   |
+|-------------------------|--------------------------|
+| `Alt + Tab`             | Toggle overview mode     |
+| `Alt + Z`               | Toggle scratchpad        |
+| `Super + Scroll Up/Down`| Switch tags with scroll  |
+|                         | wheel                    |
 
 ### Multi-Monitor
 
-| Keybinding | Action |
-|------------|--------|
-| `Alt + Shift + ←/→` | Focus adjacent monitor |
-| `Super + Alt + ←/→` | Move window to adjacent monitor |
+| Keybinding          | Action                           |
+|---------------------|----------------------------------|
+| `Alt + Shift + ←/→` | Focus adjacent monitor           |
+| `Super + Alt + ←/→` | Move window to adjacent monitor  |
 
 ### Floating Window Adjustment
 
-| Keybinding | Action |
-|------------|--------|
-| `Ctrl + Shift + ←/→/↑/↓` | Move floating window by pixels |
-| `Ctrl + Alt + ←/→/↑/↓` | Resize floating window by pixels |
-| `Super + Left-drag` | Move floating window with mouse |
-| `Super + Right-drag` | Resize floating window with mouse |
-| `Middle-click` | Maximize window |
+| Keybinding                | Action                             |
+|---------------------------|------------------------------------|
+| `Ctrl + Shift + ←/→/↑/↓`  | Move floating window by pixels     |
+| `Ctrl + Alt + ←/→/↑/↓`    | Resize floating window by pixels   |
+| `Super + Left-drag`       | Move floating window with mouse    |
+| `Super + Right-drag`      | Resize floating window with mouse  |
+| `Middle-click`            | Maximize window                    |
 
 > **Tip**: Press `Super + R` after editing your config to reload without restarting!
 
@@ -634,7 +656,8 @@ git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 
 ## Documentation
 
-MangoWC comes with comprehensive documentation to help you get started and master the compositor:
+MangoWC comes with comprehensive documentation to help you get started and
+master the compositor:
 
 ### 📚 Documentation Files
 
@@ -658,7 +681,8 @@ MangoWC comes with comprehensive documentation to help you get started and maste
 
 ### 🌐 Online Resources
 
-- **[Wiki](https://github.com/DreamMaoMao/mango/wiki/)** - Comprehensive online documentation
+- **[Wiki](https://github.com/DreamMaoMao/mango/wiki/)** - Comprehensive
+  online documentation
 - **[Website](https://mangowc.vercel.app/docs)** - Web-based documentation
 - **[Discord](https://discord.gg/CPjbDxesh5)** - Community support and discussions
 
@@ -674,11 +698,14 @@ MangoWC comes with comprehensive documentation to help you get started and maste
 
 ---
 
-# NixOS + Home-manager
+## NixOS + Home-manager
 
-The repo contains a flake that provides a NixOS module and a home-manager module for mango.
-Use the NixOS module to install mango with other necessary components of a working Wayland environment.
-Use the home-manager module to declare configuration and autostart for mango.
+The repo contains a flake that provides a NixOS module and a home-manager
+module for mango.
+Use the NixOS module to install mango with other necessary components of a
+working Wayland environment.
+Use the home-manager module to declare configuration and autostart for
+mango.
 
 Here's an example of using the modules in a flake:
 
@@ -750,20 +777,23 @@ Here's an example of using the modules in a flake:
 }
 ```
 
-# Packaging mango
+## Packaging mango
 
-To package mango for other distributions, you can check the reference setup for:
+To package mango for other distributions, you can check the reference setup
+for:
 
 - [nix](https://github.com/DreamMaoMao/mangowc/blob/main/nix/default.nix)
 - [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mangowc-git).
 - [gentoo](https://data.gpo.zugaina.org/guru/gui-wm/mangowc)
 
-You might need to package `scenefx` for your distribution, check availability [here](https://github.com/wlrfx/scenefx.git).
+You might need to package `scenefx` for your distribution, check availability
+at the [scenefx repository](https://github.com/wlrfx/scenefx.git).
 
-If you encounter build errors when packaging `mango`, feel free to create an issue and ask a question, but
-Read The Friendly Manual on packaging software in your distribution first.
+If you encounter build errors when packaging `mango`, feel free to create an
+issue and ask a question, but Read The Friendly Manual on packaging software
+in your distribution first.
 
-# Thanks to These Reference Repositories
+## Thanks to These Reference Repositories
 
 - <https://gitlab.freedesktop.org/wlroots/wlroots> - Implementation of Wayland protocol
 
@@ -775,10 +805,11 @@ Read The Friendly Manual on packaging software in your distribution first.
 
 - <https://github.com/wlrfx/scenefx> - Make it simple to add window effect.
 
-# Sponsor
+## Sponsor
 
 At present, I can only accept sponsorship through an encrypted connection.
-If you find this project helpful to you, you can offer sponsorship in the following ways.
+If you find this project helpful to you, you can offer sponsorship in the
+following ways.
 
 <img width="650" height="870" alt="image" src="https://github.com/user-attachments/assets/8c860317-90d2-4071-971d-f1a92b674469" />
 
