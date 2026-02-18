@@ -77,9 +77,9 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 		abbr[2] = '\0';
 	} else {
 		// 5. 最终回退：返回 "xx"
-		// Explicit null termination for consistency
-		strncpy(abbr, "xx", LAYOUT_ABBR_SIZE - 1);
-		abbr[LAYOUT_ABBR_SIZE - 1] = '\0';
+		abbr[0] = 'x';
+		abbr[1] = 'x';
+		abbr[2] = '\0';
 	}
 }
 

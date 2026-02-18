@@ -601,21 +601,15 @@ static char *combine_args_until_empty(char *values[], int count) {
 	size_t current_len = 0;
 	for (int i = 0; i < first_empty; i++) {
 		if (i > 0 && current_len < total_len) {
-			size_t remaining = total_len - current_len;
-			size_t to_add = (remaining < 1) ? 0 : 1;
-			if (to_add > 0) {
-				strncat(combined, ",", remaining);
-				current_len += to_add; // We know we added 1 character
-			}
+			strncat(combined, ",", total_len - current_len);
+			current_len++;
 		}
 		if (current_len < total_len) {
 			size_t remaining = total_len - current_len;
 			size_t val_len = strlen(values[i]);
-			size_t to_add = (val_len < remaining) ? val_len : remaining;
-			if (to_add > 0) {
-				strncat(combined, values[i], remaining);
-				current_len += to_add;
-			}
+			size_t will_add = (val_len < remaining) ? val_len : remaining;
+			strncat(combined, values[i], remaining);
+			current_len += will_add;
 		}
 	}
 

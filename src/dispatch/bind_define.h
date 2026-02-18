@@ -836,7 +836,6 @@ int32_t spawn(const Arg *arg) {
 
 		// 2. 解析参数
 		char *argv[64];
-		bool argv_allocated[64] = {false}; // Track which argv entries were allocated
 		int32_t argc = 0;
 		
 		char *token = strtok((char *)arg->v, " ");
@@ -847,12 +846,10 @@ int32_t spawn(const Arg *arg) {
 				argv[argc] = strdup(p.we_wordv[0]);
 				wordfree(&p); // Free immediately after copying
 				if (argv[argc] != NULL) {
-					argv_allocated[argc] = true;
 					argc++;
 				}
 			} else {
 				argv[argc] = token;
-				argv_allocated[argc] = false;
 				argc++;
 			}
 			token = strtok(NULL, " ");
@@ -862,12 +859,9 @@ int32_t spawn(const Arg *arg) {
 		// 3. 执行命令
 		execvp(argv[0], argv);
 
-		// 4. execvp 失败时：清理分配的字符串并打印错误
-		for (int arg_idx = 0; arg_idx < argc; arg_idx++) {
-			if (argv_allocated[arg_idx]) {
-				free(argv[arg_idx]);
-			}
-		}
+		// 4. execvp 失败时打印错误并退出
+		// Note: We don't need to free here since we're about to _exit
+		// The OS will clean up when the process exits
 		wlr_log(WLR_ERROR, "mango: execvp '%s' failed: %s\n", argv[0],
 				strerror(errno));
 		_exit(EXIT_FAILURE); // 使用 _exit 避免缓冲区刷新等操作
