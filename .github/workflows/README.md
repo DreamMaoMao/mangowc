@@ -72,7 +72,7 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 
 ### lock.yml
 
-**Purpose**: Automatically locks inactive issues and PRs to keep the repository 
+**Purpose**: Automatically locks inactive issues and PRs to keep the repository
   clean.
 
 **Triggers**:
