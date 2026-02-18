@@ -598,25 +598,11 @@ static char *combine_args_until_empty(char *values[], int count) {
 	}
 
 	combined[0] = '\0';
-	size_t current_len = 0;
 	for (int i = 0; i < first_empty; i++) {
-		if (i > 0 && current_len < total_len) {
-			size_t remaining = total_len - current_len;
-			size_t to_copy = (remaining < 1) ? 0 : 1;
-			if (to_copy > 0) {
-				strncat(combined, ",", to_copy);
-				current_len += to_copy;
-			}
+		if (i > 0) {
+			strncat(combined, ",", total_len - strlen(combined));
 		}
-		if (current_len < total_len) {
-			size_t remaining = total_len - current_len;
-			size_t val_len = strlen(values[i]);
-			size_t to_copy = (val_len < remaining) ? val_len : remaining;
-			if (to_copy > 0) {
-				strncat(combined, values[i], to_copy);
-				current_len += to_copy;
-			}
-		}
+		strncat(combined, values[i], total_len - strlen(combined));
 	}
 
 	return combined;
