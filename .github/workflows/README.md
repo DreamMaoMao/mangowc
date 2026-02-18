@@ -54,9 +54,10 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 - Workflow file itself: `.github/workflows/docs.yml`
 
 **What it does**:
-- Lints all markdown files using markdownlint-cli2
+- Lints markdown files in the repository using markdownlint-cli2
 - Checks for common markdown formatting issues
 - Ensures documentation follows consistent style guidelines
+- Excludes dependency directories (wayland, wlroots, scenefx) to only lint repository files
 
 ### lock.yml
 **Purpose**: Automatically locks inactive issues and PRs to keep the repository clean.
