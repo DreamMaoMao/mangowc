@@ -4,10 +4,10 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 
 ## Workflows
 
-### build.yml
+### build-arch.yml
 
 **Purpose**: Builds the project on Arch Linux to ensure code changes compile
-successfully.
+successfully and code is properly formatted.
 
 **Triggers**:
 
@@ -20,17 +20,18 @@ successfully.
 - Source files: `**.c`, `**.h`, `**.cpp`, `**.scm`
 - Build files: `meson.build`, `meson_options.txt`, `flake.nix`
 - Protocol definitions: `protocols/**`
-- Workflow file itself: `.github/workflows/build.yml`
+- Workflow file itself: `.github/workflows/build-arch.yml`
 
 **What it does**:
 
 1. Runs in Arch Linux container (archlinux:latest)
-2. Updates system and installs all dependencies via pacman
-3. Installs wlroots from official Arch repositories
-4. Installs scenefx from AUR (Arch User Repository)
-5. Configures the project with meson
-6. Builds the project with ninja
-7. Verifies the executables were created
+2. Checks C/C++ code formatting with clang-format
+3. Updates system and installs all dependencies via pacman
+4. Installs wlroots from official Arch repositories
+5. Installs scenefx from AUR (Arch User Repository)
+6. Configures the project with meson
+7. Builds the project with ninja
+8. Verifies the executables were created
 
 **Build Strategy**:
 
@@ -39,9 +40,15 @@ successfully.
 - wlroots installed from official Arch repositories
 - scenefx installed from AUR
 
+**Code Quality Checks**:
+
+- Validates C/C++ code formatting with clang-format (LLVM style with tabs)
+- Fails if code doesn't match the formatting defined in `.clang-format`
+
 **Dependencies**:
 
 - Arch Linux container (archlinux:latest)
+- clang-format for code formatting checks
 - Meson build system
 - Ninja build tool
 - All system packages from pacman (wayland, libinput, wlroots, mesa, etc.)
@@ -69,10 +76,11 @@ changes work correctly in the NixOS ecosystem.
 **What it does**:
 
 1. Runs on Ubuntu with Nix installed
-2. Installs Nix with flakes and nix-command experimental features
-3. Builds the project using `nix build` with the repository's flake.nix
-4. Verifies that executables (mango and mmsg) are created and executable
-5. Tests basic executable functionality
+2. Validates the flake with `nix flake check`
+3. Checks Nix code formatting with alejandra (the formatter defined in flake.nix)
+4. Builds the project using `nix build` with the repository's flake.nix
+5. Verifies that executables (mango and mmsg) are created and executable
+6. Tests basic executable functionality
 
 **Build Strategy**:
 
@@ -80,6 +88,12 @@ changes work correctly in the NixOS ecosystem.
 - All dependencies managed through Nix
 - Leverages the repository's flake.nix configuration
 - Dependencies from nixpkgs-unstable
+
+**Code Quality Checks**:
+
+- Validates flake structure and outputs with `nix flake check`
+- Checks Nix code formatting with alejandra formatter
+- Ensures flake.nix and nix/*.nix files are properly formatted
 
 **Dependencies**:
 
@@ -148,6 +162,7 @@ The build workflows ensure that:
 - All dependencies are properly installed
 - The project compiles without errors on both Arch Linux and NixOS
 - Both main executables (`mango` and `mmsg`) are built successfully
+- Code formatting standards are enforced (clang-format for C/C++, alejandra for Nix)
 
 The docs workflow ensures that:
 
@@ -161,3 +176,5 @@ If a build workflow fails, check:
 2. wlroots and scenefx versions match requirements in meson.build
 3. Build configuration in meson.build hasn't changed
 4. For NixOS builds: flake.nix and nix/default.nix are correctly configured
+5. For Arch builds: Code is properly formatted (run `./format.sh` to fix)
+6. For NixOS builds: Nix files are properly formatted (run `nix fmt` to fix)

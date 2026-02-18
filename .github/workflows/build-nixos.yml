@@ -46,6 +46,17 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
+      - name: Check Nix flake
+        run: |
+          echo "Running nix flake check..."
+          nix flake check --print-build-logs
+
+      - name: Check Nix formatting with alejandra
+        run: |
+          echo "Checking Nix code formatting..."
+          nix fmt -- --check .
+          echo "✅ Nix formatting check passed!"
+
       - name: Build project with Nix
         run: |
           nix build --print-build-logs

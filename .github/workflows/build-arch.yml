@@ -1,4 +1,4 @@
-name: Build
+name: Build (Arch Linux)
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
       - 'meson_options.txt'
       - 'flake.nix'
       - 'protocols/**'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/build-arch.yml'
   pull_request:
     branches: [main, master]
     paths:
@@ -24,7 +24,7 @@ on:
       - 'meson_options.txt'
       - 'flake.nix'
       - 'protocols/**'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/build-arch.yml'
   workflow_dispatch:
 
 jobs:
@@ -39,12 +39,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check C/C++ code formatting
+        run: |
+          # Install clang-format
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm clang
+          
+          # Check if code is properly formatted
+          echo "Checking code formatting with clang-format..."
+          clang-format --dry-run --Werror src/*/*.h src/*/*.c src/mango.c mmsg/mmsg.c mmsg/arg.h mmsg/dynarr.h || {
+            echo "❌ Code formatting check failed!"
+            echo "Run './format.sh' to fix formatting issues."
+            exit 1
+          }
+          echo "✅ Code formatting check passed!"
+
       - name: Update system and install dependencies
         run: |
-          # Update package database
-          pacman -Syu --noconfirm
-          
-          # Install build tools and all dependencies
+          # Install build tools and all dependencies (system already updated in format check)
           pacman -S --noconfirm \
             base-devel \
             git \
