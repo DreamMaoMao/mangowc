@@ -591,27 +591,29 @@ static char *combine_args_until_empty(char *values[], int count) {
 	// 	plus the number of commas (first_empty-1 commas)
 	total_len += (first_empty - 1);
 
-	// 	allocate memory and concatenate
+	// allocate memory and concatenate safely
 	char *combined = malloc(total_len + 1);
 	if (combined == NULL) {
 		return strdup("");
 	}
 
-	combined[0] = '\0';
-	size_t current_len = 0;
+	char *ptr = combined;
+	size_t remaining = total_len + 1; // Include space for null terminator
+	
 	for (int i = 0; i < first_empty; i++) {
-		if (i > 0 && current_len < total_len) {
-			strncat(combined, ",", total_len - current_len);
-			current_len++;
+		if (i > 0 && remaining > 1) {
+			*ptr++ = ',';
+			remaining--;
 		}
-		if (current_len < total_len) {
-			size_t remaining = total_len - current_len;
+		if (remaining > 1) {
 			size_t val_len = strlen(values[i]);
-			size_t will_add = (val_len < remaining) ? val_len : remaining;
-			strncat(combined, values[i], remaining);
-			current_len += will_add;
+			size_t to_copy = (val_len < remaining - 1) ? val_len : remaining - 1;
+			memcpy(ptr, values[i], to_copy);
+			ptr += to_copy;
+			remaining -= to_copy;
 		}
 	}
+	*ptr = '\0'; // Null terminate
 
 	return combined;
 }
