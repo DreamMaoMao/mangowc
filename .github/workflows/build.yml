@@ -66,20 +66,8 @@ jobs:
             seatd \
             mesa \
             wlroots0.19 \
+            scenefx0.4 \
             pkg-config
-
-      - name: Install scenefx from AUR
-        run: |
-          # Install scenefx from AUR since it's not in official repos
-          # Create a non-root user for makepkg (AUR requires non-root)
-          useradd -m -G wheel builder
-          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-          
-          # Clone and build scenefx from AUR as builder user
-          cd /home/builder
-          su - builder -c "git clone https://aur.archlinux.org/scenefx.git"
-          cd scenefx
-          su - builder -c "cd /home/builder/scenefx && makepkg -si --noconfirm"
 
       - name: Configure meson
         run: |
