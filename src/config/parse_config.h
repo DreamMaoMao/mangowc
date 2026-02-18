@@ -539,7 +539,7 @@ int32_t parse_fold_state(const char *str) {
 int64_t parse_color(const char *hex_str) {
 	char *endptr;
 	errno = 0;
-	int64_t hex_num = strtol(hex_str, &endptr, 16);
+	uint64_t hex_num = strtoul(hex_str, &endptr, 16);
 	
 	// Check for conversion errors
 	if (*endptr != '\0' || errno == ERANGE) {
@@ -547,11 +547,11 @@ int64_t parse_color(const char *hex_str) {
 	}
 	
 	// Validate range for color values (0x00000000 to 0xFFFFFFFF)
-	if (hex_num < 0 || hex_num > 0xFFFFFFFF) {
+	if (hex_num > 0xFFFFFFFF) {
 		return -1;
 	}
 	
-	return hex_num;
+	return (int64_t)hex_num;
 }
 
 // 辅助函数：检查字符串是否以指定的前缀开头（忽略大小写）
@@ -600,17 +600,22 @@ static char *combine_args_until_empty(char *values[], int count) {
 	combined[0] = '\0';
 	size_t current_len = 0;
 	for (int i = 0; i < first_empty; i++) {
-		if (i > 0) {
+		if (i > 0 && current_len < total_len) {
 			size_t remaining = total_len - current_len;
-			if (remaining > 0) {
-				strncat(combined, ",", remaining);
-				current_len += 1;
+			size_t to_copy = (remaining < 1) ? 0 : 1;
+			if (to_copy > 0) {
+				strncat(combined, ",", to_copy);
+				current_len += to_copy;
 			}
 		}
-		size_t remaining = total_len - current_len;
-		if (remaining > 0) {
-			strncat(combined, values[i], remaining);
-			current_len += strlen(values[i]);
+		if (current_len < total_len) {
+			size_t remaining = total_len - current_len;
+			size_t val_len = strlen(values[i]);
+			size_t to_copy = (val_len < remaining) ? val_len : remaining;
+			if (to_copy > 0) {
+				strncat(combined, values[i], to_copy);
+				current_len += to_copy;
+			}
 		}
 	}
 
