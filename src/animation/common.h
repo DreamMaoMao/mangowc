@@ -47,10 +47,11 @@ void init_baked_points(void) {
 		{OPAFADEIN, &baked_points_opafadein},
 		{OPAFADEOUT, &baked_points_opafadeout},
 	};
+	const size_t num_animation_types =
+		sizeof(animation_types) / sizeof(animation_types[0]);
 
 	/* Allocate and calculate baked points for all animation types */
-	for (size_t j = 0; j < sizeof(animation_types) / sizeof(animation_types[0]);
-		 j++) {
+	for (size_t j = 0; j < num_animation_types; j++) {
 		*animation_types[j].points =
 			calloc(BAKED_POINTS_COUNT, sizeof(struct dvec2));
 		for (int32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
