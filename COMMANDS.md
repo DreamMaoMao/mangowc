@@ -395,8 +395,8 @@ Change number of windows in master area.
 
 **Example:**
 ```conf
-bind=Super,i,incnmaster,+1
-bind=Super,d,incnmaster,-1
+bind=Super,equal,incnmaster,+1
+bind=Super,minus,incnmaster,-1
 ```
 
 ---
