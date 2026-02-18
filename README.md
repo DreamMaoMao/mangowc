@@ -594,11 +594,47 @@ git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 ```
 
 
-## Config Documentation
+## Documentation
 
-Refer to the repo wiki [wiki](https://github.com/DreamMaoMao/mango/wiki/)
+MangoWC comes with comprehensive documentation to help you get started and master the compositor:
 
-or the website docs [docs](https://mangowc.vercel.app/docs)
+### 📚 Documentation Files
+
+- **[USAGE.md](USAGE.md)** - Practical guide for day-to-day usage
+  - Common workflows and usage patterns
+  - Layout explanations with diagrams
+  - Scratchpad and overview mode guides
+  - Multi-monitor workflows
+  - Customization tips and examples
+
+- **[COMMANDS.md](COMMANDS.md)** - Complete command reference
+  - All available commands with descriptions
+  - Parameter documentation
+  - Keybinding examples
+  - IPC/mmsg usage and scripting examples
+
+- **[config.conf](config.conf)** - Annotated configuration file
+  - All settings explained with inline comments
+  - Example configurations
+  - Default keybindings
+
+### 🌐 Online Resources
+
+- **[Wiki](https://github.com/DreamMaoMao/mango/wiki/)** - Comprehensive online documentation
+- **[Website](https://mangowc.vercel.app/docs)** - Web-based documentation
+- **[Discord](https://discord.gg/CPjbDxesh5)** - Community support and discussions
+
+### 📖 Quick Links by Topic
+
+- **Getting Started:** See [Quick Start Guide](#quick-start-guide) above
+- **Understanding Concepts:** [Key Concepts](#key-concepts) section above
+- **Daily Usage:** [USAGE.md](USAGE.md) for workflows and patterns
+- **Command Reference:** [COMMANDS.md](COMMANDS.md) for all commands
+- **Configuration:** [config.conf](config.conf) with inline documentation
+- **Troubleshooting:** [Troubleshooting](#troubleshooting) section above
+- **IPC/Scripting:** [IPC Control with mmsg](#ipc-control-with-mmsg) section above
+
+---
 
 # NixOS + Home-manager
 
