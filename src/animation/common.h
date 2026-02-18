@@ -1,23 +1,28 @@
+/* Helper function to get animation curve array by type */
+static double *get_animation_curve_by_type(int32_t type) {
+	switch (type) {
+	case MOVE:
+		return animation_curve_move;
+	case OPEN:
+		return animation_curve_open;
+	case TAG:
+		return animation_curve_tag;
+	case CLOSE:
+		return animation_curve_close;
+	case FOCUS:
+		return animation_curve_focus;
+	case OPAFADEIN:
+		return animation_curve_opafadein;
+	case OPAFADEOUT:
+		return animation_curve_opafadeout;
+	default:
+		return animation_curve_move;
+	}
+}
+
 struct dvec2 calculate_animation_curve_at(double t, int32_t type) {
 	struct dvec2 point;
-	double *animation_curve;
-	if (type == MOVE) {
-		animation_curve = animation_curve_move;
-	} else if (type == OPEN) {
-		animation_curve = animation_curve_open;
-	} else if (type == TAG) {
-		animation_curve = animation_curve_tag;
-	} else if (type == CLOSE) {
-		animation_curve = animation_curve_close;
-	} else if (type == FOCUS) {
-		animation_curve = animation_curve_focus;
-	} else if (type == OPAFADEIN) {
-		animation_curve = animation_curve_opafadein;
-	} else if (type == OPAFADEOUT) {
-		animation_curve = animation_curve_opafadeout;
-	} else {
-		animation_curve = animation_curve_move;
-	}
+	double *animation_curve = get_animation_curve_by_type(type);
 
 	point.x = 3 * t * (1 - t) * (1 - t) * animation_curve[0] +
 			  3 * t * t * (1 - t) * animation_curve[2] + t * t * t;
@@ -29,45 +34,52 @@ struct dvec2 calculate_animation_curve_at(double t, int32_t type) {
 }
 
 void init_baked_points(void) {
-	baked_points_move = calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_move));
-	baked_points_open = calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_open));
-	baked_points_tag = calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_tag));
-	baked_points_close =
-		calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_close));
-	baked_points_focus =
-		calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_focus));
-	baked_points_opafadein =
-		calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_opafadein));
-	baked_points_opafadeout =
-		calloc(BAKED_POINTS_COUNT, sizeof(*baked_points_opafadeout));
+	/* Animation type to baked points mapping */
+	struct {
+		int32_t type;
+		struct dvec2 **points;
+	} animation_types[] = {
+		{MOVE, &baked_points_move},
+		{OPEN, &baked_points_open},
+		{TAG, &baked_points_tag},
+		{CLOSE, &baked_points_close},
+		{FOCUS, &baked_points_focus},
+		{OPAFADEIN, &baked_points_opafadein},
+		{OPAFADEOUT, &baked_points_opafadeout},
+	};
+	const size_t num_animation_types =
+		sizeof(animation_types) / sizeof(animation_types[0]);
 
-	for (int32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
-		baked_points_move[i] = calculate_animation_curve_at(
-			(double)i / (BAKED_POINTS_COUNT - 1), MOVE);
+	/* Allocate and calculate baked points for all animation types */
+	for (size_t j = 0; j < num_animation_types; j++) {
+		*animation_types[j].points =
+			calloc(BAKED_POINTS_COUNT, sizeof(struct dvec2));
+		for (int32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
+			(*animation_types[j].points)[i] = calculate_animation_curve_at(
+				(double)i / (BAKED_POINTS_COUNT - 1), animation_types[j].type);
+		}
 	}
-	for (int32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
-		baked_points_open[i] = calculate_animation_curve_at(
-			(double)i / (BAKED_POINTS_COUNT - 1), OPEN);
-	}
-	for (int32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
-		baked_points_tag[i] = calculate_animation_curve_at(
-			(double)i / (BAKED_POINTS_COUNT - 1), TAG);
-	}
-	for (int32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
-		baked_points_close[i] = calculate_animation_curve_at(
-			(double)i / (BAKED_POINTS_COUNT - 1), CLOSE);
-	}
-	for (int32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
-		baked_points_focus[i] = calculate_animation_curve_at(
-			(double)i / (BAKED_POINTS_COUNT - 1), FOCUS);
-	}
-	for (int32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
-		baked_points_opafadein[i] = calculate_animation_curve_at(
-			(double)i / (BAKED_POINTS_COUNT - 1), OPAFADEIN);
-	}
-	for (int32_t i = 0; i < BAKED_POINTS_COUNT; i++) {
-		baked_points_opafadeout[i] = calculate_animation_curve_at(
-			(double)i / (BAKED_POINTS_COUNT - 1), OPAFADEOUT);
+}
+
+/* Helper function to get baked points array by type */
+static struct dvec2 *get_baked_points_by_type(int32_t type) {
+	switch (type) {
+	case MOVE:
+		return baked_points_move;
+	case OPEN:
+		return baked_points_open;
+	case TAG:
+		return baked_points_tag;
+	case CLOSE:
+		return baked_points_close;
+	case FOCUS:
+		return baked_points_focus;
+	case OPAFADEIN:
+		return baked_points_opafadein;
+	case OPAFADEOUT:
+		return baked_points_opafadeout;
+	default:
+		return baked_points_move;
 	}
 }
 
@@ -76,24 +88,7 @@ double find_animation_curve_at(double t, int32_t type) {
 	int32_t up = BAKED_POINTS_COUNT - 1;
 
 	int32_t middle = (up + down) / 2;
-	struct dvec2 *baked_points;
-	if (type == MOVE) {
-		baked_points = baked_points_move;
-	} else if (type == OPEN) {
-		baked_points = baked_points_open;
-	} else if (type == TAG) {
-		baked_points = baked_points_tag;
-	} else if (type == CLOSE) {
-		baked_points = baked_points_close;
-	} else if (type == FOCUS) {
-		baked_points = baked_points_focus;
-	} else if (type == OPAFADEIN) {
-		baked_points = baked_points_opafadein;
-	} else if (type == OPAFADEOUT) {
-		baked_points = baked_points_opafadeout;
-	} else {
-		baked_points = baked_points_move;
-	}
+	struct dvec2 *baked_points = get_baked_points_by_type(type);
 
 	while (up - down != 1) {
 		if (baked_points[middle].x <= t) {
