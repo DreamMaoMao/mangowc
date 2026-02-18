@@ -4,9 +4,10 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 
 ## Workflows
 
-### build.yml
+### build-arch.yml
 
-**Purpose**: Builds the project to ensure code changes compile successfully.
+**Purpose**: Builds the project on Arch Linux to ensure code changes compile
+successfully.
 
 **Triggers**:
 
@@ -19,7 +20,7 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 - Source files: `**.c`, `**.h`, `**.cpp`, `**.scm`
 - Build files: `meson.build`, `meson_options.txt`, `flake.nix`
 - Protocol definitions: `protocols/**`
-- Workflow file itself: `.github/workflows/build.yml`
+- Workflow file itself: `.github/workflows/build-arch.yml`
 
 **What it does**:
 
@@ -45,6 +46,47 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 - Ninja build tool
 - All system packages from pacman (wayland, libinput, wlroots, mesa, etc.)
 - scenefx from AUR
+
+### build-nixos.yml
+
+**Purpose**: Builds the project on NixOS using Nix flakes to ensure code
+changes work correctly in the NixOS ecosystem.
+
+**Triggers**:
+
+- Push to `main` or `master` branch (only when code files change)
+- Pull requests to `main` or `master` branch (only when code files change)
+- Manual dispatch (workflow_dispatch)
+
+**Path filters** (only runs when these change):
+
+- Source files: `**.c`, `**.h`, `**.cpp`, `**.scm`
+- Build files: `meson.build`, `meson_options.txt`, `flake.nix`
+- Nix files: `nix/**`
+- Protocol definitions: `protocols/**`
+- Workflow file itself: `.github/workflows/build-nixos.yml`
+
+**What it does**:
+
+1. Runs on Ubuntu with Nix installed
+2. Installs Nix with flakes and nix-command experimental features
+3. Builds the project using `nix build` with the repository's flake.nix
+4. Verifies that executables (mango and mmsg) are created and executable
+5. Tests basic executable functionality
+
+**Build Strategy**:
+
+- Uses Nix flakes for reproducible builds
+- All dependencies managed through Nix
+- Leverages the repository's flake.nix configuration
+- Dependencies from nixpkgs-unstable
+
+**Dependencies**:
+
+- Nix package manager with flakes support
+- All dependencies defined in flake.nix and nix/default.nix
+- scenefx from upstream flake
+- wlroots 0.19 from nixpkgs
 
 ### docs.yml
 
@@ -100,11 +142,11 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 
 ## Development Notes
 
-The build workflow ensures that:
+The build workflows ensure that:
 
-- Only runs when actual code or build configuration changes
+- Only run when actual code or build configuration changes
 - All dependencies are properly installed
-- The project compiles without errors
+- The project compiles without errors on both Arch Linux and NixOS
 - Both main executables (`mango` and `mmsg`) are built successfully
 
 The docs workflow ensures that:
@@ -113,8 +155,9 @@ The docs workflow ensures that:
 - Documentation follows consistent formatting
 - Markdown files are well-formed and free of common issues
 
-If the build workflow fails, check:
+If a build workflow fails, check:
 
 1. Dependencies are up to date in the workflow file
 2. wlroots and scenefx versions match requirements in meson.build
 3. Build configuration in meson.build hasn't changed
+4. For NixOS builds: flake.nix and nix/default.nix are correctly configured

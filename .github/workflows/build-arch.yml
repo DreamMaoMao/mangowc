@@ -1,4 +1,4 @@
-name: Build
+name: Build (Arch Linux)
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
       - 'meson_options.txt'
       - 'flake.nix'
       - 'protocols/**'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/build-arch.yml'
   pull_request:
     branches: [main, master]
     paths:
@@ -24,7 +24,7 @@ on:
       - 'meson_options.txt'
       - 'flake.nix'
       - 'protocols/**'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/build-arch.yml'
   workflow_dispatch:
 
 jobs:
