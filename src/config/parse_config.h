@@ -113,7 +113,7 @@ typedef struct {
 	int32_t vrr;				 // variable refresh rate
 } ConfigMonitorRule;
 
-// 修改后的宏定义
+// Modified macro definition
 #define CHVT(n)                                                                \
 	{                                                                          \
 		WLR_MODIFIER_CTRL | WLR_MODIFIER_ALT,                                  \
@@ -123,7 +123,7 @@ typedef struct {
 		}                                                                      \
 	}
 
-// 默认按键绑定数组
+// Default key bindings array
 KeyBinding default_key_bindings[] = {CHVT(1), CHVT(2),	CHVT(3),  CHVT(4),
 									 CHVT(5), CHVT(6),	CHVT(7),  CHVT(8),
 									 CHVT(9), CHVT(10), CHVT(11), CHVT(12)};
@@ -170,7 +170,7 @@ typedef struct {
 } ConfigTagRule;
 
 typedef struct {
-	char *layer_name; // 布局名称
+	char *layer_name; // Layout name
 	char *animation_type_open;
 	char *animation_type_close;
 	int32_t noblur;
@@ -311,17 +311,17 @@ typedef struct {
 
 	char autostart[3][256];
 
-	ConfigTagRule *tag_rules; // 动态数组
-	int32_t tag_rules_count;  // 数量
+	ConfigTagRule *tag_rules; // Dynamic array
+	int32_t tag_rules_count;  // Count
 
-	ConfigLayerRule *layer_rules; // 动态数组
-	int32_t layer_rules_count;	  // 数量
+	ConfigLayerRule *layer_rules; // Dynamic array
+	int32_t layer_rules_count;	  // Count
 
 	ConfigWinRule *window_rules;
 	int32_t window_rules_count;
 
-	ConfigMonitorRule *monitor_rules; // 动态数组
-	int32_t monitor_rules_count;	  // 条数
+	ConfigMonitorRule *monitor_rules; // Dynamic array
+	int32_t monitor_rules_count;	  // Count
 
 	KeyBinding *key_bindings;
 	int32_t key_bindings_count;
@@ -402,7 +402,7 @@ int32_t parse_double_array(const char *input, double *output,
 	char *token;
 	int32_t count = 0;
 
-	// 先清空整个数组
+	// First clear the entire array
 	memset(output, 0, max_count * sizeof(double));
 
 	token = strtok(dup, ",");
@@ -418,8 +418,8 @@ int32_t parse_double_array(const char *input, double *output,
 			free(dup);
 			return -1;
 		}
-		output[count] = val; // 赋值到当前count位置
-		count++;			 // 然后才自增
+		output[count] = val; // Assign to current count position
+		count++;			 // Then increment
 		token = strtok(NULL, ",");
 	}
 
@@ -427,12 +427,12 @@ int32_t parse_double_array(const char *input, double *output,
 	return count;
 }
 
-// 清理字符串中的不可见字符（包括 \r, \n, 空格等）
+// Clean invisible characters from string (including \r, \n, spaces, etc.)
 char *sanitize_string(char *str) {
-	// 去除首部不可见字符
+	// Remove leading invisible characters
 	while (*str != '\0' && !isprint((unsigned char)*str))
 		str++;
-	// 去除尾部不可见字符
+	// Remove trailing invisible characters
 	char *end = str + strlen(str) - 1;
 	while (end > str && !isprint((unsigned char)*end))
 		end--;
@@ -440,17 +440,17 @@ char *sanitize_string(char *str) {
 	return str;
 }
 
-// 解析bind组合字符串
+// Parse bind combination string
 void parse_bind_flags(const char *str, KeyBinding *kb) {
 
-	// 检查是否以"bind"开头
+	// Check if starts with "bind"
 	if (strncmp(str, "bind", 4) != 0) {
 		return;
 	}
 
-	const char *suffix = str + 4; // 跳过"bind"
+	const char *suffix = str + 4; // Skip "bind"
 
-	// 遍历后缀字符
+	// Iterate through suffix characters
 	for (int32_t i = 0; suffix[i] != '\0'; i++) {
 		switch (suffix[i]) {
 		case 's':
@@ -475,7 +475,7 @@ void parse_bind_flags(const char *str, KeyBinding *kb) {
 }
 
 int32_t parse_circle_direction(const char *str) {
-	// 将输入字符串转换为小写
+	// Convert input string to lowercase
 	char lowerStr[10];
 	int32_t i = 0;
 	while (str[i] && i < 9) {
@@ -3276,12 +3276,12 @@ void set_value_default() {
 	config.center_when_single_stack =
 		center_when_single_stack; // 单个stack时是否居中
 
-	config.numlockon = numlockon; // 是否打开右边小键盘
+	config.numlockon = numlockon; // Enable numlock
 
-	config.ov_tab_mode = ov_tab_mode;	// alt tab切换模式
-	config.hotarea_size = hotarea_size; // 热区大小,10x10
+	config.ov_tab_mode = ov_tab_mode;	// Alt-tab switch mode
+	config.hotarea_size = hotarea_size; // Hot corner size (10x10)
 	config.hotarea_corner = hotarea_corner;
-	config.enable_hotarea = enable_hotarea; // 是否启用鼠标热区
+	config.enable_hotarea = enable_hotarea; // Enable mouse hot corner
 	config.smartgaps = smartgaps;	  /* 1 means no outer gap when there is
 										 only one window */
 	config.sloppyfocus = sloppyfocus; /* focus follows mouse */
@@ -3328,8 +3328,10 @@ void set_value_default() {
 									*/
 
 	config.borderpx = borderpx;
-	config.overviewgappi = overviewgappi; /* overview时 窗口与边缘 缝隙大小 */
-	config.overviewgappo = overviewgappo; /* overview时 窗口与窗口 缝隙大小 */
+	config.overviewgappi =
+		overviewgappi; /* Gap size between windows and edges in overview mode */
+	config.overviewgappo =
+		overviewgappo; /* Gap size between windows in overview mode */
 	config.cursor_hide_timeout = cursor_hide_timeout;
 
 	config.warpcursor = warpcursor; /* Warp cursor to focused client */
@@ -3406,11 +3408,11 @@ void set_value_default() {
 }
 
 void set_default_key_bindings(Config *config) {
-	// 计算默认按键绑定的数量
+	// Calculate the count of default key bindings
 	size_t default_key_bindings_count =
 		sizeof(default_key_bindings) / sizeof(KeyBinding);
 
-	// 重新分配内存以容纳新的默认按键绑定
+	// Reallocate memory to hold new default key bindings
 	config->key_bindings =
 		realloc(config->key_bindings,
 				(config->key_bindings_count + default_key_bindings_count) *
@@ -3419,7 +3421,7 @@ void set_default_key_bindings(Config *config) {
 		return;
 	}
 
-	// 将默认按键绑定复制到配置的按键绑定数组中
+	// Copy default key bindings to the config's key bindings array
 	for (size_t i = 0; i < default_key_bindings_count; i++) {
 		config->key_bindings[config->key_bindings_count + i] =
 			default_key_bindings[i];
@@ -3428,7 +3430,7 @@ void set_default_key_bindings(Config *config) {
 		config->key_bindings[config->key_bindings_count + i].islockapply = true;
 	}
 
-	// 更新按键绑定的总数
+	// Update the total count of key bindings
 	config->key_bindings_count += default_key_bindings_count;
 }
 
@@ -3438,7 +3440,7 @@ bool parse_config(void) {
 
 	free_config();
 
-	// 重置config结构体，确保所有指针初始化为NULL
+	// Reset config struct, ensuring all pointers are initialized to NULL
 	memset(&config, 0, sizeof(config));
 	memset(&xkb_rules_rules, 0, sizeof(xkb_rules_rules));
 	memset(&xkb_rules_model, 0, sizeof(xkb_rules_model));
@@ -3446,7 +3448,7 @@ bool parse_config(void) {
 	memset(&xkb_rules_variant, 0, sizeof(xkb_rules_variant));
 	memset(&xkb_rules_options, 0, sizeof(xkb_rules_options));
 
-	// 初始化动态数组的指针为NULL，避免野指针
+	// Initialize dynamic array pointers to NULL to avoid dangling pointers
 	config.window_rules = NULL;
 	config.window_rules_count = 0;
 	config.monitor_rules = NULL;
@@ -3481,19 +3483,19 @@ bool parse_config(void) {
 	if (cli_config_path) {
 		snprintf(filename, sizeof(filename), "%s", cli_config_path);
 	} else {
-		// 获取当前用户家目录
+		// Get current user's home directory
 		const char *homedir = getenv("HOME");
 		if (!homedir) {
-			// 如果获取失败，则无法继续
+			// Cannot continue if retrieval fails
 			return false;
 		}
-		// 构建日志文件路径
+		// Build config file path
 		snprintf(filename, sizeof(filename), "%s/.config/mango/config.conf",
 				 homedir);
 
-		// 检查文件是否存在
+		// Check if file exists
 		if (access(filename, F_OK) != 0) {
-			// 如果文件不存在，则使用 /etc/mango/config.conf
+			// If file doesn't exist, use /etc/mango/config.conf
 			snprintf(filename, sizeof(filename), "%s/mango/config.conf",
 					 SYSCONFDIR);
 		}
@@ -3555,10 +3557,10 @@ void reapply_monitor_rules(void) {
 
 			mr = &config.monitor_rules[ji];
 
-			// 检查是否匹配的变量
+			// Check if variable matches
 			match_rule = true;
 
-			// 检查四个标识字段的匹配
+			// Check the four identification fields for matching
 			if (mr->name != NULL) {
 				if (!regex_match(mr->name, m->wlr_output->name)) {
 					match_rule = false;
@@ -3586,7 +3588,7 @@ void reapply_monitor_rules(void) {
 				}
 			}
 
-			// 只有当所有指定的标识都匹配时才应用规则
+			// Apply rule only when all specified identifiers match
 			if (match_rule) {
 				mx = mr->x == INT32_MAX ? m->m.x : mr->x;
 				my = mr->y == INT32_MAX ? m->m.y : mr->y;
