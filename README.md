@@ -1,8 +1,6 @@
 # Mango Wayland Compositor
 
-<div>
-  <img src="https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png" alt="MangoWC Logo" width="120"/>
-</div>
+![MangoWC Logo](https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png)
 
 This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
@@ -105,20 +103,17 @@ tag 1, or tag 2, or both tags 1 and 2 simultaneously.
 
 MangoWC supports 9 different layouts:
 
-| Layout                | Description                     | Best For              |
-|-----------------------|---------------------------------|-----------------------|
-| **tile**              | Master-stack tiling             | General multitasking  |
-|                       | (left master, right stack)      |                       |
-| **scroller**          | Horizontal scrolling columns    | Wide content,         |
-|                       |                                 | terminals             |
-| **monocle**           | One window fullscreen at a time | Focus,                |
-|                       |                                 | presentations         |
-| **grid**              | Windows arranged in grid        | Many small windows    |
-| **deck**              | Stack of windows, one visible   | Cycling through tasks |
-| **center_tile**       | Master centered, stack on sides | Symmetrical layout    |
-| **vertical_tile**     | Master top, stack bottom        | Wide monitors         |
-| **vertical_scroller** | Vertical scrolling rows         | Document review       |
-| **vertical_grid**     | Vertical grid arrangement       | Vertical content      |
+| Layout | Description | Best For |
+|--------|-------------|----------|
+| **tile** | Master-stack tiling | General multitasking |
+| **scroller** | Horizontal scrolling columns | Wide content, terminals |
+| **monocle** | One window fullscreen at a time | Focus, presentations |
+| **grid** | Windows arranged in grid | Many small windows |
+| **deck** | Stack of windows, one visible | Cycling through tasks |
+| **center_tile** | Master centered, stack on sides | Symmetrical layout |
+| **vertical_tile** | Master top, stack bottom | Wide monitors |
+| **vertical_scroller** | Vertical scrolling rows | Document review |
+| **vertical_grid** | Vertical grid arrangement | Vertical content |
 
 **Switch layouts:**
 
@@ -630,7 +625,10 @@ sudo ninja -C build install
 - Dependencies
 
 ```bash
-yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
+yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist \
+  cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms \
+  sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd \
+  wlr-randr grim slurp satty swaylock-effects-git wlogout sox
 ```
 
 ### Dms
@@ -638,7 +636,9 @@ yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist w
 - Dependencies
 
 ```bash
-yay -S foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard sway-audio-idle-inhibit-git brightnessctl grim slurp satty matugen-bin dms-shell-git
+yay -S foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist \
+  wl-clipboard sway-audio-idle-inhibit-git brightnessctl grim slurp satty \
+  matugen-bin dms-shell-git
 
 ```
 
@@ -811,7 +811,7 @@ At present, I can only accept sponsorship through an encrypted connection.
 If you find this project helpful to you, you can offer sponsorship in the
 following ways.
 
-<img width="650" height="870" alt="image" src="https://github.com/user-attachments/assets/8c860317-90d2-4071-971d-f1a92b674469" />
+![image](https://github.com/user-attachments/assets/8c860317-90d2-4071-971d-f1a92b674469)
 
 Thanks to the following friends for their sponsorship of this project
 
