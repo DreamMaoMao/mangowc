@@ -1103,7 +1103,6 @@ int32_t tagmon(const Arg *arg) {
 	c->float_geom = setclient_coordinate_center(c, c->mon, c->float_geom, 0, 0);
 
 	// Recalculate centered coordinates
-	// Recalculate centered coordinates
 	if (c->isfloating) {
 		c->geom = c->float_geom;
 		target = get_tags_first_tag(c->tags);

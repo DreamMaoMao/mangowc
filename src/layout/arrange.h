@@ -705,7 +705,7 @@ void reset_size_per_mon(Monitor *m, int32_t tile_cilent_num,
 	}
 }
 
-void // Main arrange function
+void // Main layout arrangement function that positions and sizes tiled windows according to the current layout
 arrange(Monitor *m, bool want_animation, bool from_view) {
 	Client *c = NULL;
 	double total_stack_inner_percent = 0;
