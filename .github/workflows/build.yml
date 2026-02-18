@@ -65,15 +65,19 @@ jobs:
         run: |
           # Try to install wayland from apt
           if sudo apt-get install -y libwayland-dev 2>/dev/null; then
-            WAYLAND_VERSION=$(pkg-config --modversion wayland-server 2>/dev/null || echo "0.0.0")
-            echo "Installed wayland version: $WAYLAND_VERSION"
-            
-            # Check if version meets requirement (>= 1.23.1)
-            if dpkg --compare-versions "$WAYLAND_VERSION" ge "1.23.1"; then
-              echo "✅ wayland $WAYLAND_VERSION from apt meets requirements"
-              exit 0
+            # Check if pkg-config can find wayland-server
+            if WAYLAND_VERSION=$(pkg-config --modversion wayland-server 2>/dev/null); then
+              echo "Installed wayland version: $WAYLAND_VERSION"
+              
+              # Check if version meets requirement (>= 1.23.1)
+              if dpkg --compare-versions "$WAYLAND_VERSION" ge "1.23.1"; then
+                echo "✅ wayland $WAYLAND_VERSION from apt meets requirements"
+                exit 0
+              else
+                echo "⚠️  wayland $WAYLAND_VERSION from apt is too old, building from source..."
+              fi
             else
-              echo "⚠️  wayland $WAYLAND_VERSION from apt is too old, building from source..."
+              echo "⚠️  pkg-config cannot find wayland-server, building from source..."
             fi
           else
             echo "⚠️  wayland not available in apt, building from source..."
@@ -93,15 +97,19 @@ jobs:
         run: |
           # Try to install wlroots from apt
           if sudo apt-get install -y libwlroots-dev 2>/dev/null; then
-            WLROOTS_VERSION=$(pkg-config --modversion wlroots 2>/dev/null || echo "0.0.0")
-            echo "Installed wlroots version: $WLROOTS_VERSION"
-            
-            # Check if version meets requirement (>= 0.19.0)
-            if dpkg --compare-versions "$WLROOTS_VERSION" ge "0.19.0"; then
-              echo "✅ wlroots $WLROOTS_VERSION from apt meets requirements"
-              exit 0
+            # Check if pkg-config can find wlroots
+            if WLROOTS_VERSION=$(pkg-config --modversion wlroots 2>/dev/null); then
+              echo "Installed wlroots version: $WLROOTS_VERSION"
+              
+              # Check if version meets requirement (>= 0.19.0)
+              if dpkg --compare-versions "$WLROOTS_VERSION" ge "0.19.0"; then
+                echo "✅ wlroots $WLROOTS_VERSION from apt meets requirements"
+                exit 0
+              else
+                echo "⚠️  wlroots $WLROOTS_VERSION from apt is too old, building from source..."
+              fi
             else
-              echo "⚠️  wlroots $WLROOTS_VERSION from apt is too old, building from source..."
+              echo "⚠️  pkg-config cannot find wlroots, building from source..."
             fi
           else
             echo "⚠️  wlroots not available in apt, building from source..."

@@ -30,7 +30,7 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 **Install Strategy**:
 - Prefers apt packages when available and version requirements are met
 - Falls back to building from source only when necessary
-- wayland: requires >= 1.23.1 (Ubuntu apt has 1.22, builds from source)
+- wayland: requires >= 1.23.1 (typically builds from source on Ubuntu 22.04/24.04)
 - wlroots: requires >= 0.19.0 (checks apt version, builds from source if too old)
 - scenefx: not in apt repositories (always builds from source)
 
