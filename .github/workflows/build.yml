@@ -30,6 +30,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
     permissions:
       contents: read
 
@@ -37,85 +39,57 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Update system and install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          # Update package database
+          pacman -Syu --noconfirm
+          
+          # Install build tools and dependencies
+          pacman -S --noconfirm \
+            base-devel \
+            git \
             meson \
-            ninja-build \
+            ninja \
+            wayland \
             wayland-protocols \
-            libxkbcommon-dev \
-            libpcre2-dev \
-            libpixman-1-dev \
-            libdrm-dev \
-            libxcb1-dev \
-            libxcb-icccm4-dev \
-            xwayland \
+            libinput \
+            libxkbcommon \
+            pcre2 \
+            pixman \
+            libdrm \
+            libxcb \
+            xcb-util-wm \
+            xorg-xwayland \
             hwdata \
-            libliftoff-dev \
-            libdisplay-info-dev \
-            libseat-dev \
-            libffi-dev \
-            libexpat1-dev \
-            libxml2-dev \
-            libgles2-mesa-dev \
-            libegl1-mesa-dev \
-            libgbm-dev \
-            libevdev-dev \
-            libmtdev-dev \
-            libudev-dev \
-            libsystemd-dev \
+            libliftoff \
+            libdisplay-info \
+            seatd \
+            mesa \
             pkg-config
-
-      - name: Build and install libinput 1.27.1
-        run: |
-          # Build libinput 1.27.1 from source since Ubuntu has older version
-          git clone https://gitlab.freedesktop.org/libinput/libinput.git
-          cd libinput
-          git checkout 1.27.1
-          # Download meson subprojects if needed
-          meson subprojects download || true
-          meson setup build/ --prefix=/usr
-          sudo ninja -C build/ install
-          sudo ldconfig
-          cd ..
-
-      - name: Build and install wayland 1.23.1
-        run: |
-          # Build wayland 1.23.1 from source
-          git clone https://gitlab.freedesktop.org/wayland/wayland.git
-          cd wayland
-          git checkout 1.23.1
-          # Download meson subprojects if needed
-          meson subprojects download || true
-          meson setup build/ --prefix=/usr -Ddocumentation=false
-          sudo ninja -C build/ install
-          sudo ldconfig
-          cd ..
 
       - name: Install wlroots 0.19.0
         run: |
-          # Install wlroots 0.19 from source
+          # Build wlroots 0.19.0 from source
           git clone https://gitlab.freedesktop.org/wlroots/wlroots.git
           cd wlroots
           git checkout 0.19.0
           # Download meson subprojects if needed
           meson subprojects download || true
           meson setup build/ --prefix=/usr
-          sudo ninja -C build/ install
-          sudo ldconfig
+          ninja -C build/ install
+          ldconfig
           cd ..
 
       - name: Install scenefx 0.4.1
         run: |
-          # Install scenefx from source
+          # Build scenefx from source
           git clone -b 0.4.1 https://github.com/wlrfx/scenefx.git
           cd scenefx
           # Download meson subprojects if needed
           meson subprojects download || true
           meson setup build/ --prefix=/usr
-          sudo ninja -C build/ install
-          sudo ldconfig
+          ninja -C build/ install
+          ldconfig
           cd ..
 
       - name: Configure meson
