@@ -1,23 +1,29 @@
 # Mango Wayland Compositor
+
 <div>
   <img src="https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png" alt="MangoWC Logo" width="120"/>
 </div>
 
 This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
-
 1. **Lightweight & Fast Build**
 
-   - _Mango_ is as lightweight as _dwl_, and can be built completely within a few seconds. Despite this, _Mango_ does not compromise on functionality.
+   - _Mango_ is as lightweight as _dwl_, and can be built completely within
+     a few seconds. Despite this, _Mango_ does not compromise on
+     functionality.
 
 2. **Feature Highlights**
    - In addition to basic WM functionality, Mango provides:
      - Excellent xwayland support.
-     - Base tags not workspaces (supports separate window layouts for each tag)
-     - Smooth and customizable complete animations (window open/move/close, tag enter/leave,layer open/close/move)
+     - Base tags not workspaces (supports separate window layouts for each
+       tag)
+     - Smooth and customizable complete animations (window
+       open/move/close, tag enter/leave,layer open/close/move)
      - Excellent input method support (text input v2/v3)
-     - Flexible window layouts with easy switching (scroller, master-stack, monocle,center-master, etc.)
-     - Rich window states (swallow, minimize, maximize, unglobal, global, fakefullscreen, overlay, etc.)
+     - Flexible window layouts with easy switching (scroller,
+       master-stack, monocle,center-master, etc.)
+     - Rich window states (swallow, minimize, maximize, unglobal, global,
+       fakefullscreen, overlay, etc.)
      - Simple yet powerful external configuration(support shortcuts hot-reload)
      - Sway-like scratchpad and named scratchpad
      - Ipc support(get/send message from/to compositor by external program)
@@ -25,17 +31,22 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
      - Zero flickering - every frame is perfect.
 
-https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f
+<https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f>
 
-# Quick Start Guide
+## Quick Start Guide
 
 ## What is MangoWC?
 
-MangoWC is a **Wayland compositor** - a program that manages windows and displays on modern Linux systems using the Wayland protocol. If you're familiar with window managers like i3, dwm, or awesome, MangoWC provides similar tiling window management functionality but for Wayland instead of X11.
+MangoWC is a **Wayland compositor** - a program that manages windows and
+displays on modern Linux systems using the Wayland protocol. If you're
+familiar with window managers like i3, dwm, or awesome, MangoWC provides
+similar tiling window management functionality but for Wayland instead of
+X11.
 
 ## First Steps After Installation
 
 1. **Copy the default configuration:**
+
    ```bash
    mkdir -p ~/.config/mango
    cp /usr/share/mango/config.conf ~/.config/mango/config.conf
@@ -53,6 +64,7 @@ MangoWC is a **Wayland compositor** - a program that manages windows and display
    - `Super + R` - Reload configuration (after making changes)
 
 4. **Create an autostart script** (optional):
+
    ```bash
    # Create ~/.config/mango/autostart.sh
    #!/bin/bash
@@ -66,6 +78,7 @@ MangoWC is a **Wayland compositor** - a program that manages windows and display
    # Start notification daemon
    swaync &
    ```
+
    Make it executable: `chmod +x ~/.config/mango/autostart.sh`
 
 ## Key Concepts
@@ -74,12 +87,16 @@ MangoWC is a **Wayland compositor** - a program that manages windows and display
 
 Unlike traditional workspaces, **tags** are more flexible:
 
-- **Workspaces**: A window belongs to one workspace. Switching workspaces shows a different set of windows.
-- **Tags**: A window can have multiple tags. You can view multiple tags at once or filter to specific tags.
+- **Workspaces**: A window belongs to one workspace. Switching workspaces
+  shows a different set of windows.
+- **Tags**: A window can have multiple tags. You can view multiple tags at
+  once or filter to specific tags.
 
-Think of tags as labels you can attach to windows. You can view windows with tag 1, or tag 2, or both tags 1 and 2 simultaneously.
+Think of tags as labels you can attach to windows. You can view windows with
+tag 1, or tag 2, or both tags 1 and 2 simultaneously.
 
 **Default behavior:**
+
 - `Ctrl + 1-9` - View tag 1-9
 - `Alt + 1-9` - Move current window to tag 1-9
 - Each tag can have its own layout (tile, scroller, grid, etc.)
@@ -88,19 +105,23 @@ Think of tags as labels you can attach to windows. You can view windows with tag
 
 MangoWC supports 9 different layouts:
 
-| Layout | Description | Best For |
-|--------|-------------|----------|
-| **tile** | Master-stack tiling (left master, right stack) | General multitasking |
-| **scroller** | Horizontal scrolling columns | Wide content, terminals |
-| **monocle** | One window fullscreen at a time | Focus, presentations |
-| **grid** | Windows arranged in grid | Many small windows |
-| **deck** | Stack of windows, one visible | Cycling through tasks |
-| **center_tile** | Master centered, stack on sides | Symmetrical layout |
-| **vertical_tile** | Master top, stack bottom | Wide monitors |
-| **vertical_scroller** | Vertical scrolling rows | Document review |
-| **vertical_grid** | Vertical grid arrangement | Vertical content |
+| Layout                | Description                     | Best For              |
+|-----------------------|---------------------------------|-----------------------|
+| **tile**              | Master-stack tiling             | General multitasking  |
+|                       | (left master, right stack)      |                       |
+| **scroller**          | Horizontal scrolling columns    | Wide content,         |
+|                       |                                 | terminals             |
+| **monocle**           | One window fullscreen at a time | Focus,                |
+|                       |                                 | presentations         |
+| **grid**              | Windows arranged in grid        | Many small windows    |
+| **deck**              | Stack of windows, one visible   | Cycling through tasks |
+| **center_tile**       | Master centered, stack on sides | Symmetrical layout    |
+| **vertical_tile**     | Master top, stack bottom        | Wide monitors         |
+| **vertical_scroller** | Vertical scrolling rows         | Document review       |
+| **vertical_grid**     | Vertical grid arrangement       | Vertical content      |
 
 **Switch layouts:**
+
 - `Super + N` - Cycle through layouts for current tag
 - Each tag can have its own default layout (set in `config.conf`)
 
@@ -114,6 +135,7 @@ The **scratchpad** is a hidden workspace for temporary windows:
 - Scratchpad windows float centered on screen
 
 **Usage example:**
+
 1. Open a terminal (`Alt + Return`)
 2. Move it to scratchpad (`Alt + Z`)
 3. It disappears
@@ -161,32 +183,37 @@ Windows can have multiple states:
 ### Typical Workflow
 
 1. **Open applications:**
-   ```
+
+   ```text
    Alt + Space          → Application launcher
    Alt + Return         → Terminal
    ```
 
 2. **Navigate windows:**
-   ```
+
+   ```text
    Alt + Arrow Keys     → Focus window in direction
    Super + Tab          → Focus next window in stack
    ```
 
 3. **Organize windows:**
-   ```
+
+   ```text
    Super + Shift + Arrows  → Swap window positions
    Alt + \                 → Toggle floating
    Alt + 1-9               → Move to specific tag
    ```
 
 4. **Adjust layout:**
-   ```
+
+   ```text
    Super + N               → Change layout
    Alt + Shift + X/Z       → Increase/decrease gaps
    ```
 
 5. **Multi-monitor:**
-   ```
+
+   ```text
    Alt + Shift + Left/Right  → Focus other monitor
    Super + Alt + Left/Right  → Move window to other monitor
    ```
@@ -194,16 +221,19 @@ Windows can have multiple states:
 ### Common Use Cases
 
 **Web browsing + Terminal:**
+
 - Open browser on tag 1, terminal on tag 2
 - Use `Ctrl + 1` and `Ctrl + 2` to switch between them
 
 **Development workflow:**
+
 - Tag 1: Code editor (center_tile layout)
 - Tag 2: Browser (monocle layout)
 - Tag 3: Terminals (tile or scroller layout)
 - Scratchpad: Calculator, notes
 
 **Keeping a window visible everywhere:**
+
 - Open music player or chat app
 - Press `Super + G` to make it global
 - It now appears on all tags
@@ -250,6 +280,7 @@ mmsg -d spawn firefox
 ### Scripting Examples
 
 **Auto-save workspace state:**
+
 ```bash
 #!/bin/bash
 # Save current tags to file
@@ -257,6 +288,7 @@ mmsg -t > ~/mango-state.txt
 ```
 
 **Tag-specific wallpapers:**
+
 ```bash
 #!/bin/bash
 # In a loop, change wallpaper based on active tag
@@ -268,6 +300,7 @@ done
 ```
 
 **Quick window layout toggle:**
+
 ```bash
 #!/bin/bash
 # Toggle between tile and monocle layouts
@@ -284,18 +317,21 @@ fi
 ### MangoWC won't start
 
 1. **Check dependencies:**
+
    ```bash
    # Verify wlroots and scenefx are installed
    pkg-config --modversion wlroots scenefx
    ```
 
 2. **Check logs:**
+
    ```bash
    # Run from terminal to see error messages
    mango
    ```
 
 3. **XWayland issues:**
+
    ```bash
    # If X11 apps won't start, rebuild with XWayland
    meson configure build -Dxwayland=enabled
@@ -311,6 +347,7 @@ fi
 ### Keybindings not working
 
 1. **Find correct key name:**
+
    ```bash
    # Install wev to see key names
    wev
@@ -324,12 +361,14 @@ fi
 ### Applications not starting
 
 1. **Missing required tools:**
+
    ```bash
    # Install suggested applications
    sudo pacman -S rofi foot waybar swaybg
    ```
 
 2. **Check autostart script:**
+
    ```bash
    # Test autostart manually
    bash ~/.config/mango/autostart.sh
@@ -338,6 +377,7 @@ fi
 ### Performance issues
 
 1. **Disable effects:**
+
    ```conf
    # In config.conf
    animations=0
@@ -346,6 +386,7 @@ fi
    ```
 
 2. **Check GPU drivers:**
+
    ```bash
    # Ensure proper graphics drivers are installed
    glxinfo | grep "OpenGL"
@@ -354,6 +395,7 @@ fi
 ### Screen sharing not working
 
 Install portal packages:
+
 ```bash
 sudo pacman -S xdg-desktop-portal xdg-desktop-portal-wlr
 ```
@@ -365,12 +407,13 @@ sudo pacman -S xdg-desktop-portal xdg-desktop-portal-wlr
 - **Website**: [mangowc.vercel.app/docs](https://mangowc.vercel.app/docs)
 - **Issues**: [GitHub Issues](https://github.com/DreamMaoMao/mangowc/issues)
 
-# Our discord
+## Our discord
+
 [mangowc](https://discord.gg/CPjbDxesh5)
 
 ---
 
-# Installation
+## Installation
 
 ## Dependencies
 
@@ -393,13 +436,19 @@ sudo pacman -S xdg-desktop-portal xdg-desktop-portal-wlr
 - libxcb
 
 ## Arch Linux
-The package is in the Arch User Repository and is available for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper like yay:
+
+The package is in the Arch User Repository and is available for manual
+download from the
+[AUR package page](https://aur.archlinux.org/packages/mangowc-git) or
+through a AUR helper like yay:
+
 ```bash
 yay -S mangowc-git
 
 ```
 
 ## Gentoo Linux
+
 The package is in the community-maintained repository called GURU.
 First, add GURU repository:
 
@@ -418,6 +467,7 @@ emerge --ask --verbose gui-wm/mangowc
 ```
 
 ## Fedora Linux
+
 The package is in the third-party Terra repository.
 First, add the [Terra Repository](https://terra.fyralabs.com/).
 
@@ -428,6 +478,7 @@ dnf install mangowc
 ```
 
 ## GuixSD
+
 The package definition is described in the source repository.
 First, add `mangowc` channel to `channels.scm` file:
 
@@ -477,9 +528,11 @@ sudo ninja -C build install
 ## Suggested Tools
 
 ### Hybrid component
+
 - [dms-shell](https://github.com/AvengeMedia/DankMaterialShell)
 
 ### Independent component
+
 - Application launcher (rofi, bemenu, wmenu, fuzzel)
 - Terminal emulator (foot, wezterm, alacritty, kitty, ghostty)
 - Status bar (waybar, eww, quickshell, ags), waybar is preferred
@@ -496,80 +549,84 @@ sudo ninja -C build install
 
 ### Essential Shortcuts
 
-| Keybinding | Action | Description |
-|------------|--------|-------------|
-| `Alt + Return` | Open terminal | Launches foot terminal emulator |
-| `Alt + Space` | Open launcher | Launches rofi application launcher |
-| `Alt + Q` | Close window | Kill focused window |
-| `Super + M` | Exit | Quit MangoWC |
-| `Super + R` | Reload config | Apply config changes without restart |
+| Keybinding     | Action        | Description                      |
+|----------------|---------------|----------------------------------|
+| `Alt + Return` | Open terminal | Launches foot terminal emulator  |
+| `Alt + Space`  | Open launcher | Launches rofi application        |
+|                |               | launcher                         |
+| `Alt + Q`      | Close window  | Kill focused window              |
+| `Super + M`    | Exit          | Quit MangoWC                     |
+| `Super + R`    | Reload config | Apply config changes without     |
+|                |               | restart                          |
 
 ### Window Management
 
-| Keybinding | Action |
-|------------|--------|
-| `Alt + ←/→/↑/↓` | Focus window in direction |
-| `Super + Tab` | Focus next window |
-| `Super + Shift + ←/→/↑/↓` | Swap window with neighbor |
-| `Alt + \` | Toggle floating/tiling |
-| `Alt + F` | Toggle fullscreen |
-| `Alt + Shift + F` | Toggle fake fullscreen |
-| `Alt + A` | Toggle maximize |
-| `Super + I` | Minimize window |
-| `Super + Shift + I` | Restore minimized window |
-| `Super + G` | Toggle global (visible all tags) |
-| `Super + O` | Toggle overlay (always on top) |
+| Keybinding                | Action                              |
+|---------------------------|-------------------------------------|
+| `Alt + ←/→/↑/↓`           | Focus window in direction           |
+| `Super + Tab`             | Focus next window                   |
+| `Super + Shift + ←/→/↑/↓` | Swap window with neighbor           |
+| `Alt + \`                 | Toggle floating/tiling              |
+| `Alt + F`                 | Toggle fullscreen                   |
+| `Alt + Shift + F`         | Toggle fake fullscreen              |
+| `Alt + A`                 | Toggle maximize                     |
+| `Super + I`               | Minimize window                     |
+| `Super + Shift + I`       | Restore minimized window            |
+| `Super + G`               | Toggle global (visible all tags)    |
+| `Super + O`               | Toggle overlay (always on top)      |
 
 ### Tag (Workspace) Management
 
-| Keybinding | Action |
-|------------|--------|
-| `Ctrl + 1-9` | Switch to tag 1-9 |
-| `Alt + 1-9` | Move window to tag 1-9 (and follow) |
-| `Super + ←/→` | Previous/next tag |
-| `Ctrl + ←/→` | Previous/next tag with windows |
-| `Ctrl + Super + ←/→` | Move window to previous/next tag |
+| Keybinding          | Action                               |
+|---------------------|--------------------------------------|
+| `Ctrl + 1-9`        | Switch to tag 1-9                    |
+| `Alt + 1-9`         | Move window to tag 1-9 (and follow)  |
+| `Super + ←/→`       | Previous/next tag                    |
+| `Ctrl + ←/→`        | Previous/next tag with windows       |
+| `Ctrl + Super + ←/→`| Move window to previous/next tag     |
 
 ### Layout Control
 
-| Keybinding | Action |
-|------------|--------|
-| `Super + N` | Cycle through layouts |
-| `Alt + E` | Set window to full width (scroller) |
-| `Alt + X` | Cycle width presets (scroller) |
-| `Alt + Shift + X/Z` | Increase/decrease gaps |
-| `Alt + Shift + R` | Toggle gaps on/off |
+| Keybinding          | Action                               |
+|---------------------|--------------------------------------|
+| `Super + N`         | Cycle through layouts                |
+| `Alt + E`           | Set window to full width (scroller)  |
+| `Alt + X`           | Cycle width presets (scroller)       |
+| `Alt + Shift + X/Z` | Increase/decrease gaps               |
+| `Alt + Shift + R`   | Toggle gaps on/off                   |
 
 ### Special Features
 
-| Keybinding | Action |
-|------------|--------|
-| `Alt + Tab` | Toggle overview mode |
-| `Alt + Z` | Toggle scratchpad |
-| `Super + Scroll Up/Down` | Switch tags with scroll wheel |
+| Keybinding              | Action                   |
+|-------------------------|--------------------------|
+| `Alt + Tab`             | Toggle overview mode     |
+| `Alt + Z`               | Toggle scratchpad        |
+| `Super + Scroll Up/Down`| Switch tags with scroll  |
+|                         | wheel                    |
 
 ### Multi-Monitor
 
-| Keybinding | Action |
-|------------|--------|
-| `Alt + Shift + ←/→` | Focus adjacent monitor |
-| `Super + Alt + ←/→` | Move window to adjacent monitor |
+| Keybinding          | Action                           |
+|---------------------|----------------------------------|
+| `Alt + Shift + ←/→` | Focus adjacent monitor           |
+| `Super + Alt + ←/→` | Move window to adjacent monitor  |
 
 ### Floating Window Adjustment
 
-| Keybinding | Action |
-|------------|--------|
-| `Ctrl + Shift + ←/→/↑/↓` | Move floating window by pixels |
-| `Ctrl + Alt + ←/→/↑/↓` | Resize floating window by pixels |
-| `Super + Left-drag` | Move floating window with mouse |
-| `Super + Right-drag` | Resize floating window with mouse |
-| `Middle-click` | Maximize window |
+| Keybinding                | Action                             |
+|---------------------------|------------------------------------|
+| `Ctrl + Shift + ←/→/↑/↓`  | Move floating window by pixels     |
+| `Ctrl + Alt + ←/→/↑/↓`    | Resize floating window by pixels   |
+| `Super + Left-drag`       | Move floating window with mouse    |
+| `Super + Right-drag`      | Resize floating window with mouse  |
+| `Middle-click`            | Maximize window                    |
 
 > **Tip**: Press `Super + R` after editing your config to reload without restarting!
 
 ## My Dotfiles
 
 ### Daily
+
 - Dependencies
 
 ```bash
@@ -577,26 +634,30 @@ yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist w
 ```
 
 ### Dms
+
 - Dependencies
+
 ```bash
 yay -S foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard sway-audio-idle-inhibit-git brightnessctl grim slurp satty matugen-bin dms-shell-git
 
 ```
+
 - use my dms config
 
 ```bash
 git clone -b dms https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 ```
+
 - use my daily config
 
 ```bash
 git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 ```
 
-
 ## Documentation
 
-MangoWC comes with comprehensive documentation to help you get started and master the compositor:
+MangoWC comes with comprehensive documentation to help you get started and
+master the compositor:
 
 ### 📚 Documentation Files
 
@@ -620,7 +681,8 @@ MangoWC comes with comprehensive documentation to help you get started and maste
 
 ### 🌐 Online Resources
 
-- **[Wiki](https://github.com/DreamMaoMao/mango/wiki/)** - Comprehensive online documentation
+- **[Wiki](https://github.com/DreamMaoMao/mango/wiki/)** - Comprehensive
+  online documentation
 - **[Website](https://mangowc.vercel.app/docs)** - Web-based documentation
 - **[Discord](https://discord.gg/CPjbDxesh5)** - Community support and discussions
 
@@ -636,11 +698,14 @@ MangoWC comes with comprehensive documentation to help you get started and maste
 
 ---
 
-# NixOS + Home-manager
+## NixOS + Home-manager
 
-The repo contains a flake that provides a NixOS module and a home-manager module for mango.
-Use the NixOS module to install mango with other necessary components of a working Wayland environment.
-Use the home-manager module to declare configuration and autostart for mango.
+The repo contains a flake that provides a NixOS module and a home-manager
+module for mango.
+Use the NixOS module to install mango with other necessary components of a
+working Wayland environment.
+Use the home-manager module to declare configuration and autostart for
+mango.
 
 Here's an example of using the modules in a flake:
 
@@ -712,38 +777,41 @@ Here's an example of using the modules in a flake:
 }
 ```
 
-# Packaging mango
+## Packaging mango
 
-To package mango for other distributions, you can check the reference setup for:
+To package mango for other distributions, you can check the reference setup
+for:
 
 - [nix](https://github.com/DreamMaoMao/mangowc/blob/main/nix/default.nix)
 - [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mangowc-git).
 - [gentoo](https://data.gpo.zugaina.org/guru/gui-wm/mangowc)
 
-You might need to package `scenefx` for your distribution, check availability [here](https://github.com/wlrfx/scenefx.git).
+You might need to package `scenefx` for your distribution, check availability
+at the [scenefx repository](https://github.com/wlrfx/scenefx.git).
 
-If you encounter build errors when packaging `mango`, feel free to create an issue and ask a question, but
-Read The Friendly Manual on packaging software in your distribution first.
+If you encounter build errors when packaging `mango`, feel free to create an
+issue and ask a question, but Read The Friendly Manual on packaging software
+in your distribution first.
 
-# Thanks to These Reference Repositories
+## Thanks to These Reference Repositories
 
-- https://gitlab.freedesktop.org/wlroots/wlroots - Implementation of Wayland protocol
+- <https://gitlab.freedesktop.org/wlroots/wlroots> - Implementation of Wayland protocol
 
-- https://github.com/dqrk0jeste/owl - Basal window animation
+- <https://github.com/dqrk0jeste/owl> - Basal window animation
 
-- https://codeberg.org/dwl/dwl - Basal dwl feature
+- <https://codeberg.org/dwl/dwl> - Basal dwl feature
 
-- https://github.com/swaywm/sway - Sample of Wayland protocol
+- <https://github.com/swaywm/sway> - Sample of Wayland protocol
 
-- https://github.com/wlrfx/scenefx - Make it simple to add window effect.
+- <https://github.com/wlrfx/scenefx> - Make it simple to add window effect.
 
+## Sponsor
 
-# Sponsor
 At present, I can only accept sponsorship through an encrypted connection.
-If you find this project helpful to you, you can offer sponsorship in the following ways.
+If you find this project helpful to you, you can offer sponsorship in the
+following ways.
 
 <img width="650" height="870" alt="image" src="https://github.com/user-attachments/assets/8c860317-90d2-4071-971d-f1a92b674469" />
-
 
 Thanks to the following friends for their sponsorship of this project
 
