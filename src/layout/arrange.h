@@ -82,7 +82,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int32_t offsetx,
 	bool begin_find_nextnext = false;
 	bool begin_find_prevprev = false;
 
-	// 从当前节点的下一个开始遍历
+	// Start traversal from next node of current node
 	for (node = grabc->link.next; node != &clients; node = node->next) {
 		tc = wl_container_of(node, tc, link);
 		if (begin_find_nextnext && VISIBLEON(tc, grabc->mon) && ISTILED(tc)) {
@@ -91,14 +91,14 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int32_t offsetx,
 		}
 
 		if (!begin_find_nextnext && VISIBLEON(tc, grabc->mon) &&
-			ISTILED(tc)) { // 根据你的实际字段名调整
+			ISTILED(tc)) { // Adjust according to your actual field names
 			next = tc;
 			begin_find_nextnext = true;
 			continue;
 		}
 	}
 
-	// 从当前节点的上一个开始遍历
+	// Start traversal from previous node of current node
 	for (node = grabc->link.prev; node != &clients; node = node->prev) {
 		tc = wl_container_of(node, tc, link);
 
@@ -108,7 +108,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int32_t offsetx,
 		}
 
 		if (!begin_find_prevprev && VISIBLEON(tc, grabc->mon) &&
-			ISTILED(tc)) { // 根据你的实际字段名调整
+			ISTILED(tc)) { // Adjust according to your actual field names
 			prev = tc;
 			begin_find_prevprev = true;
 			continue;
@@ -119,7 +119,7 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int32_t offsetx,
 		drag_begin_cursorx = cursor->x;
 		drag_begin_cursory = cursor->y;
 		start_drag_window = true;
-		// 记录初始状态
+		// Record initial state
 		grabc->old_master_mfact_per = grabc->master_mfact_per;
 		grabc->old_master_inner_per = grabc->master_inner_per;
 		grabc->old_stack_inner_per = grabc->stack_inner_per;
@@ -127,10 +127,10 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int32_t offsetx,
 			cursor->y < grabc->geom.y + grabc->geom.height / 2;
 		grabc->cursor_in_left_half =
 			cursor->x < grabc->geom.x + grabc->geom.width / 2;
-		// 记录初始几何信息
+		// Record initial geometric information
 		grabc->drag_begin_geom = grabc->geom;
 	} else {
-		// 计算相对于屏幕尺寸的比例变化
+		// Calculate proportional change relative to screen size
 		if (isdrag) {
 
 			offsetx = cursor->x - drag_begin_cursorx;
@@ -205,11 +205,11 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int32_t offsetx,
 			}
 		} else if ((grabc->cursor_in_upper_half && moving_up) ||
 				   (!grabc->cursor_in_upper_half && moving_down)) {
-			// 光标在窗口上方且向上移动，或在窗口下方且向下移动 → 增加高度
+			// Cursor above window and moving up, or below window and moving down → increase height
 			delta_y = fabsf(delta_y);
 			delta_y = delta_y * 2;
 		} else {
-			// 其他情况 → 减小高度
+			// Other cases → decrease height
 			delta_y = -fabsf(delta_y);
 			delta_y = delta_y * 2;
 		}
@@ -231,17 +231,17 @@ void resize_tile_master_horizontal(Client *grabc, bool isdrag, int32_t offsetx,
 			delta_x = delta_x * -1.0f;
 		}
 
-		// 直接设置新的比例，基于初始值 + 变化量
+		// Directly set new proportion, based on initial value + change amount
 		float new_master_mfact_per = grabc->old_master_mfact_per + delta_x;
 		float new_master_inner_per = grabc->old_master_inner_per + delta_y;
 		float new_stack_inner_per = grabc->old_stack_inner_per + delta_y;
 
-		// 应用限制，确保比例在合理范围内
+		// Apply limits to ensure proportion is within reasonable range
 		new_master_mfact_per = fmaxf(0.1f, fminf(0.9f, new_master_mfact_per));
 		new_master_inner_per = fmaxf(0.1f, fminf(0.9f, new_master_inner_per));
 		new_stack_inner_per = fmaxf(0.1f, fminf(0.9f, new_stack_inner_per));
 
-		// 应用到所有平铺窗口
+		// Apply to all tiling windows
 		wl_list_for_each(tc, &clients, link) {
 			if (VISIBLEON(tc, grabc->mon) && ISTILED(tc)) {
 				tc->master_mfact_per = new_master_mfact_per;
@@ -272,23 +272,23 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int32_t offsetx,
 	Client *prev = NULL;
 	struct wl_list *node;
 
-	// 从当前节点的下一个开始遍历
+	// Start traversal from next node of current node
 	for (node = grabc->link.next; node != &clients; node = node->next) {
 		tc = wl_container_of(node, tc, link);
 
 		if (VISIBLEON(tc, grabc->mon) &&
-			ISTILED(tc)) { // 根据你的实际字段名调整
+			ISTILED(tc)) { // Adjust according to your actual field names
 			next = tc;
 			break;
 		}
 	}
 
-	// 从当前节点的上一个开始遍历
+	// Start traversal from previous node of current node
 	for (node = grabc->link.prev; node != &clients; node = node->prev) {
 		tc = wl_container_of(node, tc, link);
 
 		if (VISIBLEON(tc, grabc->mon) &&
-			ISTILED(tc)) { // 根据你的实际字段名调整
+			ISTILED(tc)) { // Adjust according to your actual field names
 			prev = tc;
 			break;
 		}
@@ -299,7 +299,7 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int32_t offsetx,
 		drag_begin_cursory = cursor->y;
 		start_drag_window = true;
 
-		// 记录初始状态
+		// Record initial state
 		grabc->old_master_mfact_per = grabc->master_mfact_per;
 		grabc->old_master_inner_per = grabc->master_inner_per;
 		grabc->old_stack_inner_per = grabc->stack_inner_per;
@@ -307,11 +307,11 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int32_t offsetx,
 			cursor->y < grabc->geom.y + grabc->geom.height / 2;
 		grabc->cursor_in_left_half =
 			cursor->x < grabc->geom.x + grabc->geom.width / 2;
-		// 记录初始几何信息
+		// Record initial geometric information
 		grabc->drag_begin_geom = grabc->geom;
 	} else {
-		// 计算相对于屏幕尺寸的比例变化
-		// 计算相对于屏幕尺寸的比例变化
+		// Calculate proportional change relative to screen size
+		// Calculate proportional change relative to screen size
 		if (isdrag) {
 
 			offsetx = cursor->x - drag_begin_cursorx;
@@ -326,7 +326,7 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int32_t offsetx,
 		}
 
 		if (grabc->ismaster) {
-			// 垂直版本：左右移动调整高度比例，上下移动调整宽度比例
+			// Vertical version: left-right movement adjusts height proportion, up-down movement adjusts width proportion
 			delta_x = (float)(offsetx) * (grabc->old_master_inner_per) /
 					  grabc->drag_begin_geom.width;
 			delta_y = (float)(offsety) * (grabc->old_master_mfact_per) /
@@ -349,56 +349,56 @@ void resize_tile_master_vertical(Client *grabc, bool isdrag, int32_t offsetx,
 			moving_right = cursor->x > drag_begin_cursorx;
 		}
 
-		// 调整主区域和栈区域的高度比例（垂直分割）
+		// Adjust height proportion of master and stack areas (vertical split)
 		if (grabc->ismaster && !prev) {
 			if (moving_left) {
-				delta_x = -fabsf(delta_x); // 向上移动减少主区域高度
+				delta_x = -fabsf(delta_x); // Move up to decrease master area height
 			} else {
-				delta_x = fabsf(delta_x); // 向下移动增加主区域高度
+				delta_x = fabsf(delta_x); // Move down to increase master area height
 			}
 		} else if (grabc->ismaster && next && !next->ismaster) {
 			if (moving_left) {
-				delta_x = fabsf(delta_x); // 向上移动增加主区域高度
+				delta_x = fabsf(delta_x); // Move up to increase master area height
 			} else {
-				delta_x = -fabsf(delta_x); // 向下移动减少主区域高度
+				delta_x = -fabsf(delta_x); // Move down to decrease master area height
 			}
 		} else if (!grabc->ismaster && prev && prev->ismaster) {
 			if (moving_left) {
-				delta_x = -fabsf(delta_x); // 向上移动减少栈区域高度
+				delta_x = -fabsf(delta_x); // Move up to decrease stack area height
 			} else {
-				delta_x = fabsf(delta_x); // 向下移动增加栈区域高度
+				delta_x = fabsf(delta_x); // Move down to increase stack area height
 			}
 		} else if (!grabc->ismaster && !next) {
 			if (moving_left) {
-				delta_x = fabsf(delta_x); // 向上移动增加栈区域高度
+				delta_x = fabsf(delta_x); // Move up to increase stack area height
 			} else {
-				delta_x = -fabsf(delta_x); // 向下移动减少栈区域高度
+				delta_x = -fabsf(delta_x); // Move down to decrease stack area height
 			}
 		} else if ((grabc->cursor_in_left_half && moving_left) ||
 				   (!grabc->cursor_in_left_half && moving_right)) {
-			// 光标在窗口左侧且向左移动，或在窗口右侧且向右移动 → 增加宽度
+			// Cursor on left side of window and moving left, or on right side and moving right → increase width
 			delta_x = fabsf(delta_x);
 			delta_x = delta_x * 2;
 		} else {
-			// 其他情况 → 减小宽度
+			// Other cases → decrease width
 			delta_x = -fabsf(delta_x);
 			delta_x = delta_x * 2;
 		}
 
-		// 直接设置新的比例，基于初始值 + 变化量
+		// Directly set new proportion, based on initial value + change amount
 		float new_master_mfact_per = grabc->old_master_mfact_per +
-									 delta_y; // 垂直：delta_y调整主区域高度
+									 delta_y; // Vertical: delta_y adjusts master area height
 		float new_master_inner_per = grabc->old_master_inner_per +
-									 delta_x; // 垂直：delta_x调整主区域内部宽度
+									 delta_x; // Vertical: delta_x adjusts master area internal width
 		float new_stack_inner_per = grabc->old_stack_inner_per +
-									delta_x; // 垂直：delta_x调整栈区域内部宽度
+									delta_x; // Vertical: delta_x adjusts stack area internal width
 
-		// 应用限制，确保比例在合理范围内
+		// Apply limits to ensure proportion is within reasonable range
 		new_master_mfact_per = fmaxf(0.1f, fminf(0.9f, new_master_mfact_per));
 		new_master_inner_per = fmaxf(0.1f, fminf(0.9f, new_master_inner_per));
 		new_stack_inner_per = fmaxf(0.1f, fminf(0.9f, new_stack_inner_per));
 
-		// 应用到所有平铺窗口
+		// Apply to all tiling windows
 		wl_list_for_each(tc, &clients, link) {
 			if (VISIBLEON(tc, grabc->mon) && ISTILED(tc)) {
 				tc->master_mfact_per = new_master_mfact_per;
@@ -437,7 +437,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 		drag_begin_cursory = cursor->y;
 		start_drag_window = true;
 
-		// 记录初始状态
+		// Record initial state
 		stack_head->old_scroller_pproportion = stack_head->scroller_proportion;
 		grabc->old_stack_proportion = grabc->stack_proportion;
 
@@ -445,11 +445,11 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 			cursor->x < grabc->geom.x + grabc->geom.width / 2;
 		grabc->cursor_in_upper_half =
 			cursor->y < grabc->geom.y + grabc->geom.height / 2;
-		// 记录初始几何信息
+		// Record initial geometric information
 		grabc->drag_begin_geom = grabc->geom;
 	} else {
-		// 计算相对于屏幕尺寸的比例变化
-		// 计算相对于屏幕尺寸的比例变化
+		// Calculate proportional change relative to screen size
+		// Calculate proportional change relative to screen size
 		if (isdrag) {
 
 			offsetx = cursor->x - drag_begin_cursorx;
@@ -499,10 +499,10 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 
 		if ((grabc->cursor_in_upper_half && moving_up) ||
 			(!grabc->cursor_in_upper_half && moving_down)) {
-			// 光标在窗口上方且向上移动，或在窗口下方且向下移动 → 增加高度
+			// Cursor above window and moving up, or below window and moving down → increase height
 			delta_y = fabsf(delta_y);
 		} else {
-			// 其他情况 → 减小高度
+			// Other cases → decrease height
 			delta_y = -fabsf(delta_y);
 		}
 
@@ -568,7 +568,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 			}
 		}
 
-		// 直接设置新的比例，基于初始值 + 变化量
+		// Directly set new proportion, based on initial value + change amount
 		if (isvertical) {
 			new_scroller_proportion =
 				stack_head->old_scroller_pproportion + delta_y;
@@ -580,7 +580,7 @@ void resize_tile_scroller(Client *grabc, bool isdrag, int32_t offsetx,
 			new_stack_proportion = grabc->old_stack_proportion + delta_y;
 		}
 
-		// 应用限制，确保比例在合理范围内
+		// Apply limits to ensure proportion is within reasonable range
 		new_scroller_proportion =
 			fmaxf(0.1f, fminf(1.0f, new_scroller_proportion));
 		new_stack_proportion = fmaxf(0.1f, fminf(1.0f, new_stack_proportion));
@@ -705,7 +705,7 @@ void reset_size_per_mon(Monitor *m, int32_t tile_cilent_num,
 	}
 }
 
-void // 17
+void // Main arrange function
 arrange(Monitor *m, bool want_animation, bool from_view) {
 	Client *c = NULL;
 	double total_stack_inner_percent = 0;
