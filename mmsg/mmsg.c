@@ -67,7 +67,7 @@ static DYNARR_DEF(struct output) outputs;
 static struct wl_display *display;
 static struct zdwl_ipc_manager_v2 *dwl_ipc_manager;
 
-// 为每个回调定义专用的空函数
+// Define dedicated empty functions for each callback
 static void noop_geometry(void *data, struct wl_output *wl_output, int32_t x,
 						  int32_t y, int32_t physical_width,
 						  int32_t physical_height, int32_t subpixel,
@@ -85,12 +85,12 @@ static void noop_scale(void *data, struct wl_output *wl_output,
 static void noop_description(void *data, struct wl_output *wl_output,
 							 const char *description) {}
 
-// 将 n 转换为 9 位二进制字符串，结果存入 buf（至少长度 10）
+// Convert n to a 9-bit binary string, result stored in buf (minimum length 10)
 void bin_str_9bits(char *buf, uint32_t n) {
 	for (int32_t i = 8; i >= 0; i--) {
 		*buf++ = ((n >> i) & 1) ? '1' : '0';
 	}
-	*buf = '\0'; // 字符串结尾
+	*buf = '\0'; // End of string
 }
 
 static void dwl_ipc_tags(void *data,
@@ -152,7 +152,7 @@ static void dwl_ipc_output_tag(void *data,
 	if (clients > 0)
 		occ |= 1 << tag;
 
-	// 累计所有 tag 的 clients 总数
+	// Accumulate total client count for all tags
 	total_clients += clients;
 
 	if (!(mode & GET))
