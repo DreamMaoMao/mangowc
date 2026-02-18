@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <errno.h>
 #include <libgen.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -537,11 +538,20 @@ int32_t parse_fold_state(const char *str) {
 }
 int64_t parse_color(const char *hex_str) {
 	char *endptr;
-	int64_t hex_num = strtol(hex_str, &endptr, 16);
-	if (*endptr != '\0') {
+	errno = 0;
+	uint64_t hex_num = strtoul(hex_str, &endptr, 16);
+	
+	// Check for conversion errors
+	if (*endptr != '\0' || errno == ERANGE) {
 		return -1;
 	}
-	return hex_num;
+	
+	// Validate range for color values (0x00000000 to 0xFFFFFFFF)
+	if (hex_num > 0xFFFFFFFF) {
+		return -1;
+	}
+	
+	return (int64_t)hex_num;
 }
 
 // 辅助函数：检查字符串是否以指定的前缀开头（忽略大小写）
@@ -581,19 +591,32 @@ static char *combine_args_until_empty(char *values[], int count) {
 	// 	plus the number of commas (first_empty-1 commas)
 	total_len += (first_empty - 1);
 
-	// 	allocate memory and concatenate
+	// allocate memory and concatenate safely
 	char *combined = malloc(total_len + 1);
 	if (combined == NULL) {
 		return strdup("");
 	}
 
-	combined[0] = '\0';
+	char *ptr = combined;
+	size_t remaining = total_len + 1; // Include space for null terminator
+	
 	for (int i = 0; i < first_empty; i++) {
-		if (i > 0) {
-			strcat(combined, ",");
+		if (i > 0 && remaining > 1) {
+			*ptr++ = ',';
+			remaining--;
 		}
-		strcat(combined, values[i]);
+		if (remaining > 1) {
+			size_t val_len = strlen(values[i]);
+			// Always leave space for null terminator
+			size_t to_copy = (val_len < remaining - 1) ? val_len : remaining - 1;
+			if (to_copy > 0) {
+				memcpy(ptr, values[i], to_copy);
+				ptr += to_copy;
+				remaining -= to_copy;
+			}
+		}
 	}
+	*ptr = '\0'; // Null terminate
 
 	return combined;
 }
@@ -626,8 +649,10 @@ uint32_t parse_mod(const char *mod_str) {
 		if (strncmp(token, "code:", 5) == 0) {
 			// 处理 code: 形式
 			char *endptr;
+			errno = 0;
 			long keycode = strtol(token + 5, &endptr, 10);
-			if (endptr != token + 5 && (*endptr == '\0' || *endptr == ' ')) {
+			// Check for conversion errors: overflow or no conversion
+			if (endptr != token + 5 && (*endptr == '\0' || *endptr == ' ') && errno != ERANGE) {
 				switch (keycode) {
 				case 133:
 				case 134:
@@ -777,7 +802,16 @@ KeySymCode parse_key(const char *key_str, bool isbindsym) {
 	// 处理 code: 前缀的情况
 	if (strncmp(key_str, "code:", 5) == 0) {
 		char *endptr;
+		errno = 0;
 		xkb_keycode_t keycode = (xkb_keycode_t)strtol(key_str + 5, &endptr, 10);
+		
+		// Validate conversion
+		if (errno == ERANGE || *endptr != '\0') {
+			kc.type = KEY_TYPE_SYM;
+			kc.keysym = XKB_KEY_NoSymbol;
+			return kc;
+		}
+		
 		kc.type = KEY_TYPE_CODE;
 		kc.keycode.keycode1 = keycode; // 只设置第一个
 		kc.keycode.keycode2 = 0;
@@ -2284,7 +2318,8 @@ bool parse_option(Config *config, char *key, char *value) {
 		trim_whitespace(arg_value4);
 		trim_whitespace(arg_value5);
 
-		strcpy(binding->mode, config->keymode);
+		strncpy(binding->mode, config->keymode, sizeof(binding->mode) - 1);
+		binding->mode[sizeof(binding->mode) - 1] = '\0';
 		if (strcmp(binding->mode, "common") == 0) {
 			binding->iscommonmode = true;
 			binding->isdefaultmode = false;
@@ -3479,7 +3514,8 @@ bool parse_config(void) {
 	config.tag_rules = NULL;
 	config.tag_rules_count = 0;
 	config.cursor_theme = NULL;
-	strcpy(config.keymode, "default");
+	strncpy(config.keymode, "default", sizeof(config.keymode) - 1);
+	config.keymode[sizeof(config.keymode) - 1] = '\0';
 
 	create_config_keymap();
 

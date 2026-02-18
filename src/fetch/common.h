@@ -26,6 +26,9 @@ int32_t isdescprocess(pid_t p, pid_t c) {
 	return (int32_t)c;
 }
 
+// Buffer size for layout abbreviations (must match kb_layout buffer in dwl-ipc.h)
+#define LAYOUT_ABBR_SIZE 32
+
 void get_layout_abbr(char *abbr, const char *full_name) {
 	// 清空输出缓冲区
 	abbr[0] = '\0';
@@ -33,7 +36,8 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 	// 1. 尝试在映射表中查找
 	for (int32_t i = 0; layout_mappings[i].full_name != NULL; i++) {
 		if (strcmp(full_name, layout_mappings[i].full_name) == 0) {
-			strcpy(abbr, layout_mappings[i].abbr);
+			strncpy(abbr, layout_mappings[i].abbr, LAYOUT_ABBR_SIZE - 1);
+			abbr[LAYOUT_ABBR_SIZE - 1] = '\0';
 			return;
 		}
 	}
@@ -73,7 +77,9 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 		abbr[2] = '\0';
 	} else {
 		// 5. 最终回退：返回 "xx"
-		strcpy(abbr, "xx");
+		abbr[0] = 'x';
+		abbr[1] = 'x';
+		abbr[2] = '\0';
 	}
 }
 

@@ -836,14 +836,24 @@ int32_t spawn(const Arg *arg) {
 
 		// 2. 解析参数
 		char *argv[64];
+		char *allocated_strings[64]; // Track strdup'd strings for cleanup
 		int32_t argc = 0;
+		int32_t alloc_count = 0;
+		
 		char *token = strtok((char *)arg->v, " ");
 		while (token != NULL && argc < 63) {
 			wordexp_t p;
-			if (wordexp(token, &p, 0) == 0) {
-				argv[argc++] = p.we_wordv[0];
+			if (wordexp(token, &p, 0) == 0 && p.we_wordc > 0) {
+				// Duplicate the string since we'll free the wordexp result
+				argv[argc] = strdup(p.we_wordv[0]);
+				wordfree(&p); // Free immediately after copying
+				if (argv[argc] != NULL) {
+					allocated_strings[alloc_count++] = argv[argc];
+					argc++;
+				}
 			} else {
-				argv[argc++] = token;
+				argv[argc] = token;
+				argc++;
 			}
 			token = strtok(NULL, " ");
 		}
@@ -852,7 +862,12 @@ int32_t spawn(const Arg *arg) {
 		// 3. 执行命令
 		execvp(argv[0], argv);
 
-		// 4. execvp 失败时：打印错误并直接退出（避免 coredump）
+		// 4. execvp 失败时：清理并退出
+		// If execvp succeeds, this code never runs (process replaced)
+		// If it fails, clean up allocated strings before exiting
+		for (int32_t i = 0; i < alloc_count; i++) {
+			free(allocated_strings[i]);
+		}
 		wlr_log(WLR_ERROR, "mango: execvp '%s' failed: %s\n", argv[0],
 				strerror(errno));
 		_exit(EXIT_FAILURE); // 使用 _exit 避免缓冲区刷新等操作
