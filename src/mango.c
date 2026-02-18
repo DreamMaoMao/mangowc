@@ -274,8 +274,8 @@ typedef struct {
 	struct wl_list link;
 	struct wlr_input_device *wlr_device;
 	struct libinput_device *libinput_device;
-	struct wl_listener destroy_listener; // 用于监听设备销毁事件
-	void *device_data; // 新增：指向设备特定数据（如 Switch）
+	struct wl_listener destroy_listener; // Listen for device destruction events
+	void *device_data; // Added: pointer to device-specific data (e.g. Switch)
 } InputDevice;
 
 typedef struct {
@@ -586,8 +586,9 @@ static void pinch_end(struct wl_listener *listener, void *data);
 static void hold_begin(struct wl_listener *listener, void *data);
 static void hold_end(struct wl_listener *listener, void *data);
 static void checkidleinhibitor(struct wlr_surface *exclude);
-static void cleanup(void); // 退出清理
-static void cleanupmon(struct wl_listener *listener, void *data); // 退出清理
+static void cleanup(void); // Cleanup on exit
+static void cleanupmon(struct wl_listener *listener,
+					   void *data); // Monitor cleanup
 static void closemon(Monitor *m);
 static void cleanuplisteners(void);
 static void toggle_hotarea(int32_t x_root, int32_t y_root); // 触发热区

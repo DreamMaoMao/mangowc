@@ -1485,8 +1485,9 @@ bool parse_option(Config *config, char *key, char *value) {
 					"scroller_proportion_preset format: %s\n",
 					value);
 			free(value_copy);
-			free(config->scroller_proportion_preset); // 释放已分配的内存
-			config->scroller_proportion_preset = NULL; // 防止野指针
+			free(config->scroller_proportion_preset); // Free allocated memory
+			config->scroller_proportion_preset =
+				NULL; // Prevent dangling pointer
 			config->scroller_proportion_preset_count = 0;
 			return false;
 		}
@@ -3265,16 +3266,18 @@ void set_value_default() {
 
 	/* appearance */
 	config.axis_bind_apply_timeout =
-		axis_bind_apply_timeout; // 滚轮绑定动作的触发的时间间隔
-	config.focus_on_activate =
-		focus_on_activate; // 收到窗口激活请求是否自动跳转聚焦
-	config.new_is_master = new_is_master;	  // 新窗口是否插在头部
-	config.default_mfact = default_mfact;	  // master 窗口比例
-	config.default_nmaster = default_nmaster; // 默认master数量
+		axis_bind_apply_timeout; // Timeout interval for mouse wheel binding
+								 // actions
+	config.focus_on_activate = focus_on_activate; // Auto-focus when receiving
+												  // window activation request
+	config.new_is_master = new_is_master; // Insert new windows at the head
+	config.default_mfact = default_mfact; // Master window proportion
+	config.default_nmaster =
+		default_nmaster; // Default number of master windows
 	config.center_master_overspread =
-		center_master_overspread; // 中心master时是否铺满
+		center_master_overspread; // Whether to fill screen when center master
 	config.center_when_single_stack =
-		center_when_single_stack; // 单个stack时是否居中
+		center_when_single_stack; // Whether to center when single stack window
 
 	config.numlockon = numlockon; // Enable numlock
 
