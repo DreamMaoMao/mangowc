@@ -24,32 +24,27 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 **What it does**:
 
 1. Runs in Arch Linux container (archlinux:latest)
-2. Updates system and installs dependencies via pacman
-3. Builds wlroots 0.19.0 from source
-4. Builds scenefx 0.4.1 from source
-5. Uses `meson subprojects download` to fetch any required subproject
-   dependencies
-6. Configures the project with meson
-7. Builds the project with ninja
-8. Verifies the executables were created
+2. Updates system and installs all dependencies via pacman
+3. Installs wlroots from official Arch repositories
+4. Installs scenefx from AUR (Arch User Repository)
+5. Configures the project with meson
+6. Builds the project with ninja
+7. Verifies the executables were created
 
 **Build Strategy**:
 
-- Uses Arch Linux for up-to-date system packages (wayland, libinput, etc.)
-- Only builds wlroots and scenefx from source (not available in pacman)
-- Uses `meson subprojects download` before each meson setup to fetch required
-  subprojects
-- Allows meson wrap mode for automatic subproject handling
-  (no --wrap-mode=nodownload)
+- Uses Arch Linux for up-to-date system packages
+- All dependencies installed via pacman or AUR (no source builds)
+- wlroots installed from official Arch repositories
+- scenefx installed from AUR
 
 **Dependencies**:
 
 - Arch Linux container (archlinux:latest)
 - Meson build system
 - Ninja build tool
-- System packages from pacman (wayland, libinput, mesa, etc.)
-- wlroots 0.19.0 (built from source)
-- scenefx 0.4.1 (built from source)
+- All system packages from pacman (wayland, libinput, wlroots, mesa, etc.)
+- scenefx from AUR
 
 ### docs.yml
 

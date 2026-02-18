@@ -44,7 +44,7 @@ jobs:
           # Update package database
           pacman -Syu --noconfirm
           
-          # Install build tools and dependencies
+          # Install build tools and all dependencies
           pacman -S --noconfirm \
             base-devel \
             git \
@@ -65,32 +65,21 @@ jobs:
             libdisplay-info \
             seatd \
             mesa \
+            wlroots \
             pkg-config
 
-      - name: Install wlroots 0.19.0
+      - name: Install scenefx from AUR
         run: |
-          # Build wlroots 0.19.0 from source
-          git clone https://gitlab.freedesktop.org/wlroots/wlroots.git
-          cd wlroots
-          git checkout 0.19.0
-          # Download meson subprojects if needed
-          meson subprojects download || true
-          meson setup build/ --prefix=/usr
-          ninja -C build/ install
-          ldconfig
-          cd ..
-
-      - name: Install scenefx 0.4.1
-        run: |
-          # Build scenefx from source
-          git clone -b 0.4.1 https://github.com/wlrfx/scenefx.git
+          # Install scenefx from AUR since it's not in official repos
+          # Create a non-root user for makepkg (AUR requires non-root)
+          useradd -m -G wheel builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          
+          # Clone and build scenefx from AUR as builder user
+          cd /home/builder
+          su - builder -c "git clone https://aur.archlinux.org/scenefx.git"
           cd scenefx
-          # Download meson subprojects if needed
-          meson subprojects download || true
-          meson setup build/ --prefix=/usr
-          ninja -C build/ install
-          ldconfig
-          cd ..
+          su - builder -c "cd /home/builder/scenefx && makepkg -si --noconfirm"
 
       - name: Configure meson
         run: |
