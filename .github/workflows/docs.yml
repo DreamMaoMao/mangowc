@@ -1,0 +1,31 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - '**.md'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '**.md'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+jobs:
+  markdown-lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v18
+        with:
+          globs: |
+            **/*.md
+            !**/node_modules/**

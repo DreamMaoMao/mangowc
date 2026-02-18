@@ -3,8 +3,28 @@ name: Build
 on:
   push:
     branches: [main, master]
+    paths:
+      - '**.c'
+      - '**.h'
+      - '**.cpp'
+      - '**.scm'
+      - 'meson.build'
+      - 'meson_options.txt'
+      - 'flake.nix'
+      - 'protocols/**'
+      - '.github/workflows/build.yml'
   pull_request:
     branches: [main, master]
+    paths:
+      - '**.c'
+      - '**.h'
+      - '**.cpp'
+      - '**.scm'
+      - 'meson.build'
+      - 'meson_options.txt'
+      - 'flake.nix'
+      - 'protocols/**'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 jobs:

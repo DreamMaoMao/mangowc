@@ -8,9 +8,15 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 **Purpose**: Builds the project to ensure code changes compile successfully.
 
 **Triggers**:
-- Push to `main` or `master` branch
-- Pull requests to `main` or `master` branch
+- Push to `main` or `master` branch (only when code files change)
+- Pull requests to `main` or `master` branch (only when code files change)
 - Manual dispatch (workflow_dispatch)
+
+**Path filters** (only runs when these change):
+- Source files: `**.c`, `**.h`, `**.cpp`, `**.scm`
+- Build files: `meson.build`, `meson_options.txt`, `flake.nix`
+- Protocol definitions: `protocols/**`
+- Workflow file itself: `.github/workflows/build.yml`
 
 **What it does**:
 1. Installs system dependencies (wayland, libinput, etc.)
@@ -27,6 +33,23 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 - Wayland ecosystem libraries
 - wlroots 0.19
 - scenefx 0.4.1
+
+### docs.yml
+**Purpose**: Validates markdown documentation for style and formatting consistency.
+
+**Triggers**:
+- Push to `main` or `master` branch (only when markdown files change)
+- Pull requests to `main` or `master` branch (only when markdown files change)
+- Manual dispatch (workflow_dispatch)
+
+**Path filters** (only runs when these change):
+- Markdown files: `**.md`
+- Workflow file itself: `.github/workflows/docs.yml`
+
+**What it does**:
+- Lints all markdown files using markdownlint-cli2
+- Checks for common markdown formatting issues
+- Ensures documentation follows consistent style guidelines
 
 ### lock.yml
 **Purpose**: Automatically locks inactive issues and PRs to keep the repository clean.
@@ -53,9 +76,15 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 ## Development Notes
 
 The build workflow ensures that:
+- Only runs when actual code or build configuration changes
 - All dependencies are properly installed
 - The project compiles without errors
 - Both main executables (`mango` and `mmsg`) are built successfully
+
+The docs workflow ensures that:
+- Only runs when markdown documentation changes
+- Documentation follows consistent formatting
+- Markdown files are well-formed and free of common issues
 
 If the build workflow fails, check:
 1. Dependencies are up to date in the workflow file
