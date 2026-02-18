@@ -20,27 +20,26 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 
 **What it does**:
 1. Installs system dependencies (libinput, libdrm, etc.)
-2. Installs wayland (tries apt first, builds 1.23.1 from source if needed)
-3. Installs wlroots (tries apt first, builds 0.19 from source if needed)
-4. Builds scenefx 0.4.1 from source (not available in apt)
-5. Configures the project with meson
-6. Builds the project with ninja
-7. Verifies the executables were created
+2. Builds wayland 1.23.1 from source
+3. Builds wlroots 0.19 from source
+4. Builds scenefx 0.4.1 from source
+5. Uses `meson subprojects download` to fetch any required subproject dependencies
+6. Configures the project with meson
+7. Builds the project with ninja
+8. Verifies the executables were created
 
-**Install Strategy**:
-- Prefers apt packages when available and version requirements are met
-- Falls back to building from source only when necessary
-- wayland: requires >= 1.23.1 (typically builds from source on Ubuntu 22.04/24.04)
-- wlroots: requires >= 0.19.0 (checks apt version, builds from source if too old)
-- scenefx: not in apt repositories (always builds from source)
+**Build Strategy**:
+- All dependencies (wayland, wlroots, scenefx) are built from their source repositories
+- Uses `meson subprojects download` before each meson setup to fetch required subprojects
+- Allows meson wrap mode for automatic subproject handling (no --wrap-mode=nodownload)
 
 **Dependencies**:
 - Ubuntu latest runner
 - Meson build system
 - Ninja build tool
-- Wayland >= 1.23.1
-- wlroots >= 0.19.0
-- scenefx 0.4.1
+- Wayland 1.23.1 (built from source)
+- wlroots 0.19 (built from source)
+- scenefx 0.4.1 (built from source)
 
 ### docs.yml
 **Purpose**: Validates markdown documentation for style and formatting consistency.
@@ -55,10 +54,9 @@ This directory contains the GitHub Actions workflows for the MangoWC project.
 - Workflow file itself: `.github/workflows/docs.yml`
 
 **What it does**:
-- Lints markdown files in the repository using markdownlint-cli2
+- Lints all markdown files using markdownlint-cli2
 - Checks for common markdown formatting issues
 - Ensures documentation follows consistent style guidelines
-- Excludes dependency directories (wayland, wlroots, scenefx) to only lint repository files
 
 ### lock.yml
 **Purpose**: Automatically locks inactive issues and PRs to keep the repository clean.

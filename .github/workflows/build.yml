@@ -37,7 +37,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install system dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -61,84 +61,48 @@ jobs:
             libxml2-dev \
             pkg-config
 
-      - name: Install wayland (try apt first, build from source if needed)
+      - name: Build and install wayland 1.23.1
         run: |
-          # Try to install wayland from apt
-          if sudo apt-get install -y libwayland-dev 2>/dev/null; then
-            # Check if pkg-config can find wayland-server
-            if WAYLAND_VERSION=$(pkg-config --modversion wayland-server 2>/dev/null); then
-              echo "Installed wayland version: $WAYLAND_VERSION"
-              
-              # Check if version meets requirement (>= 1.23.1)
-              if dpkg --compare-versions "$WAYLAND_VERSION" ge "1.23.1"; then
-                echo "✅ wayland $WAYLAND_VERSION from apt meets requirements"
-                exit 0
-              else
-                echo "⚠️  wayland $WAYLAND_VERSION from apt is too old, building from source..."
-              fi
-            else
-              echo "⚠️  pkg-config cannot find wayland-server, building from source..."
-            fi
-          else
-            echo "⚠️  wayland not available in apt, building from source..."
-          fi
-          
-          # Build from source if apt package is unavailable or too old
+          # Build wayland 1.23.1 from source
           git clone https://gitlab.freedesktop.org/wayland/wayland.git
           cd wayland
           git checkout 1.23.1
+          # Download meson subprojects if needed
+          meson subprojects download || true
           meson setup build/ --prefix=/usr -Ddocumentation=false
           sudo ninja -C build/ install
           sudo ldconfig
           cd ..
-          echo "✅ Built wayland 1.23.1 from source"
 
-      - name: Install wlroots (try apt first, build from source if needed)
+      - name: Install wlroots 0.19
         run: |
-          # Try to install wlroots from apt
-          if sudo apt-get install -y libwlroots-dev 2>/dev/null; then
-            # Check if pkg-config can find wlroots
-            if WLROOTS_VERSION=$(pkg-config --modversion wlroots 2>/dev/null); then
-              echo "Installed wlroots version: $WLROOTS_VERSION"
-              
-              # Check if version meets requirement (>= 0.19.0)
-              if dpkg --compare-versions "$WLROOTS_VERSION" ge "0.19.0"; then
-                echo "✅ wlroots $WLROOTS_VERSION from apt meets requirements"
-                exit 0
-              else
-                echo "⚠️  wlroots $WLROOTS_VERSION from apt is too old, building from source..."
-              fi
-            else
-              echo "⚠️  pkg-config cannot find wlroots, building from source..."
-            fi
-          else
-            echo "⚠️  wlroots not available in apt, building from source..."
-          fi
-          
-          # Build from source if apt package is unavailable or too old
+          # Install wlroots 0.19 from source
           git clone https://gitlab.freedesktop.org/wlroots/wlroots.git
           cd wlroots
           git checkout 0.19.0
+          # Download meson subprojects if needed
+          meson subprojects download || true
           meson setup build/ --prefix=/usr
           sudo ninja -C build/ install
           sudo ldconfig
           cd ..
-          echo "✅ Built wlroots 0.19.0 from source"
 
-      - name: Install scenefx (build from source - not in apt)
+      - name: Install scenefx 0.4.1
         run: |
-          # scenefx is not available in Ubuntu apt repositories
-          # Build from source
+          # Install scenefx from source
           git clone -b 0.4.1 https://github.com/wlrfx/scenefx.git
           cd scenefx
+          # Download meson subprojects if needed
+          meson subprojects download || true
           meson setup build/ --prefix=/usr
           sudo ninja -C build/ install
           sudo ldconfig
           cd ..
-          echo "✅ Built scenefx 0.4.1 from source"
 
       - name: Configure meson
         run: |
+          # Download meson subprojects if needed
+          meson subprojects download || true
           meson setup build/ --prefix=/usr
 
       - name: Build project
