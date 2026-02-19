@@ -353,8 +353,7 @@ void client_draw_shadow(Client *c) {
 void apply_shield(Client *c, struct wlr_box clip_box) {
 	if (active_capture_count > 0 && c->shield_when_capture) {
 		wlr_scene_node_raise_to_top(&c->shield->node);
-		wlr_scene_node_set_position(&c->shield->node, clip_box.x + c->bw,
-									clip_box.y + c->bw);
+		wlr_scene_node_set_position(&c->shield->node, clip_box.x, clip_box.y);
 		wlr_scene_rect_set_size(c->shield, clip_box.width, clip_box.height);
 		wlr_scene_node_set_enabled(&c->shield->node, true);
 	} else {

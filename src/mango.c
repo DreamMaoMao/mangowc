@@ -4015,8 +4015,8 @@ mapnotify(struct wl_listener *listener, void *data) {
 	wlr_scene_node_lower_to_bottom(&c->shadow->node);
 	wlr_scene_node_set_enabled(&c->shadow->node, true);
 
-	c->shield =
-		wlr_scene_rect_create(c->scene, 0, 0, (float[4]){0, 0, 0, 0xff});
+	c->shield = wlr_scene_rect_create(c->scene_surface, 0, 0,
+									  (float[4]){0, 0, 0, 0xff});
 	c->shield->node.data = c;
 	wlr_scene_node_lower_to_bottom(&c->shield->node);
 	wlr_scene_node_set_enabled(&c->shield->node, false);
