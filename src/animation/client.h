@@ -350,6 +350,24 @@ void client_draw_shadow(Client *c) {
 	wlr_scene_shadow_set_clipped_region(c->shadow, clipped_region);
 }
 
+void apply_shield(Client *c) {
+	if (active_capture_count > 0 && c->shield_when_capture) {
+		wlr_scene_node_raise_to_top(&c->shield->node);
+		wlr_scene_node_set_position(&c->shield->node, c->bw, c->bw);
+		wlr_scene_rect_set_size(c->shield,
+								c->animation.current.width - 2 * c->bw,
+								c->animation.current.height - 2 * c->bw);
+		wlr_scene_node_set_enabled(&c->shield->node, true);
+	} else {
+		if (c->shield->node.enabled) {
+			wlr_scene_node_lower_to_bottom(&c->shield->node);
+			wlr_scene_rect_set_size(c->shield, c->animation.current.width,
+									c->animation.current.height);
+			wlr_scene_node_set_enabled(&c->shield->node, false);
+		}
+	}
+}
+
 void apply_border(Client *c) {
 	if (!c || c->iskilling || !client_surface(c)->mapped)
 		return;
@@ -535,6 +553,7 @@ void client_apply_clip(Client *c, float factor) {
 
 		apply_border(c);
 		client_draw_shadow(c);
+		apply_shield(c);
 
 		if (clip_box.width <= 0 || clip_box.height <= 0) {
 			return;
@@ -572,6 +591,7 @@ void client_apply_clip(Client *c, float factor) {
 	// 应用窗口装饰
 	apply_border(c);
 	client_draw_shadow(c);
+	apply_shield(c);
 
 	// 如果窗口剪切区域已经剪切到0，则不渲染窗口表面
 	if (clip_box.width <= 0 || clip_box.height <= 0) {
@@ -1000,6 +1020,7 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 
 		client_draw_shadow(c);
 		apply_border(c);
+		apply_shield(c);
 		client_get_clip(c, &clip);
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip);
 		return;
