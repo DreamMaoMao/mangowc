@@ -915,7 +915,13 @@ int32_t switch_keyboard_layout(const Arg *arg) {
 		wlr_log(WLR_INFO, "Only one layout available");
 		return 0;
 	}
-	xkb_layout_index_t next = (current + 1) % num_layouts;
+
+	xkb_layout_index_t next = 0;
+	if (arg->i > 0 && arg->i <= num_layouts) {
+		next = arg->i - 1;
+	} else {
+		next = (current + 1) % num_layouts;
+	}
 
 	// 6. Apply new keymap
 	uint32_t depressed = keyboard->modifiers.depressed;

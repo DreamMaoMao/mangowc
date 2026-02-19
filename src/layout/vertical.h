@@ -358,6 +358,7 @@ void vertical_scroller(Monitor *m) {
 
 	bool need_apply_overspread =
 		scroller_prefer_overspread && m->visible_scroll_tiling_clients > 1 &&
+		(focus_client_index == 0 || focus_client_index == n - 1) &&
 		tempClients[focus_client_index]->scroller_proportion < 1.0f;
 
 	if (need_apply_overspread) {

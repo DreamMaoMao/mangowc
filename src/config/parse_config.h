@@ -1051,6 +1051,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		(*arg).v = strdup(arg_value);
 	} else if (strcmp(func_name, "switch_keyboard_layout") == 0) {
 		func = switch_keyboard_layout;
+		(*arg).i = CLAMP_INT(atoi(arg_value), 0, 100);
 	} else if (strcmp(func_name, "setlayout") == 0) {
 		func = setlayout;
 		(*arg).v = strdup(arg_value);
