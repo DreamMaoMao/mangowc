@@ -839,11 +839,11 @@ int32_t spawn(const Arg *arg) {
 		char *allocated_strings[64]; // Track strdup'd strings for cleanup
 		int32_t argc = 0;
 		int32_t alloc_count = 0;
-		
+
 		char *token = strtok((char *)arg->v, " ");
 		while (token != NULL && argc < 63) {
 			wordexp_t p;
-			if (wordexp(token, &p, 0) == 0 && p.we_wordc > 0) {
+			if (wordexp(token, &p, WRDE_NOCMD) == 0 && p.we_wordc > 0) {
 				// Duplicate the string since we'll free the wordexp result
 				argv[argc] = strdup(p.we_wordv[0]);
 				wordfree(&p); // Free immediately after copying
@@ -1591,8 +1591,9 @@ int32_t toggleoverview(const Arg *arg) {
 		return 0;
 	}
 
-	// Normal view to overview, exit all floating and fullscreen states to participate in tiling,
-	// Overview to normal view, restore previously exited floating and fullscreen window states
+	// Normal view to overview, exit all floating and fullscreen states to
+	// participate in tiling, Overview to normal view, restore previously exited
+	// floating and fullscreen window states
 	if (selmon->isoverview) {
 		wl_list_for_each(c, &clients, link) {
 			if (c && c->mon == selmon && !client_is_unmanaged(c) &&

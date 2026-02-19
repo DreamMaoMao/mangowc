@@ -15,16 +15,16 @@ endif
 prefix = get_option('prefix')
 sysconfdir = get_option('sysconfdir')
 
-# 如果 sysconfdir 以 prefix 开头，去掉 prefix
+# If sysconfdir starts with prefix, remove prefix
 if sysconfdir.startswith(prefix) and not is_nixos
   sysconfdir = sysconfdir.substring(prefix.length())
-  # 确保 sysconfdir 是绝对路径
+  # Ensure sysconfdir is an absolute path
   if not sysconfdir.startswith('/')
     sysconfdir = '/' + sysconfdir
   endif
 endif
 
-# 打印调试信息，确认 sysconfdir 的值
+# Print debug information to confirm sysconfdir value
 # message('prefix: ' + prefix)
 # message('sysconfdir: ' + sysconfdir)
 
@@ -41,11 +41,11 @@ pcre2_dep = dependency('libpcre2-8')
 libscenefx_dep = dependency('scenefx-0.4',version: '>=0.4.1')
 
 
-# 获取版本信息
+# Get version information
 git = find_program('git', required : false)
 is_git_repo = false
 
-# 检查当前目录是否是 Git 仓库
+# Check if current directory is a Git repository
 if git.found()
   git_status = run_command(git, 'rev-parse', '--is-inside-work-tree', check : false)
   if git_status.returncode() == 0 and git_status.stdout().strip() == 'true'
@@ -54,18 +54,18 @@ if git.found()
 endif
 
 if is_git_repo
-  # 如果是 Git 目录，获取 Commit Hash 和最新的 tag
+  # If in Git directory, get Commit Hash and latest tag
   commit_hash = run_command(git, 'rev-parse', '--short', 'HEAD', check : false).stdout().strip()
   latest_tag = meson.project_version()
   version_with_hash = '@0@(@1@)'.format(latest_tag, commit_hash)
 else
-  # 如果不是 Git 目录，使用项目版本号和 "release" 字符串
+  # If not in Git directory, use project version number and "release" string
   commit_hash = 'release'
   latest_tag = meson.project_version()
   version_with_hash = '@0@(@1@)'.format(latest_tag, commit_hash)
 endif
 
-# 定义编译参数
+# Define compilation arguments
 c_args = [
   '-g',
   '-Wno-unused-function',
@@ -75,7 +75,7 @@ c_args = [
   '-DSYSCONFDIR="@0@"'.format('/etc'),
 ]
 
-# 仅在 debug 选项启用时添加调试参数
+# Only add debug arguments when debug option is enabled
 if get_option('asan')
   c_args += [
     '-fsanitize=address',
@@ -88,7 +88,7 @@ if xcb.found() and xlibs.found()
   c_args += '-DXWAYLAND'
 endif
 
-# 链接参数（根据 debug 状态添加 ASAN）
+# Link arguments (add ASAN based on debug state)
 link_args = []
 if get_option('asan')
   link_args += '-fsanitize=address'
