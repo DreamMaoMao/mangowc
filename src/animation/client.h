@@ -656,6 +656,10 @@ void init_fadeout_client(Client *c) {
 		return;
 	}
 
+	if (c->shield_when_capture && active_capture_count > 0) {
+		return;
+	}
+
 	if ((c->animation_type_close &&
 		 strcmp(c->animation_type_close, "none") == 0) ||
 		(!c->animation_type_close &&
