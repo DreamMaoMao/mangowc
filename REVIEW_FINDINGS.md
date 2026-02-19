@@ -5,20 +5,21 @@
 **Repository:** squassina/mangowc  
 **Commit:** 1341f84 (Merge from DreamMaoMao:main)
 
-**🎉 UPDATE (2026-02-19):** All 3 main recommendations have been successfully 
+**🎉 UPDATE (2026-02-19):** All 3 main recommendations have been successfully
 implemented in commit d97ec4a. See IMPLEMENTATION_SUMMARY.md for details.
 
 ---
 
 ## Executive Summary
 
-MangoWC is a well-structured Wayland compositor written in C with attention to 
-security, performance, and code clarity. The codebase demonstrates good 
-engineering practices with proper error handling, memory management, and clear 
-separation of concerns. This review identifies both strengths and areas for 
+MangoWC is a well-structured Wayland compositor written in C with attention to
+security, performance, and code clarity. The codebase demonstrates good
+engineering practices with proper error handling, memory management, and clear
+separation of concerns. This review identifies both strengths and areas for
 potential improvement.
 
 **Overall Assessment:**
+
 - ✅ **Security:** GOOD - No critical vulnerabilities found
 - ✅ **Performance:** GOOD - Well-optimized for real-time rendering
 - ✅ **Clarity:** GOOD - Clear structure with comprehensive comments
@@ -30,13 +31,14 @@ potential improvement.
 ### ✅ Strengths
 
 #### Memory Safety
-- **Checked Allocations:** All memory allocations use `ecalloc()` wrapper that 
+
+- **Checked Allocations:** All memory allocations use `ecalloc()` wrapper that
   checks for allocation failures and terminates gracefully
   - Location: `src/common/util.c:31-37`
-  - Pattern: `void *ecalloc(size_t nmemb, size_t size)` always checks return 
+  - Pattern: `void *ecalloc(size_t nmemb, size_t size)` always checks return
     value
 
-- **No Unsafe String Operations:** No usage of dangerous functions like 
+- **No Unsafe String Operations:** No usage of dangerous functions like
   `strcpy()`, `strcat()`, `sprintf()`, or `gets()`
   - Only safe alternatives used: `snprintf()`, `strdup()`, `fgets()`
   - Location verified across all source files
@@ -46,11 +48,12 @@ potential improvement.
   - Location: `src/config/parse_config.h:1250`
 
 #### Process Spawning
-- **Shell Command Execution:** Uses `execlp()` properly with shell as 
+
+- **Shell Command Execution:** Uses `execlp()` properly with shell as
   intermediary
   - Location: `src/dispatch/bind_define.h:796-821` (`spawn_shell()`)
   - Commands from config file executed via shell (`sh -c` or `bash -c`)
-  - Fork + exec pattern properly implemented with `setsid()` for process 
+  - Fork + exec pattern properly implemented with `setsid()` for process
     isolation
 
 - **Direct Execution:** `spawn()` function uses `execvp()` with argument parsing
@@ -59,13 +62,14 @@ potential improvement.
   - Proper cleanup of allocated strings on failure
 
 #### Input Validation
+
 - **Regex Matching:** Uses PCRE2 library with proper error handling
   - Location: `src/common/util.c:53-79`
   - UTF-8 support enabled: `PCRE2_UTF` flag
   - Null pointer checks before processing
   - Error messages displayed for malformed patterns
 
-- **Configuration Parsing:** 
+- **Configuration Parsing:**
   - Uses `fgets()` for line-by-line reading (bounded input)
   - Location: `src/config/parse_config.h:2786`
   - Proper validation and error reporting
@@ -73,6 +77,7 @@ potential improvement.
 ### ⚠️ Areas of Concern
 
 #### 1. wordexp() Security Risk (MEDIUM)
+
 **Location:** `src/dispatch/bind_define.h:846`
 
 ```c
@@ -84,23 +89,28 @@ if (wordexp(token, &p, 0) == 0 && p.we_wordc > 0) {
 }
 ```
 
-**Issue:** `wordexp()` performs shell-like expansion including command 
-substitution. If an attacker can control the config file or IPC commands, they 
+**Issue:** `wordexp()` performs shell-like expansion including command
+substitution. If an attacker can control the config file or IPC commands, they
 could inject shell commands.
 
-**Risk Assessment:** 
+**Risk Assessment:**
+
 - **Likelihood:** LOW - Config file is user-owned (~/.config/mango/config.conf)
 - **Impact:** HIGH - Could execute arbitrary commands as the user
 - **Overall:** MEDIUM risk
 
-**Recommendation:** 
+**Recommendation:**
+
 - Use `WRDE_NOCMD` flag to disable command substitution:
+
   ```c
   if (wordexp(token, &p, WRDE_NOCMD) == 0 && p.we_wordc > 0) {
   ```
+
 - This maintains tilde/glob expansion while blocking command execution
 
 #### 2. Signal Handler Safety (LOW)
+
 **Location:** `src/dispatch/bind_define.h:802-804, 830-832`
 
 ```c
@@ -109,30 +119,34 @@ signal(SIGABRT, SIG_IGN);
 signal(SIGILL, SIG_IGN);
 ```
 
-**Issue:** Ignoring fatal signals in child processes prevents core dumps that 
+**Issue:** Ignoring fatal signals in child processes prevents core dumps that
 could aid debugging.
 
 **Risk Assessment:**
+
 - **Likelihood:** N/A - Design choice
 - **Impact:** LOW - Only affects debugging
 - **Overall:** LOW concern
 
-**Recommendation:** Consider removing these signal handlers or making them 
-configurable for development builds. Core dumps are valuable for debugging 
+**Recommendation:** Consider removing these signal handlers or making them
+configurable for development builds. Core dumps are valuable for debugging
 crashes in spawned processes.
 
 #### 3. XWayland Attack Surface (LOW)
+
 **Location:** `meson.build:87-89`, `src/mango.c:90-94`
 
-**Issue:** XWayland support increases attack surface by including X11 protocol 
+**Issue:** XWayland support increases attack surface by including X11 protocol
 handling.
 
 **Risk Assessment:**
+
 - **Likelihood:** LOW - XWayland is optional (compile-time flag)
 - **Impact:** MEDIUM - X11 protocol has historical security issues
 - **Overall:** LOW risk
 
-**Recommendation:** 
+**Recommendation:**
+
 - Document security implications of enabling XWayland
 - Consider disabling by default for security-conscious deployments
 - Current implementation is acceptable with compile-time option
@@ -140,7 +154,7 @@ handling.
 ### ✅ Good Practices Observed
 
 1. **Fork Safety:** Proper use of `setsid()` after fork to create new session
-2. **File Descriptor Management:** `fd_set_nonblock()` with proper error 
+2. **File Descriptor Management:** `fd_set_nonblock()` with proper error
    checking
 3. **Error Handling:** Consistent error logging with `wlr_log(WLR_ERROR, ...)`
 4. **No System Calls:** No use of `system()` or `popen()` (high-risk functions)
@@ -150,9 +164,10 @@ handling.
 
 ## 2. Performance Review
 
-### ✅ Strengths
+### ✅ Performance Strengths
 
 #### Rendering Optimization
+
 - **Scene Graph Architecture:** Uses wlroots scene graph for efficient rendering
   - Delegates to SceneFX library for GPU-accelerated effects
   - Location: Scene setup throughout `src/mango.c`
@@ -169,11 +184,12 @@ handling.
   - Smooth 60+ FPS animations without recalculating curves
 
 #### Memory Management
+
 - **Efficient Allocations:** Uses `ecalloc()` wrapper that zeros memory
   - Prevents uninitialized memory bugs
   - Location: `src/common/util.c:31-37`
 
-- **Layout Algorithm Efficiency:** 
+- **Layout Algorithm Efficiency:**
   - **Tile Layout:** O(n) where n = visible windows
     - Location: `src/layout/arrange.h`
   - **Horizontal/Vertical Layouts:** O(n) with temporary arrays
@@ -181,6 +197,7 @@ handling.
     - Proper `malloc()`/`free()` pattern with cleanup
 
 #### Time Management
+
 - **Monotonic Clock:** Uses `CLOCK_MONOTONIC` for timing
   - Location: `src/common/util.c:85-94`
   - Immune to system time adjustments
@@ -189,33 +206,38 @@ handling.
 ### ⚠️ Performance Notes
 
 #### 1. Temporary Array Allocations (MINOR)
-**Locations:** 
+
+**Locations:**
+
 - `src/layout/vertical.h:294` - `tempClients = malloc(n * sizeof(Client *))`
 - `src/layout/horizontal.h:308` - Similar pattern
 
 **Observation:** Layout functions allocate temporary arrays on every arrange call.
 
-**Impact:** 
+**Impact:**
+
 - **Frequency:** Triggered on window open/close/resize/tag change
 - **Cost:** Small - allocations are typically < 100 windows
 - **Overall:** ACCEPTABLE for current implementation
 
-**Potential Optimization:** Pre-allocate static buffer or use stack allocation 
+**Potential Optimization:** Pre-allocate static buffer or use stack allocation
 for common cases (e.g., < 32 windows).
 
 #### 2. Config Parsing Uses realloc() (MINOR)
+
 **Location:** `src/config/parse_config.h` (multiple instances)
 
 **Observation:** Configuration arrays grown with `realloc()` during parsing.
 
 **Impact:**
+
 - **Frequency:** Only during startup and config reload
 - **Cost:** Acceptable - config parsing is not performance-critical
 - **Overall:** ACCEPTABLE
 
 **Note:** This is fine for config parsing, which is not a hot path.
 
-### ✅ Good Practices Observed
+### ✅ Performance Best Practices
 
 1. **Render Loop Efficiency:** Only renders when needed (`need_more_frames` flag)
 2. **Data Structure Choice:** Wayland linked lists for O(1) insertion/removal
@@ -227,11 +249,13 @@ for common cases (e.g., < 32 windows).
 
 ## 3. Clarity Review
 
-### ✅ Strengths
+### ✅ Code Clarity Strengths
 
 #### Code Organization
+
 - **Modular Structure:** Clear separation of concerns
-  ```
+
+  ```text
   src/
   ├── animation/      # Animation system
   ├── client/         # Window/client management
@@ -248,6 +272,7 @@ for common cases (e.g., < 32 windows).
   - Clear that functions are not part of public API
 
 #### Naming Conventions
+
 - **Clear Function Names:** Self-documenting
   - Examples: `spawn_shell()`, `focusclient()`, `arrangelayers()`
   - Follows consistent verb-noun pattern
@@ -256,11 +281,12 @@ for common cases (e.g., < 32 windows).
   - `isfloating`, `isfullscreen`, `isminimized` - boolean state flags
   - `mon` for monitor, `c` for client - common abbreviations
 
-- **Suffix Conventions:** 
+- **Suffix Conventions:**
   - `_mb` suffix indicates multi-byte UTF-8 encoding
   - Location: `src/common/util.h:7` comment documents this
 
 #### Comments and Documentation
+
 - **Function Documentation:** Most functions have purpose comments
   - Example: Animation functions explain curve types
   - Location: Throughout `src/animation/`
@@ -274,6 +300,7 @@ for common cases (e.g., < 32 windows).
   - Examples: `ISTILED`, `VISIBLEON`, `CLEANMASK`
 
 #### Code Formatting
+
 - **Consistent Style:** Uses clang-format for formatting
   - Configuration: `.clang-format` present in repository
   - Script: `format.sh` for easy reformatting
@@ -282,22 +309,27 @@ for common cases (e.g., < 32 windows).
 ### ⚠️ Areas for Improvement
 
 #### 1. TODO/FIXME Items (LOW PRIORITY)
+
 **Locations found:**
+
 - `src/mango.c:1803` - "TODO: allow usage of scroll wheel for mousebindings"
 - `src/mango.c:3537` - "TODO handle other input device types"
 - `src/mango.c:3545` - "TODO do we actually require a cursor?"
 - `src/mango.c:4782` - "TODO hack to get cursor to display"
 - `src/mango.c:5982` - "FIXME: figure out why cursor image is at 0,0"
 
-**Recommendation:** 
+**Recommendation:**
+
 - Create GitHub issues for each TODO/FIXME
 - Track as technical debt items
 - Not urgent - code functions correctly despite TODOs
 
 #### 2. Some Chinese Comments in meson.build (MINOR)
+
 **Location:** `meson.build:18, 22, 27-29, 44`
 
 **Examples:**
+
 - Line 18: `# 如果 sysconfdir 以 prefix 开头，去掉 prefix`
 - Line 22: `# 确保 sysconfdir 是绝对路径`
 - Line 27-29: Debug output comments
@@ -306,21 +338,25 @@ for common cases (e.g., < 32 windows).
 **Impact:** Reduces accessibility for international contributors
 
 **Recommendation:** Translate to English for consistency
+
 - Translation examples:
   - Line 18: "If sysconfdir starts with prefix, remove prefix"
   - Line 22: "Ensure sysconfdir is an absolute path"
   - Line 44: "Get version information"
 
 #### 3. Magic Numbers (VERY MINOR)
+
 **Examples:**
+
 - `src/dispatch/bind_define.h:838` - `char *argv[64]` - Why 64?
 - `src/animation/common.h` - Various curve point counts
 
 **Recommendation:** Define named constants for magic numbers
+
 - Example: `#define MAX_SPAWN_ARGS 64`
 - Improves maintainability and documents rationale
 
-### ✅ Good Practices Observed
+### ✅ Clarity Best Practices
 
 1. **English Comments:** Primary codebase comments are in English
 2. **Consistent Naming:** Functions, variables, and types follow conventions
@@ -333,6 +369,7 @@ for common cases (e.g., < 32 windows).
 ## 4. Additional Observations
 
 ### Build System (meson.build)
+
 - **ASAN Support:** Optional AddressSanitizer for memory debugging
   - Flag: `get_option('asan')`
   - Lines 79-85, 92-95
@@ -346,19 +383,24 @@ for common cases (e.g., < 32 windows).
   - Good practice: prevents incompatible versions
 
 ### Testing
+
 **Observation:** No test suite found in repository.
 
-**Impact:** 
+**Impact:**
+
 - Makes refactoring riskier
 - Manual testing required for regressions
 
-**Recommendation:** 
+**Recommendation:**
+
 - Consider adding integration tests for critical paths
 - Unit tests for utility functions (regex_match, time functions)
 - Not urgent for a compositor (difficult to test), but valuable long-term
 
 ### Documentation
+
 **Present:**
+
 - `README.md` - Project overview and setup
 - `COMMANDS.md` - Command reference (1209 lines)
 - `USAGE.md` - User guide (819 lines)
@@ -371,6 +413,7 @@ for common cases (e.g., < 32 windows).
 ## 5. Recommendations Summary
 
 ### High Priority (Security) ✅ COMPLETED
+
 1. **Add WRDE_NOCMD flag to wordexp()** - Prevents command injection
    - File: `src/dispatch/bind_define.h:846`
    - Change: `wordexp(token, &p, WRDE_NOCMD)`
@@ -378,28 +421,31 @@ for common cases (e.g., < 32 windows).
    - **Status:** ✅ Implemented in commit d97ec4a
 
 ### Medium Priority (Code Quality) ✅ COMPLETED
-2. **Translate Chinese comments to English** - Improves international 
+
+1. **Translate Chinese comments to English** - Improves international
    collaboration
    - File: `meson.build`
    - Estimated effort: 15 minutes
    - **Status:** ✅ Implemented in commit d97ec4a (10 lines translated)
 
-3. **Convert TODO/FIXME to GitHub issues** - Track technical debt
+2. **Convert TODO/FIXME to GitHub issues** - Track technical debt
    - Create issues for 5 TODO items
    - Estimated effort: 30 minutes
    - **Status:** ✅ Implemented in commit d97ec4a (documented in TECHNICAL_DEBT.md)
 
 ### Low Priority (Nice to Have)
-4. **Replace magic numbers with named constants**
+
+1. **Replace magic numbers with named constants**
    - Various files
    - Estimated effort: 1-2 hours
 
-5. **Consider adding basic tests**
+2. **Consider adding basic tests**
    - Start with utility function tests
    - Estimated effort: Several days (ongoing)
 
 ### Optional (Documentation)
-6. **Document XWayland security implications**
+
+1. **Document XWayland security implications**
    - Add security section to README
    - Estimated effort: 30 minutes
 
@@ -407,25 +453,25 @@ for common cases (e.g., < 32 windows).
 
 ## 6. Conclusion
 
-MangoWC demonstrates solid engineering practices with attention to security, 
-performance, and code clarity. The codebase is well-structured, properly 
+MangoWC demonstrates solid engineering practices with attention to security,
+performance, and code clarity. The codebase is well-structured, properly
 documented, and follows consistent conventions.
 
-**No critical security vulnerabilities were found.** The one medium-priority 
-security issue (wordexp command substitution) can be easily mitigated with a 
+**No critical security vulnerabilities were found.** The one medium-priority
+security issue (wordexp command substitution) can be easily mitigated with a
 single flag addition.
 
-**Performance is well-optimized** for a real-time compositor, with efficient 
+**Performance is well-optimized** for a real-time compositor, with efficient
 algorithms, proper memory management, and GPU acceleration where appropriate.
 
-**Code clarity is good** with clear organization, consistent naming, and 
-comprehensive comments. The few areas for improvement (TODOs, Chinese comments) 
+**Code clarity is good** with clear organization, consistent naming, and
+comprehensive comments. The few areas for improvement (TODOs, Chinese comments)
 are minor and do not impact functionality.
 
 **Overall Grade: A-** (Very Good)
 
-The codebase is production-ready and demonstrates mature software engineering 
-practices. The recommended improvements are minor refinements rather than 
+The codebase is production-ready and demonstrates mature software engineering
+practices. The recommended improvements are minor refinements rather than
 critical fixes.
 
 ---

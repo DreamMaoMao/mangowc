@@ -8,9 +8,9 @@
 
 ## Overview
 
-Successfully implemented all 3 recommendations from the comprehensive code review 
-(documented in REVIEW_FINDINGS.md). All changes are minimal, surgical, and 
-maintain backward compatibility while improving security, code clarity, and 
+Successfully implemented all 3 recommendations from the comprehensive code review
+(documented in REVIEW_FINDINGS.md). All changes are minimal, surgical, and
+maintain backward compatibility while improving security, code clarity, and
 maintainability.
 
 ---
@@ -23,24 +23,28 @@ maintainability.
 **File:** `src/dispatch/bind_define.h:846`  
 **Effort:** 5 minutes  
 
-#### Change Made:
+#### Change Made
+
 ```diff
 - if (wordexp(token, &p, 0) == 0 && p.we_wordc > 0) {
 + if (wordexp(token, &p, WRDE_NOCMD) == 0 && p.we_wordc > 0) {
 ```
 
-#### Security Impact:
+#### Security Impact
+
 - **Prevents:** Command injection via command substitution (e.g., `$(malicious)`)
 - **Maintains:** Tilde expansion (`~`) and glob patterns (`*.txt`)
 - **Risk Mitigation:** Closes medium-priority security vulnerability
 
-#### Why This Matters:
-Without `WRDE_NOCMD`, an attacker who can control spawn arguments (through 
-config file or IPC) could execute arbitrary commands using shell command 
-substitution. This flag blocks that attack vector while preserving useful 
+#### Why This Matters
+
+Without `WRDE_NOCMD`, an attacker who can control spawn arguments (through
+config file or IPC) could execute arbitrary commands using shell command
+substitution. This flag blocks that attack vector while preserving useful
 shell expansion features.
 
-#### Testing:
+#### Testing
+
 - Code compiles successfully
 - clang-format applied and passed
 - Change is minimal and localized
@@ -55,7 +59,8 @@ shell expansion features.
 **File:** `meson.build`  
 **Effort:** 15 minutes  
 
-#### Changes Made:
+#### Changes Made
+
 Translated 10 Chinese comment lines to English:
 
 1. Line 18: `"如果 sysconfdir 以 prefix 开头，去掉 prefix"`  
@@ -88,7 +93,8 @@ Translated 10 Chinese comment lines to English:
 10. Line 91: `"链接参数（根据 debug 状态添加 ASAN）"`  
     → `"Link arguments (add ASAN based on debug state)"`
 
-#### Impact:
+#### Impact
+
 - **Accessibility:** International contributors can now understand build system
 - **Consistency:** Matches English-only comments in source code
 - **Collaboration:** Reduces language barriers for new contributors
@@ -103,10 +109,11 @@ Translated 10 Chinese comment lines to English:
 **File:** `TECHNICAL_DEBT.md` (new)  
 **Effort:** 30 minutes  
 
-#### What Was Created:
+#### What Was Created
+
 A comprehensive tracking document for all TODO/FIXME items in the codebase.
 
-#### Items Documented:
+#### Items Documented
 
 1. **Mouse Scroll Wheel Support** (`src/mango.c:1803`)
    - Priority: Low
@@ -133,14 +140,16 @@ A comprehensive tracking document for all TODO/FIXME items in the codebase.
    - Effort: Medium-Large (4-8 hours)
    - Impact: User experience improvement
 
-#### Document Structure:
+#### Document Structure
+
 - Clear descriptions of each item
 - Code location and context
 - Priority and effort estimates
 - Impact analysis
 - Contribution guidelines
 
-#### Benefits:
+#### Benefits
+
 - **Visibility:** All technical debt in one place
 - **Prioritization:** Clear priority levels for contributors
 - **Onboarding:** New contributors can easily find improvement opportunities
@@ -150,7 +159,7 @@ A comprehensive tracking document for all TODO/FIXME items in the codebase.
 
 ## Files Modified
 
-```
+```text
 TECHNICAL_DEBT.md          | 143 +++++++++++++++++++++++++++++++++++++++
 meson.build                |  20 ++++++------
 src/dispatch/bind_define.h |   9 +++---
@@ -162,14 +171,17 @@ src/dispatch/bind_define.h |   9 +++---
 ## Quality Assurance
 
 ### Code Style ✅
+
 - clang-format applied to all C code changes
 - Formatting passes repository standards
 
 ### Build System ✅
+
 - meson.build changes maintain build compatibility
 - Comments improved without affecting functionality
 
 ### Git Hygiene ✅
+
 - Descriptive commit message
 - Co-authored with repository maintainer
 - Changes pushed to feature branch
@@ -179,16 +191,19 @@ src/dispatch/bind_define.h |   9 +++---
 ## Impact Assessment
 
 ### Security
+
 **Before:** Medium-priority vulnerability (command injection possible)  
 **After:** Vulnerability mitigated with WRDE_NOCMD flag  
 **Risk Reduction:** Significant
 
 ### Maintainability
+
 **Before:** Chinese comments, undocumented technical debt  
 **After:** English-only comments, tracked technical debt  
 **Improvement:** Substantial
 
 ### Code Quality
+
 **Before:** Good overall, with noted improvement areas  
 **After:** Excellent with recommendations implemented  
 **Grade Improvement:** A- → A
@@ -198,26 +213,29 @@ src/dispatch/bind_define.h |   9 +++---
 ## Next Steps
 
 ### Immediate (Completed) ✅
+
 1. ✅ Security fix implemented
 2. ✅ Comments translated
 3. ✅ Technical debt documented
 
 ### Short Term (Optional)
+
 1. Consider addressing Medium-priority technical debt item #5
 2. Review other wordexp() usage in codebase for consistency
 3. Update REVIEW_FINDINGS.md to mark recommendations as completed
 
 ### Long Term (Optional)
-4. Address Low-priority technical debt items as time permits
-5. Add automated security scanning to CI/CD pipeline
-6. Consider adding unit tests for utility functions
+
+1. Address Low-priority technical debt items as time permits
+2. Add automated security scanning to CI/CD pipeline
+3. Consider adding unit tests for utility functions
 
 ---
 
 ## Conclusion
 
-All 3 code review recommendations have been successfully implemented with 
-minimal, surgical changes that improve security, clarity, and maintainability 
+All 3 code review recommendations have been successfully implemented with
+minimal, surgical changes that improve security, clarity, and maintainability
 without affecting functionality.
 
 **Status:** ✅ Complete  
@@ -225,7 +243,7 @@ without affecting functionality.
 **Risk:** Low  
 **Impact:** Positive
 
-The MangoWC codebase is now more secure, more accessible to international 
+The MangoWC codebase is now more secure, more accessible to international
 contributors, and has better visibility into technical debt items.
 
 ---

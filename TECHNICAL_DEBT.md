@@ -1,10 +1,10 @@
 # Technical Debt Tracking
 
-This document tracks known technical debt items (TODO/FIXME comments) in the 
-MangoWC codebase. These items represent future improvements or issues that need 
+This document tracks known technical debt items (TODO/FIXME comments) in the
+MangoWC codebase. These items represent future improvements or issues that need
 investigation but don't block current functionality.
 
-**Status:** All items are non-critical. The code functions correctly despite 
+**Status:** All items are non-critical. The code functions correctly despite
 these notes.
 
 ---
@@ -16,13 +16,14 @@ these notes.
 **Location:** `src/mango.c:1803-1804`
 
 **Current Code:**
+
 ```c
 /* TODO: allow usage of scroll whell for mousebindings, it can be
  * implemented checking the event's orientation and the delta of the event
 ```
 
-**Description:** 
-Mouse bindings currently don't support scroll wheel events. Implementation would 
+**Description:**
+Mouse bindings currently don't support scroll wheel events. Implementation would
 require checking the event's orientation and delta values.
 
 **Priority:** Low  
@@ -36,13 +37,14 @@ require checking the event's orientation and delta values.
 **Location:** `src/mango.c:3537`
 
 **Current Code:**
+
 ```c
 /* TODO handle other input device types */
 ```
 
-**Description:** 
-The input device handling code may not support all input device types. Current 
-implementation covers keyboard, pointer, touch, tablet, and switch devices, but 
+**Description:**
+The input device handling code may not support all input device types. Current
+implementation covers keyboard, pointer, touch, tablet, and switch devices, but
 there may be edge cases or newer device types not yet handled.
 
 **Priority:** Low  
@@ -56,13 +58,14 @@ there may be edge cases or newer device types not yet handled.
 **Location:** `src/mango.c:3545`
 
 **Current Code:**
+
 ```c
 /* TODO do we actually require a cursor? */
 ```
 
-**Description:** 
-Question about whether a cursor is always required in the compositor. This may 
-relate to headless or server-only configurations where a cursor might not be 
+**Description:**
+Question about whether a cursor is always required in the compositor. This may
+relate to headless or server-only configurations where a cursor might not be
 needed.
 
 **Priority:** Very Low  
@@ -76,14 +79,15 @@ needed.
 **Location:** `src/mango.c:4782-4783`
 
 **Current Code:**
+
 ```c
 /* TODO hack to get cursor to display in its initial location (100, 100)
  * instead of (0, 0) and then jumping. still may not be fully
 ```
 
-**Description:** 
-Current implementation uses a workaround to position the cursor at (100, 100) 
-instead of (0, 0) to avoid a visual jump. This is marked as a hack that should 
+**Description:**
+Current implementation uses a workaround to position the cursor at (100, 100)
+instead of (0, 0) to avoid a visual jump. This is marked as a hack that should
 be properly fixed.
 
 **Priority:** Low  
@@ -99,13 +103,14 @@ be properly fixed.
 **Location:** `src/mango.c:5982-5983`
 
 **Current Code:**
+
 ```c
 /* FIXME: figure out why the cursor image is at 0,0 after turning all
  * the monitors on.
 ```
 
-**Description:** 
-After turning all monitors on, the cursor image appears at position (0, 0) 
+**Description:**
+After turning all monitors on, the cursor image appears at position (0, 0)
 instead of maintaining its previous position. Root cause is not yet understood.
 
 **Priority:** Medium  
