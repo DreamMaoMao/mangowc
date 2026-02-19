@@ -4435,6 +4435,14 @@ void handle_session_destroy(struct wl_listener *listener, void *data) {
 		wl_container_of(listener, tracker, session_destroy);
 	active_capture_count--;
 	wl_list_remove(&tracker->session_destroy.link);
+
+	Client *c = NULL;
+	wl_list_for_each(c, &clients, link) {
+		if (c->shield_when_capture && !c->iskilling && VISIBLEON(c, c->mon)) {
+			arrange(c->mon, false, false);
+		}
+	}
+
 	wlr_log(WLR_DEBUG, "Capture session ended, active count: %d",
 			active_capture_count);
 	free(tracker);
@@ -4456,6 +4464,14 @@ void handle_iamge_copy_capture_new_session(struct wl_listener *listener,
 	wl_signal_add(&session->events.destroy, &tracker->session_destroy);
 
 	active_capture_count++;
+
+	Client *c = NULL;
+	wl_list_for_each(c, &clients, link) {
+		if (c->shield_when_capture && !c->iskilling && VISIBLEON(c, c->mon)) {
+			arrange(c->mon, false, false);
+		}
+	}
+
 	wlr_log(WLR_DEBUG, "New capture session started, active count: %d",
 			active_capture_count);
 }
