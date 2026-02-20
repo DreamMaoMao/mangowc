@@ -110,7 +110,7 @@ First, add `mangowc` channel to `channels.scm` file:
 (cons (channel
         (name 'mangowc)
         (url "https://github.com/DreamMaoMao/mangowc.git")
-        (branch "main")
+        (branch "main"))
       ... ;; Your other channels
       %default-channels)
 ```
