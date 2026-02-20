@@ -101,7 +101,7 @@ Then, install the package:
 dnf install mangowc
 ```
 
-## GuixSD
+## Guix System
 The package definition is described in the source repository.
 First, add `mangowc` channel to `channels.scm` file:
 
@@ -109,7 +109,8 @@ First, add `mangowc` channel to `channels.scm` file:
 ;; In $HOME/.config/guix/channels.scm
 (cons (channel
         (name 'mangowc)
-        (url "https://github.com/DreamMaoMao/mangowc.git"))
+        (url "https://github.com/DreamMaoMao/mangowc.git")
+        (branch "main")
       ... ;; Your other channels
       %default-channels)
 ```
@@ -121,8 +122,8 @@ Then, run `guix pull` and after update you can either run
 (use-modules (mangowc)) ;; Add mangowc module
 
 ;; Add mangowc to packages list
-(packages (cons 
-            mangowc
+(packages (cons*
+            mangowc-git
             ... ;; Other packages you specified
             %base-packages))
 ```
