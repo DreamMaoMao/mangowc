@@ -410,6 +410,8 @@ sudo pacman -S xdg-desktop-portal xdg-desktop-portal-wlr
 
 ## Installation
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/mangowc.svg)](https://repology.org/project/mangowc/versions)
+
 ## Dependencies
 
 - glibc
