@@ -794,70 +794,88 @@ int32_t centerwin(const Arg *arg) {
 }
 
 int32_t spawn_shell(const Arg *arg) {
-	if (!arg->v)
-		return 0;
+    if (!arg->v)
+        return 0;
 
-	if (fork() == 0) {
-		// 1. 忽略可能导致 coredump 的信号
-		signal(SIGSEGV, SIG_IGN);
-		signal(SIGABRT, SIG_IGN);
-		signal(SIGILL, SIG_IGN);
+    pid_t child = fork();
+    if (child == -1) {
+        wlr_log_errno(WLR_ERROR, "spawn_shell: first fork failed");
+        return 0;
+    }
 
-		dup2(STDERR_FILENO, STDOUT_FILENO);
-		setsid();
+    if (child == 0) {
+        reset_child_environment();
 
-		execlp("sh", "sh", "-c", arg->v, (char *)NULL);
+        pid_t grandchild = fork();
+        if (grandchild == -1) {
+            wlr_log_errno(WLR_ERROR, "spawn_shell: second fork failed");
+            _exit(EXIT_FAILURE);
+        }
 
-		// fallback to bash
-		execlp("bash", "bash", "-c", arg->v, (char *)NULL);
+        if (grandchild == 0) {
+ 
+            execlp("sh", "sh", "-c", arg->v, (char *)NULL);
+            // fallback to bash
+            execlp("bash", "bash", "-c", arg->v, (char *)NULL);
+            wlr_log_errno(WLR_ERROR, "spawn_shell: execlp failed for '%s'", arg->v);
+            _exit(EXIT_FAILURE);
+        }
 
-		// if execlp fails, we should not reach here
-		wlr_log(WLR_ERROR,
-				"mango: failed to execute command '%s' with shell: %s\n",
-				arg->v, strerror(errno));
-		_exit(EXIT_FAILURE);
-	}
-	return 0;
+        _exit(EXIT_SUCCESS);
+    }
+
+    waitpid(child, NULL, 0);
+    return 0;
 }
 
 int32_t spawn(const Arg *arg) {
+    if (!arg->v)
+        return 0;
 
-	if (!arg->v)
-		return 0;
+    pid_t child = fork();
+    if (child == -1) {
+        wlr_log_errno(WLR_ERROR, "spawn: first fork failed");
+        return 0;
+    }
 
-	if (fork() == 0) {
-		// 1. 忽略可能导致 coredump 的信号
-		signal(SIGSEGV, SIG_IGN);
-		signal(SIGABRT, SIG_IGN);
-		signal(SIGILL, SIG_IGN);
+    if (child == 0) {
+        // reset environment
+        reset_child_environment();
 
-		dup2(STDERR_FILENO, STDOUT_FILENO);
-		setsid();
+        // create second child
+        pid_t grandchild = fork();
+        if (grandchild == -1) {
+            wlr_log_errno(WLR_ERROR, "spawn: second fork failed");
+            _exit(EXIT_FAILURE);
+        }
 
-		// 2. 解析参数
-		char *argv[64];
-		int32_t argc = 0;
-		char *token = strtok((char *)arg->v, " ");
-		while (token != NULL && argc < 63) {
-			wordexp_t p;
-			if (wordexp(token, &p, 0) == 0) {
-				argv[argc++] = p.we_wordv[0];
-			} else {
-				argv[argc++] = token;
-			}
-			token = strtok(NULL, " ");
-		}
-		argv[argc] = NULL;
+        if (grandchild == 0) {
+            // execute actual command
+            char *argv[64];
+            int32_t argc = 0;
+            char *token = strtok((char *)arg->v, " ");
+            while (token != NULL && argc < 63) {
+                wordexp_t p;
+                if (wordexp(token, &p, 0) == 0) {
+                    argv[argc++] = p.we_wordv[0];
+                } else {
+                    argv[argc++] = token;
+                }
+                token = strtok(NULL, " ");
+            }
+            argv[argc] = NULL;
 
-		// 3. 执行命令
-		execvp(argv[0], argv);
+            execvp(argv[0], argv);
+            wlr_log_errno(WLR_ERROR, "spawn: execvp '%s' failed", argv[0]);
+            _exit(EXIT_FAILURE);
+        }
 
-		// 4. execvp 失败时：打印错误并直接退出（避免 coredump）
-		wlr_log(WLR_ERROR, "mango: execvp '%s' failed: %s\n", argv[0],
-				strerror(errno));
-		_exit(EXIT_FAILURE); // 使用 _exit 避免缓冲区刷新等操作
-	}
-	return 0;
+
+        _exit(EXIT_SUCCESS);
+    }
+
+    waitpid(child, NULL, 0);
+    return 0;
 }
 
 int32_t spawn_on_empty(const Arg *arg) {

@@ -5,7 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
+#include <signal.h>
+#include <sys/resource.h>
+#include <wlr/util/log.h>
 #include "util.h"
 
 #define PCRE2_CODE_UNIT_WIDTH 8
@@ -91,4 +93,30 @@ uint32_t get_now_in_ms(void) {
 
 uint32_t timespec_to_ms(struct timespec *ts) {
 	return (uint32_t)ts->tv_sec * 1000 + (uint32_t)ts->tv_nsec / 1000000;
+}
+
+void restore_nofile_limit(void) {
+    struct rlimit rl;
+    if (getrlimit(RLIMIT_NOFILE, &rl) == 0) {
+        // Restore the soft limit to the hard limit
+        rl.rlim_cur = rl.rlim_max;
+        if (setrlimit(RLIMIT_NOFILE, &rl) != 0) {
+            wlr_log(WLR_DEBUG, "restore_nofile_limit: setrlimit failed");
+        }
+    } else {
+        wlr_log(WLR_DEBUG, "restore_nofile_limit: getrlimit failed");
+    }
+}
+
+void reset_child_environment(void) {
+    restore_nofile_limit();
+
+    // Reset signal handlers
+    sigset_t set;
+    sigemptyset(&set);
+    sigprocmask(SIG_SETMASK, &set, NULL);
+
+    // Reset signal handlers to default
+    signal(SIGPIPE, SIG_DFL);
+    signal(SIGCHLD, SIG_DFL);
 }

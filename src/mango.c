@@ -86,6 +86,7 @@
 #include <wlr/util/log.h>
 #include <wlr/util/region.h>
 #include <wordexp.h>
+#include <sys/resource.h>
 #include <xkbcommon/xkbcommon.h>
 #ifdef XWAYLAND
 #include <X11/Xlib.h>
