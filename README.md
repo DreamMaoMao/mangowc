@@ -1,3 +1,7 @@
+# DO NOT USE! THIS IS JUST A LEARNING REPO AND NOT SUPPORTED IN ANY WAY!
+
+
+
 # Mango Wayland Compositor
 
 ![MangoWC Logo](https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png)
