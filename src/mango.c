@@ -5971,6 +5971,10 @@ void updatemons(struct wl_listener *listener, void *data) {
 				c->mon = selmon;
 				reset_foreign_tolevel(c);
 			}
+			if(c->tags ==0 && !c->is_in_scratchpad) {
+				c->tags = selmon->tagset[selmon->seltags];
+				set_size_per(selmon,c);
+			}
 		}
 		focusclient(focustop(selmon), 1);
 		if (selmon->lock_surface) {
