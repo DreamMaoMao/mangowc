@@ -1,5 +1,6 @@
 int32_t bind_to_view(const Arg *arg) {
-
+	if (!selmon)
+		return 0;
 	uint32_t target = arg->ui;
 
 	if (view_current_to_back && selmon->pertag->curtag &&
@@ -100,6 +101,8 @@ int32_t defaultgaps(const Arg *arg) {
 }
 
 int32_t exchange_client(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	Client *c = selmon->sel;
 	if (!c || c->isfloating)
 		return 0;
@@ -112,6 +115,9 @@ int32_t exchange_client(const Arg *arg) {
 }
 
 int32_t exchange_stack_client(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	Client *c = selmon->sel;
 	Client *tc = NULL;
 	if (!c || c->isfloating || c->isfullscreen || c->ismaximizescreen)
@@ -265,42 +271,56 @@ int32_t incnmaster(const Arg *arg) {
 }
 
 int32_t incgaps(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	setgaps(selmon->gappoh + arg->i, selmon->gappov + arg->i,
 			selmon->gappih + arg->i, selmon->gappiv + arg->i);
 	return 0;
 }
 
 int32_t incigaps(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	setgaps(selmon->gappoh, selmon->gappov, selmon->gappih + arg->i,
 			selmon->gappiv + arg->i);
 	return 0;
 }
 
 int32_t incogaps(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	setgaps(selmon->gappoh + arg->i, selmon->gappov + arg->i, selmon->gappih,
 			selmon->gappiv);
 	return 0;
 }
 
 int32_t incihgaps(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	setgaps(selmon->gappoh, selmon->gappov, selmon->gappih + arg->i,
 			selmon->gappiv);
 	return 0;
 }
 
 int32_t incivgaps(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	setgaps(selmon->gappoh, selmon->gappov, selmon->gappih,
 			selmon->gappiv + arg->i);
 	return 0;
 }
 
 int32_t incohgaps(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	setgaps(selmon->gappoh + arg->i, selmon->gappov, selmon->gappih,
 			selmon->gappiv);
 	return 0;
 }
 
 int32_t incovgaps(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	setgaps(selmon->gappoh, selmon->gappov + arg->i, selmon->gappih,
 			selmon->gappiv);
 	return 0;
@@ -330,6 +350,8 @@ int32_t setmfact(const Arg *arg) {
 
 int32_t killclient(const Arg *arg) {
 	Client *c = NULL;
+	if (!selmon)
+		return 0;
 	c = selmon->sel;
 	if (c) {
 		pending_kill_client(c);
@@ -399,6 +421,8 @@ int32_t moveresize(const Arg *arg) {
 
 int32_t movewin(const Arg *arg) {
 	Client *c = NULL;
+	if (!selmon)
+		return 0;
 	c = selmon->sel;
 	if (!c || c->isfullscreen)
 		return 0;
@@ -442,6 +466,8 @@ int32_t quit(const Arg *arg) {
 
 int32_t resizewin(const Arg *arg) {
 	Client *c = NULL;
+	if (!selmon)
+		return 0;
 	c = selmon->sel;
 	int32_t offsetx = 0, offsety = 0;
 
@@ -546,6 +572,8 @@ int32_t restore_minimized(const Arg *arg) {
 
 int32_t setlayout(const Arg *arg) {
 	int32_t jk;
+	if (!selmon)
+		return 0;
 
 	for (jk = 0; jk < LENGTH(layouts); jk++) {
 		if (strcmp(layouts[jk].name, arg->v) == 0) {
@@ -571,6 +599,8 @@ int32_t setkeymode(const Arg *arg) {
 }
 
 int32_t set_proportion(const Arg *arg) {
+	if (!selmon)
+		return 0;
 
 	if (selmon->isoverview || !is_scroller_layout(selmon))
 		return 0;
@@ -596,6 +626,8 @@ int32_t smartmovewin(const Arg *arg) {
 	Client *c = NULL, *tc = NULL;
 	int32_t nx, ny;
 	int32_t buttom, top, left, right, tar;
+	if (!selmon)
+		return 0;
 	c = selmon->sel;
 	if (!c || c->isfullscreen)
 		return 0;
@@ -697,6 +729,8 @@ int32_t smartresizewin(const Arg *arg) {
 	Client *c = NULL, *tc = NULL;
 	int32_t nw, nh;
 	int32_t buttom, top, left, right, tar;
+	if (!selmon)
+		return 0;
 	c = selmon->sel;
 	if (!c || c->isfullscreen)
 		return 0;
@@ -765,6 +799,8 @@ int32_t smartresizewin(const Arg *arg) {
 
 int32_t centerwin(const Arg *arg) {
 	Client *c = NULL;
+	if (!selmon)
+		return 0;
 	c = selmon->sel;
 
 	if (!c || c->isfullscreen || c->ismaximizescreen)
@@ -943,6 +979,9 @@ int32_t switch_layout(const Arg *arg) {
 	char *target_layout_name = NULL;
 	uint32_t len;
 
+	if (!selmon)
+		return 0;
+
 	if (config.circle_layout_count != 0) {
 		for (jk = 0; jk < config.circle_layout_count; jk++) {
 
@@ -994,6 +1033,8 @@ int32_t switch_layout(const Arg *arg) {
 
 int32_t switch_proportion_preset(const Arg *arg) {
 	float target_proportion = 0;
+	if (!selmon)
+		return 0;
 
 	if (config.scroller_proportion_preset_count == 0) {
 		return 0;
@@ -1038,6 +1079,8 @@ int32_t switch_proportion_preset(const Arg *arg) {
 }
 
 int32_t tag(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	Client *target_client = selmon->sel;
 	tag_client(arg, target_client);
 	return 0;
@@ -1045,6 +1088,8 @@ int32_t tag(const Arg *arg) {
 
 int32_t tagmon(const Arg *arg) {
 	Monitor *m = NULL, *cm = NULL;
+	if (!selmon)
+		return 0;
 	Client *c = focustop(selmon);
 
 	if (!c)
@@ -1136,6 +1181,9 @@ int32_t tagsilent(const Arg *arg) {
 }
 
 int32_t tagtoleft(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	if (selmon->sel != NULL &&
 		__builtin_popcount(selmon->tagset[selmon->seltags] & TAGMASK) == 1 &&
 		selmon->tagset[selmon->seltags] > 1) {
@@ -1145,6 +1193,9 @@ int32_t tagtoleft(const Arg *arg) {
 }
 
 int32_t tagtoright(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	if (selmon->sel != NULL &&
 		__builtin_popcount(selmon->tagset[selmon->seltags] & TAGMASK) == 1 &&
 		selmon->tagset[selmon->seltags] & (TAGMASK >> 1)) {
@@ -1173,6 +1224,8 @@ int32_t toggle_named_scratchpad(const Arg *arg) {
 }
 
 int32_t toggle_render_border(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	render_border = !render_border;
 	arrange(selmon, false, false);
 	return 0;
@@ -1208,6 +1261,8 @@ int32_t toggle_scratchpad(const Arg *arg) {
 }
 
 int32_t togglefakefullscreen(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	Client *sel = focustop(selmon);
 	if (sel)
 		setfakefullscreen(sel, !sel->isfakefullscreen);
@@ -1215,6 +1270,9 @@ int32_t togglefakefullscreen(const Arg *arg) {
 }
 
 int32_t togglefloating(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	Client *sel = focustop(selmon);
 
 	if (selmon && selmon->isoverview)
@@ -1236,6 +1294,9 @@ int32_t togglefloating(const Arg *arg) {
 }
 
 int32_t togglefullscreen(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	Client *sel = focustop(selmon);
 	if (!sel)
 		return 0;
@@ -1252,6 +1313,9 @@ int32_t togglefullscreen(const Arg *arg) {
 }
 
 int32_t toggleglobal(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	if (!selmon->sel)
 		return 0;
 	if (selmon->sel->is_in_scratchpad) {
@@ -1270,12 +1334,18 @@ int32_t toggleglobal(const Arg *arg) {
 }
 
 int32_t togglegaps(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	enablegaps ^= 1;
 	arrange(selmon, false, false);
 	return 0;
 }
 
 int32_t togglemaximizescreen(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	Client *sel = focustop(selmon);
 	if (!sel)
 		return 0;
@@ -1294,6 +1364,9 @@ int32_t togglemaximizescreen(const Arg *arg) {
 }
 
 int32_t toggleoverlay(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	if (!selmon->sel || !selmon->sel->mon || selmon->sel->isfullscreen) {
 		return 0;
 	}
@@ -1315,6 +1388,9 @@ int32_t toggleoverlay(const Arg *arg) {
 }
 
 int32_t toggletag(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	uint32_t newtags;
 	Client *sel = focustop(selmon);
 	if (!sel)
@@ -1338,13 +1414,15 @@ int32_t toggletag(const Arg *arg) {
 }
 
 int32_t toggleview(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	uint32_t newtagset;
 	uint32_t target;
 
 	target = arg->ui == 0 ? ~0 & TAGMASK : arg->ui;
 
-	newtagset =
-		selmon ? selmon->tagset[selmon->seltags] ^ (target & TAGMASK) : 0;
+	newtagset = selmon->tagset[selmon->seltags] ^ (target & TAGMASK);
 
 	if (newtagset) {
 		selmon->tagset[selmon->seltags] = newtagset;
@@ -1356,6 +1434,9 @@ int32_t toggleview(const Arg *arg) {
 }
 
 int32_t viewtoleft(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	uint32_t target = selmon->tagset[selmon->seltags];
 
 	if (selmon->isoverview || selmon->pertag->curtag == 0) {
@@ -1376,6 +1457,9 @@ int32_t viewtoleft(const Arg *arg) {
 }
 
 int32_t viewtoright(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	if (selmon->isoverview || selmon->pertag->curtag == 0) {
 		return 0;
 	}
@@ -1393,6 +1477,9 @@ int32_t viewtoright(const Arg *arg) {
 }
 
 int32_t viewtoleft_have_client(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	uint32_t n;
 	uint32_t current = get_tags_first_tag_num(selmon->tagset[selmon->seltags]);
 	bool found = false;
@@ -1417,6 +1504,9 @@ int32_t viewtoleft_have_client(const Arg *arg) {
 }
 
 int32_t viewtoright_have_client(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	uint32_t n;
 	uint32_t current = get_tags_first_tag_num(selmon->tagset[selmon->seltags]);
 	bool found = false;
@@ -1441,6 +1531,9 @@ int32_t viewtoright_have_client(const Arg *arg) {
 }
 
 int32_t viewcrossmon(const Arg *arg) {
+	if (!selmon)
+		return 0;
+
 	focusmon(&(Arg){.v = arg->v, .i = UNDIR});
 	view_in_mon(arg, true, selmon, true);
 	return 0;
@@ -1519,6 +1612,8 @@ int32_t setoption(const Arg *arg) {
 }
 
 int32_t minimized(const Arg *arg) {
+	if (!selmon)
+		return 0;
 
 	if (selmon && selmon->isoverview)
 		return 0;
@@ -1541,6 +1636,8 @@ void fix_mon_tagset_from_overview(Monitor *m) {
 
 int32_t toggleoverview(const Arg *arg) {
 	Client *c = NULL;
+	if (!selmon)
+		return 0;
 
 	if (selmon->isoverview && ov_tab_mode && arg->i != 1 && selmon->sel) {
 		focusstack(&(Arg){.i = 1});
@@ -1646,6 +1743,8 @@ int32_t toggle_monitor(const Arg *arg) {
 }
 
 int32_t scroller_stack(const Arg *arg) {
+	if (!selmon)
+		return 0;
 	Client *c = selmon->sel;
 	Client *stack_head = NULL;
 	Client *source_stack_head = NULL;
