@@ -102,6 +102,9 @@ emerge --ask --verbose gui-wm/mangowc
 ## Fedora Linux
 The package is in the third-party Terra repository.
 First, add the [Terra Repository](https://terra.fyralabs.com/).
+```bash
+dnf install mangowc
+```
 
 ## OpenSUSE
 The package is in the third-party obs repository.
