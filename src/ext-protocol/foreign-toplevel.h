@@ -15,7 +15,7 @@ void handle_foreign_activate_request(struct wl_listener *listener, void *data) {
 		c->is_scratchpad_show = 0;
 		setborder_color(c);
 		show_hide_client(c);
-		arrange(c->mon, true);
+		arrange(c->mon, true, false);
 		return;
 	}
 
@@ -60,7 +60,7 @@ void handle_foreign_minimize_request(struct wl_listener *listener, void *data) {
 		c->is_scratchpad_show = 0;
 		setborder_color(c);
 		show_hide_client(c);
-		arrange(c->mon, true);
+		arrange(c->mon, true, false);
 		return;
 	}
 }
