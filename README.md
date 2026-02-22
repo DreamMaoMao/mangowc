@@ -75,9 +75,9 @@ https://github.com/user-attachments/assets/014c893f-115c-4ae9-8342-f9ae3e9a0df0
 - libxcb
 
 ## Arch Linux
-The package is in the Arch User Repository and is availble for manual download [here](https://aur.archlinux.org/packages/mangowc) or through a AUR helper like yay:
+The package is in the Arch User Repository and is availble for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper like yay:
 ```bash
-yay -S mangowc
+yay -S mangowc-git
 
 ```
 
@@ -103,12 +103,13 @@ emerge --ask --verbose gui-wm/mangowc
 The package is in the third-party Terra repository.
 First, add the [Terra Repository](https://terra.fyralabs.com/).
 
-## opensuse
+## OpenSUSE
 The package is in the third-party obs repository.
 
 install the package:
 
 ```bash
+sudo zypper install opi
 opi install mangowc
 ```
 
