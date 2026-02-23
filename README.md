@@ -108,7 +108,15 @@ Then, install the package:
 ```bash
 dnf install mangowc
 ```
+## OpenSUSE
+The package is in the third-party obs repository.
 
+install the package:
+
+```bash
+sudo zypper install opi
+opi install mangowc
+```
 ## Other
 
 ```bash
