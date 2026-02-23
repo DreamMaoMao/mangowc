@@ -102,7 +102,7 @@ static void remove_workspace_by_tag(uint32_t tag, Monitor *m) {
 	}
 }
 
-static void add_workspace_by_tag(int tag, Monitor *m) {
+static void add_workspace_by_tag(int32_t tag, Monitor *m) {
 	const char *name = get_name_from_tag(tag);
 
 	struct workspace *workspace = ecalloc(1, sizeof(*workspace));
@@ -162,7 +162,7 @@ void dwl_ext_workspace_printstatus(Monitor *m) {
 }
 
 void refresh_monitors_workspaces_status(Monitor *m) {
-	int i;
+	int32_t i;
 
 	if (m->isoverview) {
 		for (i = 1; i <= LENGTH(tags); i++) {
