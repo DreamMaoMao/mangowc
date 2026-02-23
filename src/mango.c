@@ -502,13 +502,15 @@ struct Monitor {
 	struct wl_listener request_state;
 	struct wl_listener destroy_lock_surface;
 	struct wlr_session_lock_surface_v1 *lock_surface;
-	struct wl_event_source *skip_timeout;
+	struct wl_event_source *skip_frame_timeout;
 	struct wlr_box m;		  /* monitor area, layout-relative */
 	struct wlr_box w;		  /* window area, layout-relative */
 	struct wl_list layers[4]; /* LayerSurface::link */
 	uint32_t seltags;
 	uint32_t tagset[2];
 	bool skiping_frame;
+	uint32_t resizing_count_pending;
+	uint32_t resizing_count_current;
 
 	struct wl_list dwl_ipc_outputs;
 	int32_t gappih; /* horizontal gap between windows */
@@ -798,7 +800,7 @@ static Client *get_scroll_stack_head(Client *c);
 static bool client_only_in_one_tag(Client *c);
 static Client *get_focused_stack_client(Client *sc);
 static bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc);
-static void monitor_stop_skip_timer(Monitor *m);
+static void monitor_stop_skip_frame_timer(Monitor *m);
 static int monitor_skip_frame_timeout_callback(void *data);
 static void handle_iamge_copy_capture_new_session(struct wl_listener *listener,
 												  void *data);
@@ -2254,10 +2256,10 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 
 	closemon(m);
 
-	if (m->skip_timeout) {
-		monitor_stop_skip_timer(m);
-		wl_event_source_remove(m->skip_timeout);
-		m->skip_timeout = NULL;
+	if (m->skip_frame_timeout) {
+		monitor_stop_skip_frame_timer(m);
+		wl_event_source_remove(m->skip_frame_timeout);
+		m->skip_frame_timeout = NULL;
 	}
 
 	m->wlr_output->data = NULL;
@@ -2752,9 +2754,11 @@ void createmon(struct wl_listener *listener, void *data) {
 	struct wl_event_loop *loop = wl_display_get_event_loop(dpy);
 	m = wlr_output->data = ecalloc(1, sizeof(*m));
 
-	m->skip_timeout =
+	m->skip_frame_timeout =
 		wl_event_loop_add_timer(loop, monitor_skip_frame_timeout_callback, m);
 	m->skiping_frame = false;
+	m->resizing_count_pending = 0;
+	m->resizing_count_current = 0;
 
 	m->wlr_output = wlr_output;
 	m->wlr_output->data = m;
@@ -4441,10 +4445,12 @@ void client_set_opacity(Client *c, double opacity) {
 								   scene_buffer_apply_opacity, &opacity);
 }
 
-void monitor_stop_skip_timer(Monitor *m) {
-	if (m->skip_timeout)
-		wl_event_source_timer_update(m->skip_timeout, 0);
+void monitor_stop_skip_frame_timer(Monitor *m) {
+	if (m->skip_frame_timeout)
+		wl_event_source_timer_update(m->skip_frame_timeout, 0);
 	m->skiping_frame = false;
+	m->resizing_count_pending = 0;
+	m->resizing_count_current = 0;
 }
 
 static int monitor_skip_frame_timeout_callback(void *data) {
@@ -4453,20 +4459,22 @@ static int monitor_skip_frame_timeout_callback(void *data) {
 
 	wl_list_for_each_safe(c, tmp, &clients, link) { c->configure_serial = 0; }
 
-	monitor_stop_skip_timer(m);
+	monitor_stop_skip_frame_timer(m);
 	wlr_output_schedule_frame(m->wlr_output);
 
 	return 1;
 }
 
 void monitor_check_skip_frame_timeout(Monitor *m) {
-	if (m->skiping_frame) {
+	if (m->skiping_frame &&
+		m->resizing_count_pending == m->resizing_count_current) {
 		return;
 	}
 
-	if (m->skip_timeout) {
-		wl_event_source_timer_update(m->skip_timeout, 100); // 100ms
+	if (m->skip_frame_timeout) {
+		m->resizing_count_current = m->resizing_count_pending;
 		m->skiping_frame = true;
+		wl_event_source_timer_update(m->skip_frame_timeout, 100); // 100ms
 	}
 }
 
@@ -4509,16 +4517,15 @@ void rendermon(struct wl_listener *listener, void *data) {
 	// 绘制客户端
 	wl_list_for_each(c, &clients, link) {
 		need_more_frames = client_draw_frame(c) || need_more_frames;
-		if (!animations && !(allow_tearing && frame_allow_tearing) &&
-			c->configure_serial && client_is_rendered_on_mon(c, m) &&
-			!client_is_stopped(c) && !grabc) {
+		if (!animations && !grabc && c->configure_serial &&
+			client_is_rendered_on_mon(c, m)) {
 			monitor_check_skip_frame_timeout(m);
 			goto skip;
 		}
 	}
 
 	if (m->skiping_frame) {
-		monitor_stop_skip_timer(m);
+		monitor_stop_skip_frame_timer(m);
 	}
 
 	// 只有在需要帧时才构建和提交状态
@@ -5967,9 +5974,9 @@ void updatemons(struct wl_listener *listener, void *data) {
 				c->mon = selmon;
 				reset_foreign_tolevel(c);
 			}
-			if(c->tags ==0 && !c->is_in_scratchpad) {
+			if (c->tags == 0 && !c->is_in_scratchpad) {
 				c->tags = selmon->tagset[selmon->seltags];
-				set_size_per(selmon,c);
+				set_size_per(selmon, c);
 			}
 		}
 		focusclient(focustop(selmon), 1);
