@@ -179,14 +179,20 @@ sudo ninja -C build install
 - Dependencies
 
 ```bash
-rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
+rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer swayidle brightnessctl swayosd wlr-randr grim slurp satty wlogout sox
 ```
-
+#aur packages
+```bash
+wlr-dpms sway-audio-idle-inhibit-git dimland-git swaylock-effects-git wlogout
+```
 ### Dms
 - Dependencies
 ```bash
-foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard sway-audio-idle-inhibit-git brightnessctl grim slurp satty matugen-bin dms-shell-git
-
+foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard  brightnessctl grim slurp satty dms-shell-git
+```
+#aur packages
+```bash
+sway-audio-idle-inhibit-git matugen-bin dms-shell-git
 ```
 - use my dms config
 
