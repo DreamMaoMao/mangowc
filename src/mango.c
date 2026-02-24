@@ -915,6 +915,12 @@ static KeyMode keymode = {
 	.mode = {'d', 'e', 'f', 'a', 'u', 'l', 't', '\0'},
 	.isdefault = true,
 };
+
+static char *env_vars[] = {"DISPLAY",
+						   "WAYLAND_DISPLAY",
+						   "XDG_CURRENT_DESKTOP",
+						   "XDG_SESSION_TYPE",
+						   NULL};
 static struct {
 	enum wp_cursor_shape_device_v1_shape shape;
 	struct wlr_surface *surface;
@@ -4725,6 +4731,41 @@ void exchange_two_client(Client *c1, Client *c2) {
 	}
 }
 
+void set_activation_env() {
+	if (!getenv("DBUS_SESSION_BUS_ADDRESS")) {
+		wlr_log(WLR_INFO, "Not updating dbus execution environment: "
+						  "DBUS_SESSION_BUS_ADDRESS not set");
+		return;
+	}
+
+	wlr_log(WLR_INFO, "Updating dbus execution environment");
+
+	char *env_keys = join_strings(env_vars, " ");
+
+	// first command: dbus-update-activation-environment
+	const char *arg1 = env_keys;
+	char *cmd1 = string_printf("dbus-update-activation-environment %s", arg1);
+	if (!cmd1) {
+		wlr_log(WLR_ERROR, "Failed to allocate command string");
+		goto cleanup;
+	}
+	spawn(&(Arg){.v = cmd1});
+	free(cmd1);
+
+	// second command: systemctl --user
+	const char *action = "import-environment";
+	char *cmd2 = string_printf("systemctl --user %s %s", action, env_keys);
+	if (!cmd2) {
+		wlr_log(WLR_ERROR, "Failed to allocate command string");
+		goto cleanup;
+	}
+	spawn(&(Arg){.v = cmd2});
+	free(cmd2);
+
+cleanup:
+	free(env_keys);
+}
+
 void // 17
 run(char *startup_cmd) {
 
@@ -4781,6 +4822,8 @@ run(char *startup_cmd) {
 	wlr_cursor_warp_closest(cursor, NULL, cursor->x, cursor->y);
 	wlr_cursor_set_xcursor(cursor, cursor_mgr, "left_ptr");
 	handlecursoractivity();
+
+	set_activation_env();
 
 	run_exec();
 	run_exec_once();
@@ -5278,6 +5321,7 @@ void setup(void) {
 
 	setenv("XCURSOR_SIZE", "24", 1);
 	setenv("XDG_CURRENT_DESKTOP", "mango", 1);
+
 	parse_config();
 	init_baked_points();
 
