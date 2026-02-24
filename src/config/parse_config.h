@@ -217,6 +217,7 @@ typedef struct {
 	int32_t exchange_cross_monitor;
 	int32_t scratchpad_cross_monitor;
 	int32_t focus_cross_tag;
+	int32_t tag_orientation;
 	int32_t view_current_to_back;
 	int32_t no_border_when_single;
 	int32_t no_radius_when_single;
@@ -1351,6 +1352,8 @@ bool parse_option(Config *config, char *key, char *value) {
 		config->scratchpad_cross_monitor = atoi(value);
 	} else if (strcmp(key, "focus_cross_tag") == 0) {
 		config->focus_cross_tag = atoi(value);
+	} else if (strcmp(key, "tag_orientation") == 0) {
+		config->tag_orientation = atoi(value);
 	} else if (strcmp(key, "view_current_to_back") == 0) {
 		config->view_current_to_back = atoi(value);
 	} else if (strcmp(key, "blur") == 0) {
@@ -3146,6 +3149,7 @@ void override_config(void) {
 	exchange_cross_monitor = CLAMP_INT(config.exchange_cross_monitor, 0, 1);
 	scratchpad_cross_monitor = CLAMP_INT(config.scratchpad_cross_monitor, 0, 1);
 	focus_cross_tag = CLAMP_INT(config.focus_cross_tag, 0, 1);
+	tag_orientation = CLAMP_INT(config.tag_orientation, 0, 1);
 	view_current_to_back = CLAMP_INT(config.view_current_to_back, 0, 1);
 	enable_floating_snap = CLAMP_INT(config.enable_floating_snap, 0, 1);
 	snap_distance = CLAMP_INT(config.snap_distance, 0, 99999);
@@ -3313,6 +3317,7 @@ void set_value_default() {
 	config.exchange_cross_monitor = exchange_cross_monitor;
 	config.scratchpad_cross_monitor = scratchpad_cross_monitor;
 	config.focus_cross_tag = focus_cross_tag;
+	config.tag_orientation = tag_orientation;
 	config.axis_scroll_factor = axis_scroll_factor;
 	config.view_current_to_back = view_current_to_back;
 	config.single_scratchpad = single_scratchpad;

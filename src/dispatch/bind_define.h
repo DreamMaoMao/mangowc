@@ -142,13 +142,24 @@ int32_t focusdir(const Arg *arg) {
 			warp_cursor(c);
 	} else {
 		if (config.focus_cross_tag) {
-			if (arg->i == LEFT || arg->i == UP)
-				viewtoleft_have_client(&(Arg){0});
-			if (arg->i == RIGHT || arg->i == DOWN)
-				viewtoright_have_client(&(Arg){0});
-		} else if (config.focus_cross_monitor) {
-			focusmon(arg);
-		}
+            if (config.tag_orientation) {
+                if (arg->i == DOWN) {
+                    viewtoright_have_client(&(Arg){0});
+                } else if (arg->i == UP) {
+                    viewtoleft_have_client(&(Arg){0});
+                } else if (config.focus_cross_monitor) {
+                    focusmon(arg);
+                }
+            } else {
+                if (arg->i == RIGHT) {
+                    viewtoright_have_client(&(Arg){0});
+                } else if (arg->i == LEFT) {
+                    viewtoleft_have_client(&(Arg){0});
+                } else if (config.focus_cross_monitor) {
+                    focusmon(arg);
+                }
+            }
+        }
 	}
 	return 0;
 }
