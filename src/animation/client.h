@@ -1,10 +1,10 @@
-void client_actual_size(Client *c, uint32_t *width, uint32_t *height) {
-	*width = c->animation.current.width - c->bw;
+void client_actual_size(Client *c, int32_t *width, int32_t *height) {
+	*width = c->animation.current.width - 2 * (int32_t)c->bw;
 
-	*height = c->animation.current.height - c->bw;
+	*height = c->animation.current.height - 2 * (int32_t)c->bw;
 }
 
-void set_rect_size(struct wlr_scene_rect *rect, int width, int height) {
+void set_rect_size(struct wlr_scene_rect *rect, int32_t width, int32_t height) {
 	wlr_scene_rect_set_size(rect, GEZERO(width), GEZERO(height));
 }
 
@@ -47,7 +47,7 @@ bool is_horizontal_right_stack_layout(Monitor *m) {
 	return false;
 }
 
-int is_special_animaiton_rule(Client *c) {
+int32_t is_special_animation_rule(Client *c) {
 
 	if (is_scroller_layout(c->mon) && !c->isfloating) {
 		return DOWN;
@@ -70,12 +70,12 @@ int is_special_animaiton_rule(Client *c) {
 	}
 }
 
-void set_client_open_animaiton(Client *c, struct wlr_box geo) {
-	int slide_direction;
-	int horizontal, horizontal_value;
-	int vertical, vertical_value;
-	int special_direction;
-	int center_x, center_y;
+void set_client_open_animation(Client *c, struct wlr_box geo) {
+	int32_t slide_direction;
+	int32_t horizontal, horizontal_value;
+	int32_t vertical, vertical_value;
+	int32_t special_direction;
+	int32_t center_x, center_y;
 
 	if ((!c->animation_type_open && strcmp(animation_type_open, "fade") == 0) ||
 		(c->animation_type_open &&
@@ -96,7 +96,7 @@ void set_client_open_animaiton(Client *c, struct wlr_box geo) {
 			geo.y + (geo.height - c->animainit_geom.height) / 2;
 		return;
 	} else {
-		special_direction = is_special_animaiton_rule(c);
+		special_direction = is_special_animation_rule(c);
 		center_x = c->geom.x + c->geom.width / 2;
 		center_y = c->geom.y + c->geom.height / 2;
 		if (special_direction == UNDIR) {
@@ -147,15 +147,15 @@ void set_client_open_animaiton(Client *c, struct wlr_box geo) {
 	}
 }
 
-void snap_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx,
-									int sy, void *data) {
+void snap_scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int32_t sx,
+									int32_t sy, void *data) {
 	BufferData *buffer_data = (BufferData *)data;
 	wlr_scene_buffer_set_dest_size(buffer, buffer_data->width,
 								   buffer_data->height);
 }
 
-void scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx, int sy,
-							   void *data) {
+void scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int32_t sx,
+							   int32_t sy, void *data) {
 	BufferData *buffer_data = (BufferData *)data;
 
 	if (buffer_data->should_scale && buffer_data->height_scale < 1 &&
@@ -183,8 +183,8 @@ void scene_buffer_apply_effect(struct wlr_scene_buffer *buffer, int sx, int sy,
 
 	if (buffer_data->should_scale) {
 
-		uint32_t surface_width = surface->current.width;
-		uint32_t surface_height = surface->current.height;
+		int32_t surface_width = surface->current.width;
+		int32_t surface_height = surface->current.height;
 
 		surface_width = buffer_data->width_scale < 1
 							? surface_width
@@ -271,24 +271,24 @@ void client_draw_shadow(Client *c) {
 			? CORNER_LOCATION_NONE
 			: CORNER_LOCATION_ALL;
 
-	uint32_t bwoffset = c->bw != 0 && hit_no_border ? c->bw : 0;
+	int32_t bwoffset = c->bw != 0 && hit_no_border ? (int32_t)c->bw : 0;
 
-	uint32_t width, height;
+	int32_t width, height;
 	client_actual_size(c, &width, &height);
 
-	uint32_t delta = shadows_size + c->bw - bwoffset;
+	int32_t delta = shadows_size + (int32_t)c->bw - bwoffset;
 
 	/* we calculate where to clip the shadow */
 	struct wlr_box client_box = {
 		.x = bwoffset,
 		.y = bwoffset,
-		.width = width - 2 * bwoffset,
-		.height = height - 2 * bwoffset,
+		.width = width + (int32_t)c->bw - bwoffset,
+		.height = height + (int32_t)c->bw - bwoffset,
 	};
 
 	struct wlr_box shadow_box = {
-		.x = shadows_position_x,
-		.y = shadows_position_y,
+		.x = shadows_position_x + bwoffset,
+		.y = shadows_position_y + bwoffset,
 		.width = width + 2 * delta,
 		.height = height + 2 * delta,
 	};
@@ -297,8 +297,8 @@ void client_draw_shadow(Client *c) {
 	wlr_box_intersection(&intersection_box, &client_box, &shadow_box);
 	/* clipped region takes shadow relative coords, so we translate everything
 	 * by its position */
-	intersection_box.x -= shadows_position_x;
-	intersection_box.y -= shadows_position_y;
+	intersection_box.x -= shadows_position_x + bwoffset;
+	intersection_box.y -= shadows_position_y + bwoffset;
 
 	struct clipped_region clipped_region = {
 		.area = intersection_box,
@@ -313,7 +313,7 @@ void client_draw_shadow(Client *c) {
 		.height = shadow_box.height,
 	};
 
-	int right_offset, bottom_offset, left_offset, top_offset;
+	int32_t right_offset, bottom_offset, left_offset, top_offset;
 
 	if (c == grabc) {
 		right_offset = 0;
@@ -363,7 +363,6 @@ void apply_border(Client *c) {
 		current_corner_location = set_client_corner_location(c);
 	}
 
-	// Handle no-border cases
 	if (hit_no_border && smartgaps) {
 		c->bw = 0;
 		c->fake_no_border = true;
@@ -379,9 +378,9 @@ void apply_border(Client *c) {
 
 	struct wlr_box clip_box = c->animation.current;
 	// 一但在GEZERO如果使用无符号，那么其他数据也会转换为无符号导致没有负数出错
-	int bw = (int)c->bw;
+	int32_t bw = (int32_t)c->bw;
 
-	int right_offset, bottom_offset, left_offset, top_offset;
+	int32_t right_offset, bottom_offset, left_offset, top_offset;
 
 	if (c == grabc) {
 		right_offset = 0;
@@ -400,25 +399,27 @@ void apply_border(Client *c) {
 		top_offset = GEZERO(c->mon->m.y - c->animation.current.y);
 	}
 
-	int inner_surface_width = GEZERO(clip_box.width - 2 * bw);
-	int inner_surface_height = GEZERO(clip_box.height - 2 * bw);
+	int32_t inner_surface_width = GEZERO(clip_box.width - 2 * bw);
+	int32_t inner_surface_height = GEZERO(clip_box.height - 2 * bw);
 
-	int inner_surface_x = GEZERO(bw - left_offset);
-	int inner_surface_y = GEZERO(bw - top_offset);
+	int32_t inner_surface_x = GEZERO(bw - left_offset);
+	int32_t inner_surface_y = GEZERO(bw - top_offset);
 
-	int rect_x = left_offset;
-	int rect_y = top_offset;
+	int32_t rect_x = left_offset;
+	int32_t rect_y = top_offset;
 
-	int rect_width =
+	int32_t rect_width =
 		GEZERO(c->animation.current.width - left_offset - right_offset);
-	int rect_height =
+	int32_t rect_height =
 		GEZERO(c->animation.current.height - top_offset - bottom_offset);
 
 	if (left_offset > c->bw)
-		inner_surface_width = inner_surface_width - left_offset + c->bw;
+		inner_surface_width =
+			inner_surface_width - left_offset + (int32_t)c->bw;
 
 	if (top_offset > c->bw)
-		inner_surface_height = inner_surface_height - top_offset + c->bw;
+		inner_surface_height =
+			inner_surface_height - top_offset + (int32_t)c->bw;
 
 	if (right_offset > 0) {
 		inner_surface_width =
@@ -446,24 +447,24 @@ void apply_border(Client *c) {
 }
 
 struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
-	int offsetx = 0, offsety = 0, offsetw = 0, offseth = 0;
+	int32_t offsetx = 0, offsety = 0, offsetw = 0, offseth = 0;
 	struct ivec2 offset = {0, 0, 0, 0};
 
 	if (!ISSCROLLTILED(c) && !c->animation.tagining && !c->animation.tagouted &&
 		!c->animation.tagouting)
 		return offset;
 
-	int bottom_out_offset =
+	int32_t bottom_out_offset =
 		GEZERO(c->animation.current.y + c->animation.current.height -
 			   c->mon->m.y - c->mon->m.height);
-	int right_out_offset =
+	int32_t right_out_offset =
 		GEZERO(c->animation.current.x + c->animation.current.width -
 			   c->mon->m.x - c->mon->m.width);
-	int left_out_offset = GEZERO(c->mon->m.x - c->animation.current.x);
-	int top_out_offset = GEZERO(c->mon->m.y - c->animation.current.y);
+	int32_t left_out_offset = GEZERO(c->mon->m.x - c->animation.current.x);
+	int32_t top_out_offset = GEZERO(c->mon->m.y - c->animation.current.y);
 
 	// 必须转换为int，否计算会没有负数导致判断错误
-	int bw = (int)c->bw;
+	int32_t bw = (int32_t)c->bw;
 
 	/*
 	  计算窗口表面超出屏幕四个方向的偏差，避免窗口超出屏幕
@@ -522,8 +523,6 @@ void client_apply_clip(Client *c, float factor) {
 	enum corner_location current_corner_location =
 		set_client_corner_location(c);
 
-	int bw = (int)c->bw;
-
 	if (!animations) {
 		c->animation.running = false;
 		c->need_output_flush = false;
@@ -549,7 +548,7 @@ void client_apply_clip(Client *c, float factor) {
 	}
 
 	// 获取窗口动画实时位置矩形
-	uint32_t width, height;
+	int32_t width, height;
 	client_actual_size(c, &width, &height);
 
 	// 计算出除了边框的窗口实际剪切大小
@@ -558,8 +557,8 @@ void client_apply_clip(Client *c, float factor) {
 	clip_box = (struct wlr_box){
 		.x = geometry.x,
 		.y = geometry.y,
-		.width = width - bw,
-		.height = height - bw,
+		.width = width,
+		.height = height,
 	};
 
 	if (client_is_x11(c)) {
@@ -592,8 +591,8 @@ void client_apply_clip(Client *c, float factor) {
 	wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
 
 	// 获取剪切后的表面的实际大小用于计算缩放
-	int acutal_surface_width = geometry.width - offset.x - offset.width;
-	int acutal_surface_height = geometry.height - offset.y - offset.height;
+	int32_t acutal_surface_width = geometry.width - offset.x - offset.width;
+	int32_t acutal_surface_height = geometry.height - offset.y - offset.height;
 
 	if (acutal_surface_width <= 0 || acutal_surface_height <= 0)
 		return;
@@ -625,25 +624,24 @@ void fadeout_client_animation_next_tick(Client *c) {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	uint32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
+	int32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
 	double animation_passed =
 		c->animation.duration
 			? (double)passed_time / (double)c->animation.duration
 			: 1.0;
 
-	int type = c->animation.action = c->animation.action;
+	int32_t type = c->animation.action = c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
 
-	uint32_t width = c->animation.initial.width +
-					 (c->current.width - c->animation.initial.width) * factor;
-	uint32_t height =
-		c->animation.initial.height +
-		(c->current.height - c->animation.initial.height) * factor;
+	int32_t width = c->animation.initial.width +
+					(c->current.width - c->animation.initial.width) * factor;
+	int32_t height = c->animation.initial.height +
+					 (c->current.height - c->animation.initial.height) * factor;
 
-	uint32_t x = c->animation.initial.x +
-				 (c->current.x - c->animation.initial.x) * factor;
-	uint32_t y = c->animation.initial.y +
-				 (c->current.y - c->animation.initial.y) * factor;
+	int32_t x = c->animation.initial.x +
+				(c->current.x - c->animation.initial.x) * factor;
+	int32_t y = c->animation.initial.y +
+				(c->current.y - c->animation.initial.y) * factor;
 
 	wlr_scene_node_set_position(&c->scene->node, x, y);
 
@@ -692,24 +690,23 @@ void client_animation_next_tick(Client *c) {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	uint32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
+	int32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
 	double animation_passed =
 		c->animation.duration
 			? (double)passed_time / (double)c->animation.duration
 			: 1.0;
 
-	int type = c->animation.action == NONE ? MOVE : c->animation.action;
+	int32_t type = c->animation.action == NONE ? MOVE : c->animation.action;
 	double factor = find_animation_curve_at(animation_passed, type);
 
 	Client *pointer_c = NULL;
 	double sx = 0, sy = 0;
 	struct wlr_surface *surface = NULL;
 
-	uint32_t width = c->animation.initial.width +
-					 (c->current.width - c->animation.initial.width) * factor;
-	uint32_t height =
-		c->animation.initial.height +
-		(c->current.height - c->animation.initial.height) * factor;
+	int32_t width = c->animation.initial.width +
+					(c->current.width - c->animation.initial.width) * factor;
+	int32_t height = c->animation.initial.height +
+					 (c->current.height - c->animation.initial.height) * factor;
 
 	int32_t x = c->animation.initial.x +
 				(c->current.x - c->animation.initial.x) * factor;
@@ -775,71 +772,71 @@ void init_fadeout_client(Client *c) {
 		return;
 	}
 
-	Client *fadeout_cient = ecalloc(1, sizeof(*fadeout_cient));
+	Client *fadeout_client = ecalloc(1, sizeof(*fadeout_client));
 
 	wlr_scene_node_set_enabled(&c->scene->node, true);
 	client_set_border_color(c, bordercolor);
-	fadeout_cient->scene =
+	fadeout_client->scene =
 		wlr_scene_tree_snapshot(&c->scene->node, layers[LyrFadeOut]);
 	wlr_scene_node_set_enabled(&c->scene->node, false);
 
-	if (!fadeout_cient->scene) {
-		free(fadeout_cient);
+	if (!fadeout_client->scene) {
+		free(fadeout_client);
 		return;
 	}
 
-	fadeout_cient->animation.duration = animation_duration_close;
-	fadeout_cient->geom = fadeout_cient->current =
-		fadeout_cient->animainit_geom = fadeout_cient->animation.initial =
+	fadeout_client->animation.duration = animation_duration_close;
+	fadeout_client->geom = fadeout_client->current =
+		fadeout_client->animainit_geom = fadeout_client->animation.initial =
 			c->animation.current;
-	fadeout_cient->mon = c->mon;
-	fadeout_cient->animation_type_close = c->animation_type_close;
-	fadeout_cient->animation.action = CLOSE;
-	fadeout_cient->bw = c->bw;
-	fadeout_cient->nofadeout = c->nofadeout;
+	fadeout_client->mon = c->mon;
+	fadeout_client->animation_type_close = c->animation_type_close;
+	fadeout_client->animation.action = CLOSE;
+	fadeout_client->bw = c->bw;
+	fadeout_client->nofadeout = c->nofadeout;
 
 	// 这里snap节点的坐标设置是使用的相对坐标，所以不能加上原来坐标
 	// 这跟普通node有区别
 
-	fadeout_cient->animation.initial.x = 0;
-	fadeout_cient->animation.initial.y = 0;
+	fadeout_client->animation.initial.x = 0;
+	fadeout_client->animation.initial.y = 0;
 
 	if ((!c->animation_type_close &&
 		 strcmp(animation_type_close, "fade") == 0) ||
 		(c->animation_type_close &&
 		 strcmp(c->animation_type_close, "fade") == 0)) {
-		fadeout_cient->current.x = 0;
-		fadeout_cient->current.y = 0;
-		fadeout_cient->current.width = 0;
-		fadeout_cient->current.height = 0;
+		fadeout_client->current.x = 0;
+		fadeout_client->current.y = 0;
+		fadeout_client->current.width = 0;
+		fadeout_client->current.height = 0;
 	} else if ((c->animation_type_close &&
 				strcmp(c->animation_type_close, "slide") == 0) ||
 			   (!c->animation_type_close &&
 				strcmp(animation_type_close, "slide") == 0)) {
-		fadeout_cient->current.y =
+		fadeout_client->current.y =
 			c->geom.y + c->geom.height / 2 > c->mon->m.y + c->mon->m.height / 2
 				? c->mon->m.height -
 					  (c->animation.current.y - c->mon->m.y) // down out
 				: c->mon->m.y - c->geom.height;				 // up out
-		fadeout_cient->current.x = 0; // x无偏差，垂直划出
+		fadeout_client->current.x = 0; // x无偏差，垂直划出
 	} else {
-		fadeout_cient->current.y =
-			(fadeout_cient->geom.height -
-			 fadeout_cient->geom.height * zoom_end_ratio) /
+		fadeout_client->current.y =
+			(fadeout_client->geom.height -
+			 fadeout_client->geom.height * zoom_end_ratio) /
 			2;
-		fadeout_cient->current.x =
-			(fadeout_cient->geom.width -
-			 fadeout_cient->geom.width * zoom_end_ratio) /
+		fadeout_client->current.x =
+			(fadeout_client->geom.width -
+			 fadeout_client->geom.width * zoom_end_ratio) /
 			2;
-		fadeout_cient->current.width =
-			fadeout_cient->geom.width * zoom_end_ratio;
-		fadeout_cient->current.height =
-			fadeout_cient->geom.height * zoom_end_ratio;
+		fadeout_client->current.width =
+			fadeout_client->geom.width * zoom_end_ratio;
+		fadeout_client->current.height =
+			fadeout_client->geom.height * zoom_end_ratio;
 	}
 
-	fadeout_cient->animation.time_started = get_now_in_ms();
-	wlr_scene_node_set_enabled(&fadeout_cient->scene->node, true);
-	wl_list_insert(&fadeout_clients, &fadeout_cient->fadeout_link);
+	fadeout_client->animation.time_started = get_now_in_ms();
+	wlr_scene_node_set_enabled(&fadeout_client->scene->node, true);
+	wl_list_insert(&fadeout_clients, &fadeout_client->fadeout_link);
 
 	// 请求刷新屏幕
 	request_fresh_all_monitors();
@@ -910,7 +907,7 @@ void client_set_pending_state(Client *c) {
 	c->dirty = true;
 }
 
-void resize(Client *c, struct wlr_box geo, int interact) {
+void resize(Client *c, struct wlr_box geo, int32_t interact) {
 
 	// 动画设置的起始函数，这里用来计算一些动画的起始值
 	// 动画起始位置大小是由于c->animainit_geom确定的
@@ -932,8 +929,8 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 
 	if (is_scroller_layout(c->mon) && (!c->isfloating || c == grabc)) {
 		c->geom = geo;
-		c->geom.width = MAX(1 + 2 * (int)c->bw, c->geom.width);
-		c->geom.height = MAX(1 + 2 * (int)c->bw, c->geom.height);
+		c->geom.width = MAX(1 + 2 * (int32_t)c->bw, c->geom.width);
+		c->geom.height = MAX(1 + 2 * (int32_t)c->bw, c->geom.height);
 	} else { // 这里会限制不允许窗口划出屏幕
 		c->geom = geo;
 		applybounds(
@@ -974,7 +971,7 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 		c->animainit_geom.height = c->animation.current.height;
 		c->animainit_geom.width = c->animation.current.width;
 	} else if (c->is_pending_open_animation) {
-		set_client_open_animaiton(c, c->geom);
+		set_client_open_animation(c, c->geom);
 	} else {
 		c->animainit_geom = c->animation.current;
 	}
@@ -983,9 +980,19 @@ void resize(Client *c, struct wlr_box geo, int interact) {
 		c->bw = 0;
 	}
 
+	bool hit_no_border = check_hit_no_border(c);
+	if (hit_no_border && smartgaps) {
+		c->bw = 0;
+		c->fake_no_border = true;
+	}
+
 	// c->geom 是真实的窗口大小和位置，跟过度的动画无关，用于计算布局
 	c->configure_serial = client_set_size(c, c->geom.width - 2 * c->bw,
 										  c->geom.height - 2 * c->bw);
+
+	if (c->configure_serial != 0) {
+		c->mon->resizing_count_pending++;
+	}
 
 	if (c == grabc) {
 		c->animation.running = false;
@@ -1051,20 +1058,11 @@ void client_set_focused_opacity_animation(Client *c) {
 		   sizeof(c->opacity_animation.target_border_color));
 	c->opacity_animation.target_opacity = c->focused_opacity;
 	c->opacity_animation.time_started = get_now_in_ms();
-	if (c->opacity_animation.running) {
-		memcpy(c->opacity_animation.initial_border_color,
-			   c->opacity_animation.current_border_color,
-			   sizeof(c->opacity_animation.initial_border_color));
-		c->opacity_animation.initial_opacity =
-			c->opacity_animation.current_opacity;
-	} else {
-		memcpy(c->opacity_animation.initial_border_color, border_color,
-			   sizeof(c->opacity_animation.initial_border_color));
-		memcpy(c->opacity_animation.current_border_color, border_color,
-			   sizeof(c->opacity_animation.current_border_color));
-		c->opacity_animation.initial_opacity = c->unfocused_opacity;
-		c->opacity_animation.current_opacity = c->unfocused_opacity;
-	}
+	memcpy(c->opacity_animation.initial_border_color,
+		   c->opacity_animation.current_border_color,
+		   sizeof(c->opacity_animation.initial_border_color));
+	c->opacity_animation.initial_opacity = c->opacity_animation.current_opacity;
+
 	c->opacity_animation.running = true;
 }
 
@@ -1084,20 +1082,10 @@ void client_set_unfocused_opacity_animation(Client *c) {
 	c->opacity_animation.target_opacity = c->unfocused_opacity;
 	c->opacity_animation.time_started = get_now_in_ms();
 
-	if (c->opacity_animation.running) {
-		memcpy(c->opacity_animation.initial_border_color,
-			   c->opacity_animation.current_border_color,
-			   sizeof(c->opacity_animation.initial_border_color));
-		c->opacity_animation.initial_opacity =
-			c->opacity_animation.current_opacity;
-	} else {
-		memcpy(c->opacity_animation.initial_border_color, border_color,
-			   sizeof(c->opacity_animation.initial_border_color));
-		memcpy(c->opacity_animation.current_border_color, border_color,
-			   sizeof(c->opacity_animation.current_border_color));
-		c->opacity_animation.initial_opacity = c->focused_opacity;
-		c->opacity_animation.current_opacity = c->focused_opacity;
-	}
+	memcpy(c->opacity_animation.initial_border_color,
+		   c->opacity_animation.current_border_color,
+		   sizeof(c->opacity_animation.initial_border_color));
+	c->opacity_animation.initial_opacity = c->opacity_animation.current_opacity;
 
 	c->opacity_animation.running = true;
 }
@@ -1113,7 +1101,7 @@ bool client_apply_focus_opacity(Client *c) {
 		struct timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
 
-		uint32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
+		int32_t passed_time = timespec_to_ms(&now) - c->animation.time_started;
 		double linear_progress =
 			c->animation.duration
 				? (double)passed_time / (double)c->animation.duration
@@ -1132,13 +1120,18 @@ bool client_apply_focus_opacity(Client *c) {
 		if (target_opacity > opacity) {
 			target_opacity = opacity;
 		}
+		memcpy(c->opacity_animation.current_border_color,
+			   c->opacity_animation.target_border_color,
+			   sizeof(c->opacity_animation.current_border_color));
+		c->opacity_animation.current_opacity = target_opacity;
 		client_set_opacity(c, target_opacity);
+		client_set_border_color(c, c->opacity_animation.target_border_color);
 	} else if (animations && c->opacity_animation.running) {
 
 		struct timespec now;
 		clock_gettime(CLOCK_MONOTONIC, &now);
 
-		uint32_t passed_time =
+		int32_t passed_time =
 			timespec_to_ms(&now) - c->opacity_animation.time_started;
 		double linear_progress =
 			c->opacity_animation.duration
@@ -1155,7 +1148,7 @@ bool client_apply_focus_opacity(Client *c) {
 		client_set_opacity(c, c->opacity_animation.current_opacity);
 
 		// Animate border color
-		for (int i = 0; i < 4; i++) {
+		for (int32_t i = 0; i < 4; i++) {
 			c->opacity_animation.current_border_color[i] =
 				c->opacity_animation.initial_border_color[i] +
 				(c->opacity_animation.target_border_color[i] -
@@ -1163,7 +1156,7 @@ bool client_apply_focus_opacity(Client *c) {
 					eased_progress;
 		}
 		client_set_border_color(c, c->opacity_animation.current_border_color);
-		if (linear_progress == 1.0f) {
+		if (linear_progress >= 1.0f) {
 			c->opacity_animation.running = false;
 		} else {
 			return true;

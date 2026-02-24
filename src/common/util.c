@@ -36,8 +36,8 @@ void *ecalloc(size_t nmemb, size_t size) {
 	return p;
 }
 
-int fd_set_nonblock(int fd) {
-	int flags = fcntl(fd, F_GETFL);
+int32_t fd_set_nonblock(int32_t fd) {
+	int32_t flags = fcntl(fd, F_GETFL);
 	if (flags < 0) {
 		perror("fcntl(F_GETFL):");
 		return -1;
@@ -50,8 +50,8 @@ int fd_set_nonblock(int fd) {
 	return 0;
 }
 
-int regex_match(const char *pattern, const char *str) {
-	int errnum;
+int32_t regex_match(const char *pattern, const char *str) {
+	int32_t errnum;
 	PCRE2_SIZE erroffset;
 
 	if (!pattern || !str) {
@@ -70,7 +70,7 @@ int regex_match(const char *pattern, const char *str) {
 
 	pcre2_match_data *match_data =
 		pcre2_match_data_create_from_pattern(re, NULL);
-	int ret =
+	int32_t ret =
 		pcre2_match(re, (PCRE2_SPTR)str, strlen(str), 0, 0, match_data, NULL);
 
 	pcre2_match_data_free(match_data);

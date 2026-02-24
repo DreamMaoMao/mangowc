@@ -112,7 +112,7 @@ void dwl_ipc_output_printstatus_to(DwlIpcOutput *ipc_output) {
 	Client *c = NULL, *focused = NULL;
 	struct wlr_keyboard *keyboard;
 	xkb_layout_index_t current;
-	int tagmask, state, numclients, focused_client, tag;
+	int32_t tagmask, state, numclients, focused_client, tag;
 	const char *title, *appid, *symbol;
 	char kb_layout[32];
 	focused = focustop(monitor);
@@ -238,7 +238,7 @@ void dwl_ipc_output_set_client_tags(struct wl_client *client,
 	selected_client->tags = newtags;
 	if (selmon == monitor)
 		focusclient(focustop(monitor), 1);
-	arrange(selmon, false);
+	arrange(selmon, false, false);
 	printstatus();
 }
 
@@ -257,7 +257,7 @@ void dwl_ipc_output_set_layout(struct wl_client *client,
 
 	monitor->pertag->ltidxs[monitor->pertag->curtag] = &layouts[index];
 	clear_fullscreen_and_maximized_state(monitor);
-	arrange(monitor, false);
+	arrange(monitor, false, false);
 	printstatus();
 }
 
@@ -287,7 +287,7 @@ void dwl_ipc_output_dispatch(struct wl_client *client,
 							 const char *arg3, const char *arg4,
 							 const char *arg5) {
 
-	int (*func)(const Arg *);
+	int32_t (*func)(const Arg *);
 	Arg arg;
 	func = parse_func_name((char *)dispatch, &arg, (char *)arg1, (char *)arg2,
 						   (char *)arg3, (char *)arg4, (char *)arg5);
