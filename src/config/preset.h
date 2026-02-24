@@ -69,6 +69,7 @@ int32_t scroller_prefer_center = 0;
 int32_t scroller_prefer_overspread = 1;
 int32_t focus_cross_monitor = 0;
 int32_t focus_cross_tag = 0;
+int32_t tag_orientation = 0;
 int32_t exchange_cross_monitor = 0;
 int32_t scratchpad_cross_monitor = 0;
 int32_t view_current_to_back = 0;
