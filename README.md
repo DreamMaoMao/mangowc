@@ -104,7 +104,15 @@ Then, install the package:
 ```bash
 dnf install mangowc
 ```
+## OpenSUSE
+The package is in the third-party obs repository.
 
+install the package:
+
+```bash
+sudo zypper install opi
+opi install mangowc
+```
 ## Guix System
 The package definition is described in the source repository.
 First, add `mangowc` channel to `channels.scm` file:
