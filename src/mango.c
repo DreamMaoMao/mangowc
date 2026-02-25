@@ -2556,6 +2556,10 @@ void destroydecoration(struct wl_listener *listener, void *data) {
 static void popup_unconstrain(Popup *popup) {
 	struct wlr_xdg_popup *wlr_popup = popup->wlr_popup;
 
+	if (!wlr_popup || !wlr_popup->parent) {
+		return;
+	}
+
 	struct wlr_scene_node *parent_node = wlr_popup->parent->data;
 	if (!parent_node) {
 		wlr_log(WLR_ERROR, "Popup parent has no scene node");
