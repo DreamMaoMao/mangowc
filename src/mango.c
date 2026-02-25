@@ -488,8 +488,6 @@ typedef struct {
 
 typedef struct {
 	struct wlr_xdg_popup *wlr_popup;
-	Client *client;
-	LayerSurface *layer;
 	uint32_t type;
 	struct wl_listener destroy;
 	struct wl_listener commit;
@@ -2622,8 +2620,6 @@ static void commitpopup(struct wl_listener *listener, void *data) {
 		goto commitpopup_listen_free;
 	}
 
-	popup->client = c;
-	popup->layer = l;
 	popup->type = type;
 	popup->wlr_popup = wkr_popup;
 
