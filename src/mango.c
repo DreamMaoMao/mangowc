@@ -486,6 +486,16 @@ typedef struct {
 } LayerSurface;
 
 typedef struct {
+	struct wlr_xdg_popup *wlr_popup;
+	Client *client;
+	LayerSurface *layer;
+	uint32_t type;
+	struct wl_listener destroy;
+	struct wl_listener commit;
+	struct wl_listener reposition;
+} Popup;
+
+typedef struct {
 	const char *symbol;
 	void (*arrange)(Monitor *);
 	const char *name;
@@ -804,6 +814,7 @@ static void monitor_stop_skip_frame_timer(Monitor *m);
 static int monitor_skip_frame_timeout_callback(void *data);
 static void handle_iamge_copy_capture_new_session(struct wl_listener *listener,
 												  void *data);
+static Monitor *get_monitor_nearest_to(int32_t lx, int32_t ly);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -916,11 +927,8 @@ static KeyMode keymode = {
 	.isdefault = true,
 };
 
-static char *env_vars[] = {"DISPLAY",
-						   "WAYLAND_DISPLAY",
-						   "XDG_CURRENT_DESKTOP",
-						   "XDG_SESSION_TYPE",
-						   NULL};
+static char *env_vars[] = {"DISPLAY", "WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP",
+						   "XDG_SESSION_TYPE", NULL};
 static struct {
 	enum wp_cursor_shape_device_v1_shape shape;
 	struct wlr_surface *surface;
@@ -2507,37 +2515,107 @@ void destroydecoration(struct wl_listener *listener, void *data) {
 	wl_list_remove(&c->set_decoration_mode.link);
 }
 
-void commitpopup(struct wl_listener *listener, void *data) {
+static void popup_unconstrain(Popup *popup) {
+	struct wlr_xdg_popup *wlr_popup = popup->wlr_popup;
+
+	if (!wlr_popup || !wlr_popup->parent) {
+		return;
+	}
+
+	struct wlr_scene_node *parent_node = wlr_popup->parent->data;
+	if (!parent_node) {
+		wlr_log(WLR_ERROR, "Popup parent has no scene node");
+		return;
+	}
+	int parent_lx, parent_ly;
+	wlr_scene_node_coords(parent_node, &parent_lx, &parent_ly);
+
+	struct wlr_box *scheduled = &wlr_popup->scheduled.geometry;
+	int popup_lx = parent_lx + scheduled->x;
+	int popup_ly = parent_ly + scheduled->y;
+
+	Monitor *mon = get_monitor_nearest_to(popup_lx, popup_ly);
+
+	struct wlr_box usable = popup->type == LayerShell ? mon->m : mon->w;
+
+	struct wlr_box constraint_box = {
+		.x = usable.x - parent_lx,
+		.y = usable.y - parent_ly,
+		.width = usable.width,
+		.height = usable.height,
+	};
+
+	wlr_xdg_popup_unconstrain_from_box(wlr_popup, &constraint_box);
+}
+
+static void destroypopup(struct wl_listener *listener, void *data) {
+	Popup *popup = wl_container_of(listener, popup, destroy);
+	wl_list_remove(&popup->destroy.link);
+	wl_list_remove(&popup->reposition.link);
+	free(popup);
+}
+
+static void commitpopup(struct wl_listener *listener, void *data) {
+	Popup *popup = wl_container_of(listener, popup, commit);
+
 	struct wlr_surface *surface = data;
-	struct wlr_xdg_popup *popup = wlr_xdg_popup_try_from_wlr_surface(surface);
-	LayerSurface *l = NULL;
+	struct wlr_xdg_popup *wkr_popup =
+		wlr_xdg_popup_try_from_wlr_surface(surface);
+
 	Client *c = NULL;
-	struct wlr_box box;
+	LayerSurface *l = NULL;
 	int32_t type = -1;
 
-	if (!popup || !popup->base->initial_commit)
+	if (!wkr_popup || !wkr_popup->base->initial_commit)
 		goto commitpopup_listen_free;
 
-	type = toplevel_from_wlr_surface(popup->base->surface, &c, &l);
-	if (!popup->parent || !popup->parent->data || type < 0)
-		goto commitpopup_listen_free;
-
-	wlr_scene_node_raise_to_top(popup->parent->data);
-
-	popup->base->surface->data =
-		wlr_scene_xdg_surface_create(popup->parent->data, popup->base);
-	if ((l && !l->mon) || (c && !c->mon)) {
-		wlr_xdg_popup_destroy(popup);
+	type = toplevel_from_wlr_surface(wkr_popup->base->surface, &c, &l);
+	if (!wkr_popup->parent || !wkr_popup->parent->data || type < 0) {
+		wlr_xdg_popup_destroy(wkr_popup);
 		goto commitpopup_listen_free;
 	}
-	box = type == LayerShell ? l->mon->m : c->mon->w;
-	box.x -= (type == LayerShell ? l->scene->node.x : c->geom.x);
-	box.y -= (type == LayerShell ? l->scene->node.y : c->geom.y);
-	wlr_xdg_popup_unconstrain_from_box(popup, &box);
+
+	wlr_scene_node_raise_to_top(wkr_popup->parent->data);
+
+	wkr_popup->base->surface->data =
+		wlr_scene_xdg_surface_create(wkr_popup->parent->data, wkr_popup->base);
+	if ((l && !l->mon) || (c && !c->mon)) {
+		wlr_xdg_popup_destroy(wkr_popup);
+		goto commitpopup_listen_free;
+	}
+
+	popup->client = c;
+	popup->layer = l;
+	popup->type = type;
+	popup->wlr_popup = wkr_popup;
+
+	popup_unconstrain(popup);
 
 commitpopup_listen_free:
-	wl_list_remove(&listener->link);
-	free(listener);
+	wl_list_remove(&popup->commit.link);
+	popup->commit.notify = NULL;
+}
+
+static void repositionpopup(struct wl_listener *listener, void *data) {
+	Popup *popup = wl_container_of(listener, popup, reposition);
+	popup_unconstrain(popup);
+}
+
+static void createpopup(struct wl_listener *listener, void *data) {
+	struct wlr_xdg_popup *wlr_popup = data;
+
+	Popup *popup = calloc(1, sizeof(Popup));
+	if (!popup)
+		return;
+
+	popup->destroy.notify = destroypopup;
+	wl_signal_add(&wlr_popup->events.destroy, &popup->destroy);
+
+	popup->commit.notify = commitpopup;
+	wl_signal_add(&wlr_popup->base->surface->events.commit, &popup->commit);
+
+	popup->reposition.notify = repositionpopup;
+	wl_signal_add(&wlr_popup->events.reposition, &popup->reposition);
 }
 
 void createdecoration(struct wl_listener *listener, void *data) {
@@ -3118,13 +3196,6 @@ void createpointerconstraint(struct wl_listener *listener, void *data) {
 	pointer_constraint->constraint = data;
 	LISTEN(&pointer_constraint->constraint->events.destroy,
 		   &pointer_constraint->destroy, destroypointerconstraint);
-}
-
-void createpopup(struct wl_listener *listener, void *data) {
-	/* This event is raised when a client (either xdg-shell or layer-shell)
-	 * creates a new popup. */
-	struct wlr_xdg_popup *popup = data;
-	LISTEN_STATIC(&popup->base->surface->events.commit, commitpopup);
 }
 
 void cursorconstrain(struct wlr_pointer_constraint_v1 *constraint) {
