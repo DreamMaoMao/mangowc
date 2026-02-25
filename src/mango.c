@@ -2608,8 +2608,10 @@ static void commitpopup(struct wl_listener *listener, void *data) {
 		goto commitpopup_listen_free;
 
 	type = toplevel_from_wlr_surface(wkr_popup->base->surface, &c, &l);
-	if (!wkr_popup->parent || !wkr_popup->parent->data || type < 0)
+	if (!wkr_popup->parent || !wkr_popup->parent->data || type < 0) {
+		wlr_xdg_popup_destroy(wkr_popup);
 		goto commitpopup_listen_free;
+	}
 
 	wlr_scene_node_raise_to_top(wkr_popup->parent->data);
 
