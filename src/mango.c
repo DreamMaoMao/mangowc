@@ -799,6 +799,7 @@ static bool client_is_in_same_stack(Client *sc, Client *tc, Client *fc);
 static void monitor_stop_skip_frame_timer(Monitor *m);
 static int monitor_skip_frame_timeout_callback(void *data);
 static Monitor *get_monitor_nearest_to(int32_t lx, int32_t ly);
+static bool match_monitor_spec(char *spec, Monitor *m);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
