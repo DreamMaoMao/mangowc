@@ -3647,13 +3647,13 @@ void reapply_cursor_style(void) {
 
 	cursor_mgr = wlr_xcursor_manager_create(config.cursor_theme, cursor_size);
 
-	if(cursor_size > 0){
-        char size_str[16];
-        snprintf(size_str, sizeof(size_str), "%d", cursor_size);
+	if (cursor_size > 0) {
+		char size_str[16];
+		snprintf(size_str, sizeof(size_str), "%d", cursor_size);
 		setenv("XCURSOR_SIZE", size_str, 1);
 	}
 
-	if(config.cursor_theme){
+	if (config.cursor_theme) {
 		setenv("XCURSOR_THEME", config.cursor_theme, 1);
 	}
 
