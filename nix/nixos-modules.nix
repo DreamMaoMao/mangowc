@@ -9,6 +9,10 @@ in {
   options = {
     programs.mango = {
       enable = lib.mkEnableOption "mango, a wayland compositor based on dwl";
+      addLoginEntry = lib.mkEnableOption {
+        default = true;
+        description = "Whether to add a login entry to the display manager for mango";
+      };
       package = lib.mkOption {
         type = lib.types.package;
         default = self.packages.${pkgs.stdenv.hostPlatform.system}.mango;
@@ -55,7 +59,7 @@ in {
     programs.xwayland.enable = lib.mkDefault true;
 
     services = {
-      displayManager.sessionPackages = [cfg.package];
+      displayManager.sessionPackages = lib.mkIf cfg.addLoginEntry [ cfg.package ];
 
       graphical-desktop.enable = lib.mkDefault true;
     };

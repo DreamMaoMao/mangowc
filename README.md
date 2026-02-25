@@ -23,14 +23,22 @@ This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
      - Ipc support(get/send message from/to compositor by external program)
      - Hycov-like overview
      - Window effects from scenefx (blur, shadow, corner radius, opacity)
+     - Zero flickering - every frame is perfect.
 
 https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f
+
+# Mango's Vision
+
+**Mango's primary goal is stability**: After months of testing and development—and aside from a few lingering GPU compatibility issues—it should now be stable enough. I don't plan on making many breaking changes.
+
+**Mango's preference is practicality**: I tend to add features that genuinely help with daily workflows—things that make our work more convenient.
+
+**Mango won't cater to every user preference**: For niche feature requests, I'll take a wait-and-see approach. I'll only consider adding them if they get a significant number of upvotes.
 
 # Our discord
 [mangowc](https://discord.gg/CPjbDxesh5)
 
 # Supported layouts
-
 - tile
 - scroller
 - monocle
@@ -40,21 +48,20 @@ https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f
 - vertical_tile
 - vertical_grid
 - vertical_scroller
+- tgmix
 
 # Installation
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/mangowc.svg)](https://repology.org/project/mangowc/versions)
+
 ## Dependencies
 
-- glibc
 - wayland
 - wayland-protocols
 - libinput
 - libdrm
 - libxkbcommon
 - pixman
-- git
-- meson
-- ninja
 - libdisplay-info
 - libliftoff
 - hwdata
@@ -97,6 +104,35 @@ Then, install the package:
 ```bash
 dnf install mangowc
 ```
+
+## Guix System
+The package definition is described in the source repository.
+First, add `mangowc` channel to `channels.scm` file:
+
+```scheme
+;; In $HOME/.config/guix/channels.scm
+(cons (channel
+        (name 'mangowc)
+        (url "https://github.com/DreamMaoMao/mangowc.git")
+        (branch "main"))
+      ... ;; Your other channels
+      %default-channels)
+```
+
+Then, run `guix pull` and after update you can either run
+`guix install mangowc` or add it to your configuration via:
+
+```scheme
+(use-modules (mangowc)) ;; Add mangowc module
+
+;; Add mangowc to packages list
+(packages (cons*
+            mangowc-git
+            ... ;; Other packages you specified
+            %base-packages))
+```
+
+And then rebuild your system.
 
 ## Other
 
