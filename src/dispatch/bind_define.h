@@ -211,7 +211,7 @@ int32_t focusmon(const Arg *arg) {
 			if (!m->wlr_output->enabled) {
 				continue;
 			}
-			if (regex_match(arg->v, m->wlr_output->name)) {
+			if (match_monitor_spec(arg->v, m)) {
 				tm = m;
 				break;
 			}
@@ -1103,7 +1103,7 @@ int32_t tagmon(const Arg *arg) {
 			if (!cm->wlr_output->enabled) {
 				continue;
 			}
-			if (regex_match(arg->v, cm->wlr_output->name)) {
+			if (match_monitor_spec(arg->v, cm)) {
 				m = cm;
 				break;
 			}
@@ -1544,7 +1544,7 @@ int32_t tagcrossmon(const Arg *arg) {
 	if (!selmon || !selmon->sel)
 		return 0;
 
-	if (regex_match(selmon->wlr_output->name, arg->v)) {
+	if (match_monitor_spec(arg->v, selmon)) {
 		tag_client(arg, selmon->sel);
 		return 0;
 	}
@@ -1702,7 +1702,7 @@ int32_t disable_monitor(const Arg *arg) {
 	Monitor *m = NULL;
 	struct wlr_output_state state = {0};
 	wl_list_for_each(m, &mons, link) {
-		if (regex_match(arg->v, m->wlr_output->name)) {
+		if (match_monitor_spec(arg->v, m)) {
 			wlr_output_state_set_enabled(&state, false);
 			wlr_output_commit_state(m->wlr_output, &state);
 			m->asleep = 1;
@@ -1717,7 +1717,7 @@ int32_t enable_monitor(const Arg *arg) {
 	Monitor *m = NULL;
 	struct wlr_output_state state = {0};
 	wl_list_for_each(m, &mons, link) {
-		if (regex_match(arg->v, m->wlr_output->name)) {
+		if (match_monitor_spec(arg->v, m)) {
 			wlr_output_state_set_enabled(&state, true);
 			wlr_output_commit_state(m->wlr_output, &state);
 			m->asleep = 0;
@@ -1732,7 +1732,7 @@ int32_t toggle_monitor(const Arg *arg) {
 	Monitor *m = NULL;
 	struct wlr_output_state state = {0};
 	wl_list_for_each(m, &mons, link) {
-		if (regex_match(arg->v, m->wlr_output->name)) {
+		if (match_monitor_spec(arg->v, m)) {
 			wlr_output_state_set_enabled(&state, !m->wlr_output->enabled);
 			wlr_output_commit_state(m->wlr_output, &state);
 			m->asleep = !m->wlr_output->enabled;
