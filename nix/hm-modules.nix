@@ -13,9 +13,7 @@ self: {
     ${cfg.autostart_sh}
   '';
   validatedConfig = pkgs.runCommand "mango-config.conf" { } ''
-    cat > "$out" <<'EOF'
-    ${cfg.settings}
-    EOF
+    cp ${pkgs.writeText "mango-config.conf" cfg.settings} "$out"
 
     ${cfg.package}/bin/mango -c "$out" -p || exit 1
   '';
