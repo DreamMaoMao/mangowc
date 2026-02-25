@@ -4558,7 +4558,6 @@ void monitor_check_skip_frame_timeout(Monitor *m) {
 void rendermon(struct wl_listener *listener, void *data) {
 	Monitor *m = wl_container_of(listener, m, frame);
 	Client *c = NULL, *tmp = NULL;
-	struct wlr_output_state pending = {0};
 	LayerSurface *l = NULL, *tmpl = NULL;
 	int32_t i;
 	struct wl_list *layer_list;
@@ -4619,7 +4618,6 @@ skip:
 		wlr_scene_output_send_frame_done(m->scene_output, &now);
 	} else {
 		wlr_scene_output_send_frame_done(m->scene_output, &now);
-		wlr_output_state_finish(&pending);
 	}
 
 	// 如果需要更多帧，确保安排下一帧
