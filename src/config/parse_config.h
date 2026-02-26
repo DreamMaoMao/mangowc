@@ -1778,6 +1778,13 @@ bool parse_option(Config *config, char *key, char *value) {
 			token = strtok(NULL, ",");
 		}
 
+		if (!rule->name && !rule->make && !rule->model && !rule->serial) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Monitor rule "
+							"must have at least one of the following "
+							"options: name, make, model, serial\n");
+			return false;
+		}
+
 		config->monitor_rules_count++;
 		return !parse_error;
 	} else if (strcmp(key, "tagrule") == 0) {
