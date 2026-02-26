@@ -4517,6 +4517,7 @@ void scene_buffer_apply_opacity(struct wlr_scene_buffer *buffer, int32_t sx,
 }
 
 void client_set_opacity(Client *c, double opacity) {
+	opacity = CLAMP_FLOAT(opacity, 0.0f, 1.0f);
 	wlr_scene_node_for_each_buffer(&c->scene_surface->node,
 								   scene_buffer_apply_opacity, &opacity);
 }
