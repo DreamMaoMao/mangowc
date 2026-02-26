@@ -341,6 +341,7 @@ void apply_border(Client *c) {
 struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
 	int32_t offsetx = 0, offsety = 0, offsetw = 0, offseth = 0;
 	struct ivec2 offset = {0, 0, 0, 0};
+	return offset;
 
 	if (!ISSCROLLTILED(c) && !c->animation.tagining && !c->animation.tagouted &&
 		!c->animation.tagouting)
@@ -457,6 +458,8 @@ void client_apply_clip(Client *c, float factor) {
 
 	// 检测窗口是否需要剪切超出屏幕部分，如果需要就调整实际要剪切的矩形
 	offset = clip_to_hide(c, &clip_box);
+
+	wlr_scene_tree_set_clip(c->mon->scene_tree, &c->mon->m);
 
 	// 应用窗口装饰
 	apply_border(c);

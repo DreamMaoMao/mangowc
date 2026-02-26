@@ -82,15 +82,28 @@ void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
 	struct wlr_scene_node *node, *pnode;
 	struct wlr_surface *surface = NULL;
 	Client *c = NULL;
+	Monitor *m = NULL;
 	LayerSurface *l = NULL;
 	int32_t layer;
+
+	m = xytomon(x, y);
+
+	if (!m)
+		return;
 
 	for (layer = NUM_LAYERS - 1; !surface && layer >= 0; layer--) {
 
 		if (layer == LyrFadeOut)
 			continue;
 
-		if (!(node = wlr_scene_node_at(&layers[layer]->node, x, y, nx, ny)))
+		node = wlr_scene_node_at(&layers[layer]->node, x, y, nx, ny);
+
+		if (!node) {
+			node = wlr_scene_node_at(&m->layers_scene_tree[layer]->node, x, y,
+									 nx, ny);
+		}
+
+		if (!node)
 			continue;
 
 		if (!node->enabled)

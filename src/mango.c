@@ -519,6 +519,8 @@ struct Monitor {
 	bool skiping_frame;
 	uint32_t resizing_count_pending;
 	uint32_t resizing_count_current;
+	struct wlr_scene_tree *scene_tree;
+	struct wlr_scene_tree *layers_scene_tree[NUM_LAYERS];
 
 	struct wl_list dwl_ipc_outputs;
 	int32_t gappih; /* horizontal gap between windows */
@@ -1538,6 +1540,11 @@ void applyrules(Client *c) {
 			   (!c->istagsilent || !newtags ||
 				newtags & mon->tagset[mon->seltags]));
 
+	if (c->mon) {
+		wlr_scene_node_reparent(&c->scene->node,
+								c->mon->layers_scene_tree[LyrTile]);
+	}
+
 	if (c->mon &&
 		!(c->mon == selmon && c->tags & c->mon->tagset[c->mon->seltags]) &&
 		!c->isopensilent && !c->istagsilent) {
@@ -1576,7 +1583,8 @@ void applyrules(Client *c) {
 
 	// apply overlay rule
 	if (c->isoverlay && c->scene) {
-		wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
+		wlr_scene_node_reparent(&c->scene->node,
+								c->mon->layers_scene_tree[LyrOverlay]);
 		wlr_scene_node_raise_to_top(&c->scene->node);
 	}
 }
@@ -2373,8 +2381,6 @@ void maplayersurfacenotify(struct wl_listener *listener, void *data) {
 void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
 	LayerSurface *l = wl_container_of(listener, l, surface_commit);
 	struct wlr_layer_surface_v1 *layer_surface = l->layer_surface;
-	struct wlr_scene_tree *scene_layer =
-		layers[layermap[layer_surface->current.layer]];
 	struct wlr_layer_surface_v1_state old_state;
 	struct wlr_box box;
 
@@ -2390,6 +2396,9 @@ void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
 
 		return;
 	}
+
+	struct wlr_scene_tree *scene_layer =
+		l->mon->layers_scene_tree[layermap[layer_surface->current.layer]];
 
 	// 检查surface是否有buffer
 	// 空buffer，只是隐藏，不改变mapped状态
@@ -2434,7 +2443,7 @@ void commitlayersurfacenotify(struct wl_listener *listener, void *data) {
 		wlr_scene_node_reparent(
 			&l->popups->node,
 			(layer_surface->current.layer < ZWLR_LAYER_SHELL_V1_LAYER_TOP
-				 ? layers[LyrTop]
+				 ? l->mon->layers_scene_tree[LyrTop]
 				 : scene_layer));
 	}
 
@@ -2723,14 +2732,16 @@ void createlayersurface(struct wl_listener *listener, void *data) {
 	struct wlr_layer_surface_v1 *layer_surface = data;
 	LayerSurface *l = NULL;
 	struct wlr_surface *surface = layer_surface->surface;
-	struct wlr_scene_tree *scene_layer =
-		layers[layermap[layer_surface->pending.layer]];
 
 	if (!layer_surface->output &&
 		!(layer_surface->output = selmon ? selmon->wlr_output : NULL)) {
 		wlr_layer_surface_v1_destroy(layer_surface);
 		return;
 	}
+
+	Monitor *mon = layer_surface->output->data;
+	struct wlr_scene_tree *scene_layer =
+		mon->layers_scene_tree[layermap[layer_surface->pending.layer]];
 
 	l = layer_surface->data = ecalloc(1, sizeof(*l));
 	l->type = LayerShell;
@@ -2740,14 +2751,15 @@ void createlayersurface(struct wl_listener *listener, void *data) {
 	LISTEN(&surface->events.unmap, &l->unmap, unmaplayersurfacenotify);
 
 	l->layer_surface = layer_surface;
-	l->mon = layer_surface->output->data;
+	l->mon = mon;
 	l->scene_layer =
 		wlr_scene_layer_surface_v1_create(scene_layer, layer_surface);
 	l->scene = l->scene_layer->tree;
 	l->popups = surface->data = wlr_scene_tree_create(
 		layer_surface->current.layer < ZWLR_LAYER_SHELL_V1_LAYER_TOP
-			? layers[LyrTop]
+			? l->mon->layers_scene_tree[LyrTop]
 			: scene_layer);
+
 	l->scene->node.data = l->popups->node.data = l;
 
 	LISTEN(&l->scene->node.events.destroy, &l->destroy, destroylayernodenotify);
@@ -2843,6 +2855,13 @@ void createmon(struct wl_listener *listener, void *data) {
 
 	m->wlr_output = wlr_output;
 	m->wlr_output->data = m;
+
+	m->scene_tree = wlr_scene_tree_create(&scene->tree);
+
+	for (i = 0; i < NUM_LAYERS; i++)
+		m->layers_scene_tree[i] = wlr_scene_tree_create(m->scene_tree);
+
+	wlr_scene_node_place_below(&m->scene_tree->node, &layers[LyrTile]->node);
 
 	wl_list_init(&m->dwl_ipc_outputs);
 
@@ -4993,12 +5012,15 @@ setfloating(Client *c, int32_t floating) {
 	}
 
 	if (c->isoverlay) {
-		wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
-	} else if (client_should_overtop(c) && c->isfloating) {
-		wlr_scene_node_reparent(&c->scene->node, layers[LyrTop]);
-	} else {
 		wlr_scene_node_reparent(&c->scene->node,
-								layers[c->isfloating ? LyrTop : LyrTile]);
+								c->mon->layers_scene_tree[LyrOverlay]);
+	} else if (client_should_overtop(c) && c->isfloating) {
+		wlr_scene_node_reparent(&c->scene->node,
+								c->mon->layers_scene_tree[LyrTop]);
+	} else {
+		wlr_scene_node_reparent(
+			&c->scene->node,
+			c->mon->layers_scene_tree[c->isfloating ? LyrTop : LyrTile]);
 	}
 
 	if (!c->isfloating && old_floating_state) {
@@ -5085,8 +5107,9 @@ void setmaximizescreen(Client *c, int32_t maximizescreen) {
 			setfloating(c, 1);
 	}
 
-	wlr_scene_node_reparent(&c->scene->node,
-							layers[c->isfloating ? LyrTop : LyrTile]);
+	wlr_scene_node_reparent(
+		&c->scene->node,
+		c->mon->layers_scene_tree[c->isfloating ? LyrTop : LyrTile]);
 	if (!c->ismaximizescreen && old_maximizescreen_state) {
 		restore_size_per(c->mon, c);
 	}
@@ -5149,13 +5172,16 @@ void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自
 	}
 
 	if (c->isoverlay) {
-		wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
+		wlr_scene_node_reparent(&c->scene->node,
+								c->mon->layers_scene_tree[LyrOverlay]);
 	} else if (client_should_overtop(c) && c->isfloating) {
-		wlr_scene_node_reparent(&c->scene->node, layers[LyrTop]);
+		wlr_scene_node_reparent(&c->scene->node,
+								c->mon->layers_scene_tree[LyrTop]);
 	} else {
 		wlr_scene_node_reparent(
 			&c->scene->node,
-			layers[fullscreen || c->isfloating ? LyrTop : LyrTile]);
+			c->mon->layers_scene_tree[fullscreen || c->isfloating ? LyrTop
+																  : LyrTile]);
 	}
 
 	if (!c->isfullscreen && old_fullscreen_state) {

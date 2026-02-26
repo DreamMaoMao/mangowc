@@ -1375,14 +1375,19 @@ int32_t toggleoverlay(const Arg *arg) {
 	selmon->sel->isoverlay ^= 1;
 
 	if (selmon->sel->isoverlay) {
-		wlr_scene_node_reparent(&selmon->sel->scene->node, layers[LyrOverlay]);
+		wlr_scene_node_reparent(
+			&selmon->sel->scene->node,
+			selmon->sel->mon->layers_scene_tree[LyrOverlay]);
 		wlr_scene_node_raise_to_top(&selmon->sel->scene->node);
 	} else if (client_should_overtop(selmon->sel) && selmon->sel->isfloating) {
-		wlr_scene_node_reparent(&selmon->sel->scene->node, layers[LyrTop]);
+		wlr_scene_node_reparent(&selmon->sel->scene->node,
+								selmon->sel->mon->layers_scene_tree[LyrTop]);
 	} else {
 		wlr_scene_node_reparent(
 			&selmon->sel->scene->node,
-			layers[selmon->sel->isfloating ? LyrTop : LyrTile]);
+			selmon->sel->mon
+				->layers_scene_tree[selmon->sel->isfloating ? LyrTop
+															: LyrTile]);
 	}
 	setborder_color(selmon->sel);
 	return 0;
