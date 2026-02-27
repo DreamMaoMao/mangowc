@@ -768,7 +768,7 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 		c->animainit_geom = c->current = c->pending = c->animation.current =
 			c->geom;
 		wlr_scene_node_set_position(&c->scene->node, c->geom.x, c->geom.y);
-
+		client_apply_node_layer(c);
 		client_get_clip(c, &clip);
 		apply_border(c);
 		apply_shield(c);

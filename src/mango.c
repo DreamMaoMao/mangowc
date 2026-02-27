@@ -2114,6 +2114,7 @@ buttonpress(struct wl_listener *listener, void *data) {
 			tmpc = grabc;
 			grabc = NULL;
 			start_drag_window = false;
+			client_apply_node_layer(tmpc);
 			last_apply_drap_time = 0;
 			if (tmpc->drag_to_tile && drag_tile_to_tile) {
 				place_drag_tile_client(tmpc);
@@ -4702,10 +4703,10 @@ void client_apply_node_layer(Client *c) {
 									c->mon->layers_scene_tree[LyrTile]);
 		}
 	} else {
-		if (c->isfloating) {
+		if (c->isfloating && c == grabc) {
 			wlr_scene_node_reparent(&c->scene->node,
 									layers[c->isoverlay ? LyrOverlay : LyrTop]);
-		} else if (c->isfullscreen) {
+		} else if (c->isfullscreen || c->isfloating) {
 			wlr_scene_node_reparent(&c->scene->node,
 									c->mon->layers_scene_tree[LyrTop]);
 		} else {
