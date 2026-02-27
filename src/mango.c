@@ -6102,6 +6102,8 @@ void updatemons(struct wl_listener *listener, void *data) {
 												  m->m.height);
 		}
 
+		monitor_clip_scene_tree(m);
+
 		/* Calculate the effective monitor geometry to use for clients */
 		arrangelayers(m);
 		/* Don't move clients to the left output when plugging monitors */
