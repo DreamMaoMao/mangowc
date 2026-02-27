@@ -290,6 +290,13 @@ void apply_border(Client *c) {
 	wlr_scene_node_set_position(&c->border[3]->node, fullgeom.width - bw, 0);
 }
 
+void monitor_clip_scene_tree(Monitor *m) {
+	int i;
+	for (i = 0; i < NUM_LAYERS; i++) {
+		wlr_scene_tree_set_clip(m->layers_scene_tree[i], &m->m);
+	}
+}
+
 void client_apply_clip(Client *c, float factor) {
 	if (c->iskilling || !client_surface(c)->mapped)
 		return;
@@ -306,7 +313,7 @@ void client_apply_clip(Client *c, float factor) {
 
 		client_get_clip(c, &clip_box); // 获取相对于父级的初始剪切区域
 
-		wlr_scene_tree_set_clip(c->mon->scene_tree, &c->mon->m);
+		monitor_clip_scene_tree(c->mon);
 
 		apply_border(c);
 		apply_shield(c);
@@ -340,7 +347,7 @@ void client_apply_clip(Client *c, float factor) {
 		clip_box.y = 0;
 	}
 
-	wlr_scene_tree_set_clip(c->mon->scene_tree, &c->mon->m);
+	monitor_clip_scene_tree(c->mon);
 
 	apply_border(c);
 	apply_shield(c);

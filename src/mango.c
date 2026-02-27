@@ -518,7 +518,6 @@ struct Monitor {
 	bool skiping_frame;
 	uint32_t resizing_count_pending;
 	uint32_t resizing_count_current;
-	struct wlr_scene_tree *scene_tree;
 	struct wlr_scene_tree *layers_scene_tree[NUM_LAYERS];
 
 	struct wl_list dwl_ipc_outputs;
@@ -2858,12 +2857,11 @@ void createmon(struct wl_listener *listener, void *data) {
 	m->wlr_output = wlr_output;
 	m->wlr_output->data = m;
 
-	m->scene_tree = wlr_scene_tree_create(&scene->tree);
-
-	for (i = 0; i < NUM_LAYERS; i++)
-		m->layers_scene_tree[i] = wlr_scene_tree_create(m->scene_tree);
-
-	wlr_scene_node_place_below(&m->scene_tree->node, &layers[LyrTile]->node);
+	for (i = 0; i < NUM_LAYERS; i++) {
+		m->layers_scene_tree[i] = wlr_scene_tree_create(&scene->tree);
+		wlr_scene_node_place_below(&m->layers_scene_tree[i]->node,
+								   &layers[i]->node);
+	}
 
 	wl_list_init(&m->dwl_ipc_outputs);
 
@@ -4680,16 +4678,13 @@ void requeststartdrag(struct wl_listener *listener, void *data) {
 
 void client_apply_node_layer(Client *c) {
 
-	if(!c->mon) {
+	if (!c->mon) {
 		if (c->isoverlay) {
-			wlr_scene_node_reparent(&c->scene->node,
-									layers[LyrOverlay]);
+			wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
 		} else if (c->isfloating || c->isfullscreen) {
-			wlr_scene_node_reparent(&c->scene->node,
-									layers[LyrTop]);
+			wlr_scene_node_reparent(&c->scene->node, layers[LyrTop]);
 		} else {
-			wlr_scene_node_reparent(&c->scene->node,
-									layers[LyrTile]);
+			wlr_scene_node_reparent(&c->scene->node, layers[LyrTile]);
 		}
 
 		return;
