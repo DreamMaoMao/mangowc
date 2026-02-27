@@ -268,7 +268,7 @@ void apply_border(Client *c) {
 	}
 
 	struct wlr_box fullgeom = c->animation.current;
-	int32_t bw = (int32_t)c->bw;  // 使用有符号类型避免负数问题
+	int32_t bw = (int32_t)c->bw; // 使用有符号类型避免负数问题
 
 	// 设置场景表面的位置（缩进边框宽度）
 	wlr_scene_node_set_position(&c->scene_surface->node, bw, bw);
@@ -289,7 +289,6 @@ void apply_border(Client *c) {
 	set_rect_size(c->border[3], bw, fullgeom.height);
 	wlr_scene_node_set_position(&c->border[3]->node, fullgeom.width - bw, 0);
 }
-
 
 void client_apply_clip(Client *c, float factor) {
 	if (c->iskilling || !client_surface(c)->mapped)
@@ -503,6 +502,8 @@ void client_animation_next_tick(Client *c) {
 		if (surface && pointer_c == selmon->sel) {
 			wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
 		}
+
+		client_apply_node_layer(c);
 
 		// end flush in next frame, not the current frame
 		c->need_output_flush = false;
@@ -760,7 +761,7 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 		c->animainit_geom = c->current = c->pending = c->animation.current =
 			c->geom;
 		wlr_scene_node_set_position(&c->scene->node, c->geom.x, c->geom.y);
-		
+
 		client_get_clip(c, &clip);
 		apply_border(c);
 		apply_shield(c);
@@ -789,6 +790,8 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 	if (c->scratchpad_switching_mon && c->isfloating) {
 		c->animainit_geom = c->geom;
 	}
+
+	client_apply_node_layer(c);
 
 	// 开始应用动画设置
 	client_set_pending_state(c);

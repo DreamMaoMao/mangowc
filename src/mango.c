@@ -397,7 +397,6 @@ struct Client {
 	int32_t force_tiled_state;
 	pid_t pid;
 	Client *swallowing, *swallowedby;
-	bool is_clip_to_hide;
 	bool drag_to_tile;
 	bool scratchpad_switching_mon;
 	bool fake_no_border;
@@ -816,6 +815,7 @@ static void handle_iamge_copy_capture_new_session(struct wl_listener *listener,
 												  void *data);
 static Monitor *get_monitor_nearest_to(int32_t lx, int32_t ly);
 static bool match_monitor_spec(char *spec, Monitor *m);
+static void client_apply_node_layer(Client *c);
 
 #include "data/static_keymap.h"
 #include "dispatch/bind_declare.h"
@@ -1541,8 +1541,7 @@ void applyrules(Client *c) {
 				newtags & mon->tagset[mon->seltags]));
 
 	if (c->mon) {
-		wlr_scene_node_reparent(&c->scene->node,
-								c->mon->layers_scene_tree[LyrTile]);
+		client_apply_node_layer(c);
 	}
 
 	if (c->mon &&
@@ -1583,8 +1582,7 @@ void applyrules(Client *c) {
 
 	// apply overlay rule
 	if (c->isoverlay && c->scene) {
-		wlr_scene_node_reparent(&c->scene->node,
-								c->mon->layers_scene_tree[LyrOverlay]);
+		client_apply_node_layer(c);
 		wlr_scene_node_raise_to_top(&c->scene->node);
 	}
 }
@@ -3912,7 +3910,6 @@ void init_client_properties(Client *c) {
 	c->isnamedscratchpad = 0;
 	c->is_scratchpad_show = 0;
 	c->need_float_size_reduce = 0;
-	c->is_clip_to_hide = 0;
 	c->is_restoring_from_ov = 0;
 	c->isurgent = 0;
 	c->need_output_flush = 0;
@@ -4677,6 +4674,33 @@ void requeststartdrag(struct wl_listener *listener, void *data) {
 		wlr_data_source_destroy(event->drag->source);
 }
 
+void client_apply_node_layer(Client *c) {
+	if (c->animation.tagining || c->animation.tagouting) {
+		if (c->isoverlay) {
+			wlr_scene_node_reparent(&c->scene->node,
+									c->mon->layers_scene_tree[LyrOverlay]);
+		} else if (c->isfloating || c->isfullscreen) {
+			wlr_scene_node_reparent(&c->scene->node,
+									c->mon->layers_scene_tree[LyrTop]);
+		} else {
+			wlr_scene_node_reparent(&c->scene->node,
+									c->mon->layers_scene_tree[LyrTile]);
+		}
+	} else {
+		if (c->isfloating) {
+			wlr_scene_node_reparent(&c->scene->node,
+									layers[c->isoverlay ? LyrOverlay : LyrTop]);
+		} else if (c->isfullscreen) {
+			wlr_scene_node_reparent(&c->scene->node,
+									c->mon->layers_scene_tree[LyrTop]);
+		} else {
+			wlr_scene_node_reparent(
+				&c->scene->node,
+				c->mon->layers_scene_tree[c->isoverlay ? LyrOverlay : LyrTile]);
+		}
+	}
+}
+
 void setborder_color(Client *c) {
 	if (!c || !c->mon)
 		return;
@@ -5011,17 +5035,7 @@ setfloating(Client *c, int32_t floating) {
 		}
 	}
 
-	if (c->isoverlay) {
-		wlr_scene_node_reparent(&c->scene->node,
-								c->mon->layers_scene_tree[LyrOverlay]);
-	} else if (client_should_overtop(c) && c->isfloating) {
-		wlr_scene_node_reparent(&c->scene->node,
-								c->mon->layers_scene_tree[LyrTop]);
-	} else {
-		wlr_scene_node_reparent(
-			&c->scene->node,
-			c->mon->layers_scene_tree[c->isfloating ? LyrTop : LyrTile]);
-	}
+	client_apply_node_layer(c);
 
 	if (!c->isfloating && old_floating_state) {
 		restore_size_per(c->mon, c);
@@ -5107,9 +5121,7 @@ void setmaximizescreen(Client *c, int32_t maximizescreen) {
 			setfloating(c, 1);
 	}
 
-	wlr_scene_node_reparent(
-		&c->scene->node,
-		c->mon->layers_scene_tree[c->isfloating ? LyrTop : LyrTile]);
+	client_apply_node_layer(c);
 	if (!c->ismaximizescreen && old_maximizescreen_state) {
 		restore_size_per(c->mon, c);
 	}
@@ -5171,18 +5183,7 @@ void setfullscreen(Client *c, int32_t fullscreen) // 用自定义全屏代理自
 			setfloating(c, 1);
 	}
 
-	if (c->isoverlay) {
-		wlr_scene_node_reparent(&c->scene->node,
-								c->mon->layers_scene_tree[LyrOverlay]);
-	} else if (client_should_overtop(c) && c->isfloating) {
-		wlr_scene_node_reparent(&c->scene->node,
-								c->mon->layers_scene_tree[LyrTop]);
-	} else {
-		wlr_scene_node_reparent(
-			&c->scene->node,
-			c->mon->layers_scene_tree[fullscreen || c->isfloating ? LyrTop
-																  : LyrTile]);
-	}
+	client_apply_node_layer(c);
 
 	if (!c->isfullscreen && old_fullscreen_state) {
 		restore_size_per(c->mon, c);
@@ -5896,8 +5897,7 @@ void unmapnotify(struct wl_listener *listener, void *data) {
 	Client *prev_in_stack = c->prev_in_stack;
 	c->iskilling = 1;
 
-	if (animations && !c->is_clip_to_hide && !c->isminimized &&
-		(!c->mon || VISIBLEON(c, c->mon)))
+	if (animations && !c->isminimized && (!c->mon || VISIBLEON(c, c->mon)))
 		init_fadeout_client(c);
 
 	// If the client is in a stack, remove it from the stack
