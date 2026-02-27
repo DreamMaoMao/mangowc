@@ -1131,6 +1131,7 @@ int32_t tagmon(const Arg *arg) {
 	client_update_oldmonname_record(c, m);
 
 	reset_foreign_tolevel(c);
+	client_apply_node_layer(c);
 
 	c->float_geom.width =
 		(int32_t)(c->float_geom.width * c->mon->w.width / selmon->w.width);

@@ -1137,8 +1137,10 @@ void swallow(Client *c, Client *w) {
 	wl_list_insert(&w->link, &c->link);
 	wl_list_insert(&w->flink, &c->flink);
 
-	if (w->foreign_toplevel)
+	if (w->foreign_toplevel) {
 		remove_foreign_topleve(w);
+		client_apply_node_layer(w);
+	}
 
 	wlr_scene_node_set_enabled(&w->scene->node, false);
 	wlr_scene_node_set_enabled(&c->scene->node, true);
@@ -1163,6 +1165,7 @@ bool switch_scratchpad_client_state(Client *c) {
 		c->scratchpad_switching_mon = true;
 		c->mon = selmon;
 		reset_foreign_tolevel(c);
+		client_apply_node_layer(c);
 		client_update_oldmonname_record(c, selmon);
 
 		// 根据新monitor调整窗口尺寸
@@ -2308,6 +2311,7 @@ void closemon(Monitor *m) {
 			if (selmon == NULL) {
 				remove_foreign_topleve(c);
 				c->mon = NULL;
+				client_apply_node_layer(c);
 			} else {
 				client_change_mon(c, selmon);
 			}
@@ -4675,6 +4679,22 @@ void requeststartdrag(struct wl_listener *listener, void *data) {
 }
 
 void client_apply_node_layer(Client *c) {
+
+	if(!c->mon) {
+		if (c->isoverlay) {
+			wlr_scene_node_reparent(&c->scene->node,
+									layers[LyrOverlay]);
+		} else if (c->isfloating || c->isfullscreen) {
+			wlr_scene_node_reparent(&c->scene->node,
+									layers[LyrTop]);
+		} else {
+			wlr_scene_node_reparent(&c->scene->node,
+									layers[LyrTile]);
+		}
+
+		return;
+	}
+
 	if (c->animation.tagining || c->animation.tagouting) {
 		if (c->isoverlay) {
 			wlr_scene_node_reparent(&c->scene->node,
@@ -5315,6 +5335,7 @@ void setmon(Client *c, Monitor *m, uint32_t newtags, bool focus) {
 	if (m) {
 		/* Make sure window actually overlaps with the monitor */
 		reset_foreign_tolevel(c);
+		client_apply_node_layer(c);
 		resize(c, c->geom, 0);
 		if (!newtags && !m->isoverview) {
 			c->tags = m->tagset[m->seltags];
@@ -6106,6 +6127,7 @@ void updatemons(struct wl_listener *listener, void *data) {
 			if (!c->mon && client_surface(c)->mapped) {
 				c->mon = selmon;
 				reset_foreign_tolevel(c);
+				client_apply_node_layer(c);
 			}
 			if (c->tags == 0 && !c->is_in_scratchpad) {
 				c->tags = selmon->tagset[selmon->seltags];
