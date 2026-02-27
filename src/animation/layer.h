@@ -345,8 +345,8 @@ void init_fadeout_layers(LayerSurface *l) {
 	get_layer_area_bound(l, &usable_area);
 
 	wlr_scene_node_set_enabled(&l->scene->node, true);
-	fadeout_layer->scene =
-		wlr_scene_tree_snapshot(&l->scene->node, layers[LyrFadeOut]);
+	fadeout_layer->scene = wlr_scene_tree_snapshot(
+		&l->scene->node, l->mon->layers_scene_tree[LyrFadeOut]);
 	wlr_scene_node_set_enabled(&l->scene->node, false);
 
 	if (!fadeout_layer->scene) {

@@ -543,8 +543,8 @@ void init_fadeout_client(Client *c) {
 
 	wlr_scene_node_set_enabled(&c->scene->node, true);
 	client_set_border_color(c, bordercolor);
-	fadeout_client->scene =
-		wlr_scene_tree_snapshot(&c->scene->node, layers[LyrFadeOut]);
+	fadeout_client->scene = wlr_scene_tree_snapshot(
+		&c->scene->node, c->mon->layers_scene_tree[LyrFadeOut]);
 	wlr_scene_node_set_enabled(&c->scene->node, false);
 
 	if (!fadeout_client->scene) {
