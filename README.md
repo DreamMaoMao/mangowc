@@ -72,6 +72,18 @@ https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f
 
 ## Arch Linux
 The package is in the Arch User Repository and is availble for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper
+#scenefx
+```bash
+git clone https://aur.archlinux.org/scenefx.0.4
+#read the pkg build
+makepkg -si
+#mangowc
+```bash
+git clone https://aur.archlinux.org/mangowc
+#read the pkgbuild
+makepkg -si
+```
+
 
 ## Gentoo Linux
 The package is in the community-maintained repository called GURU.
