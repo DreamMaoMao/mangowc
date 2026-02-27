@@ -188,7 +188,7 @@ sudo ninja -C build install
 ## My Dotfiles
 
 ### Daily
-- Dependencies
+- Dependencies for arch
 
 ```bash
 rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer swayidle brightnessctl swayosd wlr-randr grim slurp satty wlogout sox
