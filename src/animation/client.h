@@ -227,11 +227,11 @@ void buffer_set_effect(Client *c, BufferData data) {
 								   scene_buffer_apply_effect, &data);
 }
 
-void apply_shield(Client *c, struct wlr_box clip_box) {
+void apply_shield(Client *c) {
 	if (active_capture_count > 0 && c->shield_when_capture) {
 		wlr_scene_node_raise_to_top(&c->shield->node);
-		wlr_scene_node_set_position(&c->shield->node, clip_box.x, clip_box.y);
-		wlr_scene_rect_set_size(c->shield, clip_box.width, clip_box.height);
+		wlr_scene_rect_set_size(c->shield, c->animation.current.width,
+								c->animation.current.height);
 		wlr_scene_node_set_enabled(&c->shield->node, true);
 	} else {
 		if (c->shield->node.enabled) {
@@ -268,182 +268,67 @@ void apply_border(Client *c) {
 	}
 
 	struct wlr_box fullgeom = c->animation.current;
-	// 一但在GEZERO如果使用无符号，那么其他数据也会转换为无符号导致没有负数出错
-	int32_t bw = (int32_t)c->bw;
+	int32_t bw = (int32_t)c->bw;  // 使用有符号类型避免负数问题
 
-	int32_t right_offset, bottom_offset, left_offset, top_offset;
+	// 设置场景表面的位置（缩进边框宽度）
+	wlr_scene_node_set_position(&c->scene_surface->node, bw, bw);
 
-	if (c == grabc) {
-		right_offset = 0;
-		bottom_offset = 0;
-		left_offset = 0;
-		top_offset = 0;
-	} else {
-		right_offset =
-			GEZERO(c->animation.current.x + c->animation.current.width -
-				   c->mon->m.x - c->mon->m.width);
-		bottom_offset =
-			GEZERO(c->animation.current.y + c->animation.current.height -
-				   c->mon->m.y - c->mon->m.height);
+	// 上边框：位于窗口顶部，宽度为窗口宽，高度为边框宽
+	set_rect_size(c->border[0], fullgeom.width, bw);
+	wlr_scene_node_set_position(&c->border[0]->node, 0, 0);
 
-		left_offset = GEZERO(c->mon->m.x - c->animation.current.x);
-		top_offset = GEZERO(c->mon->m.y - c->animation.current.y);
-	}
+	// 下边框：位于窗口底部
+	set_rect_size(c->border[1], fullgeom.width, bw);
+	wlr_scene_node_set_position(&c->border[1]->node, 0, fullgeom.height - bw);
 
-	int32_t border_up_width =
-		GEZERO(fullgeom.width - left_offset - right_offset);
-	int32_t border_up_height =
-		GEZERO(bw - top_offset - GEZERO(bottom_offset + bw - fullgeom.height));
+	// 左边框：位于窗口左侧，高度为窗口高，宽度为边框宽
+	set_rect_size(c->border[2], bw, fullgeom.height);
+	wlr_scene_node_set_position(&c->border[2]->node, 0, 0);
 
-	int32_t border_down_width =
-		GEZERO(fullgeom.width - left_offset - right_offset);
-	int32_t border_down_height =
-		GEZERO(bw - bottom_offset - GEZERO(top_offset + bw - fullgeom.height));
-
-	int32_t border_left_width =
-		GEZERO(bw - left_offset - GEZERO(right_offset + bw - fullgeom.width));
-	int32_t border_left_height =
-		GEZERO(fullgeom.height - top_offset - bottom_offset);
-
-	int32_t border_right_width =
-		GEZERO(bw - right_offset - GEZERO(left_offset + bw - fullgeom.width));
-	int32_t border_right_height =
-		GEZERO(fullgeom.height - top_offset - bottom_offset);
-
-	int32_t border_up_x = GEZERO(left_offset);
-	int32_t border_up_y = GEZERO(top_offset);
-
-	int32_t border_down_x = GEZERO(left_offset);
-	int32_t border_down_y = GEZERO(fullgeom.height - bw) +
-							GEZERO(top_offset + bw - fullgeom.height);
-
-	int32_t border_left_x = GEZERO(left_offset);
-	int32_t border_left_y = GEZERO(top_offset);
-
-	int32_t border_right_x =
-		GEZERO(fullgeom.width - bw) + GEZERO(left_offset + bw - fullgeom.width);
-	int32_t border_right_y = GEZERO(top_offset);
-
-	wlr_scene_node_set_position(&c->scene_surface->node, c->bw, c->bw);
-	set_rect_size(c->border[0], border_up_width, border_up_height);
-	set_rect_size(c->border[1], border_down_width, border_down_height);
-	set_rect_size(c->border[2], border_left_width, border_left_height);
-	set_rect_size(c->border[3], border_right_width, border_right_height);
-	wlr_scene_node_set_position(&c->border[0]->node, border_up_x, border_up_y);
-	wlr_scene_node_set_position(&c->border[2]->node, border_left_x,
-								border_left_y);
-	wlr_scene_node_set_position(&c->border[1]->node, border_down_x,
-								border_down_y);
-	wlr_scene_node_set_position(&c->border[3]->node, border_right_x,
-								border_right_y);
+	// 右边框：位于窗口右侧
+	set_rect_size(c->border[3], bw, fullgeom.height);
+	wlr_scene_node_set_position(&c->border[3]->node, fullgeom.width - bw, 0);
 }
 
-struct ivec2 clip_to_hide(Client *c, struct wlr_box *clip_box) {
-	int32_t offsetx = 0, offsety = 0, offsetw = 0, offseth = 0;
-	struct ivec2 offset = {0, 0, 0, 0};
-	return offset;
-
-	if (!ISSCROLLTILED(c) && !c->animation.tagining && !c->animation.tagouted &&
-		!c->animation.tagouting)
-		return offset;
-
-	int32_t bottom_out_offset =
-		GEZERO(c->animation.current.y + c->animation.current.height -
-			   c->mon->m.y - c->mon->m.height);
-	int32_t right_out_offset =
-		GEZERO(c->animation.current.x + c->animation.current.width -
-			   c->mon->m.x - c->mon->m.width);
-	int32_t left_out_offset = GEZERO(c->mon->m.x - c->animation.current.x);
-	int32_t top_out_offset = GEZERO(c->mon->m.y - c->animation.current.y);
-
-	// 必须转换为int，否计算会没有负数导致判断错误
-	int32_t bw = (int32_t)c->bw;
-
-	/*
-	  计算窗口表面超出屏幕四个方向的偏差，避免窗口超出屏幕
-	  需要主要border超出屏幕的时候不计算如偏差之内而是
-	  要等窗口表面超出才开始计算偏差
-	*/
-	if (ISSCROLLTILED(c) || c->animation.tagining || c->animation.tagouted ||
-		c->animation.tagouting) {
-		if (left_out_offset > 0) {
-			offsetx = GEZERO(left_out_offset - bw);
-			clip_box->x = clip_box->x + offsetx;
-			clip_box->width = clip_box->width - offsetx;
-		} else if (right_out_offset > 0) {
-			offsetw = GEZERO(right_out_offset - bw);
-			clip_box->width = clip_box->width - offsetw;
-		}
-
-		if (top_out_offset > 0) {
-			offsety = GEZERO(top_out_offset - bw);
-			clip_box->y = clip_box->y + offsety;
-			clip_box->height = clip_box->height - offsety;
-		} else if (bottom_out_offset > 0) {
-			offseth = GEZERO(bottom_out_offset - bw);
-			clip_box->height = clip_box->height - offseth;
-		}
-	}
-
-	// 窗口表面超出屏幕四个方向的偏差
-	offset.x = offsetx;
-	offset.y = offsety;
-	offset.width = offsetw;
-	offset.height = offseth;
-
-	if ((clip_box->width + bw <= 0 || clip_box->height + bw <= 0) &&
-		(ISSCROLLTILED(c) || c->animation.tagouting || c->animation.tagining)) {
-		c->is_clip_to_hide = true;
-		wlr_scene_node_set_enabled(&c->scene->node, false);
-	} else if (c->is_clip_to_hide && VISIBLEON(c, c->mon)) {
-		c->is_clip_to_hide = false;
-		wlr_scene_node_set_enabled(&c->scene->node, true);
-	}
-
-	return offset;
-}
 
 void client_apply_clip(Client *c, float factor) {
-
 	if (c->iskilling || !client_surface(c)->mapped)
 		return;
 
 	struct wlr_box clip_box;
-	bool should_render_client_surface = false;
-	struct ivec2 offset;
 	BufferData buffer_data;
 
 	if (!animations) {
+		// 非动画模式：直接固定几何，应用边框，设置剪切
 		c->animation.running = false;
 		c->need_output_flush = false;
 		c->animainit_geom = c->current = c->pending = c->animation.current =
 			c->geom;
 
-		client_get_clip(c, &clip_box);
+		client_get_clip(c, &clip_box); // 获取相对于父级的初始剪切区域
 
-		offset = clip_to_hide(c, &clip_box);
+		wlr_scene_tree_set_clip(c->mon->scene_tree, &c->mon->m);
 
 		apply_border(c);
+		apply_shield(c);
 
-		if (clip_box.width <= 0 || clip_box.height <= 0) {
+		if (clip_box.width <= 0 || clip_box.height <= 0)
 			return;
-		}
 
-		apply_shield(c, clip_box);
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
-
 		buffer_set_effect(
 			c, (BufferData){1.0f, 1.0f, clip_box.width, clip_box.height, true});
 		return;
 	}
 
-	// 获取窗口动画实时位置矩形
+	// 动画模式：获取窗口当前动画尺寸和几何
 	int32_t width, height;
 	client_actual_size(c, &width, &height);
 
-	// 计算出除了边框的窗口实际剪切大小
 	struct wlr_box geometry;
 	client_get_geometry(c, &geometry);
+
+	// 剪切框 = 窗口当前动画矩形（相对于父级）
 	clip_box = (struct wlr_box){
 		.x = geometry.x,
 		.y = geometry.y,
@@ -456,54 +341,30 @@ void client_apply_clip(Client *c, float factor) {
 		clip_box.y = 0;
 	}
 
-	// 检测窗口是否需要剪切超出屏幕部分，如果需要就调整实际要剪切的矩形
-	offset = clip_to_hide(c, &clip_box);
-
 	wlr_scene_tree_set_clip(c->mon->scene_tree, &c->mon->m);
 
-	// 应用窗口装饰
 	apply_border(c);
+	apply_shield(c);
 
-	// 如果窗口剪切区域已经剪切到0，则不渲染窗口表面
 	if (clip_box.width <= 0 || clip_box.height <= 0) {
-		should_render_client_surface = false;
 		wlr_scene_node_set_enabled(&c->scene_surface->node, false);
+		return;
 	} else {
-		should_render_client_surface = true;
 		wlr_scene_node_set_enabled(&c->scene_surface->node, true);
 	}
 
-	// 不用在执行下面的窗口表面剪切和缩放等效果操作
-	if (!should_render_client_surface) {
-		return;
-	}
-
-	// 应用窗口表面剪切
-	apply_shield(c, clip_box);
 	wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip_box);
 
-	// 获取剪切后的表面的实际大小用于计算缩放
-	int32_t acutal_surface_width = geometry.width - offset.x - offset.width;
-	int32_t acutal_surface_height = geometry.height - offset.y - offset.height;
-
-	if (acutal_surface_width <= 0 || acutal_surface_height <= 0)
-		return;
-
+	// 计算缩放因子（动画尺寸 / 原始表面尺寸）
 	buffer_data.should_scale = true;
 	buffer_data.width = clip_box.width;
 	buffer_data.height = clip_box.height;
-	buffer_data.width_scale = (float)buffer_data.width / acutal_surface_width;
-	buffer_data.height_scale =
-		(float)buffer_data.height / acutal_surface_height;
+	buffer_data.width_scale = (float)buffer_data.width / geometry.width;
+	buffer_data.height_scale = (float)buffer_data.height / geometry.height;
 
 	if (factor == 1.0) {
 		buffer_data.width_scale = 1.0;
 		buffer_data.height_scale = 1.0;
-	} else {
-		buffer_data.width_scale =
-			(float)buffer_data.width / acutal_surface_width;
-		buffer_data.height_scale =
-			(float)buffer_data.height / acutal_surface_height;
 	}
 
 	buffer_set_effect(c, buffer_data);
@@ -899,10 +760,10 @@ void resize(Client *c, struct wlr_box geo, int32_t interact) {
 		c->animainit_geom = c->current = c->pending = c->animation.current =
 			c->geom;
 		wlr_scene_node_set_position(&c->scene->node, c->geom.x, c->geom.y);
-
-		apply_border(c);
+		
 		client_get_clip(c, &clip);
-		apply_shield(c, clip);
+		apply_border(c);
+		apply_shield(c);
 		wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip);
 		return;
 	}
