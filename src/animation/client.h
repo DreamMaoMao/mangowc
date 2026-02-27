@@ -313,8 +313,6 @@ void client_apply_clip(Client *c, float factor) {
 
 		client_get_clip(c, &clip_box); // 获取相对于父级的初始剪切区域
 
-		monitor_clip_scene_tree(c->mon);
-
 		apply_border(c);
 		apply_shield(c);
 
@@ -346,8 +344,6 @@ void client_apply_clip(Client *c, float factor) {
 		clip_box.x = 0;
 		clip_box.y = 0;
 	}
-
-	monitor_clip_scene_tree(c->mon);
 
 	apply_border(c);
 	apply_shield(c);
