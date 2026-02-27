@@ -519,6 +519,7 @@ struct Monitor {
 	uint32_t resizing_count_pending;
 	uint32_t resizing_count_current;
 	struct wlr_scene_tree *layers_scene_tree[NUM_LAYERS];
+	bool iscleanuping;
 
 	struct wl_list dwl_ipc_outputs;
 	int32_t gappih; /* horizontal gap between windows */
@@ -2254,11 +2255,27 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 	Monitor *m = wl_container_of(listener, m, destroy);
 	LayerSurface *l = NULL, *tmp = NULL;
 	uint32_t i;
+	m->iscleanuping = true;
 
 	/* m->layers[i] are intentionally not unlinked */
 	for (i = 0; i < LENGTH(m->layers); i++) {
-		wl_list_for_each_safe(l, tmp, &m->layers[i], link)
+		wl_list_for_each_safe(l, tmp, &m->layers[i], link) {
 			wlr_layer_surface_v1_destroy(l->layer_surface);
+		}
+	}
+
+	LayerSurface *l_tmp, *l_safe;
+	wl_list_for_each_safe(l_tmp, l_safe, &fadeout_layers, fadeout_link) {
+		if (l_tmp->mon == m) {
+			wlr_scene_node_reparent(&l_tmp->scene->node, layers[LyrFadeOut]);
+		}
+	}
+
+	Client *c_tmp, *c_safe;
+	wl_list_for_each_safe(c_tmp, c_safe, &fadeout_clients, link) {
+		if (c_tmp->mon == m) {
+			wlr_scene_node_reparent(&c_tmp->scene->node, layers[LyrFadeOut]);
+		}
 	}
 
 	// clean ext-workspaces grouplab
@@ -2285,6 +2302,11 @@ void cleanupmon(struct wl_listener *listener, void *data) {
 	}
 
 	m->wlr_output->data = NULL;
+
+	for (i = 0; i < NUM_LAYERS; i++) {
+		wlr_scene_node_destroy(&m->layers_scene_tree[i]->node);
+	}
+
 	free(m->pertag);
 	free(m);
 }
@@ -2854,6 +2876,7 @@ void createmon(struct wl_listener *listener, void *data) {
 	m->skiping_frame = false;
 	m->resizing_count_pending = 0;
 	m->resizing_count_current = 0;
+	m->iscleanuping = false;
 
 	m->wlr_output = wlr_output;
 	m->wlr_output->data = m;

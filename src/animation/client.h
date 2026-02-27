@@ -521,7 +521,7 @@ void client_animation_next_tick(Client *c) {
 
 void init_fadeout_client(Client *c) {
 
-	if (!c->mon || client_is_unmanaged(c))
+	if (!c->mon || client_is_unmanaged(c) || c->mon->iscleanuping)
 		return;
 
 	if (!c->scene) {

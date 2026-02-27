@@ -325,7 +325,7 @@ void init_fadeout_layers(LayerSurface *l) {
 		return;
 	}
 
-	if (!l->mon || !l->scene)
+	if (!l->mon || !l->scene || l->mon->iscleanuping)
 		return;
 
 	if ((l->animation_type_close &&
