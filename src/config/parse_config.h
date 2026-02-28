@@ -211,6 +211,7 @@ typedef struct {
 	int32_t scroller_ignore_proportion_single;
 	int32_t scroller_focus_center;
 	int32_t scroller_prefer_center;
+	int32_t scroller_prefer_overspread;
 	int32_t edge_scroller_pointer_focus;
 	int32_t focus_cross_monitor;
 	int32_t exchange_cross_monitor;
@@ -1016,6 +1017,7 @@ FuncType parse_func_name(char *func_name, Arg *arg, char *arg_value,
 		(*arg).v = strdup(arg_value);
 	} else if (strcmp(func_name, "switch_keyboard_layout") == 0) {
 		func = switch_keyboard_layout;
+		(*arg).i = CLAMP_INT(atoi(arg_value), 0, 100);
 	} else if (strcmp(func_name, "setlayout") == 0) {
 		func = setlayout;
 		(*arg).v = strdup(arg_value);
@@ -1337,6 +1339,8 @@ bool parse_option(Config *config, char *key, char *value) {
 		config->scroller_focus_center = atoi(value);
 	} else if (strcmp(key, "scroller_prefer_center") == 0) {
 		config->scroller_prefer_center = atoi(value);
+	} else if (strcmp(key, "scroller_prefer_overspread") == 0) {
+		config->scroller_prefer_overspread = atoi(value);
 	} else if (strcmp(key, "edge_scroller_pointer_focus") == 0) {
 		config->edge_scroller_pointer_focus = atoi(value);
 	} else if (strcmp(key, "focus_cross_monitor") == 0) {
@@ -1838,6 +1842,13 @@ bool parse_option(Config *config, char *key, char *value) {
 				}
 			}
 			token = strtok(NULL, ",");
+		}
+
+		if (!rule->name && !rule->make && !rule->model && !rule->serial) {
+			fprintf(stderr, "\033[1m\033[31m[ERROR]:\033[33m Monitor rule "
+							"must have at least one of the following "
+							"options: name, make, model, serial\n");
+			return false;
 		}
 
 		config->monitor_rules_count++;
@@ -3102,6 +3113,8 @@ void override_config(void) {
 		CLAMP_INT(config.scroller_ignore_proportion_single, 0, 1);
 	scroller_focus_center = CLAMP_INT(config.scroller_focus_center, 0, 1);
 	scroller_prefer_center = CLAMP_INT(config.scroller_prefer_center, 0, 1);
+	scroller_prefer_overspread =
+		CLAMP_INT(config.scroller_prefer_overspread, 0, 1);
 	edge_scroller_pointer_focus =
 		CLAMP_INT(config.edge_scroller_pointer_focus, 0, 1);
 	scroller_structs = CLAMP_INT(config.scroller_structs, 0, 1000);
@@ -3301,6 +3314,7 @@ void set_value_default() {
 		scroller_ignore_proportion_single;
 	config.scroller_focus_center = scroller_focus_center;
 	config.scroller_prefer_center = scroller_prefer_center;
+	config.scroller_prefer_overspread = scroller_prefer_overspread;
 	config.edge_scroller_pointer_focus = edge_scroller_pointer_focus;
 	config.focus_cross_monitor = focus_cross_monitor;
 	config.exchange_cross_monitor = exchange_cross_monitor;
@@ -3639,6 +3653,16 @@ void reapply_cursor_style(void) {
 	}
 
 	cursor_mgr = wlr_xcursor_manager_create(config.cursor_theme, cursor_size);
+
+	if (cursor_size > 0) {
+		char size_str[16];
+		snprintf(size_str, sizeof(size_str), "%d", cursor_size);
+		setenv("XCURSOR_SIZE", size_str, 1);
+	}
+
+	if (config.cursor_theme) {
+		setenv("XCURSOR_THEME", config.cursor_theme, 1);
+	}
 
 	Monitor *m = NULL;
 	wl_list_for_each(m, &mons, link) {
