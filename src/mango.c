@@ -4702,42 +4702,47 @@ void requeststartdrag(struct wl_listener *listener, void *data) {
 }
 
 void client_apply_node_layer(Client *c) {
+	struct wlr_scene_tree *target = NULL;
+	struct wlr_scene_tree *current_parent = c->scene->node.parent;
 
 	if (!c->mon) {
+		// 无 monitor 时使用全局层
 		if (c->isoverlay) {
-			wlr_scene_node_reparent(&c->scene->node, layers[LyrOverlay]);
+			target = layers[LyrOverlay];
 		} else if (c->isfloating || c->isfullscreen) {
-			wlr_scene_node_reparent(&c->scene->node, layers[LyrTop]);
+			target = layers[LyrTop];
 		} else {
-			wlr_scene_node_reparent(&c->scene->node, layers[LyrTile]);
-		}
-
-		return;
-	}
-
-	if (c->animation.tagining || c->animation.tagouting) {
-		if (c->isoverlay) {
-			wlr_scene_node_reparent(&c->scene->node,
-									c->mon->layers_scene_tree[LyrOverlay]);
-		} else if (c->isfloating || c->isfullscreen) {
-			wlr_scene_node_reparent(&c->scene->node,
-									c->mon->layers_scene_tree[LyrTop]);
-		} else {
-			wlr_scene_node_reparent(&c->scene->node,
-									c->mon->layers_scene_tree[LyrTile]);
+			target = layers[LyrTile];
 		}
 	} else {
-		if (c->isfloating && c == grabc) {
-			wlr_scene_node_reparent(&c->scene->node,
-									layers[c->isoverlay ? LyrOverlay : LyrTop]);
-		} else if (c->isfullscreen || c->isfloating) {
-			wlr_scene_node_reparent(&c->scene->node,
-									c->mon->layers_scene_tree[LyrTop]);
+		if (c->animation.tagining || c->animation.tagouting) {
+			// 动画进出标签时使用 monitor 专属层
+			if (c->isoverlay) {
+				target = c->mon->layers_scene_tree[LyrOverlay];
+			} else if (c->isfloating || c->isfullscreen) {
+				target = c->mon->layers_scene_tree[LyrTop];
+			} else {
+				target = c->mon->layers_scene_tree[LyrTile];
+			}
 		} else {
-			wlr_scene_node_reparent(
-				&c->scene->node,
-				c->mon->layers_scene_tree[c->isoverlay ? LyrOverlay : LyrTile]);
+			// 非标签动画状态
+			if (c->isfloating && c->animation.running &&
+				c->animation.action == MOVE) {
+				target = layers[c->isoverlay ? LyrOverlay : LyrTop];
+			} else if (c->isfloating && c == grabc) {
+				target = layers[c->isoverlay ? LyrOverlay : LyrTop];
+			} else if (c->isfullscreen || c->isfloating) {
+				target = c->mon->layers_scene_tree[LyrTop];
+			} else {
+				target = c->mon->layers_scene_tree[c->isoverlay ? LyrOverlay
+																: LyrTile];
+			}
 		}
+	}
+
+	// 仅当目标层与当前父级不同时才执行 reparent
+	if (target && target != current_parent) {
+		wlr_scene_node_reparent(&c->scene->node, target);
 	}
 }
 
