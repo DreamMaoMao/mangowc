@@ -71,11 +71,19 @@ https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f
 - libxcb
 
 ## Arch Linux
-The package is in the Arch User Repository and is available for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper like yay:
+The package is in the Arch User Repository and is availble for manual download [here](https://aur.archlinux.org/packages/mangowc-git) or through a AUR helper
+#scenefx
 ```bash
-yay -S mangowc-git
-
+git clone https://aur.archlinux.org/scenefx.0.4
+#read the pkg build
+makepkg -si
+#mangowc
+```bash
+git clone https://aur.archlinux.org/mangowc
+#read the pkgbuild
+makepkg -si
 ```
+
 
 ## Gentoo Linux
 The package is in the community-maintained repository called GURU.
@@ -180,17 +188,23 @@ sudo ninja -C build install
 ## My Dotfiles
 
 ### Daily
-- Dependencies
+- Dependencies for arch
 
 ```bash
-yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
+rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer swayidle brightnessctl swayosd wlr-randr grim slurp satty wlogout sox
 ```
-
+#aur packages
+```bash
+wlr-dpms sway-audio-idle-inhibit-git dimland-git swaylock-effects-git wlogout
+```
 ### Dms
 - Dependencies
 ```bash
-yay -S foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard sway-audio-idle-inhibit-git brightnessctl grim slurp satty matugen-bin dms-shell-git
-
+foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard  brightnessctl grim slurp satty dms-shell-git
+```
+#aur packages
+```bash
+sway-audio-idle-inhibit-git matugen-bin dms-shell-git
 ```
 - use my dms config
 
