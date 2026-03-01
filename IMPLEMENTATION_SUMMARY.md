@@ -61,37 +61,27 @@ shell expansion features.
 
 #### Changes Made
 
-Translated 10 Chinese comment lines to English:
+Translated comment lines to English (originals removed):
 
-1. Line 18: `"如果 sysconfdir 以 prefix 开头，去掉 prefix"`  
-   → `"If sysconfdir starts with prefix, remove prefix"`
+1. Line 18: "If sysconfdir starts with prefix, remove prefix"
 
-2. Line 21: `"确保 sysconfdir 是绝对路径"`  
-   → `"Ensure sysconfdir is an absolute path"`
+2. Line 21: "Ensure sysconfdir is an absolute path"
 
-3. Line 27: `"打印调试信息，确认 sysconfdir 的值"`  
-   → `"Print debug information to confirm sysconfdir value"`
+3. Line 27: "Print debug information to confirm sysconfdir value"
 
-4. Line 44: `"获取版本信息"`  
-   → `"Get version information"`
+4. Line 44: "Get version information"
 
-5. Line 48: `"检查当前目录是否是 Git 仓库"`  
-   → `"Check if current directory is a Git repository"`
+5. Line 48: "Check if current directory is a Git repository"
 
-6. Line 57: `"如果是 Git 目录，获取 Commit Hash 和最新的 tag"`  
-   → `"If in Git directory, get Commit Hash and latest tag"`
+6. Line 57: "If in Git directory, get Commit Hash and latest tag"
 
-7. Line 62: `"如果不是 Git 目录，使用项目版本号和 'release' 字符串"`  
-   → `"If not in Git directory, use project version number and 'release' string"`
+7. Line 62: "If not in Git directory, use project version number and 'release' string"
 
-8. Line 68: `"定义编译参数"`  
-   → `"Define compilation arguments"`
+8. Line 68: "Define compilation arguments"
 
-9. Line 78: `"仅在 debug 选项启用时添加调试参数"`  
-   → `"Only add debug arguments when debug option is enabled"`
+9. Line 78: "Only add debug arguments when debug option is enabled"
 
-10. Line 91: `"链接参数（根据 debug 状态添加 ASAN）"`  
-    → `"Link arguments (add ASAN based on debug state)"`
+10. Line 91: "Link arguments (add ASAN based on debug state)"
 
 #### Impact
 

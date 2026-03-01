@@ -42,6 +42,7 @@ int32_t chvt(const Arg *arg) {
 		chvt_backup_tag = selmon->pertag->curtag;
 		strncpy(chvt_backup_selmon, selmon->wlr_output->name,
 				sizeof(chvt_backup_selmon) - 1);
+		chvt_backup_selmon[sizeof(chvt_backup_selmon) - 1] = '\0';
 	}
 
 	wlr_session_change_vt(session, arg->ui);
@@ -856,6 +857,69 @@ int32_t spawn_shell(const Arg *arg) {
 	return 0;
 }
 
+static int32_t split_argv_noexpand(const char *cmd, char *argv[],
+							  char *allocated[], int32_t max_args,
+							  int32_t *alloc_count) {
+	if (!cmd || !argv || !allocated || max_args < 2 || !alloc_count)
+		return -1;
+
+	int32_t argc = 0;
+	*alloc_count = 0;
+	const char *p = cmd;
+
+	while (*p && argc < (max_args - 1)) {
+		while (*p && isspace((unsigned char)*p))
+			p++;
+		if (!*p)
+			break;
+
+		size_t max_len = strlen(p) + 1;
+		char *token = malloc(max_len);
+		if (!token)
+			return -1;
+
+		bool in_single = false;
+		bool in_double = false;
+		size_t ti = 0;
+
+		while (*p) {
+			char c = *p;
+			if (!in_single && !in_double && isspace((unsigned char)c))
+				break;
+			if (c == '\\' && !in_single) {
+				p++;
+				if (*p) {
+					token[ti++] = *p++;
+					continue;
+				}
+				break;
+			}
+			if (c == '\"' && !in_single) {
+				in_double = !in_double;
+				p++;
+				continue;
+			}
+			if (c == '\'' && !in_double) {
+				in_single = !in_single;
+				p++;
+				continue;
+			}
+			token[ti++] = c;
+			p++;
+		}
+
+		token[ti] = '\0';
+		argv[argc++] = token;
+		allocated[(*alloc_count)++] = token;
+
+		while (*p && isspace((unsigned char)*p))
+			p++;
+	}
+
+	argv[argc] = NULL;
+	return argc;
+}
+
 int32_t spawn(const Arg *arg) {
 
 	if (!arg->v)
@@ -870,37 +934,24 @@ int32_t spawn(const Arg *arg) {
 		dup2(STDERR_FILENO, STDOUT_FILENO);
 		setsid();
 
-		// 2. Parse parameters
+		// 2. Parse parameters without shell expansion
 		char *argv[64];
-		char *allocated_strings[64]; // Track strdup'd strings for cleanup
-		int32_t argc = 0;
+		char *allocated_strings[64];
 		int32_t alloc_count = 0;
 
-		char *token = strtok((char *)arg->v, " ");
-		while (token != NULL && argc < 63) {
-			wordexp_t p;
-			if (wordexp(token, &p, WRDE_NOCMD) == 0 && p.we_wordc > 0) {
-				// Duplicate the string since we'll free the wordexp result
-				argv[argc] = strdup(p.we_wordv[0]);
-				wordfree(&p); // Free immediately after copying
-				if (argv[argc] != NULL) {
-					allocated_strings[alloc_count++] = argv[argc];
-					argc++;
-				}
-			} else {
-				argv[argc] = token;
-				argc++;
-			}
-			token = strtok(NULL, " ");
-		}
-		argv[argc] = NULL;
+		int32_t argc = split_argv_noexpand(
+			arg->v, argv, allocated_strings, 64, &alloc_count);
+		if (argc <= 0 || !argv[0])
+			_exit(EXIT_FAILURE);
 
 		// 3. Execute command
 		execvp(argv[0], argv);
 
-		// 4. execvp 失败时：打印错误并直接退出（避免 coredump）
+		// 4. If execvp fails, log and exit immediately (avoid coredump).
 		wlr_log(WLR_DEBUG, "mango: execvp '%s' failed: %s\n", argv[0],
 				strerror(errno));
+		for (int32_t i = 0; i < alloc_count; i++)
+			free(allocated_strings[i]);
 		_exit(EXIT_FAILURE); // Use _exit to avoid buffer flush operations
 	}
 	return 0;

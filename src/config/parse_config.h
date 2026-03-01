@@ -1232,7 +1232,7 @@ void run_exec() {
 
 	for (int32_t i = 0; i < config.exec_count; i++) {
 		arg.v = config.exec[i];
-		spawn_shell(&arg);
+		spawn(&arg);
 	}
 }
 
@@ -1241,7 +1241,7 @@ void run_exec_once() {
 
 	for (int32_t i = 0; i < config.exec_once_count; i++) {
 		arg.v = config.exec_once[i];
-		spawn_shell(&arg);
+		spawn(&arg);
 	}
 }
 

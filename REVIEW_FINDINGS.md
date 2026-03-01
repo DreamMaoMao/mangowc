@@ -330,10 +330,10 @@ for common cases (e.g., < 32 windows).
 
 **Examples:**
 
-- Line 18: `# 如果 sysconfdir 以 prefix 开头，去掉 prefix`
-- Line 22: `# 确保 sysconfdir 是绝对路径`
+- Line 18: `# If sysconfdir starts with prefix, remove prefix`
+- Line 22: `# Ensure sysconfdir is an absolute path`
 - Line 27-29: Debug output comments
-- Line 44: `# 获取版本信息`
+- Line 44: `# Get version information`
 
 **Impact:** Reduces accessibility for international contributors
 
