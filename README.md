@@ -1,23 +1,31 @@
+# DO NOT USE! THIS IS JUST A LEARNING REPO AND NOT SUPPORTED IN ANY WAY!
+
+
+
 # Mango Wayland Compositor
-<div>
-  <img src="https://github.com/mangowm/mango/blob/main/assets/mango-transparency-256.png" alt="MangoWM Logo" width="120"/>
-</div>
+
+![MangoWC Logo](https://github.com/DreamMaoMao/mangowc/blob/main/assets/mango-transparency-256.png)
 
 This project's development is based on [dwl](https://codeberg.org/dwl/dwl/).
 
-
 1. **Lightweight & Fast Build**
 
-   - _Mango_ is as lightweight as _dwl_, and can be built completely within a few seconds. Despite this, _Mango_ does not compromise on functionality.
+   - _Mango_ is as lightweight as _dwl_, and can be built completely within
+     a few seconds. Despite this, _Mango_ does not compromise on
+     functionality.
 
 2. **Feature Highlights**
    - In addition to basic WM functionality, Mango provides:
      - Excellent xwayland support.
-     - Base tags not workspaces (supports separate window layouts for each tag)
-     - Smooth and customizable complete animations (window open/move/close, tag enter/leave,layer open/close/move)
+     - Base tags not workspaces (supports separate window layouts for each
+       tag)
+     - Smooth and customizable complete animations (window
+       open/move/close, tag enter/leave,layer open/close/move)
      - Excellent input method support (text input v2/v3)
-     - Flexible window layouts with easy switching (scroller, master-stack, monocle,center-master, etc.)
-     - Rich window states (swallow, minimize, maximize, unglobal, global, fakefullscreen, overlay, etc.)
+     - Flexible window layouts with easy switching (scroller,
+       master-stack, monocle,center-master, etc.)
+     - Rich window states (swallow, minimize, maximize, unglobal, global,
+       fakefullscreen, overlay, etc.)
      - Simple yet powerful external configuration(support shortcuts hot-reload)
      - Sway-like scratchpad and named scratchpad
      - Ipc support(get/send message from/to compositor by external program)
@@ -71,13 +79,19 @@ https://github.com/user-attachments/assets/bb83004a-0563-4b48-ad89-6461a9b78b1f
 - libxcb
 
 ## Arch Linux
-The package is in the Arch User Repository and is available for manual download [here](https://aur.archlinux.org/packages/mangowm-git) or through a AUR helper like yay:
+
+The package is in the Arch User Repository and is available for manual
+download from the
+[AUR package page](https://aur.archlinux.org/packages/mangowm-git) or
+through a AUR helper like yay:
+
 ```bash
 yay -S mangowm-git
 
 ```
 
 ## Gentoo Linux
+
 The package is in the community-maintained repository called GURU.
 First, add GURU repository:
 
@@ -96,6 +110,7 @@ emerge --ask --verbose gui-wm/mangowm
 ```
 
 ## Fedora Linux
+
 The package is in the third-party Terra repository.
 First, add the [Terra Repository](https://terra.fyralabs.com/).
 
@@ -156,9 +171,11 @@ sudo ninja -C build install
 ## Suggested Tools
 
 ### Hybrid component
+
 - [dms-shell](https://github.com/AvengeMedia/DankMaterialShell)
 
 ### Independent component
+
 - Application launcher (rofi, bemenu, wmenu, fuzzel)
 - Terminal emulator (foot, wezterm, alacritty, kitty, ghostty)
 - Status bar (waybar, eww, quickshell, ags), waybar is preferred
@@ -169,52 +186,174 @@ sudo ninja -C build install
 - Gamma control/night light (wlsunset, gammastep)
 - Miscellaneous (xfce-polkit, wlogout)
 
-## Some Common Default Keybindings
+## Default Keybindings Reference
 
-- alt+return: open foot terminal
-- alt+space: open rofi launcher
-- alt+q: kill client
-- alt+left/right/up/down: focus direction
-- super+m: quit mango
+> **Note**: All keybindings can be customized in `~/.config/mango/config.conf`
+
+### Essential Shortcuts
+
+| Keybinding     | Action        | Description                      |
+|----------------|---------------|----------------------------------|
+| `Alt + Return` | Open terminal | Launches foot terminal emulator  |
+| `Alt + Space`  | Open launcher | Launches rofi application        |
+|                |               | launcher                         |
+| `Alt + Q`      | Close window  | Kill focused window              |
+| `Super + M`    | Exit          | Quit MangoWC                     |
+| `Super + R`    | Reload config | Apply config changes without     |
+|                |               | restart                          |
+
+### Window Management
+
+| Keybinding                | Action                              |
+|---------------------------|-------------------------------------|
+| `Alt + ←/→/↑/↓`           | Focus window in direction           |
+| `Super + Tab`             | Focus next window                   |
+| `Super + Shift + ←/→/↑/↓` | Swap window with neighbor           |
+| `Alt + \`                 | Toggle floating/tiling              |
+| `Alt + F`                 | Toggle fullscreen                   |
+| `Alt + Shift + F`         | Toggle fake fullscreen              |
+| `Alt + A`                 | Toggle maximize                     |
+| `Super + I`               | Minimize window                     |
+| `Super + Shift + I`       | Restore minimized window            |
+| `Super + G`               | Toggle global (visible all tags)    |
+| `Super + O`               | Toggle overlay (always on top)      |
+
+### Tag (Workspace) Management
+
+| Keybinding          | Action                               |
+|---------------------|--------------------------------------|
+| `Ctrl + 1-9`        | Switch to tag 1-9                    |
+| `Alt + 1-9`         | Move window to tag 1-9 (and follow)  |
+| `Super + ←/→`       | Previous/next tag                    |
+| `Ctrl + ←/→`        | Previous/next tag with windows       |
+| `Ctrl + Super + ←/→`| Move window to previous/next tag     |
+
+### Layout Control
+
+| Keybinding          | Action                               |
+|---------------------|--------------------------------------|
+| `Super + N`         | Cycle through layouts                |
+| `Alt + E`           | Set window to full width (scroller)  |
+| `Alt + X`           | Cycle width presets (scroller)       |
+| `Alt + Shift + X/Z` | Increase/decrease gaps               |
+| `Alt + Shift + R`   | Toggle gaps on/off                   |
+
+### Special Features
+
+| Keybinding              | Action                   |
+|-------------------------|--------------------------|
+| `Alt + Tab`             | Toggle overview mode     |
+| `Alt + Z`               | Toggle scratchpad        |
+| `Super + Scroll Up/Down`| Switch tags with scroll  |
+|                         | wheel                    |
+
+### Multi-Monitor
+
+| Keybinding          | Action                           |
+|---------------------|----------------------------------|
+| `Alt + Shift + ←/→` | Focus adjacent monitor           |
+| `Super + Alt + ←/→` | Move window to adjacent monitor  |
+
+### Floating Window Adjustment
+
+| Keybinding                | Action                             |
+|---------------------------|------------------------------------|
+| `Ctrl + Shift + ←/→/↑/↓`  | Move floating window by pixels     |
+| `Ctrl + Alt + ←/→/↑/↓`    | Resize floating window by pixels   |
+| `Super + Left-drag`       | Move floating window with mouse    |
+| `Super + Right-drag`      | Resize floating window with mouse  |
+| `Middle-click`            | Maximize window                    |
+
+> **Tip**: Press `Super + R` after editing your config to reload without restarting!
 
 ## My Dotfiles
 
 ### Daily
+
 - Dependencies
 
 ```bash
-yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd wlr-randr grim slurp satty swaylock-effects-git wlogout sox
+yay -S rofi foot xdg-desktop-portal-wlr swaybg waybar wl-clip-persist \
+  cliphist wl-clipboard wlsunset xfce-polkit swaync pamixer wlr-dpms \
+  sway-audio-idle-inhibit-git swayidle dimland-git brightnessctl swayosd \
+  wlr-randr grim slurp satty swaylock-effects-git wlogout sox
 ```
 
 ### Dms
+
 - Dependencies
+
 ```bash
-yay -S foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist wl-clipboard sway-audio-idle-inhibit-git brightnessctl grim slurp satty matugen-bin dms-shell-git
+yay -S foot xdg-desktop-portal-wlr swaybg wl-clip-persist cliphist \
+  wl-clipboard sway-audio-idle-inhibit-git brightnessctl grim slurp satty \
+  matugen-bin dms-shell-git
 
 ```
+
 - use my dms config
 
 ```bash
 git clone -b dms https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 ```
+
 - use my daily config
 
 ```bash
 git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 ```
 
+## Documentation
 
-## Config Documentation
+MangoWC comes with comprehensive documentation to help you get started and
+master the compositor:
 
-Refer to the repo wiki [wiki](https://github.com/mangowm/mango/wiki/)
+### 📚 Documentation Files
 
-or the website docs [docs](https://mangowm.github.io/)
+- **[USAGE.md](USAGE.md)** - Practical guide for day-to-day usage
+  - Common workflows and usage patterns
+  - Layout explanations with diagrams
+  - Scratchpad and overview mode guides
+  - Multi-monitor workflows
+  - Customization tips and examples
 
-# NixOS + Home-manager
+- **[COMMANDS.md](COMMANDS.md)** - Complete command reference
+  - All available commands with descriptions
+  - Parameter documentation
+  - Keybinding examples
+  - IPC/mmsg usage and scripting examples
 
-The repo contains a flake that provides a NixOS module and a home-manager module for mango.
-Use the NixOS module to install mango with other necessary components of a working Wayland environment.
-Use the home-manager module to declare configuration and autostart for mango.
+- **[config.conf](config.conf)** - Annotated configuration file
+  - All settings explained with inline comments
+  - Example configurations
+  - Default keybindings
+
+### 🌐 Online Resources
+
+- **[Wiki](https://github.com/DreamMaoMao/mango/wiki/)** - Comprehensive
+  online documentation
+- **[Website](https://mangowc.vercel.app/docs)** - Web-based documentation
+- **[Discord](https://discord.gg/CPjbDxesh5)** - Community support and discussions
+
+### 📖 Quick Links by Topic
+
+- **Getting Started:** See [Quick Start Guide](#quick-start-guide) above
+- **Understanding Concepts:** [Key Concepts](#key-concepts) section above
+- **Daily Usage:** [USAGE.md](USAGE.md) for workflows and patterns
+- **Command Reference:** [COMMANDS.md](COMMANDS.md) for all commands
+- **Configuration:** [config.conf](config.conf) with inline documentation
+- **Troubleshooting:** [Troubleshooting](#troubleshooting) section above
+- **IPC/Scripting:** [IPC Control with mmsg](#ipc-control-with-mmsg) section above
+
+---
+
+## NixOS + Home-manager
+
+The repo contains a flake that provides a NixOS module and a home-manager
+module for mango.
+Use the NixOS module to install mango with other necessary components of a
+working Wayland environment.
+Use the home-manager module to declare configuration and autostart for
+mango.
 
 Here's an example of using the modules in a flake:
 
@@ -286,38 +425,41 @@ Here's an example of using the modules in a flake:
 }
 ```
 
-# Packaging mango
+## Packaging mango
 
-To package mango for other distributions, you can check the reference setup for:
+To package mango for other distributions, you can check the reference setup
+for:
 
 - [nix](https://github.com/mangowm/mango/blob/main/nix/default.nix)
 - [arch](https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=mangowm-git).
 - [gentoo](https://data.gpo.zugaina.org/guru/gui-wm/mangowm)
 
-You might need to package `scenefx` for your distribution, check availability [here](https://github.com/wlrfx/scenefx.git).
+You might need to package `scenefx` for your distribution, check availability
+at the [scenefx repository](https://github.com/wlrfx/scenefx.git).
 
-If you encounter build errors when packaging `mango`, feel free to create an issue and ask a question, but
-Read The Friendly Manual on packaging software in your distribution first.
+If you encounter build errors when packaging `mango`, feel free to create an
+issue and ask a question, but Read The Friendly Manual on packaging software
+in your distribution first.
 
-# Thanks to These Reference Repositories
+## Thanks to These Reference Repositories
 
-- https://gitlab.freedesktop.org/wlroots/wlroots - Implementation of Wayland protocol
+- <https://gitlab.freedesktop.org/wlroots/wlroots> - Implementation of Wayland protocol
 
-- https://github.com/dqrk0jeste/owl - Basal window animation
+- <https://github.com/dqrk0jeste/owl> - Basal window animation
 
-- https://codeberg.org/dwl/dwl - Basal dwl feature
+- <https://codeberg.org/dwl/dwl> - Basal dwl feature
 
-- https://github.com/swaywm/sway - Sample of Wayland protocol
+- <https://github.com/swaywm/sway> - Sample of Wayland protocol
 
-- https://github.com/wlrfx/scenefx - Make it simple to add window effect.
+- <https://github.com/wlrfx/scenefx> - Make it simple to add window effect.
 
+## Sponsor
 
-# Sponsor
 At present, I can only accept sponsorship through an encrypted connection.
-If you find this project helpful to you, you can offer sponsorship in the following ways.
+If you find this project helpful to you, you can offer sponsorship in the
+following ways.
 
-<img width="650" height="870" alt="image" src="https://github.com/user-attachments/assets/8c860317-90d2-4071-971d-f1a92b674469" />
-
+![image](https://github.com/user-attachments/assets/8c860317-90d2-4071-971d-f1a92b674469)
 
 Thanks to the following friends for their sponsorship of this project
 

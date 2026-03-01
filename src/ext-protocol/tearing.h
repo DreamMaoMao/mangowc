@@ -99,30 +99,30 @@ bool custom_wlr_scene_output_commit(struct wlr_scene_output *scene_output,
 	struct wlr_output *wlr_output = scene_output->output;
 	Monitor *m = wlr_output->data;
 
-	// 检查是否需要帧
+	// Check if frame is needed
 	if (!wlr_scene_output_needs_frame(scene_output)) {
 		wlr_log(WLR_DEBUG, "No frame needed for output %s", wlr_output->name);
 		return true;
 	}
 
-	// 构建输出状态
+	// Build output state
 	if (!wlr_scene_output_build_state(scene_output, state, NULL)) {
 		wlr_log(WLR_ERROR, "Failed to build output state for %s",
 				wlr_output->name);
 		return false;
 	}
 
-	// 测试撕裂翻页
+	// Test tearing page flip
 	if (state->tearing_page_flip) {
 		if (!wlr_output_test_state(wlr_output, state)) {
 			state->tearing_page_flip = false;
 		}
 	}
 
-	// 尝试提交
+	// Attempt commit
 	bool committed = wlr_output_commit_state(wlr_output, state);
 
-	// 如果启用撕裂翻页但提交失败，重试禁用撕裂翻页
+	// If tearing page flip is enabled but commit fails, retry without tearing page flip
 	if (!committed && state->tearing_page_flip) {
 		wlr_log(WLR_DEBUG, "Retrying commit without tearing for %s",
 				wlr_output->name);
@@ -130,7 +130,7 @@ bool custom_wlr_scene_output_commit(struct wlr_scene_output *scene_output,
 		committed = wlr_output_commit_state(wlr_output, state);
 	}
 
-	// 处理状态清理
+	// Handle state cleanup
 	if (committed) {
 		wlr_log(WLR_DEBUG, "Successfully committed output %s",
 				wlr_output->name);
@@ -140,7 +140,7 @@ bool custom_wlr_scene_output_commit(struct wlr_scene_output *scene_output,
 		}
 	} else {
 		wlr_log(WLR_ERROR, "Failed to commit output %s", wlr_output->name);
-		// 即使提交失败，也清理状态避免积累
+		// Clean up state even if commit fails to avoid accumulation
 		if (state == &m->pending) {
 			wlr_output_state_finish(&m->pending);
 			wlr_output_state_init(&m->pending);

@@ -8,7 +8,7 @@ pid_t getparentprocess(pid_t p) {
 	if (!(f = fopen(buf, "r")))
 		return 0;
 
-	// 检查fscanf返回值，确保成功读取了1个参数
+	// Check fscanf return value to ensure 1 parameter was successfully read
 	if (fscanf(f, "%*u %*s %*c %u", &v) != 1) {
 		fclose(f);
 		return 0;
@@ -26,25 +26,29 @@ int32_t isdescprocess(pid_t p, pid_t c) {
 	return (int32_t)c;
 }
 
+// Buffer size for layout abbreviations (must match kb_layout buffer in dwl-ipc.h)
+#define LAYOUT_ABBR_SIZE 32
+
 void get_layout_abbr(char *abbr, const char *full_name) {
-	// 清空输出缓冲区
+	// Clear output buffer
 	abbr[0] = '\0';
 
-	// 1. 尝试在映射表中查找
+	// 1. Try to find in mapping table
 	for (int32_t i = 0; layout_mappings[i].full_name != NULL; i++) {
 		if (strcmp(full_name, layout_mappings[i].full_name) == 0) {
-			strcpy(abbr, layout_mappings[i].abbr);
+			strncpy(abbr, layout_mappings[i].abbr, LAYOUT_ABBR_SIZE - 1);
+			abbr[LAYOUT_ABBR_SIZE - 1] = '\0';
 			return;
 		}
 	}
 
-	// 2. 尝试从名称中提取并转换为小写
+	// 2. Try to extract and convert to lowercase from name
 	const char *open = strrchr(full_name, '(');
 	const char *close = strrchr(full_name, ')');
 	if (open && close && close > open) {
 		uint32_t len = close - open - 1;
 		if (len > 0 && len <= 4) {
-			// 提取并转换为小写
+			// Extract and convert to lowercase
 			for (uint32_t j = 0; j < len; j++) {
 				abbr[j] = tolower(open[j + 1]);
 			}
@@ -53,7 +57,7 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 		}
 	}
 
-	// 3. 提取前2-3个字母并转换为小写
+	// 3. Extract first 2-3 letters and convert to lowercase
 	uint32_t j = 0;
 	for (uint32_t i = 0; full_name[i] != '\0' && j < 3; i++) {
 		if (isalpha(full_name[i])) {
@@ -62,18 +66,20 @@ void get_layout_abbr(char *abbr, const char *full_name) {
 	}
 	abbr[j] = '\0';
 
-	// 确保至少2个字符
+	// Ensure at least 2 characters
 	if (j >= 2) {
 		return;
 	}
 
-	// 4. 回退方案：使用首字母小写
+	// 4. Fallback: use first letter in lowercase
 	if (j == 1) {
 		abbr[1] = full_name[1] ? tolower(full_name[1]) : '\0';
 		abbr[2] = '\0';
 	} else {
-		// 5. 最终回退：返回 "xx"
-		strcpy(abbr, "xx");
+		// 5. Final fallback: return "xx"
+		abbr[0] = 'x';
+		abbr[1] = 'x';
+		abbr[2] = '\0';
 	}
 }
 
@@ -102,8 +108,8 @@ void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc,
 						  ->surface;
 
 		/*  start from the topmost layer,
-			find a sureface that can be focused by pointer,
-			impopup neither a client nor a layer surface.*/
+			find a surface that can be focused by pointer,
+			impopup is neither a client nor a layer surface.*/
 		if (layer == LyrIMPopup) {
 			c = NULL;
 			l = NULL;

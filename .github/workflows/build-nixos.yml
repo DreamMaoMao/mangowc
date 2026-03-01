@@ -1,0 +1,77 @@
+name: Build (NixOS)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - '**.c'
+      - '**.h'
+      - '**.cpp'
+      - '**.scm'
+      - 'meson.build'
+      - 'meson_options.txt'
+      - 'flake.nix'
+      - 'nix/**'
+      - 'protocols/**'
+      - '.github/workflows/build-nixos.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '**.c'
+      - '**.h'
+      - '**.cpp'
+      - '**.scm'
+      - 'meson.build'
+      - 'meson_options.txt'
+      - 'flake.nix'
+      - 'nix/**'
+      - 'protocols/**'
+      - '.github/workflows/build-nixos.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build project with Nix
+        run: |
+          nix build --print-build-logs
+
+      - name: Check build outputs
+        run: |
+          echo "✅ Build completed successfully!"
+          echo "Built executables:"
+          ls -lh result/bin/
+
+      - name: Verify executables
+        run: |
+          # Check that mango executable exists and is executable
+          if [ -x "result/bin/mango" ]; then
+            echo "✅ mango executable found and is executable"
+            result/bin/mango --version || echo "Note: --version may not be supported"
+          else
+            echo "❌ mango executable not found or not executable"
+            exit 1
+          fi
+          
+          # Check that mmsg executable exists and is executable
+          if [ -x "result/bin/mmsg" ]; then
+            echo "✅ mmsg executable found and is executable"
+            result/bin/mmsg --help || echo "Note: --help may not be supported"
+          else
+            echo "❌ mmsg executable not found or not executable"
+            exit 1
+          fi

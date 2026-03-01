@@ -260,7 +260,7 @@ void vertical_check_scroller_root_inside_mon(Client *c,
 	}
 }
 
-// 竖屏滚动布局
+// Vertical scroll layout
 void vertical_scroller(Monitor *m) {
 	int32_t i, n, j;
 	float single_proportion = 1.0;

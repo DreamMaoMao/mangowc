@@ -27,21 +27,21 @@ void get_layer_target_geometry(LayerSurface *l, struct wlr_box *target_box) {
 
 	const struct wlr_layer_surface_v1_state *state = &l->layer_surface->current;
 
-	// 限制区域
-	// waybar一般都是大于0,表示要占用多少区域，所以计算位置也要用全部区域作为基准
-	// 如果是-1可能表示独占所有可用空间
-	// 如果是0，应该是表示使用exclusive_zone外的可用区域
+	// Exclusive zone handling:
+	// Waybar typically uses > 0, indicating how much area to reserve (use full
+	// monitor bounds) If -1, may indicate exclusive use of all available space
+	// If 0, indicates use of available area outside exclusive zones
 	struct wlr_box bounds;
 	if (state->exclusive_zone > 0 || state->exclusive_zone == -1)
 		bounds = l->mon->m;
 	else
 		bounds = l->mon->w;
 
-	// 初始化几何位置
+	// Initialize geometry
 	struct wlr_box box = {.width = state->desired_width,
 						  .height = state->desired_height};
 
-	// 水平方向定位
+	// Horizontal positioning
 	const int32_t both_horiz =
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
 	if (box.width == 0) {
@@ -56,7 +56,7 @@ void get_layer_target_geometry(LayerSurface *l, struct wlr_box *target_box) {
 		box.x = bounds.x + ((bounds.width - box.width) / 2);
 	}
 
-	// 垂直方向定位
+	// Vertical positioning
 	const int32_t both_vert =
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
 	if (box.height == 0) {
@@ -71,7 +71,7 @@ void get_layer_target_geometry(LayerSurface *l, struct wlr_box *target_box) {
 		box.y = bounds.y + ((bounds.height - box.height) / 2);
 	}
 
-	// 应用边距
+	// Apply margins
 	if (box.width == 0) {
 		box.x += state->margin.left;
 		box.width = bounds.width - (state->margin.left + state->margin.right);
@@ -412,8 +412,8 @@ void init_fadeout_layers(LayerSurface *l) {
 	fadeout_layer->animation_type_close = l->animation_type_close;
 	fadeout_layer->animation_type_open = l->animation_type_open;
 
-	// 这里snap节点的坐标设置是使用的相对坐标，不能用绝对坐标
-	// 这跟普通node有区别
+	// Snapshot node coordinates use relative coordinates, not absolute
+	// This differs from regular nodes
 
 	fadeout_layer->animation.initial.x = 0;
 	fadeout_layer->animation.initial.y = 0;
@@ -422,7 +422,7 @@ void init_fadeout_layers(LayerSurface *l) {
 		 strcmp(layer_animation_type_close, "zoom") == 0) ||
 		(l->animation_type_close &&
 		 strcmp(l->animation_type_close, "zoom") == 0)) {
-		// 算出要设置的绝对坐标和大小
+		// Calculate absolute coordinates and size to be set
 		fadeout_layer->current.width =
 			(float)l->animation.current.width * zoom_end_ratio;
 		fadeout_layer->current.height =
@@ -431,7 +431,7 @@ void init_fadeout_layers(LayerSurface *l) {
 								   fadeout_layer->current.width / 2;
 		fadeout_layer->current.y = usable_area.y + usable_area.height / 2 -
 								   fadeout_layer->current.height / 2;
-		// 算出偏差坐标，大小不用因为后续不使用他的大小偏差去设置，而是直接缩放buffer
+		// Calculate offset coordinates, size not needed because we'll scale the buffer directly rather than using its size offset
 		fadeout_layer->current.x =
 			fadeout_layer->current.x - l->animation.current.x;
 		fadeout_layer->current.y =
@@ -441,9 +441,9 @@ void init_fadeout_layers(LayerSurface *l) {
 				strcmp(layer_animation_type_close, "slide") == 0) ||
 			   (l->animation_type_close &&
 				strcmp(l->animation_type_close, "slide") == 0)) {
-		// 获取slide动画的结束绝对坐标和大小
+		// Get the end absolute coordinates and size for slide animation
 		set_layer_dir_animaiton(l, &fadeout_layer->current);
-		// 算出也能够有设置的偏差坐标和大小
+		// Calculate the offset coordinates and size to be set
 		fadeout_layer->current.x = fadeout_layer->current.x - l->geom.x;
 		fadeout_layer->current.y = fadeout_layer->current.y - l->geom.y;
 		fadeout_layer->current.width =
@@ -451,21 +451,21 @@ void init_fadeout_layers(LayerSurface *l) {
 		fadeout_layer->current.height =
 			fadeout_layer->current.height - l->geom.height;
 	} else {
-		// fade动画坐标大小不用变
+		// Fade animation doesn't need to change coordinates or size
 		fadeout_layer->current.x = 0;
 		fadeout_layer->current.y = 0;
 		fadeout_layer->current.width = 0;
 		fadeout_layer->current.height = 0;
 	}
 
-	// 动画开始时间
+	// Animation start time
 	fadeout_layer->animation.time_started = get_now_in_ms();
 
-	// 将节点插入到关闭动画链表中，屏幕刷新哪里会检查链表中是否有节点可以应用于动画
+	// Insert node into close animation list, screen refresh will check if there are nodes that can be applied to animation
 	wlr_scene_node_set_enabled(&fadeout_layer->scene->node, true);
 	wl_list_insert(&fadeout_layers, &fadeout_layer->fadeout_link);
 
-	// 请求刷新屏幕
+	// Request screen refresh
 	if (l->mon)
 		wlr_output_schedule_frame(l->mon->wlr_output);
 }
@@ -507,7 +507,7 @@ void layer_set_pending_state(LayerSurface *l) {
 	} else {
 		l->animainit_geom = l->animation.current;
 	}
-	// 判断是否需要动画
+	// Check if animation is needed
 	if (!animations || !layer_animations || l->noanim ||
 		l->layer_surface->current.layer ==
 			ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND ||
@@ -525,7 +525,7 @@ void layer_set_pending_state(LayerSurface *l) {
 		l->animation.should_animate = false;
 	}
 
-	// 开始动画
+	// Start animation
 	layer_commit(l);
 	l->dirty = true;
 }
@@ -535,7 +535,7 @@ void layer_commit(LayerSurface *l) {
 	if (!l || !l->mapped)
 		return;
 
-	l->current = l->pending; // 设置动画的结束位置
+	l->current = l->pending; // Set animation end position
 
 	if (l->animation.should_animate) {
 		if (!l->animation.running) {
@@ -545,11 +545,11 @@ void layer_commit(LayerSurface *l) {
 		l->animation.initial = l->animainit_geom;
 		l->animation.time_started = get_now_in_ms();
 
-		// 标记动画开始
+		// Mark animation start
 		l->animation.running = true;
 		l->animation.should_animate = false;
 	}
-	// 请求刷新屏幕
+	// Request screen refresh
 	if (l->mon)
 		wlr_output_schedule_frame(l->mon->wlr_output);
 }

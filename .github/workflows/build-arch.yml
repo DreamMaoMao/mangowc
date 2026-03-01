@@ -1,0 +1,98 @@
+name: Build (Arch Linux)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - '**.c'
+      - '**.h'
+      - '**.cpp'
+      - '**.scm'
+      - 'meson.build'
+      - 'meson_options.txt'
+      - 'flake.nix'
+      - 'protocols/**'
+      - '.github/workflows/build-arch.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '**.c'
+      - '**.h'
+      - '**.cpp'
+      - '**.scm'
+      - 'meson.build'
+      - 'meson_options.txt'
+      - 'flake.nix'
+      - 'protocols/**'
+      - '.github/workflows/build-arch.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update system and install dependencies
+        run: |
+          # Update package database
+          pacman -Syu --noconfirm
+          
+          # Install build tools and all dependencies
+          pacman -S --noconfirm \
+            base-devel \
+            git \
+            meson \
+            ninja \
+            wayland \
+            wayland-protocols \
+            libinput \
+            libxkbcommon \
+            pcre2 \
+            pixman \
+            libdrm \
+            libxcb \
+            xcb-util-wm \
+            xorg-xwayland \
+            hwdata \
+            libliftoff \
+            libdisplay-info \
+            seatd \
+            mesa \
+            wlroots0.19 \
+            pkg-config
+            
+      - name: Install scenefx from AUR
+        run: |
+          # Install scenefx from AUR since it's not in official repos
+          # Create a non-root user for makepkg (AUR requires non-root)
+          useradd -m -G wheel builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          
+          # Clone and build scenefx from AUR as builder user
+          cd /home/builder
+          su - builder -c "git clone https://aur.archlinux.org/scenefx0.4.git"
+          cd scenefx0.4
+          su - builder -c "cd /home/builder/scenefx0.4 && makepkg -si --noconfirm"
+
+      - name: Configure meson
+        run: |
+          # Download meson subprojects if needed
+          meson subprojects download || true
+          meson setup build/ --prefix=/usr
+
+      - name: Build project
+        run: |
+          ninja -C build/
+
+      - name: Build summary
+        run: |
+          echo "✅ Build completed successfully!"
+          echo "Built executables:"
+          ls -lh build/mango build/mmsg
