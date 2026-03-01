@@ -208,7 +208,7 @@ git clone https://github.com/DreamMaoMao/mango-config.git ~/.config/mango
 
 Refer to the repo wiki [wiki](https://github.com/mangowm/mango/wiki/)
 
-or the website docs [docs](https://mangowm.github.io/mango-web/)
+or the website docs [docs](https://mangowm.github.io/)
 
 # NixOS + Home-manager
 
