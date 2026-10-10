@@ -9,6 +9,8 @@ void set_size_per(Monitor *m, Client *c, bool reset_proportion);
 
 uint32_t drag_refresh_interval_ms(const Monitor *m);
 
+uint32_t drag_refresh_interval_ms(const Monitor *m);
+
 void resize_tile_master_horizontal(Client *gc, bool isdrag, int32_t offsetx,
 								   int32_t offsety, uint32_t time,
 								   int32_t type);

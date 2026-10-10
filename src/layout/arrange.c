@@ -835,7 +835,9 @@ void resize_tile_grid_fair(Client *gc, bool isdrag, int32_t offsetx,
 		}
 
 		if (server.last_apply_drag_time == 0 ||
-			time - server.last_apply_drag_time >= drag_refresh_interval_ms(m)) {
+
+			time - server.last_apply_drag_time >=
+				drag_refresh_interval_ms(m)) {
 			arrange(m, false, false);
 			server.last_apply_drag_time = time;
 		}
@@ -1052,7 +1054,9 @@ void resize_tile_scroller(Client *gc, bool isdrag, int32_t offsetx,
 		}
 
 		if (server.last_apply_drag_time == 0 ||
-			time - server.last_apply_drag_time >= drag_refresh_interval_ms(m)) {
+
+			time - server.last_apply_drag_time >=
+				drag_refresh_interval_ms(m)) {
 			arrange(m, false, false);
 			server.last_apply_drag_time = time;
 		}
