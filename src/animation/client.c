@@ -2,6 +2,7 @@
 #include "mango/animation/common.h"
 #include "mango/common/server.h"
 #include "mango/common/util.h"
+#include "mango/draw/traffic-lights.h"
 #include "mango/layout/dwindle.h"
 #include "mango/layout/floating.h"
 #include "mango/layout/layout.h"
@@ -1057,6 +1058,7 @@ void client_apply_clip(Client *c, float factor) {
 		client_draw_blur(c, surface_clip_offset);
 		client_draw_shield(c, surface_clip_offset);
 		client_draw_dim(c, surface_clip_offset);
+		client_draw_traffic_lights(c);
 
 		overview_layout_card(c);
 		overview_card_set_corner_radii(c, set_client_corner_location(c));
@@ -1091,6 +1093,7 @@ void client_apply_clip(Client *c, float factor) {
 		client_draw_blur(c, surface_clip_offset);
 		client_draw_shield(c, surface_clip_offset);
 		client_draw_dim(c, surface_clip_offset);
+		client_draw_traffic_lights(c);
 
 		should_render_client_surface =
 			clip_box.width > 0 && clip_box.height > 0;
@@ -1144,6 +1147,7 @@ void client_apply_clip(Client *c, float factor) {
 	client_draw_tabbar(c, offsets);
 	client_draw_shield(c, surface_clip_offset);
 	client_draw_dim(c, surface_clip_offset);
+	client_draw_traffic_lights(c);
 	client_draw_blur(c, surface_clip_offset);
 	/*
 	 * During animation, sync the X11 root surface dest_size / clipping
@@ -1661,6 +1665,7 @@ void resize(Client *c, struct wlr_box geo, ResizeOpts opts) {
 		struct ivec2 surface_clip_offset = clip_to_hide(c, &clip, offsets);
 		client_draw_shield(c, surface_clip_offset);
 		client_draw_dim(c, surface_clip_offset);
+		client_draw_traffic_lights(c);
 		client_draw_blur(c, surface_clip_offset);
 
 		if (client_is_x11(c))

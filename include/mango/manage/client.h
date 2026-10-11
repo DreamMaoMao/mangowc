@@ -84,6 +84,7 @@ struct Client {
 	struct wlr_scene_tree *overview_scene_surface;
 	MangoJumpLabel *jump_label_node;
 	MangoDimNode *dim_node;
+	MangoDimNode *traffic_light[3]; /* close, minimize, maximize */
 	struct wl_list link;
 	struct wl_list flink;
 	struct wl_list fadeout_link;
@@ -96,6 +97,8 @@ struct Client {
 	struct wl_listener map;
 	struct wl_listener maximize;
 	struct wl_listener minimize;
+	struct wl_listener request_move;
+	struct wl_listener request_resize;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 	struct wl_listener set_title;
@@ -382,6 +385,8 @@ void handle_client_commit(struct wl_listener *listener, void *data);
 void handle_client_unmap(struct wl_listener *listener, void *data);
 void handle_client_destroy(struct wl_listener *listener, void *data);
 void handle_client_request_fullscreen(struct wl_listener *listener, void *data);
+void handle_client_request_move(struct wl_listener *listener, void *data);
+void handle_client_request_resize(struct wl_listener *listener, void *data);
 void handle_client_request_maximize(struct wl_listener *listener, void *data);
 void handle_client_request_minimize(struct wl_listener *listener, void *data);
 void handle_client_set_title(struct wl_listener *listener, void *data);

@@ -6,6 +6,7 @@
 #include "mango/common/server.h"
 #include "mango/common/util.h"
 #include "mango/dispatch/bind.h"
+#include "mango/draw/traffic-lights.h"
 #include "mango/ext-protocol/foreign-toplevel.h"
 #include "mango/ext-protocol/text-input.h"
 #include "mango/input/pointer.h"
@@ -1988,6 +1989,10 @@ void handle_new_xdg_toplevel(struct wl_listener *listener, void *data) {
 		   handle_client_request_maximize);
 	LISTEN(&toplevel->events.request_minimize, &c->minimize,
 		   handle_client_request_minimize);
+	LISTEN(&toplevel->events.request_move, &c->request_move,
+		   handle_client_request_move);
+	LISTEN(&toplevel->events.request_resize, &c->request_resize,
+		   handle_client_request_resize);
 	LISTEN(&toplevel->events.set_title, &c->set_title, handle_client_set_title);
 }
 
@@ -2335,6 +2340,7 @@ void handle_client_map(struct wl_listener *listener, void *data) {
 	client_add_tab_bar(c);
 	client_add_jump_label_node(c);
 	client_add_dim_node(c);
+	client_add_traffic_lights(c);
 
 	c->droparea = wlr_scene_rect_create(c->scene, 0, 0, config.dropcolor);
 	wlr_scene_node_lower_to_bottom(&c->droparea->node);
@@ -2646,6 +2652,7 @@ void handle_client_unmap(struct wl_listener *listener, void *data) {
 		mango_dim_node_destroy(c->dim_node);
 		c->dim_node = NULL;
 	}
+	client_remove_traffic_lights(c);
 
 	if (c->image_capture_scene) {
 		wlr_scene_node_destroy(&c->image_capture_scene->tree.node);
@@ -2680,6 +2687,8 @@ void handle_client_destroy(struct wl_listener *listener, void *data) {
 		wl_list_remove(&c->commit.link);
 		wl_list_remove(&c->map.link);
 		wl_list_remove(&c->unmap.link);
+		wl_list_remove(&c->request_move.link);
+		wl_list_remove(&c->request_resize.link);
 	}
 	/*
 	 * Decoration listeners are attached to deco->events; wlroots tears down
@@ -2703,6 +2712,43 @@ void handle_client_request_fullscreen(struct wl_listener *listener,
 		return;
 
 	client_apply_fullscreen(c, client_wants_fullscreen(c), true);
+}
+
+/* A window may only start a move/resize while the button that was pressed on
+ * it is still held. */
+static bool client_owns_pointer_press(Client *c) {
+	Client *fc = NULL;
+	struct wlr_surface *focused = server.seat->pointer_state.focused_surface;
+
+	return server.cursor_mode == CurPressed && focused &&
+		   toplevel_from_wlr_surface(focused, &fc, NULL) >= 0 && fc == c;
+}
+
+/* Windows with their own title bar (GTK headerbars, Chrome, Qt/Electron) ask
+ * the compositor to move them when that bar is dragged. */
+void handle_client_request_move(struct wl_listener *listener, void *data) {
+	Client *c = wl_container_of(listener, c, request_move);
+
+	if (!c || c->iskilling || server.session_locked ||
+		!client_owns_pointer_press(c))
+		return;
+
+	if (pointer_begin_move_resize(c, CurMove, server.cursor->x,
+								  server.cursor->y, 0))
+		wlr_seat_pointer_clear_focus(server.seat);
+}
+
+void handle_client_request_resize(struct wl_listener *listener, void *data) {
+	struct wlr_xdg_toplevel_resize_event *event = data;
+	Client *c = wl_container_of(listener, c, request_resize);
+
+	if (!c || c->iskilling || server.session_locked ||
+		!client_owns_pointer_press(c))
+		return;
+
+	if (pointer_begin_move_resize(c, CurResize, server.cursor->x,
+								  server.cursor->y, event->edges))
+		wlr_seat_pointer_clear_focus(server.seat);
 }
 
 void handle_client_request_maximize(struct wl_listener *listener, void *data) {
