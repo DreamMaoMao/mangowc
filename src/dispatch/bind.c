@@ -2735,15 +2735,7 @@ int32_t focus_by_id(const Arg *arg) {
 	if (!server.selected_monitor || !arg->tc)
 		return 0;
 
-	Client *c = arg->tc;
-
-	if (c->swallowdby)
-		return 0;
-
-	if (client_is_group_member(c))
-		client_focus_group_member(c);
-
-	client_active(c);
+	client_active(arg->tc);
 	return 0;
 }
 
