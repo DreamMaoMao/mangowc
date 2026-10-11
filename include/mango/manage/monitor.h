@@ -161,5 +161,6 @@ struct wlr_output_mode *get_nearest_output_mode(struct wlr_output *output,
 												float refresh);
 bool apply_rule_to_state(Monitor *m, const ConfigMonitorRule *rule,
 						 struct wlr_output_state *state);
+bool blur_layer_on_wallpaper(uint32_t layer);
 
 #endif

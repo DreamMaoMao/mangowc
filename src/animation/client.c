@@ -1800,7 +1800,7 @@ bool client_apply_focus_opacity(Client *c) {
 
 		c->opacity_animation.current_opacity = target_opacity;
 		client_set_opacity(c, target_opacity);
-		if (config.blur && !c->no_blur && !config.blur_optimized) {
+		if (config.blur && !c->no_blur && !client_blur_uses_wallpaper(c)) {
 			float blur_val = MIN(percent * (1.0 - config.fadein_begin_opacity) +
 									 config.fadein_begin_opacity,
 								 1.0);

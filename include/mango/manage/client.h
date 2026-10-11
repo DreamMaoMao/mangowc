@@ -384,6 +384,8 @@ void handle_client_request_minimize(struct wl_listener *listener, void *data);
 void handle_client_set_title(struct wl_listener *listener, void *data);
 void handle_client_activation_request(struct wl_listener *listener, void *data);
 void pending_kill_client(Client *c);
+bool client_blur_uses_wallpaper(Client *c);
+void client_sync_blur_optimized(Client *c);
 void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int32_t sx,
 							int32_t sy, void *user_data);
 void scene_buffer_apply_opacity(struct wlr_scene_buffer *buffer, int32_t sx,

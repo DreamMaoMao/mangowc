@@ -2759,6 +2759,20 @@ void pending_kill_client(Client *c) {
 	client_send_close(c);
 }
 
+bool client_blur_uses_wallpaper(Client *c) {
+	if (!c)
+		return false;
+	return config.blur_optimized ||
+		   blur_layer_on_wallpaper(client_target_layer(c));
+}
+
+void client_sync_blur_optimized(Client *c) {
+	if (!c || !c->blur)
+		return;
+	wlr_scene_blur_set_should_only_blur_bottom_layer(
+		c->blur, client_blur_uses_wallpaper(c));
+}
+
 void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int32_t sx,
 							int32_t sy, void *user_data) {
 	Client *c = user_data;
@@ -2775,11 +2789,7 @@ void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int32_t sx,
 		return;
 
 	if (config.blur && c && !c->no_blur) {
-		if (config.blur_optimized) {
-			wlr_scene_blur_set_should_only_blur_bottom_layer(c->blur, true);
-		} else {
-			wlr_scene_blur_set_should_only_blur_bottom_layer(c->blur, false);
-		}
+		client_sync_blur_optimized(c);
 	}
 }
 
@@ -4234,6 +4244,7 @@ void client_sync_layer(Client *c) {
 	client_update_input_penetration(c);
 	if (c->scene->node.parent != server.layers[client_target_layer(c)])
 		client_reparent_group(c);
+	client_sync_blur_optimized(c);
 }
 
 bool client_wants_group_bar(Client *c) {
@@ -4383,6 +4394,7 @@ void client_reparent_group(Client *c) {
 									server.layers[layer]);
 		}
 		wlr_scene_node_reparent(&cur->scene->node, server.layers[layer]);
+		client_sync_blur_optimized(cur);
 		cur = cur->group_next;
 	}
 
