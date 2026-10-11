@@ -2871,6 +2871,10 @@ void client_focus(Client *c, int32_t lift) {
 
 		tab_sync_focus(c);
 
+		if (last_focus_client && last_focus_client != c)
+			client_check_tab_node_visible(last_focus_client);
+		client_check_tab_node_visible(c);
+
 		check_keep_idle_inhibit(c);
 		check_vrr_enable(c);
 
@@ -3812,7 +3816,9 @@ void client_replace(Client *c, Client *w, bool is_group_change_member,
 	tab_replace_client(w, c);
 
 	client_unpark(c, w);
-	mango_bar_decoration_set_focus(c->group_bar, c->is_group_focus);
+	mango_bar_decoration_set_focus(c->group_bar,
+								   server.selected_monitor &&
+									   c == server.selected_monitor->sel);
 
 	/* If the old window is in overview, destroy its card tree. */
 	overview_destroy_card(w);
@@ -4350,8 +4356,8 @@ void client_check_tab_node_visible(Client *c) {
 			cur = cur->group_next;
 			continue;
 		}
-		bool grouped = client_is_group_member(cur);
-		bool group_active = grouped && cur->is_group_focus;
+		bool focused =
+			server.selected_monitor && cur == server.selected_monitor->sel;
 		bool show_close = show && config.always_show_group_bar &&
 						  config.group_bar_close_button_enable;
 		/* The strip is drawn from one bar node per member; keep the whole
@@ -4359,7 +4365,7 @@ void client_check_tab_node_visible(Client *c) {
 		 * segment behind. */
 		wlr_scene_node_set_enabled(&cur->group_bar->scene->node, show);
 		mango_scene_node_set_ignore_hit(&cur->group_bar->scene->node, !show);
-		mango_bar_decoration_set_focus(cur->group_bar, show && group_active);
+		mango_bar_decoration_set_focus(cur->group_bar, show && focused);
 		mango_bar_decoration_set_close(cur->group_bar, show_close,
 									   config.group_bar_button_size,
 									   config.group_bar_button_margin);
