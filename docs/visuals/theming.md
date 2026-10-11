@@ -76,9 +76,9 @@ You can also color-code windows based on their state:
 | `group_bar_button_margin` | `4` | Close button inset from the right edge in px. |
 | `group_bar_button_color` | `0xad401fff` | Close button colour. |
 | `group_bar_decorate_fg_color` | `0xc0caf5ff` | text color.
-| `group_bar_decorate_bg_color` | `0x1a1b26ff` | background color.|
+| `group_bar_decorate_bg_color` | `0x1d2021ff` | background color.|
 | `group_bar_decorate_focus_fg_color` | `0x9ece6aff` | text color for focus. |
-| `group_bar_decorate_focus_bg_color` | `0x2f3d33ff` | background color for focus.|
+| `group_bar_decorate_focus_bg_color` | `0x3c3836ff` | background color for focus.|
 | `group_bar_decorate_border_color` | `0x3b4261ff` | border color.|
 | `group_bar_decorate_border_width` | `4` | border width.|
 | `group_bar_decorate_corner_radius` | `5` | corner radius.|
@@ -91,9 +91,9 @@ You can also color-code windows based on their state:
 | :--- | :--- | :--- |
 | `tab_bar_height` | `33` | Height of the auto tab bar. |
 | `tab_bar_decorate_fg_color` | `0xc0caf5ff` | text color.
-| `tab_bar_decorate_bg_color` | `0x1a1b26ff` | background color.|
+| `tab_bar_decorate_bg_color` | `0x1d2021ff` | background color.|
 | `tab_bar_decorate_focus_fg_color` | `0x7aa2f7ff` | text color for focus. |
-| `tab_bar_decorate_focus_bg_color` | `0x2b3550ff` | background color for focus.|
+| `tab_bar_decorate_focus_bg_color` | `0x3c3836ff` | background color for focus.|
 | `tab_bar_decorate_border_color` | `0x3b4261ff` | border color.|
 | `tab_bar_decorate_border_width` | `4` | border width.|
 | `tab_bar_decorate_corner_radius` | `5` | corner radius.|
