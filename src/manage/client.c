@@ -3007,7 +3007,10 @@ void client_active(Client *c) {
 		return;
 	}
 
-	if (c->swallowdby || !c->mon)
+	if (c->swallowdby)
+		return;
+
+	if (!c->mon && !client_group_swap_focus(c))
 		return;
 
 	if (c->isminimized) {
@@ -4311,21 +4314,18 @@ void client_remove_group_bar(Client *c) {
 	c->group_bar = NULL;
 }
 
-void client_focus_group_member(Client *c) {
-	if (!client_is_group_member(c))
-		return;
-
-	if (c->is_group_focus)
-		return;
+bool client_group_swap_focus(Client *c) {
+	if (!client_is_group_member(c) || c->is_group_focus)
+		return false;
 
 	Client *head = client_group_head(c);
 	Client *cur_focusing = client_group_focused(head);
 
 	if (!cur_focusing || !cur_focusing->mon)
-		return;
+		return false;
 
-	if (cur_focusing && cur_focusing->mon->isoverview)
-		return;
+	if (cur_focusing->mon->isoverview)
+		return false;
 
 	cur_focusing->is_group_focus = false;
 	c->mon = cur_focusing->mon;
@@ -4336,6 +4336,13 @@ void client_focus_group_member(Client *c) {
 	mango_bar_decoration_set_focus(c->group_bar, true);
 
 	client_reparent_group(c);
+
+	return true;
+}
+
+void client_focus_group_member(Client *c) {
+	if (!client_group_swap_focus(c))
+		return;
 
 	client_focus(c, 1);
 

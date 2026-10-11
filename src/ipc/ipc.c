@@ -78,6 +78,20 @@ Client *client_by_id(uint32_t id) {
 	return NULL;
 }
 
+static Client *client_by_id_all(uint32_t id) {
+	Client *c;
+	wl_list_for_each(c, &server.clients, link) {
+		if (c->id == id)
+			return c;
+		if (!client_is_group_member(c))
+			continue;
+		for (Client *it = client_group_head(c); it; it = it->group_next)
+			if (it->id == id)
+				return it;
+	}
+	return NULL;
+}
+
 const char *ipc_get_layout_str(void) {
 	struct wlr_keyboard *keyboard =
 		server.last_active_keyboard
@@ -553,6 +567,14 @@ cJSON *monitor_active_tags(Monitor *m) {
 			cJSON_AddItemToArray(arr, cJSON_CreateNumber(i + 1));
 	return arr;
 }
+
+static const char *client_output_name(Client *c) {
+	if (c->mon)
+		return c->mon->wlr_output->name;
+	Client *active = client_group_active(c);
+	return active && active->mon ? active->mon->wlr_output->name : "";
+}
+
 cJSON *build_client_json(Client *c) {
 	cJSON *obj = cJSON_CreateObject();
 
@@ -562,13 +584,14 @@ cJSON *build_client_json(Client *c) {
 							c->ext_foreign_toplevel->identifier);
 	cJSON_AddStringToObject(obj, "title", client_get_title(c));
 	cJSON_AddStringToObject(obj, "appid", client_get_appid(c));
-	cJSON_AddStringToObject(obj, "monitor",
-							c->mon ? c->mon->wlr_output->name : "");
+	cJSON_AddStringToObject(obj, "monitor", client_output_name(c));
 	cJSON_AddItemToObject(obj, "tags", tags_mask_to_array(c->tags));
 	cJSON_AddBoolToObject(obj, "is_xwayland", c->type == X11 ? true : false);
 	cJSON_AddBoolToObject(obj, "is_swallowing", c->swallowing ? true : false);
 	cJSON_AddBoolToObject(obj, "is_swallowedby", c->swallowdby ? true : false);
 	cJSON_AddBoolToObject(obj, "is_group", client_is_group_member(c));
+	cJSON_AddBoolToObject(obj, "is_group_focus",
+						  client_is_group_member(c) && c->is_group_focus);
 	cJSON_AddBoolToObject(obj, "is_visible", c->mon && VISIBLEON(c, c->mon));
 	cJSON_AddBoolToObject(obj, "is_focused", c->isfocusing);
 	cJSON_AddBoolToObject(obj, "is_fullscreen", c->isfullscreen);
@@ -590,6 +613,21 @@ cJSON *build_client_json(Client *c) {
 							(double)c->scroller_proportion);
 	return obj;
 }
+
+static cJSON *build_all_clients_array(void) {
+	cJSON *arr = cJSON_CreateArray();
+	Client *c;
+	wl_list_for_each(c, &server.clients, link) {
+		cJSON_AddItemToArray(arr, build_client_json(c));
+		if (!client_is_group_member(c))
+			continue;
+		for (Client *it = client_group_head(c); it; it = it->group_next)
+			if (client_is_parked(it))
+				cJSON_AddItemToArray(arr, build_client_json(it));
+	}
+	return arr;
+}
+
 cJSON *build_monitor_json(Monitor *m) {
 	cJSON *resp = cJSON_CreateObject();
 	cJSON_AddStringToObject(resp, "name", m->wlr_output->name);
@@ -678,7 +716,7 @@ void handle_command(int client_fd, const char *cmd_raw) {
 			return;
 		}
 	} else if (strncmp(cmd, "get client ", 11) == 0) {
-		Client *c = client_by_id((uint32_t)atoi(cmd + 11));
+		Client *c = client_by_id_all((uint32_t)atoi(cmd + 11));
 		if (!c) {
 			send_static_json(client_fd, "{\"error\":\"client not found\"}\n");
 			return;
@@ -724,12 +762,8 @@ void handle_command(int client_fd, const char *cmd_raw) {
 		cJSON_AddNumberToObject(resp, "client_count", numclients);
 		cJSON_AddBoolToObject(resp, "focused_client", focused_client);
 	} else if (strcmp(cmd, "get all-clients") == 0) {
-		cJSON *arr = cJSON_CreateArray();
-		Client *c;
-		wl_list_for_each(c, &server.clients, link)
-			cJSON_AddItemToArray(arr, build_client_json(c));
 		resp = cJSON_CreateObject();
-		cJSON_AddItemToObject(resp, "clients", arr);
+		cJSON_AddItemToObject(resp, "clients", build_all_clients_array());
 	} else if (strcmp(cmd, "get all-monitors") == 0) {
 		cJSON *arr = cJSON_CreateArray();
 		Monitor *m;
@@ -898,6 +932,8 @@ void handle_command(int client_fd, const char *cmd_raw) {
 
 		if (client_id > 0) {
 			arg.tc = client_by_id((uint32_t)client_id);
+			if (!arg.tc && func == focus_by_id)
+				arg.tc = client_by_id_all((uint32_t)client_id);
 			if (arg.tc == NULL)
 				return send_static_json(client_fd,
 										"{\"error\":\"no client found\"}\n");
@@ -1039,7 +1075,7 @@ bool handle_watch_command(int fd, const char *cmd,
 		break;
 	}
 	case IPC_WATCH_CLIENT: {
-		Client *c = client_by_id(client_id);
+		Client *c = client_by_id_all(client_id);
 		if (c)
 			json = build_client_json(c);
 		break;
@@ -1237,12 +1273,9 @@ void ipc_notify_all_clients(void) {
 	wl_list_for_each_safe(wc, tmp, &ipc_watch_clients, link) {
 		if (wc->type == IPC_WATCH_ALL_CLIENTS) {
 			if (!json_str) {
-				cJSON *arr = cJSON_CreateArray();
-				Client *c;
-				wl_list_for_each(c, &server.clients, link)
-					cJSON_AddItemToArray(arr, build_client_json(c));
 				cJSON *json = cJSON_CreateObject();
-				cJSON_AddItemToObject(json, "clients", arr);
+				cJSON_AddItemToObject(json, "clients",
+									  build_all_clients_array());
 				char *raw = cJSON_PrintUnformatted(json);
 				cJSON_Delete(json);
 				if (!raw)

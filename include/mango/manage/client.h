@@ -446,6 +446,7 @@ bool client_wants_group_bar(Client *c);
 void client_update_group_bar_title(Client *c);
 void client_apply_group_bar_config(Client *c);
 void client_remove_group_bar(Client *c);
+bool client_group_swap_focus(Client *c);
 void client_focus_group_member(Client *c);
 void client_check_tab_node_visible(Client *c);
 void client_raise_group(Client *c);
