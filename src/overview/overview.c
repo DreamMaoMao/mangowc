@@ -352,6 +352,7 @@ void overview_backup(Client *c) {
 
 	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
 							WLR_EDGE_RIGHT);
+	client_sync_layer(c);
 }
 // Restores window state when switching back from overview to the normal view.
 void overview_restore(Client *c, const Arg *arg) {
@@ -406,4 +407,6 @@ void overview_restore(Client *c, const Arg *arg) {
 	if (c->isfloating && !c->force_tiled_state) {
 		client_set_tiled(c, WLR_EDGE_NONE);
 	}
+
+	client_sync_layer(c);
 }
