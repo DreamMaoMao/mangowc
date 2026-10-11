@@ -169,12 +169,15 @@ void iter_layer_scene_buffers(struct wlr_scene_buffer *buffer, int32_t sx,
 	wlr_scene_node_set_enabled(&l->blur->node, true);
 	wlr_scene_blur_set_transparency_mask_source(l->blur, buffer);
 	wlr_scene_blur_set_size(l->blur, l->geom.width, l->geom.height);
+	wlr_scene_blur_set_should_only_blur_bottom_layer(
+		l->blur, layer_blur_uses_wallpaper(l));
+}
 
-	if (config.blur_optimized) {
-		wlr_scene_blur_set_should_only_blur_bottom_layer(l->blur, true);
-	} else {
-		wlr_scene_blur_set_should_only_blur_bottom_layer(l->blur, false);
-	}
+bool layer_blur_uses_wallpaper(LayerSurface *l) {
+	if (!l || !l->layer_surface)
+		return false;
+	return config.blur_optimized ||
+		   blur_layer_on_wallpaper(layermap[l->layer_surface->current.layer]);
 }
 
 void layer_flush_blur_background(LayerSurface *l) {

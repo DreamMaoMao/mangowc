@@ -343,6 +343,17 @@ Monitor *device_target_monitor(struct wlr_input_device *device) {
 	return server.selected_monitor;
 }
 
+bool blur_layer_on_wallpaper(uint32_t layer) {
+	switch (layer) {
+	case LyrBottom:
+	case LyrTile:
+	case LyrMaximize:
+		return true;
+	default:
+		return false;
+	}
+}
+
 bool mango_scene_output_commit(struct wlr_scene_output *scene_output,
 							   struct wlr_output_state *state) {
 	struct wlr_output *wlr_output = scene_output->output;

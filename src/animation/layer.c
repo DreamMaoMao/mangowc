@@ -416,7 +416,7 @@ void layer_animation_next_tick(LayerSurface *l) {
 							   1.0f);
 
 	if (config.animation_fade_in) {
-		if (config.blur && !l->no_blur && !config.blur_optimized) {
+		if (config.blur && !l->no_blur && !layer_blur_uses_wallpaper(l)) {
 			wlr_scene_blur_set_strength(l->blur, opacity);
 			wlr_scene_blur_set_alpha(l->blur, opacity);
 		}
