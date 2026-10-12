@@ -1073,6 +1073,29 @@ bool parse_option(Config *config, char *key, char *value, int line_number) {
 			return false;
 		}
 
+		bool has_width = rule->width > 0;
+		bool has_height = rule->height > 0;
+		bool has_refresh = rule->refresh > 0.0f;
+		if (has_width != has_height || has_width != has_refresh) {
+			mango_error(false, WLR_ERROR,
+						"Monitor rule must set width, height and refresh "
+						"together\n");
+			return false;
+		}
+
+		if (rule->custom && !has_width) {
+			mango_error(false, WLR_ERROR,
+						"Monitor rule with custom must set width, height and "
+						"refresh\n");
+			return false;
+		}
+
+		if ((rule->x == INT32_MAX) != (rule->y == INT32_MAX)) {
+			mango_error(false, WLR_ERROR,
+						"Monitor rule must set x and y together\n");
+			return false;
+		}
+
 		config->monitor_rules_count++;
 		return !parse_error;
 	} else if (strcmp(key, "tag_rule") == 0) {

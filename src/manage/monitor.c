@@ -563,8 +563,10 @@ bool apply_rule_to_state(Monitor *m, const ConfigMonitorRule *rule,
 					m->wlr_output->name);
 
 	if (rule->width > 0 && rule->height > 0 && rule->refresh > 0) {
-		struct wlr_output_mode *internal_mode = get_nearest_output_mode(
-			m->wlr_output, rule->width, rule->height, rule->refresh);
+		struct wlr_output_mode *internal_mode = NULL;
+		if (!rule->custom)
+			internal_mode = get_nearest_output_mode(
+				m->wlr_output, rule->width, rule->height, rule->refresh);
 		if (internal_mode) {
 			wlr_output_state_set_mode(state, internal_mode);
 			mode_set = true;
