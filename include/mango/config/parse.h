@@ -349,6 +349,8 @@ typedef struct {
 	int32_t view_current_to_back;
 	int32_t no_border_when_single;
 	int32_t no_radius_when_single;
+	int32_t monocle_no_border;
+	int32_t monocle_no_gap;
 	int32_t snap_distance;
 	int32_t enable_floating_snap;
 	int32_t float_full_to_top;
@@ -405,6 +407,8 @@ typedef struct {
 	int32_t warpcursor;
 	int32_t drag_corner;
 	int32_t drag_warp_cursor;
+	int32_t enable_border_resize;
+	int32_t border_resize_size;
 
 	/* keyboard */
 	int32_t repeat_rate;
@@ -455,7 +459,6 @@ typedef struct {
 	int32_t blur_layer;
 	int32_t blur_optimized;
 	int32_t border_radius;
-	int32_t border_radius_location_default;
 	struct blur_data blur_params;
 	int32_t shadows;
 	int32_t shadow_only_floating;
@@ -484,6 +487,11 @@ typedef struct {
 	uint32_t borderpx;
 	uint32_t group_bar_height;
 	uint32_t tab_bar_height;
+	int32_t always_show_group_bar;
+	int32_t group_bar_close_button_enable;
+	uint32_t group_bar_button_size;
+	uint32_t group_bar_button_margin;
+	float group_bar_button_color[4];
 	float scratchpad_width_ratio;
 	float scratchpad_height_ratio;
 	float special_dim;
@@ -551,8 +559,6 @@ typedef struct {
 	int32_t xwayland_ignore_scale;
 	int32_t syncobj_enable;
 	int32_t tag_carousel;
-	float drag_tile_refresh_interval;
-	float drag_floating_refresh_interval;
 	int32_t allow_tearing;
 	int32_t allow_shortcuts_inhibit;
 	int32_t disable_middle_paste;
@@ -604,6 +610,8 @@ bool monitor_matches_rule(Monitor *m, const ConfigMonitorRule *rule);
 void sync_workspaces_to_tag_num(Monitor *m);
 
 void trim_whitespace(char *str);
+
+void strip_quotes(char *str);
 
 void remove_comment(char *str);
 

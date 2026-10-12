@@ -17,6 +17,7 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/util/edges.h>
 #ifdef XWAYLAND
 #include <wlr/xwayland.h>
 #endif
@@ -410,7 +411,7 @@ void client_draw_group_bar(Client *c, struct ivec2 offsets) {
 	if (!c || !c->group_bar)
 		return;
 
-	if (!c->group_next && !c->group_prev) {
+	if (!client_wants_group_bar(c)) {
 		if (c->group_bar->scene->node.enabled)
 			wlr_scene_node_set_enabled(&c->group_bar->scene->node, false);
 		return;
@@ -419,22 +420,15 @@ void client_draw_group_bar(Client *c, struct ivec2 offsets) {
 	/* Owner hidden by tab: hide the whole strip, otherwise its nodes (they are
 	 * not children of the window) would float over the visible window. */
 	if (c->is_tab_hidden) {
-		Client *head = c;
-		while (head->group_prev)
-			head = head->group_prev;
-		for (Client *cur = head; cur; cur = cur->group_next) {
+		for (Client *cur = client_group_head(c); cur; cur = cur->group_next) {
 			if (cur->group_bar)
 				wlr_scene_node_set_enabled(&cur->group_bar->scene->node, false);
 		}
 		return;
 	}
 
-	Client *head = c;
-	while (head->group_prev)
-		head = head->group_prev;
-
 	int count = 0;
-	Client *cur = head;
+	Client *cur = client_group_head(c);
 	while (cur) {
 		count++;
 		cur = cur->group_next;
@@ -466,7 +460,7 @@ void client_draw_group_bar(Client *c, struct ivec2 offsets) {
 	}
 
 	if (tw <= 0 || th <= 0) {
-		cur = head;
+		cur = client_group_head(c);
 		while (cur) {
 			if (cur->group_bar)
 				wlr_scene_node_set_enabled(&cur->group_bar->scene->node, false);
@@ -480,7 +474,7 @@ void client_draw_group_bar(Client *c, struct ivec2 offsets) {
 	int32_t bar_w = tw / count;
 	int32_t rem = tw % count;
 	int32_t x = tab_x;
-	cur = head;
+	cur = client_group_head(c);
 
 	for (int i = 0; i < count && cur; i++) {
 		int32_t w = bar_w + (i < rem ? 1 : 0);
@@ -828,6 +822,15 @@ void client_set_drop_area(Client *c) {
 
 	if (client_width <= 0 || client_height <= 0) {
 		wlr_scene_node_set_enabled(&c->droparea->node, false);
+		return;
+	}
+
+	if (server.drop_to_group && server.drop_client == c) {
+		if (!first_draw && c->drop_direction == UNDIR)
+			return;
+		c->drop_direction = UNDIR;
+		wlr_scene_node_set_position(&c->droparea->node, bw, bw);
+		wlr_scene_rect_set_size(c->droparea, client_width, client_height);
 		return;
 	}
 
@@ -1504,7 +1507,7 @@ void client_set_pending_state(Client *c) {
 	client_commit(c);
 	c->dirty = true;
 }
-void resize_apply(Client *c, struct wlr_box geo, ResizeOpts opts) {
+void resize(Client *c, struct wlr_box geo, ResizeOpts opts) {
 	if (!c || !c->mon || !client_surface(c)->mapped)
 		return;
 
@@ -1530,8 +1533,15 @@ void resize_apply(Client *c, struct wlr_box geo, ResizeOpts opts) {
 	}
 
 	if (!c->no_size_hint && !c->ismaximizescreen && !c->isfullscreen &&
-		c->isfloating)
+		c->isfloating) {
+		int32_t anchor_right = c->geom.x + c->geom.width;
+		int32_t anchor_bottom = c->geom.y + c->geom.height;
 		client_set_size_bound(c);
+		if (opts.drag_edge & WLR_EDGE_LEFT)
+			c->geom.x = anchor_right - c->geom.width;
+		if (opts.drag_edge & WLR_EDGE_TOP)
+			c->geom.y = anchor_bottom - c->geom.height;
+	}
 
 	if (!c->is_pending_open_animation)
 		c->animation.begin_fade_in = false;
@@ -1580,8 +1590,9 @@ void resize_apply(Client *c, struct wlr_box geo, ResizeOpts opts) {
 	}
 
 	if (!c->mon->isoverview)
-		c->configure_serial = client_set_size(c, c->geom.width - 2 * c->bw,
-											  c->geom.height - 2 * c->bw);
+		c->configure_serial =
+			client_set_size(c, c->geom.width - 2 * c->bw,
+							c->geom.height - 2 * c->bw, opts.force_configure);
 
 	if (c->configure_serial != 0)
 		c->mon->resizing_count_pending++;
@@ -1716,10 +1727,6 @@ void client_set_unfocused_opacity_animation(Client *c) {
 
 	client_start_focus_animation(c, false);
 }
-void resize(Client *c, struct wlr_box geo, int32_t interact) {
-	resize_apply(c, geo, (ResizeOpts){.interact = interact});
-}
-
 void client_set_focused_opacity_animation(Client *c) {
 	wlr_scene_node_lower_to_bottom(&c->border->node);
 
@@ -1793,7 +1800,7 @@ bool client_apply_focus_opacity(Client *c) {
 
 		c->opacity_animation.current_opacity = target_opacity;
 		client_set_opacity(c, target_opacity);
-		if (config.blur && !c->no_blur && !config.blur_optimized) {
+		if (config.blur && !c->no_blur && !client_blur_uses_wallpaper(c)) {
 			float blur_val = MIN(percent * (1.0 - config.fadein_begin_opacity) +
 									 config.fadein_begin_opacity,
 								 1.0);

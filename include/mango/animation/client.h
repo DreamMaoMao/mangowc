@@ -3,6 +3,7 @@
 
 #include "mango/animation/common.h"
 #include "mango/common/types.h"
+#include <stdbool.h>
 
 bool client_is_ignore_output_clip(Client *c);
 struct ivec2 compute_edge_offsets(Client *c);
@@ -58,10 +59,12 @@ typedef struct ResizeOpts {
 	bool interact; // Interactive resize (window resized by mouse drag).
 	bool skip_ov_enter_anim; // Pre-arrangement stage: skip the overview enter
 							 // zoom.
+	bool force_configure; // Must be sent even if the box did not change (client
+						  // ConfigureRequest).
+	uint32_t drag_edge;
 } ResizeOpts;
 
-void resize_apply(Client *c, struct wlr_box geo, ResizeOpts opts);
-void resize(Client *c, struct wlr_box geo, int32_t interact);
+void resize(Client *c, struct wlr_box geo, ResizeOpts opts);
 bool client_draw_fadeout_frame(Client *c);
 void client_set_focused_opacity_animation(Client *c);
 void client_set_unfocused_opacity_animation(Client *c);

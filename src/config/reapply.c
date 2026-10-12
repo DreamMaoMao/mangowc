@@ -170,7 +170,14 @@ void reset_option(void) {
 	reapply_tagrule();
 	reapply_monitor_rules();
 
-	arrange(server.selected_monitor, false, false);
+	/* A global reload must re-apply every monitor, not just the selected one:
+	 * layout-affecting options such as always_show_group_bar reserve or release
+	 * space on all outputs. */
+	Monitor *m = NULL;
+	wl_list_for_each(m, &server.monitors, link) {
+		if (m->wlr_output->enabled)
+			arrange(m, false, false);
+	}
 }
 
 void reset_blur_params(void) {
@@ -399,7 +406,7 @@ void reapply_master(void) {
 void tag_slot_set_defaults(Monitor *m, uint32_t tag) {
 	m->pertag->nmasters[tag] = config.default_nmaster;
 	m->pertag->mfacts[tag] = config.default_mfact;
-	m->pertag->ltidxs[tag] = &layouts[0];
+	m->pertag->config_ltidxs[tag] = &layouts[0];
 	m->pertag->scroller_default_proportion[tag] =
 		config.scroller_default_proportion;
 	m->pertag->scroller_default_proportion_single[tag] =
@@ -434,7 +441,7 @@ void tag_rule_apply_to_slot(Monitor *m, const ConfigTagRule *tr, uint32_t tag) {
 
 	for (jk = 0; jk < LENGTH(layouts); jk++) {
 		if (tr->layout_name && strcmp(layouts[jk].name, tr->layout_name) == 0)
-			m->pertag->ltidxs[tag] = &layouts[jk];
+			m->pertag->config_ltidxs[tag] = &layouts[jk];
 	}
 
 	if (tr->no_hide >= 0)
@@ -461,6 +468,10 @@ void tag_rule_apply_to_slot(Monitor *m, const ConfigTagRule *tr, uint32_t tag) {
 void parse_tagrule(Monitor *m) {
 	int32_t i;
 	Client *c = NULL;
+	const Layout *prev_config_ltidxs[PERTAG_SLOTS];
+
+	for (i = 0; i < PERTAG_SLOTS; i++)
+		prev_config_ltidxs[i] = m->pertag->config_ltidxs[i];
 
 	// Set defaults for every tag.
 	for (i = 0; i <= config.tag_num; i++)
@@ -478,6 +489,11 @@ void parse_tagrule(Monitor *m) {
 			for (ti = tag_id_start; ti <= tag_id_end; ti++)
 				tag_rule_apply_to_slot(m, tr, ti);
 		}
+	}
+
+	for (i = 0; i <= config.tag_num; i++) {
+		if (prev_config_ltidxs[i] != m->pertag->config_ltidxs[i])
+			m->pertag->ltidxs[i] = m->pertag->config_ltidxs[i];
 	}
 
 	for (i = 1; i <= config.tag_num; i++) {

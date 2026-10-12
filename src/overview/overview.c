@@ -86,7 +86,6 @@ void overview_card_surface_add(struct wlr_surface *surface, int sx, int sy,
 	}
 	entry->buffer = entry->scene_surface->buffer;
 	wlr_scene_buffer_set_filter_mode(entry->buffer, WLR_SCALE_FILTER_BILINEAR);
-	entry->buffer->node.data = c; /* Hit test. */
 
 	entry->commit.notify = handle_overview_card_surface_commit;
 	wl_signal_add(&surface->events.commit, &entry->commit);
@@ -309,7 +308,6 @@ void overview_backup_surface(Client *c) {
 	c->ov_card_tree = wlr_scene_tree_create(c->scene);
 	if (!c->ov_card_tree)
 		return;
-	c->ov_card_tree->node.data = c; // Hit test.
 
 	// Walks the surface tree and creates a card node per surface.
 	wlr_surface_for_each_surface(client_surface(c), overview_card_surface_add,
@@ -354,6 +352,7 @@ void overview_backup(Client *c) {
 
 	client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
 							WLR_EDGE_RIGHT);
+	client_sync_layer(c);
 }
 // Restores window state when switching back from overview to the normal view.
 void overview_restore(Client *c, const Arg *arg) {
@@ -382,7 +381,7 @@ void overview_restore(Client *c, const Arg *arg) {
 	if (c->isfloating) {
 		// XRaiseWindow(display, c->win); // Raise the floating window to the
 		// top
-		resize(c, c->overview_backup_geom, 0);
+		resize(c, c->overview_backup_geom, (ResizeOpts){.interact = 0});
 	} else if (c->isfullscreen || c->ismaximizescreen) {
 		if (want_restore_fullscreen(c) && c->ismaximizescreen) {
 			client_set_maximize_screen(c, 1, false);
@@ -396,7 +395,7 @@ void overview_restore(Client *c, const Arg *arg) {
 	} else {
 		if (c->is_restoring_from_ov) {
 			c->is_restoring_from_ov = false;
-			resize(c, c->overview_backup_geom, 0);
+			resize(c, c->overview_backup_geom, (ResizeOpts){.interact = 0});
 		}
 	}
 
@@ -408,4 +407,6 @@ void overview_restore(Client *c, const Arg *arg) {
 	if (c->isfloating && !c->force_tiled_state) {
 		client_set_tiled(c, WLR_EDGE_NONE);
 	}
+
+	client_sync_layer(c);
 }

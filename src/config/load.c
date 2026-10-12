@@ -91,8 +91,18 @@ bool parse_config_line(Config *config, const char *line, int line_number) {
 		return false;
 	}
 
+	char *equals = strchr(processed_line, '=');
+	if (equals && strcspn(equals + 1, "\n") >= sizeof(value)) {
+		mango_error(false, WLR_ERROR,
+					"Configuration value exceeds %zu bytes: "
+					"\033[1m\033[31m%s\033[0m\n",
+					sizeof(value) - 1, line);
+		return false;
+	}
+
 	trim_whitespace(key);
 	trim_whitespace(value);
+	strip_quotes(value);
 
 	return apply_option_expanded(config, key, value, line_number);
 }
@@ -419,7 +429,7 @@ bool parse_config(void) {
 	keybindings_conflict |= check_switch_binding_conflicts(&config);
 	keybindings_conflict |= check_gesture_binding_conflicts(&config);
 
-	bool result = parse_correct || keybindings_conflict;
+	bool result = parse_correct && !keybindings_conflict;
 	config_error_store_end();
 	config_error_nag_update();
 	return result;

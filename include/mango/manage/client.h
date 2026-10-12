@@ -5,6 +5,7 @@
 #include "mango/common/types.h"
 #include "mango/config/parse.h"
 #include "mango/draw/dim-node.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -112,12 +113,8 @@ struct Client {
 	struct wlr_box xwl_clip; /* Most recent logical clip area of the XWayland
 								root surface. */
 	bool xwl_clip_active;	 /* Whether source_box clipping is active. */
-	/*
-	 * X11 configure deduplication: until the client acks, surface->current is
-	 * not updated, so repeated arrange calls resend identical configures and
-	 * force clients to re-render/re-upload. Record the most recently requested
-	 * physical size/position here and skip configure if it has not changed.
-	 */
+	/* Last physical box asked from XWayland, to skip identical repeats. The
+	 * record is dropped when the client asks to change itself or on (re)map. */
 	int32_t xwl_req_x, xwl_req_y, xwl_req_w, xwl_req_h;
 	bool xwl_req_valid;
 #endif
@@ -172,8 +169,8 @@ struct Client {
 	bool is_pending_open_animation;
 	bool is_restoring_from_ov;
 	float scroller_proportion;
-	float stack_proportion;
-	float old_stack_proportion;
+	float scroller_stack_proportion;
+	float scroller_old_stack_proportion;
 	bool need_output_flush;
 	struct mango_animation animation;
 	struct mango_opacity_animation opacity_animation;
@@ -200,6 +197,7 @@ struct Client {
 	float blur_opacity;
 	struct wlr_ext_foreign_toplevel_handle_v1 *ext_foreign_toplevel;
 	double master_mfact_per, master_inner_per, stack_inner_per;
+	double master_size_weight, stack_size_weight;
 	double old_master_mfact_per, old_master_inner_per, old_stack_inner_per;
 	double old_scroller_pproportion;
 	bool ismaster;
@@ -317,10 +315,12 @@ void client_set_scale(struct wlr_surface *s, float scale);
 void client_update_xwayland_clip(Client *c, struct wlr_box *clip);
 /* Syncs the dest_size (logical size) of the XWayland root surface. */
 void client_update_xwayland_dest_size(Client *c);
-uint32_t client_set_size(Client *c, uint32_t width, uint32_t height);
+uint32_t client_set_size(Client *c, uint32_t width, uint32_t height,
+						 bool force_configure);
 void client_set_minimized(Client *c, bool minimize_window);
 void client_set_maximized(Client *c, bool maximized);
 void client_set_tiled(Client *c, uint32_t edges);
+void client_sync_tiled_hint(Client *c);
 
 int32_t client_should_ignore_focus(Client *c);
 int32_t client_is_x11_popup(Client *c);
@@ -384,6 +384,8 @@ void handle_client_request_minimize(struct wl_listener *listener, void *data);
 void handle_client_set_title(struct wl_listener *listener, void *data);
 void handle_client_activation_request(struct wl_listener *listener, void *data);
 void pending_kill_client(Client *c);
+bool client_blur_uses_wallpaper(Client *c);
+void client_sync_blur_optimized(Client *c);
 void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int32_t sx,
 							int32_t sy, void *user_data);
 void scene_buffer_apply_opacity(struct wlr_scene_buffer *buffer, int32_t sx,
@@ -440,9 +442,11 @@ void client_add_jump_label_node(Client *c);
 uint32_t client_target_layer(Client *c);
 void client_sync_layer(Client *c);
 void client_add_group_bar(Client *c);
+bool client_wants_group_bar(Client *c);
 void client_update_group_bar_title(Client *c);
 void client_apply_group_bar_config(Client *c);
 void client_remove_group_bar(Client *c);
+bool client_group_swap_focus(Client *c);
 void client_focus_group_member(Client *c);
 void client_check_tab_node_visible(Client *c);
 void client_raise_group(Client *c);
@@ -452,6 +456,10 @@ void client_set_group_mon(Client *c, Monitor *m);
 void client_set_group_config(Client *c);
 void client_group_detach(Client *c);
 void client_group_replace(Client *old, Client *new);
+Client *client_group_active(Client *c);
+Client *client_group_head(Client *c);
+Client *client_group_focused(Client *c);
+bool client_is_group_member(const Client *c);
 
 Client *client_chain_head(Client *c, size_t prev_off);
 void client_chain_unlink(Client *c, size_t prev_off, size_t next_off);

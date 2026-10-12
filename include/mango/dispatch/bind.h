@@ -2,6 +2,7 @@
 #define __BIND_H__ 1
 
 #include "mango/common/types.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 /* The generic argument carried by a binding action. */
@@ -35,6 +36,8 @@ int32_t focus_direction(const Arg *arg);
 int32_t focus_window_or_workspace(const Arg *arg);
 int32_t group_join(const Arg *arg);
 int32_t group_leave(const Arg *arg);
+void client_group_join(Client *need_join, Client *need_replace);
+bool client_group_leave(Client *tc);
 int32_t toggle_overview(const Arg *arg);
 int32_t enter_overview(const Arg *arg);
 int32_t leave_overview(const Arg *arg);
@@ -60,6 +63,7 @@ int32_t toggle_floating(const Arg *arg);
 int32_t toggle_fullscreen(const Arg *arg);
 int32_t toggle_maximize_screen(const Arg *arg);
 int32_t toggle_gaps(const Arg *arg);
+int32_t toggle_group_bar(const Arg *arg);
 int32_t tag_monitor(const Arg *arg);
 int32_t spawn(const Arg *arg);
 int32_t spawn_shell(const Arg *arg);

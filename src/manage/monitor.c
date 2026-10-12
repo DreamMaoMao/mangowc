@@ -343,6 +343,17 @@ Monitor *device_target_monitor(struct wlr_input_device *device) {
 	return server.selected_monitor;
 }
 
+bool blur_layer_on_wallpaper(uint32_t layer) {
+	switch (layer) {
+	case LyrBottom:
+	case LyrTile:
+	case LyrMaximize:
+		return true;
+	default:
+		return false;
+	}
+}
+
 bool mango_scene_output_commit(struct wlr_scene_output *scene_output,
 							   struct wlr_output_state *state) {
 	struct wlr_output *wlr_output = scene_output->output;
@@ -564,8 +575,10 @@ bool apply_rule_to_state(Monitor *m, const ConfigMonitorRule *rule,
 					m->wlr_output->name);
 
 	if (rule->width > 0 && rule->height > 0 && rule->refresh > 0) {
-		struct wlr_output_mode *internal_mode = get_nearest_output_mode(
-			m->wlr_output, rule->width, rule->height, rule->refresh);
+		struct wlr_output_mode *internal_mode = NULL;
+		if (!rule->custom)
+			internal_mode = get_nearest_output_mode(
+				m->wlr_output, rule->width, rule->height, rule->refresh);
 		if (internal_mode) {
 			wlr_output_state_set_mode(state, internal_mode);
 			mode_set = true;
@@ -1080,7 +1093,7 @@ void handle_output_layout_change(struct wl_listener *listener, void *data) {
 			if (client_is_x11(c) && c->mon == m) {
 				xwayland_apply_scale(c);
 				if (client_surface(c)->mapped)
-					resize(c, c->geom, 0);
+					resize(c, c->geom, (ResizeOpts){.interact = 0});
 			}
 #endif
 			// floating window position auto adjust the change of monitor
@@ -1090,7 +1103,7 @@ void handle_output_layout_change(struct wl_listener *listener, void *data) {
 				c->geom.y += mon_pos_offsety;
 				c->float_geom = c->geom;
 				if (VISIBLEON(c, m))
-					resize(c, c->geom, 1);
+					resize(c, c->geom, (ResizeOpts){.interact = 1});
 			}
 
 			// restore window to old monitor
@@ -1126,7 +1139,7 @@ void handle_output_layout_change(struct wl_listener *listener, void *data) {
 		arrange(m, false, false);
 		/* make sure fullscreen clients have the right size */
 		if ((c = client_focus_top(m)) && c->isfullscreen)
-			resize(c, m->m, 0);
+			resize(c, m->m, (ResizeOpts){.interact = 0});
 
 		config_head->state.x = m->m.x;
 		config_head->state.y = m->m.y;
@@ -1145,7 +1158,7 @@ void handle_output_layout_change(struct wl_listener *listener, void *data) {
 			if (c->tags == 0 && !c->is_in_scratchpad) {
 				c->tags = server.selected_monitor
 							  ->tagset[server.selected_monitor->seltags];
-				set_size_per(server.selected_monitor, c);
+				set_size_per(server.selected_monitor, c, false);
 			}
 		}
 		client_focus(client_focus_top(server.selected_monitor), 1);

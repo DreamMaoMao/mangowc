@@ -1,6 +1,7 @@
 #include "mango/manage/layer.h"
 #include "mango/animation/layer.h"
 #include "mango/common/log.h"
+#include "mango/common/scene_node.h"
 #include "mango/common/server.h"
 #include "mango/common/util.h"
 #include "mango/ext-protocol/text-input.h"
@@ -168,12 +169,15 @@ void iter_layer_scene_buffers(struct wlr_scene_buffer *buffer, int32_t sx,
 	wlr_scene_node_set_enabled(&l->blur->node, true);
 	wlr_scene_blur_set_transparency_mask_source(l->blur, buffer);
 	wlr_scene_blur_set_size(l->blur, l->geom.width, l->geom.height);
+	wlr_scene_blur_set_should_only_blur_bottom_layer(
+		l->blur, layer_blur_uses_wallpaper(l));
+}
 
-	if (config.blur_optimized) {
-		wlr_scene_blur_set_should_only_blur_bottom_layer(l->blur, true);
-	} else {
-		wlr_scene_blur_set_should_only_blur_bottom_layer(l->blur, false);
-	}
+bool layer_blur_uses_wallpaper(LayerSurface *l) {
+	if (!l || !l->layer_surface)
+		return false;
+	return config.blur_optimized ||
+		   blur_layer_on_wallpaper(layermap[l->layer_surface->current.layer]);
 }
 
 void layer_flush_blur_background(LayerSurface *l) {
@@ -236,7 +240,6 @@ void handle_layer_surface_map(struct wl_listener *listener, void *data) {
 	// Initializes the shield.
 	l->shield =
 		wlr_scene_rect_create(l->scene, 0, 0, (float[4]){0, 0, 0, 0xff});
-	l->shield->node.data = l;
 	wlr_scene_node_lower_to_bottom(&l->shield->node);
 	wlr_scene_node_set_enabled(&l->shield->node, false);
 
@@ -423,6 +426,10 @@ void handle_popup_destroy(struct wl_listener *listener, void *data) {
 	Popup *popup = wl_container_of(listener, popup, destroy);
 	wl_list_remove(&popup->destroy.link);
 	wl_list_remove(&popup->reposition.link);
+	if (popup->commit.notify != NULL) {
+		wl_list_remove(&popup->commit.link);
+		popup->commit.notify = NULL;
+	}
 	free(popup);
 }
 
@@ -518,7 +525,9 @@ void handle_new_layer_surface(struct wl_listener *listener, void *data) {
 		layer_surface->current.layer < ZWLR_LAYER_SHELL_V1_LAYER_TOP
 			? server.layers[LyrTop]
 			: scene_layer);
-	l->scene->node.data = l->popups->node.data = l;
+	mango_scene_node_set(&l->scene->node, LayerShell, l);
+	/* Popups live in their own tree, so they carry their own payload. */
+	mango_scene_node_set(&l->popups->node, LayerShell, l);
 
 	LISTEN(&l->scene->node.events.destroy, &l->destroy,
 		   handle_layer_node_destroy);

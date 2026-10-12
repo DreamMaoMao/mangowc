@@ -1,4 +1,5 @@
 #include "mango/manage/tab.h"
+#include "mango/common/scene_node.h"
 #include "mango/common/server.h"
 #include "mango/common/util.h"
 #include "mango/draw/text-node.h"
@@ -126,6 +127,39 @@ static void tab_refresh_bars(Client *head) {
 			it->is_tab_hidden = stacked && shown && !it->is_tab_focus;
 		tab_bar_set_enabled(it, strip && shown);
 		client_update_visibility(it);
+	}
+}
+
+/*
+ * The tab strip is chain-wide UI: every member owns one bar node and they are
+ * laid out side by side to build the strip. Decide once for the whole chain
+ * whether it may take pointer input, then apply it to every member, so a
+ * tagouting or otherwise hidden chain cannot leave a single clickable segment
+ * behind.
+ */
+void tab_update_input_penetration(Client *c) {
+	if (!c || !c->mon || !tab_is_member(c))
+		return;
+
+	Client *head = tab_head(c);
+	Client *focus = head;
+	int32_t shown = 0;
+
+	for (Client *it = head; it; it = it->tab_next) {
+		if (it->is_tab_focus)
+			focus = it;
+		if (tab_member_shown_in_view(it, c->mon))
+			shown++;
+	}
+
+	bool strip = shown >= 2 && tab_layout_active(c->mon) &&
+				 tab_member_shown_in_view(focus, c->mon);
+	bool ignore_hit = !strip;
+
+	for (Client *it = head; it; it = it->tab_next) {
+		if (!it->tab_bar)
+			continue;
+		mango_scene_node_set_ignore_hit(&it->tab_bar->scene->node, ignore_hit);
 	}
 }
 
@@ -365,13 +399,16 @@ void client_draw_tabbar(Client *c, struct ivec2 offsets) {
 	if (count < 2)
 		return;
 
-	int32_t tab_x = c->animation.current.x;
+	struct wlr_box anchor = c->animation.current;
+	if (c->animation.running && c->animation.action == OPEN)
+		anchor = c->geom;
+
+	int32_t tab_x = anchor.x;
 	int32_t group_h =
-		(c->group_next || c->group_prev) ? (int32_t)config.group_bar_height : 0;
+		client_wants_group_bar(c) ? (int32_t)config.group_bar_height : 0;
 	/* Tab strip sits above the group strip when both are present. */
-	int32_t tab_y =
-		c->animation.current.y - (int32_t)config.tab_bar_height - group_h;
-	int32_t tw = c->animation.current.width;
+	int32_t tab_y = anchor.y - (int32_t)config.tab_bar_height - group_h;
+	int32_t tw = anchor.width;
 	int32_t th = (int32_t)config.tab_bar_height;
 
 	int32_t top_over = offsets.y;
@@ -384,7 +421,7 @@ void client_draw_tabbar(Client *c, struct ivec2 offsets) {
 		th = (int32_t)config.tab_bar_height - top_over;
 	}
 	if (bottom_over > 0)
-		th = th - GEZERO(bottom_over - c->animation.current.height);
+		th = th - GEZERO(bottom_over - anchor.height);
 	if (right_over > 0)
 		tw = tw - right_over;
 	if (left_over > 0) {

@@ -36,7 +36,6 @@ window_rule_once=Parameter:Values,Parameter:Values,app_id:Values,title:Values
 | `ignore_maximize` | integer | `0` / `1` (default 1) | Don't handle maximize request from client |
 | `ignore_minimize` | integer | `0` / `1` (default 1) | Don't handle minimize request from client |
 | `force_tiled_state` | integer | `0` / `1` | Deceive the window into thinking it is tiling, so it better adheres to assigned dimensions |
-| `noopenmaximized` | integer | `0` / `1` | Window does not open as maximized mode |
 | `single_scratchpad` | integer | `0` / `1` (default 1) | Only show one out of named scratchpads or the normal scratchpad |
 | `allow_shortcuts_inhibit` | integer | `0` / `1` (default 1) | Allow shortcuts to be inhibited by clients |
 | `idle_inhibit_when_focus` | integer | `0` / `1` (default 0) | Automatically keep idle inhibit active when this window is focused |
@@ -142,9 +141,6 @@ window_rule=is_named_scratchpad:1,width:1280,height:800,app_id:st-yazi
 # Custom opacity for specific apps
 window_rule=focused_opacity:0.8,app_id:firefox
 window_rule=unfocused_opacity:0.6,app_id:foot
-
-# Disable blur for selection tools
-window_rule=no_blur:1,app_id:slurp
 
 # Position windows relative to screen center
 window_rule=offset_x:20,offset_y:-30,width:800,height:600,app_id:alacritty

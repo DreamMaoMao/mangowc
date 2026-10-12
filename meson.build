@@ -1,5 +1,5 @@
 project('mango', ['c'],
-  version : '0.17.5',
+  version : '0.18.0',
 )
 
 subdir('protocols')
@@ -173,6 +173,7 @@ executable('mmsg',
     '-Wno-unused-function',
     '-Wno-unused-parameter',
     '-DWLR_USE_UNSTABLE',
+    '-D_POSIX_C_SOURCE=200809L',
   ],
 )
 

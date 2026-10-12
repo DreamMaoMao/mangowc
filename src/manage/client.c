@@ -2,6 +2,7 @@
 #include "mango/animation/client.h"
 #include "mango/common/input-event-codes.h"
 #include "mango/common/log.h"
+#include "mango/common/scene_node.h"
 #include "mango/common/server.h"
 #include "mango/common/util.h"
 #include "mango/dispatch/bind.h"
@@ -547,11 +548,11 @@ void client_update_xwayland_dest_size(Client *c) {
 	}
 #endif
 }
-uint32_t client_set_size(Client *c, uint32_t width, uint32_t height) {
+uint32_t client_set_size(Client *c, uint32_t width, uint32_t height,
+						 bool force_configure) {
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
 		struct wlr_xwayland_surface *surface = c->surface.xwayland;
-		struct wlr_surface_state *state = &surface->surface->current;
 
 		/* Configure uses physical sizes (see client_get_x11_geometry). */
 		struct wlr_box xgeo;
@@ -560,27 +561,6 @@ uint32_t client_set_size(Client *c, uint32_t width, uint32_t height) {
 		int32_t xh = xgeo.height;
 		int32_t xx = xgeo.x;
 		int32_t xy = xgeo.y;
-
-		if ((int32_t)state->width == xw && (int32_t)state->height == xh &&
-			(int32_t)c->surface.xwayland->x == xx &&
-			(int32_t)c->surface.xwayland->y == xy) {
-			return 0;
-		}
-
-		/*
-		 * Until the client acks, state does not update; deduplicate using the
-		 * already-requested parameters so identical configures are not resent,
-		 * avoiding repeated client re-renders/ uploads.
-		 */
-		if (c->xwl_req_valid && c->xwl_req_x == xx && c->xwl_req_y == xy &&
-			c->xwl_req_w == xw && c->xwl_req_h == xh) {
-			return 0;
-		}
-		c->xwl_req_valid = true;
-		c->xwl_req_x = xx;
-		c->xwl_req_y = xy;
-		c->xwl_req_w = xw;
-		c->xwl_req_h = xh;
 
 		xcb_size_hints_t *size_hints = surface->size_hints;
 		int32_t width = xw;
@@ -591,6 +571,22 @@ uint32_t client_set_size(Client *c, uint32_t width, uint32_t height) {
 		if (size_hints && xh < (int32_t)size_hints->min_height)
 			height = size_hints->min_height;
 
+		/*
+		 * Skip an identical repeat: arrange reflows the same box many times
+		 * while a window is opening. A client ConfigureRequest bypasses this,
+		 * it must be answered even when the box is unchanged.
+		 */
+		if (!force_configure && c->xwl_req_valid && c->xwl_req_x == xx &&
+			c->xwl_req_y == xy && c->xwl_req_w == width &&
+			c->xwl_req_h == height) {
+			return 0;
+		}
+
+		c->xwl_req_valid = true;
+		c->xwl_req_x = xx;
+		c->xwl_req_y = xy;
+		c->xwl_req_w = width;
+		c->xwl_req_h = height;
 		wlr_xwayland_surface_configure(c->surface.xwayland, xx, xy, width,
 									   height);
 		return 1;
@@ -651,6 +647,18 @@ void client_set_tiled(Client *c, uint32_t edges) {
 
 	if (c->force_fakemaximize) {
 		wlr_xdg_toplevel_set_maximized(toplevel, edges != WLR_EDGE_NONE);
+	}
+}
+
+void client_sync_tiled_hint(Client *c) {
+	if (!c)
+		return;
+
+	if (!c->isfloating || c->force_tiled_state) {
+		client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
+								WLR_EDGE_RIGHT);
+	} else {
+		client_set_tiled(c, WLR_EDGE_NONE);
 	}
 }
 
@@ -838,6 +846,11 @@ bool check_hit_no_border(Client *c) {
 	if (config.no_border_when_single && c && c->mon &&
 		((ISSCROLLTILED(c) && c->mon->visible_fake_tiling_clients == 1) ||
 		 c->mon->visible_clients == 1)) {
+		hit_no_border = true;
+	}
+
+	if (config.monocle_no_border && ISFAKETILED(c) && !c->mon->isoverview &&
+		is_monocle_layout(c->mon)) {
 		hit_no_border = true;
 	}
 	return hit_no_border;
@@ -1628,7 +1641,7 @@ void client_apply_rules(Client *c, Monitor **rule_mon, uint32_t *rule_tags) {
 	}
 
 	if (mon)
-		set_size_per(mon, c);
+		set_size_per(mon, c, false);
 
 	// if no geom rule hit and is normal winodw, use the center pos and record
 	// the hit size
@@ -1832,7 +1845,7 @@ void apply_window_snap(Client *c) {
 	}
 
 	c->float_geom = c->geom;
-	resize(c, c->geom, 0);
+	resize(c, c->geom, (ResizeOpts){.interact = 0});
 }
 /*
  * Client management: window lifecycle, rules, focus, tiled/floating/fullscreen
@@ -1933,11 +1946,9 @@ bool xwayland_scene_buffer_point_accepts_input(struct wlr_scene_buffer *buffer,
 		return false;
 
 	double tx = *sx, ty = *sy;
-	struct wlr_scene_node *node = &buffer->node;
-	while (node && !node->data)
-		node = node->parent ? &node->parent->node : NULL;
-	Client *c = node ? node->data : NULL;
-	if (c && client_is_x11(c)) {
+	MangoSceneNode *scene_data = mango_scene_node_find(&buffer->node);
+	if (scene_data && scene_data->type == X11) {
+		Client *c = scene_data->owner;
 #ifdef XWAYLAND
 		if (config.xwayland_ignore_scale && c->xwayland_scale > 0.f) {
 			tx *= c->xwayland_scale;
@@ -2066,6 +2077,8 @@ void init_client_properties(Client *c) {
 	c->master_mfact_per = 0.0f;
 	c->master_inner_per = 0.0f;
 	c->stack_inner_per = 0.0f;
+	c->master_size_weight = 0.0;
+	c->stack_size_weight = 0.0;
 	c->old_stack_inner_per = 0.0f;
 	c->old_master_inner_per = 0.0f;
 	c->old_master_mfact_per = 0.0f;
@@ -2089,7 +2102,7 @@ void init_client_properties(Client *c) {
 	c->float_geom.height = 0;
 	c->float_geom.x = 0;
 	c->float_geom.y = 0;
-	c->stack_proportion = 0.0f;
+	c->scroller_stack_proportion = 0.0f;
 	memset(c->oldmonname, 0, sizeof(c->oldmonname));
 	memcpy(c->opacity_animation.initial_border_color, config.bordercolor,
 		   sizeof(c->opacity_animation.initial_border_color));
@@ -2147,7 +2160,7 @@ static void client_configure_size(Client *c, struct wlr_box geo, int32_t bw) {
 		return;
 
 	client_set_size(c, (uint32_t)((int32_t)geo.width - 2 * bw),
-					(uint32_t)((int32_t)geo.height - 2 * bw));
+					(uint32_t)((int32_t)geo.height - 2 * bw), false);
 }
 
 static void client_negotiate_initial_size(Client *c, Monitor *rule_mon,
@@ -2224,7 +2237,7 @@ void handle_client_map(struct wl_listener *listener, void *data) {
 		c->type == XDGShell
 			? wlr_scene_xdg_surface_create(c->scene, c->surface.xdg)
 			: wlr_scene_subsurface_tree_create(c->scene, client_surface(c));
-	c->scene->node.data = c->scene_surface->node.data = c;
+	mango_scene_node_set(&c->scene->node, c->type, c);
 
 	client_init_xwayland(c);
 
@@ -2286,7 +2299,6 @@ void handle_client_map(struct wl_listener *listener, void *data) {
 		c->splitindicator[i] = wlr_scene_rect_create(
 			c->scene, 0, 0,
 			c->isurgent ? config.urgentcolor : config.splitcolor);
-		c->splitindicator[i]->node.data = c;
 		wlr_scene_node_lower_to_bottom(&c->splitindicator[i]->node);
 		wlr_scene_node_set_enabled(&c->splitindicator[i]->node, false);
 	}
@@ -2321,7 +2333,6 @@ void handle_client_map(struct wl_listener *listener, void *data) {
 
 	c->shield =
 		wlr_scene_rect_create(c->scene, 0, 0, (float[4]){0, 0, 0, 0xff});
-	c->shield->node.data = c;
 	wlr_scene_node_lower_to_bottom(&c->shield->node);
 	wlr_scene_node_set_enabled(&c->shield->node, false);
 
@@ -2352,7 +2363,7 @@ void handle_client_map(struct wl_listener *listener, void *data) {
 
 	// make sure the animation is open type
 	c->is_pending_open_animation = true;
-	resize(c, c->geom, 0);
+	resize(c, c->geom, (ResizeOpts){.interact = 0});
 	printstatus(IPC_WATCH_ARRANGGE);
 }
 
@@ -2433,7 +2444,7 @@ void handle_client_commit(struct wl_listener *listener, void *data) {
 	if (c == server.grab_client || !c->dirty)
 		return;
 
-	resize(c, c->geom, 0);
+	resize(c, c->geom, (ResizeOpts){.interact = 0});
 
 	new_geo = &c->surface.xdg->geometry;
 	c->xdg_geo_x = new_geo->x;
@@ -2469,7 +2480,7 @@ void handle_client_unmap(struct wl_listener *listener, void *data) {
 	if (c->swallowing) {
 		c->swallowing->mon = c->mon;
 		client_replace(c->swallowing, c, false, true);
-	} else if ((c->group_next || c->group_prev) && c->is_group_focus) {
+	} else if (client_is_group_member(c) && c->is_group_focus) {
 		Client *group_replacement =
 			c->group_next ? c->group_next : c->group_prev;
 		group_replacement->mon = c->mon;
@@ -2748,6 +2759,20 @@ void pending_kill_client(Client *c) {
 	client_send_close(c);
 }
 
+bool client_blur_uses_wallpaper(Client *c) {
+	if (!c)
+		return false;
+	return config.blur_optimized ||
+		   blur_layer_on_wallpaper(client_target_layer(c));
+}
+
+void client_sync_blur_optimized(Client *c) {
+	if (!c || !c->blur)
+		return;
+	wlr_scene_blur_set_should_only_blur_bottom_layer(
+		c->blur, client_blur_uses_wallpaper(c));
+}
+
 void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int32_t sx,
 							int32_t sy, void *user_data) {
 	Client *c = user_data;
@@ -2764,11 +2789,7 @@ void iter_xdg_scene_buffers(struct wlr_scene_buffer *buffer, int32_t sx,
 		return;
 
 	if (config.blur && c && !c->no_blur) {
-		if (config.blur_optimized) {
-			wlr_scene_blur_set_should_only_blur_bottom_layer(c->blur, true);
-		} else {
-			wlr_scene_blur_set_should_only_blur_bottom_layer(c->blur, false);
-		}
+		client_sync_blur_optimized(c);
 	}
 }
 
@@ -2849,6 +2870,10 @@ void client_focus(Client *c, int32_t lift) {
 		c->isfocusing = true;
 
 		tab_sync_focus(c);
+
+		if (last_focus_client && last_focus_client != c)
+			client_check_tab_node_visible(last_focus_client);
+		client_check_tab_node_visible(c);
 
 		check_keep_idle_inhibit(c);
 		check_vrr_enable(c);
@@ -2982,7 +3007,10 @@ void client_active(Client *c) {
 		return;
 	}
 
-	if (c->swallowdby || !c->mon)
+	if (c->swallowdby)
+		return;
+
+	if (!c->mon && !client_group_swap_focus(c))
 		return;
 
 	if (c->isminimized) {
@@ -3110,7 +3138,7 @@ void show_hide_client(Client *c) {
 	if (!c || !c->mon)
 		return;
 
-	set_size_per(c->mon, c);
+	set_size_per(c->mon, c, false);
 	target = get_tags_first_tag(c->oldtags);
 
 	if (!c->is_in_scratchpad) {
@@ -3153,7 +3181,7 @@ void client_set_monitor(Client *c, Monitor *m, uint32_t newtags, bool focus) {
 	if (m) {
 		/* Make sure window actually overlaps with the monitor */
 		reset_foreign_tolevel(c, oldmon, m);
-		resize(c, c->geom, 0);
+		resize(c, c->geom, (ResizeOpts){.interact = 0});
 		client_reset_mon_tags(c, m, newtags);
 		check_match_tag_floating_rule(c, m);
 		client_set_floating(c, c->isfloating);
@@ -3261,9 +3289,9 @@ void client_set_floating(Client *c, int32_t floating) {
 				c->float_geom =
 					client_center_geometry(c, c->mon, c->float_geom, 0, 0);
 			}
-			resize(c, c->float_geom, 0);
+			resize(c, c->float_geom, (ResizeOpts){.interact = 0});
 		} else {
-			resize(c, target_box, 0);
+			resize(c, target_box, (ResizeOpts){.interact = 0});
 		}
 
 		c->need_float_size_reduce = 0;
@@ -3273,6 +3301,7 @@ void client_set_floating(Client *c, int32_t floating) {
 		c->need_float_size_reduce = 1;
 		c->is_in_scratchpad = 0;
 		c->isnamedscratchpad = 0;
+		set_size_per(c->mon, c, false);
 		// Makes fullscreen windows on the current tag exit fullscreen so they
 		// join tiling.
 		wl_list_for_each(fc, &server.clients,
@@ -3285,19 +3314,10 @@ void client_set_floating(Client *c, int32_t floating) {
 
 	client_reparent_group(c);
 
-	if (c->isfloating) {
-		set_size_per(c->mon, c);
-	}
-
 	if (!c->force_fakemaximize)
 		client_set_maximized(c, false);
 
-	if (!c->isfloating || c->force_tiled_state) {
-		client_set_tiled(c, WLR_EDGE_TOP | WLR_EDGE_BOTTOM | WLR_EDGE_LEFT |
-								WLR_EDGE_RIGHT);
-	} else {
-		client_set_tiled(c, WLR_EDGE_NONE);
-	}
+	client_sync_tiled_hint(c);
 
 	arrange(c->mon, false, false);
 
@@ -3340,7 +3360,7 @@ void client_apply_fullscreen(
 
 		c->bw = 0;
 		if (!is_scroller_layout(c->mon) || c->isfloating)
-			resize(c, c->mon->m, 1);
+			resize(c, c->mon->m, (ResizeOpts){.interact = 1});
 
 	} else {
 		c->bw = c->no_border ? 0 : config.borderpx;
@@ -3367,9 +3387,20 @@ void client_set_fake_fullscreen(Client *c, int32_t fakefullscreen) {
 	client_set_fullscreen(c, fakefullscreen);
 }
 
+static void maximize_screen_gaps(Client *c, int32_t *gappoh, int32_t *gappov) {
+	*gappoh = config.gappoh;
+	*gappov = config.gappov;
+	if (config.monocle_no_gap && c->mon && !c->mon->isoverview &&
+		is_monocle_layout(c->mon)) {
+		*gappoh = 0;
+		*gappov = 0;
+	}
+}
+
 void client_set_maximize_screen(Client *c, int32_t maximizescreen,
 								bool rearrange) {
 	struct wlr_box maximizescreen_box;
+	int32_t gappoh, gappov;
 	if (!c || !c->mon || !client_surface(c)->mapped || c->iskilling ||
 		c == server.grab_client)
 		return;
@@ -3388,18 +3419,20 @@ void client_set_maximize_screen(Client *c, int32_t maximizescreen,
 
 		exit_scroller_stack(c);
 
-		maximizescreen_box.x = c->mon->w.x + config.gappoh;
-		maximizescreen_box.y = c->mon->w.y + config.gappov;
-		maximizescreen_box.width = c->mon->w.width - 2 * config.gappoh;
-		maximizescreen_box.height = c->mon->w.height - 2 * config.gappov;
+		maximize_screen_gaps(c, &gappoh, &gappov);
 
-		if (c->group_next || c->group_prev) {
+		maximizescreen_box.x = c->mon->w.x + gappoh;
+		maximizescreen_box.y = c->mon->w.y + gappov;
+		maximizescreen_box.width = c->mon->w.width - 2 * gappoh;
+		maximizescreen_box.height = c->mon->w.height - 2 * gappov;
+
+		if (client_wants_group_bar(c)) {
 			maximizescreen_box.height -= config.group_bar_height;
 			maximizescreen_box.y += config.group_bar_height;
 		}
 
 		if (!is_scroller_layout(c->mon) || c->isfloating)
-			resize(c, maximizescreen_box, 0);
+			resize(c, maximizescreen_box, (ResizeOpts){.interact = 0});
 	} else {
 		c->bw = c->no_border ? 0 : config.borderpx;
 		if (c->isfloating)
@@ -3420,17 +3453,21 @@ void client_set_maximize_screen(Client *c, int32_t maximizescreen,
 
 void reset_maximizescreen_size(Client *c) {
 	struct wlr_box geom;
-	geom.x = c->mon->w.x + config.gappoh;
-	geom.y = c->mon->w.y + config.gappov;
-	geom.width = c->mon->w.width - 2 * config.gappoh;
-	geom.height = c->mon->w.height - 2 * config.gappov;
+	int32_t gappoh, gappov;
 
-	if (c->group_next || c->group_prev) {
+	maximize_screen_gaps(c, &gappoh, &gappov);
+
+	geom.x = c->mon->w.x + gappoh;
+	geom.y = c->mon->w.y + gappov;
+	geom.width = c->mon->w.width - 2 * gappoh;
+	geom.height = c->mon->w.height - 2 * gappov;
+
+	if (client_wants_group_bar(c)) {
 		geom.height -= config.group_bar_height;
 		geom.y += config.group_bar_height;
 	}
 
-	resize(c, geom, 0);
+	resize(c, geom, (ResizeOpts){.interact = 0});
 }
 
 void set_minimized(Client *c) {
@@ -3471,7 +3508,7 @@ void unminimize(Client *c) {
 	}
 
 	if (c->isminimized) {
-		set_size_per(c->mon, c);
+		set_size_per(c->mon, c, false);
 		c->tags = c->mon->tagset[c->mon->seltags];
 		c->is_in_scratchpad = 0;
 		c->isnamedscratchpad = 0;
@@ -3496,6 +3533,9 @@ void exit_scroller_stack(Client *c) {
 	if (st) {
 		struct ScrollerStackNode *n = find_scroller_node(st, c);
 		if (n) {
+			c->scroller_proportion = n->scroller_proportion;
+			c->scroller_proportion_single = n->scroller_proportion_single;
+			c->scroller_stack_proportion = n->scroller_stack_weight;
 			scroller_node_remove(st, n);
 			return;
 		}
@@ -3572,7 +3612,7 @@ void show_scratchpad(Client *c) {
 		c->float_geom = c->geom = c->animainit_geom = c->animation.current =
 			client_center_geometry(c, c->mon, c->geom, 0, 0);
 		c->iscustomsize = 1;
-		resize(c, c->geom, 0);
+		resize(c, c->geom, (ResizeOpts){.interact = 0});
 	}
 
 	client_reparent_group(c);
@@ -3608,13 +3648,13 @@ bool switch_scratchpad_client_state(Client *c) {
 			c->tags = get_tags_first_tag(
 				server.selected_monitor
 					->tagset[server.selected_monitor->seltags]);
-			resize(c, c->float_geom, 0);
+			resize(c, c->float_geom, (ResizeOpts){.interact = 0});
 			arrange(server.selected_monitor, false, false);
 			client_focus(c, 1);
 			c->scratchpad_switching_mon = false;
 			return true;
 		} else {
-			resize(c, c->float_geom, 0);
+			resize(c, c->float_geom, (ResizeOpts){.interact = 0});
 			c->scratchpad_switching_mon = false;
 		}
 	}
@@ -3735,6 +3775,7 @@ void client_park(Client *c) {
 	client_unlink(c);
 	if (!c)
 		return;
+	c->animation.running = false;
 	c->mon = NULL;
 }
 
@@ -3762,12 +3803,14 @@ void client_replace(Client *c, Client *w, bool is_group_change_member,
 	c->float_geom = w->float_geom;
 	c->stack_inner_per = w->stack_inner_per;
 	c->master_inner_per = w->master_inner_per;
+	c->stack_size_weight = w->stack_size_weight;
+	c->master_size_weight = w->master_size_weight;
 	c->master_mfact_per = w->master_mfact_per;
 	c->scroller_proportion = w->scroller_proportion;
 	c->isglobal = w->isglobal;
 	c->overview_backup_geom = w->overview_backup_geom;
 	c->animation.current = w->animation.current;
-	c->stack_proportion = w->stack_proportion;
+	c->scroller_stack_proportion = w->scroller_stack_proportion;
 
 	if (is_swallow || !is_group_change_member) {
 		client_group_replace(w, c);
@@ -3776,7 +3819,9 @@ void client_replace(Client *c, Client *w, bool is_group_change_member,
 	tab_replace_client(w, c);
 
 	client_unpark(c, w);
-	mango_bar_decoration_set_focus(c->group_bar, c->is_group_focus);
+	mango_bar_decoration_set_focus(c->group_bar,
+								   server.selected_monitor &&
+									   c == server.selected_monitor->sel);
 
 	/* If the old window is in overview, destroy its card tree. */
 	overview_destroy_card(w);
@@ -4004,14 +4049,20 @@ void client_swap_layout_properties(Client *c1, Client *c2) {
 	double master_inner_per = c1->master_inner_per;
 	double master_mfact_per = c1->master_mfact_per;
 	double stack_inner_per = c1->stack_inner_per;
+	double master_size_weight = c1->master_size_weight;
+	double stack_size_weight = c1->stack_size_weight;
 
 	c1->master_inner_per = c2->master_inner_per;
 	c1->master_mfact_per = c2->master_mfact_per;
 	c1->stack_inner_per = c2->stack_inner_per;
+	c1->master_size_weight = c2->master_size_weight;
+	c1->stack_size_weight = c2->stack_size_weight;
 
 	c2->master_inner_per = master_inner_per;
 	c2->master_mfact_per = master_mfact_per;
 	c2->stack_inner_per = stack_inner_per;
+	c2->master_size_weight = master_size_weight;
+	c2->stack_size_weight = stack_size_weight;
 }
 
 void client_swap_monitors_and_tags(Client *c1, Client *c2) {
@@ -4049,8 +4100,7 @@ void client_tile_resize(Client *c, struct wlr_box geo, int32_t interact,
 	if (!ISFAKETILED(c) || !c->mon)
 		return;
 
-	if (!c->mon->isoverview && !c->isfullscreen &&
-		(c->group_next || c->group_prev)) {
+	if (!c->mon->isoverview && !c->isfullscreen && client_wants_group_bar(c)) {
 		geo.y = geo.y + config.group_bar_height;
 		geo.height -= config.group_bar_height;
 	}
@@ -4063,7 +4113,7 @@ void client_tile_resize(Client *c, struct wlr_box geo, int32_t interact,
 
 	if ((!c->isfullscreen && !c->ismaximizescreen) ||
 		is_scroller_layout(c->mon)) {
-		resize(c, geo, interact);
+		resize(c, geo, (ResizeOpts){.interact = interact});
 	}
 }
 
@@ -4111,9 +4161,22 @@ bool client_should_visible(Client *c) {
 	return c->tag_visible;
 }
 
+/*
+ * Mark the window's own scene tree as pointer-transparent while it animates
+ * out on a tag change. The group bar and tab bar are chain-wide strips built
+ * from separate scene trees, so they are handled by their own chain helpers
+ * instead of being flagged one member at a time.
+ */
+static void client_update_input_penetration(Client *c) {
+	mango_scene_node_set_ignore_hit(&c->scene->node, c->animation.tagouting);
+	tab_update_input_penetration(c);
+}
+
 void client_update_visibility(Client *c) {
 	if (!c || !c->scene)
 		return;
+
+	client_update_input_penetration(c);
 
 	bool show = client_should_visible(c);
 
@@ -4146,11 +4209,10 @@ void client_add_jump_label_node(Client *c) {
 	wlr_scene_node_set_enabled(&c->jump_label_node->scene->node, false);
 }
 
-// scene layer a client belongs to; shown scratchpads join the special
-// layers while the special workspace is active
+// scene layer a client belongs to; only clients actually tagged with tag 0
+// belong to the special layers
 uint32_t client_target_layer(Client *c) {
-	bool special_overlay = (c->tags & TAG0_MASK) ||
-						   (is_special_active(c->mon) && SCRATCHPAD_SHOWN(c));
+	bool special_overlay = (c->tags & TAG0_MASK);
 
 	if (c->isoverlay)
 		return special_overlay ? LyrSpecialOverlay : LyrOverlay;
@@ -4188,8 +4250,18 @@ uint32_t client_target_layer(Client *c) {
 void client_sync_layer(Client *c) {
 	if (!c || !c->scene || !c->mon)
 		return;
+	client_update_input_penetration(c);
 	if (c->scene->node.parent != server.layers[client_target_layer(c)])
 		client_reparent_group(c);
+	client_sync_blur_optimized(c);
+}
+
+bool client_wants_group_bar(Client *c) {
+	if (!c)
+		return false;
+	if (client_is_group_member(c))
+		return true;
+	return config.always_show_group_bar;
 }
 
 void client_add_group_bar(Client *c) {
@@ -4202,8 +4274,12 @@ void client_add_group_bar(Client *c) {
 
 	c->group_bar = mango_bar_decoration_create(
 		c, GroupBar, false, server.layers[layer], config.groupbardata, 0, 0);
+	if (!c->group_bar)
+		return;
 	wlr_scene_node_lower_to_bottom(&c->group_bar->scene->node);
 	wlr_scene_node_set_enabled(&c->group_bar->scene->node, false);
+	mango_bar_decoration_set_close_color(c->group_bar,
+										 config.group_bar_button_color);
 	client_update_group_bar_title(c);
 }
 
@@ -4221,40 +4297,35 @@ void client_apply_group_bar_config(Client *c) {
 	if (!c || !c->group_bar)
 		return;
 	mango_bar_decoration_apply_config(c->group_bar, &config.groupbardata);
+	mango_bar_decoration_set_close_color(c->group_bar,
+										 config.group_bar_button_color);
 }
 
 void client_remove_group_bar(Client *c) {
 	if (!c || !c->group_bar)
 		return;
+	if (server.group_bar_hover == c->group_bar)
+		server.group_bar_hover = NULL;
+	if (server.group_bar_drag_client == c) {
+		server.group_bar_drag_client = NULL;
+		server.group_bar_drag_pending = false;
+	}
 	mango_bar_decoration_destroy(c->group_bar);
 	c->group_bar = NULL;
 }
 
-void client_focus_group_member(Client *c) {
-	if (!c->group_prev && !c->group_next)
-		return;
+bool client_group_swap_focus(Client *c) {
+	if (!client_is_group_member(c) || c->is_group_focus)
+		return false;
 
-	if (c->is_group_focus)
-		return;
-
-	Client *head = c;
-	while (head->group_prev)
-		head = head->group_prev;
-
-	Client *cur_focusing = NULL;
-	while (head) {
-		if (head->is_group_focus) {
-			cur_focusing = head;
-			break;
-		}
-		head = head->group_next;
-	}
+	Client *head = client_group_head(c);
+	Client *cur_focusing = client_group_focused(head);
 
 	if (!cur_focusing || !cur_focusing->mon)
-		return;
+		return false;
 
-	if (cur_focusing && cur_focusing->mon->isoverview)
-		return;
+	if (cur_focusing->mon->isoverview)
+		return false;
 
 	cur_focusing->is_group_focus = false;
 	c->mon = cur_focusing->mon;
@@ -4266,6 +4337,13 @@ void client_focus_group_member(Client *c) {
 
 	client_reparent_group(c);
 
+	return true;
+}
+
+void client_focus_group_member(Client *c) {
+	if (!client_group_swap_focus(c))
+		return;
+
 	client_focus(c, 1);
 
 	arrange(c->mon, false, false);
@@ -4276,19 +4354,28 @@ void client_check_tab_node_visible(Client *c) {
 	if (!c || !c->mon)
 		return;
 
-	Client *head = c;
-	while (head->group_prev)
-		head = head->group_prev;
-
-	Client *cur = head;
+	Client *cur = client_group_head(c);
 	while (cur) {
-		if (!c->mon->isoverview && cur->group_bar &&
-			(cur->group_next || cur->group_prev) && TAGMATCH(c, c->mon) &&
-			ISNORMAL(c) && !c->isfullscreen) {
-			wlr_scene_node_set_enabled(&cur->group_bar->scene->node, true);
-		} else if (cur->group_bar) {
-			wlr_scene_node_set_enabled(&cur->group_bar->scene->node, false);
+		bool show = !c->mon->isoverview && cur->group_bar &&
+					client_wants_group_bar(cur) && TAGMATCH(c, c->mon) &&
+					ISNORMAL(c) && !c->isfullscreen;
+		if (!cur->group_bar) {
+			cur = cur->group_next;
+			continue;
 		}
+		bool focused =
+			server.selected_monitor && cur == server.selected_monitor->sel;
+		bool show_close = show && config.always_show_group_bar &&
+						  config.group_bar_close_button_enable;
+		/* The strip is drawn from one bar node per member; keep the whole
+		 * group in sync so a hidden member cannot leave a clickable
+		 * segment behind. */
+		wlr_scene_node_set_enabled(&cur->group_bar->scene->node, show);
+		mango_scene_node_set_ignore_hit(&cur->group_bar->scene->node, !show);
+		mango_bar_decoration_set_focus(cur->group_bar, show && focused);
+		mango_bar_decoration_set_close(cur->group_bar, show_close,
+									   config.group_bar_button_size,
+									   config.group_bar_button_margin);
 		cur = cur->group_next;
 	}
 }
@@ -4297,11 +4384,7 @@ void client_raise_group(Client *c) {
 	if (!c || !c->mon)
 		return;
 
-	Client *head = c;
-	while (head->group_prev)
-		head = head->group_prev;
-
-	Client *cur = head;
+	Client *cur = client_group_head(c);
 	while (cur) {
 		if (cur->group_bar) {
 			wlr_scene_node_raise_to_top(&cur->group_bar->scene->node);
@@ -4317,17 +4400,14 @@ void client_reparent_group(Client *c) {
 
 	int32_t layer = client_target_layer(c);
 
-	Client *head = c;
-	while (head->group_prev)
-		head = head->group_prev;
-
-	Client *cur = head;
+	Client *cur = client_group_head(c);
 	while (cur) {
 		if (cur->group_bar) {
 			wlr_scene_node_reparent(&cur->group_bar->scene->node,
 									server.layers[layer]);
 		}
 		wlr_scene_node_reparent(&cur->scene->node, server.layers[layer]);
+		client_sync_blur_optimized(cur);
 		cur = cur->group_next;
 	}
 
@@ -4344,28 +4424,23 @@ void client_handle_decorate_click(MangoBarDecoration *bar) {
 	Client *c = bar->node_data;
 	if (bar->is_tab)
 		tab_focus_member(c);
+	else if (!client_is_group_member(c))
+		client_focus(c, 1);
 	else
 		client_focus_group_member(c);
 }
 
 void client_set_group_mon(Client *c, Monitor *m) {
-	Client *head = c;
-	while (head->group_prev)
-		head = head->group_prev;
-
-	Client *cur = head;
+	Client *cur = client_group_head(c);
 	while (cur) {
-		client_change_mon(cur, m);
+		if (!client_is_parked(cur))
+			client_change_mon(cur, m);
 		cur = cur->group_next;
 	}
 }
 
 void client_set_group_config(Client *c) {
-	Client *head = c;
-	while (head->group_prev)
-		head = head->group_prev;
-
-	Client *cur = head;
+	Client *cur = client_group_head(c);
 	while (cur) {
 		mango_jump_label_node_apply_config(cur->jump_label_node,
 										   &config.jumplabeldata);
@@ -4390,6 +4465,30 @@ Client *client_chain_head(Client *c, size_t prev_off) {
 	return head;
 }
 
+Client *client_group_head(Client *c) {
+	return client_chain_head(c, CLIENT_GROUP_PREV_OFF);
+}
+
+bool client_is_group_member(const Client *c) {
+	return c && (c->group_prev || c->group_next);
+}
+
+Client *client_group_focused(Client *c) {
+	for (Client *it = c; it; it = it->group_next)
+		if (it->is_group_focus)
+			return it;
+	return NULL;
+}
+
+Client *client_group_active(Client *c) {
+	if (!c)
+		return NULL;
+	for (Client *it = client_group_head(c); it; it = it->group_next)
+		if (it->mon)
+			return it;
+	return NULL;
+}
+
 void client_chain_unlink(Client *c, size_t prev_off, size_t next_off) {
 	if (!c)
 		return;
@@ -4403,11 +4502,20 @@ void client_chain_unlink(Client *c, size_t prev_off, size_t next_off) {
 	*(Client **)((char *)c + next_off) = NULL;
 }
 
+static void client_group_mark_dirty(Client *c) {
+	for (Client *it = client_group_head(c); it; it = it->group_next)
+		it->need_output_flush = true;
+}
+
 void client_group_detach(Client *c) {
 	if (!c)
 		return;
+
+	Client *anchor = c->group_prev ? c->group_prev : c->group_next;
+
 	client_chain_unlink(c, CLIENT_GROUP_PREV_OFF, CLIENT_GROUP_NEXT_OFF);
 	c->is_group_focus = false;
+	client_group_mark_dirty(anchor);
 }
 
 void client_group_replace(Client *old, Client *new) {
@@ -4422,11 +4530,13 @@ void client_group_replace(Client *old, Client *new) {
 	old->group_prev = NULL;
 	old->group_next = NULL;
 
-	if (client_is_parked(old) || (!new->group_prev && !new->group_next)) {
+	if (client_is_parked(old) || (!client_is_group_member(new))) {
 		new->is_group_focus = false;
 	} else {
 		new->is_group_focus = old->is_group_focus;
 	}
+
+	client_group_mark_dirty(new);
 }
 
 void mango_surface_frame_done(struct wlr_surface *surface, int sx, int sy,
@@ -4623,7 +4733,7 @@ void handle_xwayland_surface_request_activate(struct wl_listener *listener,
 void handle_xwayland_surface_request_configure(struct wl_listener *listener,
 											   void *data) {
 	Client *c = wl_container_of(listener, c, configure);
-	if (!c || client_is_parked(c))
+	if (!c)
 		return;
 	struct wlr_xwayland_surface_configure_event *event = data;
 	struct wlr_box new_geo;
@@ -4644,6 +4754,12 @@ void handle_xwayland_surface_request_configure(struct wl_listener *listener,
 		return;
 	}
 
+	/* The client is parked (e.g. it unmapped itself and is about to be
+	 * re-mapped). Its configure request must still be answered above, but there
+	 * is nothing to lay out until it is mapped again. */
+	if (client_is_parked(c))
+		return;
+
 	if (client_is_unmanaged(c)) {
 		struct wlr_box xgeo = new_geo;
 		xwayland_logical_to_x11(&xgeo, c->xwayland_scale);
@@ -4652,6 +4768,13 @@ void handle_xwayland_surface_request_configure(struct wl_listener *listener,
 									   xgeo.width, xgeo.height);
 		return;
 	}
+
+	/*
+	 * The request must be answered even when the assigned box did not change,
+	 * so force this resize and drop the dedup record in case it never reaches
+	 * client_set_size().
+	 */
+	c->xwl_req_valid = false;
 
 	if (c->isfloating && c != server.grab_client) {
 		new_geo.x = new_geo.x - c->bw;
@@ -4665,8 +4788,11 @@ void handle_xwayland_surface_request_configure(struct wl_listener *listener,
 								.y = new_geo.y,
 								.width = new_geo.width,
 								.height = new_geo.height},
-			   0);
+			   (ResizeOpts){.force_configure = true});
 	} else {
+		/* The layout ignores the request; answer with the box it assigned and
+		 * re-run arrange. */
+		resize(c, c->geom, (ResizeOpts){.force_configure = true});
 		arrange(c->mon, false, false);
 	}
 }

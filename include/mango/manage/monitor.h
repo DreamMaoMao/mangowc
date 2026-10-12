@@ -5,6 +5,7 @@
 #include "mango/config/parse.h"
 #include "mango/config/preset.h"
 #include <limits.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_output.h>
@@ -104,6 +105,7 @@ struct Pertag {
 	float scroller_default_proportion_single[PERTAG_SLOTS];
 	int32_t scroller_ignore_proportion_single[PERTAG_SLOTS];
 	struct DwindleNode *dwindle_root[PERTAG_SLOTS];
+	const Layout *config_ltidxs[PERTAG_SLOTS];
 	const Layout *ltidxs[PERTAG_SLOTS];
 	struct TagScrollerState *scroller_state[PERTAG_SLOTS];
 };
@@ -159,5 +161,6 @@ struct wlr_output_mode *get_nearest_output_mode(struct wlr_output *output,
 												float refresh);
 bool apply_rule_to_state(Monitor *m, const ConfigMonitorRule *rule,
 						 struct wlr_output_state *state);
+bool blur_layer_on_wallpaper(uint32_t layer);
 
 #endif
