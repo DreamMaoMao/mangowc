@@ -997,8 +997,8 @@ void client_set_drop_area(Client *c) {
 	wlr_scene_rect_set_size(c->droparea, drop_box.width, drop_box.height);
 }
 
-static void fill_main_surface_buffer(struct wlr_scene_buffer *buffer, int32_t sx,
-									 int32_t sy, void *data) {
+static void fill_main_surface_buffer(struct wlr_scene_buffer *buffer,
+									 int32_t sx, int32_t sy, void *data) {
 	struct wlr_box *box = data;
 	struct wlr_scene_surface *scene_surface =
 		wlr_scene_surface_try_from_buffer(buffer);
@@ -1014,7 +1014,25 @@ static void fill_main_surface_buffer(struct wlr_scene_buffer *buffer, int32_t sx
 	if (box->width <= 0 || box->height <= 0)
 		return;
 
-	wlr_scene_buffer_set_source_box(buffer, NULL);
+	/*
+	 * Stretch only the window-geometry part of the buffer. Clients with CSD
+	 * (Chrome, PWAs) have a surface larger than their geometry (shadow
+	 * margin); stretching the whole buffer into the geometry-sized box
+	 * squeezes the content and shifts it by the margin.
+	 */
+	struct wlr_xdg_surface *xdg = wlr_xdg_surface_try_from_wlr_surface(surface);
+	if (xdg && xdg->geometry.width > 0 && xdg->geometry.height > 0) {
+		double s = surface->current.scale > 0 ? surface->current.scale : 1;
+		struct wlr_fbox src = {
+			.x = xdg->geometry.x * s,
+			.y = xdg->geometry.y * s,
+			.width = xdg->geometry.width * s,
+			.height = xdg->geometry.height * s,
+		};
+		wlr_scene_buffer_set_source_box(buffer, &src);
+	} else {
+		wlr_scene_buffer_set_source_box(buffer, NULL);
+	}
 	wlr_scene_buffer_set_dest_size(buffer, box->width, box->height);
 }
 
