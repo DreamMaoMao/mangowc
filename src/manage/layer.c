@@ -354,6 +354,10 @@ void handle_popup_destroy(struct wl_listener *listener, void *data) {
 	Popup *popup = wl_container_of(listener, popup, destroy);
 	wl_list_remove(&popup->destroy.link);
 	wl_list_remove(&popup->reposition.link);
+	if (popup->commit.notify != NULL) {
+		wl_list_remove(&popup->commit.link);
+		popup->commit.notify = NULL;
+	}
 	free(popup);
 }
 
