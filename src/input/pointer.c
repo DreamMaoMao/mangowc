@@ -1448,7 +1448,7 @@ void pointer_focus(Client *c, struct wlr_surface *surface, double sx, double sy,
 
 	if (config.sloppyfocus && !server.start_drag_window && c && time &&
 		c->scene && c->scene->node.enabled &&
-		(!c->mon || !c->mon->isoverview) && !c->animation.tagining &&
+		(!c->mon || !is_overcircle_mode(c->mon)) && !c->animation.tagining &&
 		(surface != server.seat->pointer_state.focused_surface ||
 		 (server.selected_monitor && server.selected_monitor->isoverview &&
 		  server.selected_monitor->sel != c)) &&
