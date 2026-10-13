@@ -143,6 +143,11 @@ bool is_centertile_layout(Monitor *m) {
 	return false;
 }
 
+bool is_overcircle_mode(const Monitor *m) {
+	return m && m->isoverview && m->ov_tab_layout && !m->is_jump_mode &&
+		   !m->ov_normal_mode;
+}
+
 void special_sync_top_layer(bool special_active) {
 	if (special_active) {
 		wlr_scene_node_reparent(&server.layers[LyrTop]->node,

@@ -118,6 +118,7 @@ Monitor *monitor_from_cycle(int32_t dir);
 bool is_scroller_layout(Monitor *m);
 bool is_monocle_layout(Monitor *m);
 bool is_centertile_layout(Monitor *m);
+bool is_overcircle_mode(const Monitor *m);
 void special_update_dim(Monitor *m);
 void special_sync_top_layer(bool special_active);
 uint32_t get_tag_status(uint32_t tag, Monitor *m);
