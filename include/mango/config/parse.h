@@ -475,6 +475,7 @@ typedef struct {
 	/* appearance */
 	int32_t smartgaps;
 	int32_t monocle_tab_mode;
+	int32_t monocle_right_button_close;
 	int32_t deck_tab_mode;
 	uint32_t gappih;
 	uint32_t gappiv;

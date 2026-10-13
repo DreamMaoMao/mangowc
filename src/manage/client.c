@@ -4365,8 +4365,7 @@ void client_check_tab_node_visible(Client *c) {
 		}
 		bool focused =
 			server.selected_monitor && cur == server.selected_monitor->sel;
-		bool show_close = show && config.always_show_group_bar &&
-						  config.group_bar_close_button_enable;
+		bool show_close = show && config.group_bar_close_button_enable;
 		/* The strip is drawn from one bar node per member; keep the whole
 		 * group in sync so a hidden member cannot leave a clickable
 		 * segment behind. */
