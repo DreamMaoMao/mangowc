@@ -1815,6 +1815,13 @@ bool pointer_process_button_press(struct wlr_pointer_button_event *event) {
 			return true;
 		}
 
+		/* Optionally close the clicked tab with a right click. */
+		if (bar && bar->is_tab && bar->node_data &&
+			event->button == BTN_RIGHT && config.monocle_right_button_close) {
+			pending_kill_client((Client *)bar->node_data);
+			return true;
+		}
+
 		// handle click on tile node
 		client_handle_decorate_click(bar);
 

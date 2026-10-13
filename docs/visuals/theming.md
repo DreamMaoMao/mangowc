@@ -69,9 +69,9 @@ You can also color-code windows based on their state:
 ### Group Bar
 | Setting | Default | Description |
 | :--- | :--- | :--- |
-| `always_show_group_bar` | `0` | Show the group bar (with close button) on every window. |
+| `always_show_group_bar` | `0` | Show the group bar on every window. |
 | `group_bar_height` | `33` | Group bar height. |
-| `group_bar_close_button_enable` | `1` | Show the close button. |
+| `group_bar_close_button_enable` | `0` | Show the close button. Independent of `always_show_group_bar`. |
 | `group_bar_button_size` | `16` | Close button size in px. |
 | `group_bar_button_margin` | `4` | Close button inset from the right edge in px. |
 | `group_bar_button_color` | `0xad401fff` | Close button colour. |

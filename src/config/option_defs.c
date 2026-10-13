@@ -487,6 +487,8 @@ bool parse_option(Config *config, char *key, char *value, int line_number) {
 		config->smartgaps = atoi(value);
 	} else if (strcmp(key, "monocle_tab_mode") == 0) {
 		config->monocle_tab_mode = atoi(value);
+	} else if (strcmp(key, "monocle_right_button_close") == 0) {
+		config->monocle_right_button_close = atoi(value);
 	} else if (strcmp(key, "deck_tab_mode") == 0) {
 		config->deck_tab_mode = atoi(value);
 	} else if (strcmp(key, "repeat_rate") == 0) {
@@ -2262,6 +2264,7 @@ void set_value_default() {
 	config.hotarea_disable_on_fullscreen = 1;
 	config.smartgaps = 0;
 	config.monocle_tab_mode = 1;
+	config.monocle_right_button_close = 0;
 	config.deck_tab_mode = 1;
 	config.sloppyfocus = 1;
 	config.gappih = 5;
@@ -2325,7 +2328,7 @@ void set_value_default() {
 	config.group_bar_height = 33;
 	config.tab_bar_height = 33;
 	config.always_show_group_bar = 0;
-	config.group_bar_close_button_enable = 1;
+	config.group_bar_close_button_enable = 0;
 	config.group_bar_button_size = 16;
 	config.group_bar_button_margin = 4;
 	config.group_bar_button_color[0] = 0xad / 255.0f;
@@ -2649,6 +2652,8 @@ void override_config(void) {
 		CLAMP_INT(config.no_border_when_single, 0, 1);
 	config.monocle_no_border = CLAMP_INT(config.monocle_no_border, 0, 1);
 	config.monocle_no_gap = CLAMP_INT(config.monocle_no_gap, 0, 1);
+	config.monocle_right_button_close =
+		CLAMP_INT(config.monocle_right_button_close, 0, 1);
 	config.cursor_hide_timeout =
 		CLAMP_INT(config.cursor_hide_timeout, 0, 36000);
 	config.cursor_hide_on_keypress =
