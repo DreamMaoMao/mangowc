@@ -3553,11 +3553,10 @@ void clear_fullscreen_and_maximized_state(Monitor *m) {
 
 /* Clears the fullscreen flag and restores the border zeroed at fullscreen. */
 void clear_fullscreen_flag(Client *c) {
+	uint32_t id = c->mon->pertag->ltidxs[get_client_tag_idx(c)]->id;
 
-	if ((c->mon->pertag->ltidxs[get_client_tag_idx(c)]->id == SCROLLER ||
-		 c->mon->pertag->ltidxs[get_client_tag_idx(c)]->id ==
-			 VERTICAL_SCROLLER) &&
-		!c->isfloating) {
+	if (!c->isfloating && (id == SCROLLER || id == VERTICAL_SCROLLER ||
+						   (id == MONOCLE && config.monocle_tab_mode))) {
 		return;
 	}
 
