@@ -8,6 +8,7 @@
 #include "mango/dispatch/bind.h"
 #include "mango/ext-protocol/foreign-toplevel.h"
 #include "mango/ext-protocol/text-input.h"
+#include "mango/input/keyboard.h"
 #include "mango/input/pointer.h"
 #include "mango/ipc/ipc.h"
 #include "mango/layout/arrange.h"
@@ -300,11 +301,21 @@ int32_t client_is_unmanaged(Client *c) {
 	return 0;
 }
 void client_notify_enter(struct wlr_surface *s, struct wlr_keyboard *kb) {
-	if (kb)
-		wlr_seat_keyboard_notify_enter(server.seat, s, kb->keycodes,
-									   kb->num_keycodes, &kb->modifiers);
-	else
+	if (!kb) {
 		wlr_seat_keyboard_notify_enter(server.seat, s, NULL, 0, NULL);
+		return;
+	}
+
+	size_t num_keys = 0;
+	uint32_t keys[WLR_KEYBOARD_KEYS_CAP];
+	/* Skip keys consumed by keybindings; they were never sent to clients. */
+	for (size_t i = 0; i < kb->num_keycodes && num_keys < WLR_KEYBOARD_KEYS_CAP;
+		 i++) {
+		if (!keyboard_is_bound_key(kb->keycodes[i] + 8))
+			keys[num_keys++] = kb->keycodes[i];
+	}
+	wlr_seat_keyboard_notify_enter(server.seat, s, keys, num_keys,
+								   &kb->modifiers);
 }
 
 void client_send_close(Client *c) {
@@ -336,6 +347,9 @@ void client_set_fullscreen(Client *c, int32_t fullscreen) {
 		return;
 	}
 #endif
+	if (c->surface.xdg->toplevel->scheduled.fullscreen == (bool)fullscreen)
+		return;
+
 	wlr_xdg_toplevel_set_fullscreen(c->surface.xdg->toplevel, fullscreen);
 }
 
@@ -748,6 +762,29 @@ int32_t client_wants_fullscreen(Client *c) {
 		return c->surface.xwayland->fullscreen;
 #endif
 	return c->surface.xdg->toplevel->requested.fullscreen;
+}
+
+static void client_move_to_requested_fullscreen_output(Client *c) {
+	if (!c || client_is_x11(c) || !c->surface.xdg ||
+		!c->surface.xdg->toplevel || !client_surface(c)->mapped || !c->mon)
+		return;
+
+	if (!client_wants_fullscreen(c))
+		return;
+
+	if (c->isfullscreen)
+		return;
+
+	struct wlr_output *output =
+		c->surface.xdg->toplevel->requested.fullscreen_output;
+	if (!output || output == c->mon->wlr_output)
+		return;
+
+	Monitor *m = output->data;
+	if (!m)
+		return;
+
+	client_set_monitor(c, m, c->tags, false);
 }
 
 bool client_request_minimize(Client *c, void *data) {
@@ -1542,6 +1579,8 @@ void client_apply_rules(Client *c, Monitor **rule_mon, uint32_t *rule_tags) {
 	Monitor *m = NULL;
 	Client *fc = NULL;
 	Client *parent = NULL;
+	Monitor *fs_mon = NULL;
+	bool rule_set_mon = false;
 
 	if (!c)
 		return;
@@ -1591,6 +1630,7 @@ void client_apply_rules(Client *c, Monitor **rule_mon, uint32_t *rule_tags) {
 		wl_list_for_each(m, &server.monitors, link) {
 			if (match_monitor_spec(r->monitor, m)) {
 				mon = m;
+				rule_set_mon = true;
 			}
 		}
 
@@ -1634,6 +1674,16 @@ void client_apply_rules(Client *c, Monitor **rule_mon, uint32_t *rule_tags) {
 				client_set_size_bound(c);
 		}
 	}
+
+	if (!rule_set_mon && client_wants_fullscreen(c) && !c->isfullscreen &&
+		!client_is_x11(c) && c->surface.xdg && c->surface.xdg->toplevel) {
+		struct wlr_output *fsout =
+			c->surface.xdg->toplevel->requested.fullscreen_output;
+		if (fsout)
+			fs_mon = fsout->data;
+	}
+	if (fs_mon)
+		mon = fs_mon;
 
 	if (newtags == 0 && parent && (parent->tags & TAG0_MASK)) {
 		newtags = TAG0_MASK;
@@ -2666,6 +2716,7 @@ void handle_client_request_fullscreen(struct wl_listener *listener,
 	if (!c || c->iskilling || client_is_parked(c))
 		return;
 
+	client_move_to_requested_fullscreen_output(c);
 	client_apply_fullscreen(c, client_wants_fullscreen(c), true);
 }
 
