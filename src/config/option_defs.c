@@ -43,6 +43,15 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 
+static bool is_title_message_bar_decorate_key(const char *key,
+											  const char *name) {
+	char candidate[128];
+
+	snprintf(candidate, sizeof(candidate), "title_message_bar_decorate_%s",
+			 name);
+	return strcmp(key, candidate) == 0;
+}
+
 bool parse_option(Config *config, char *key, char *value, int line_number) {
 	if (strcmp(key, "key_mode") == 0) {
 		snprintf(config->keymode, sizeof(config->keymode), "%.27s", value);
@@ -589,6 +598,85 @@ bool parse_option(Config *config, char *key, char *value, int line_number) {
 		config->groupbardata.padding_x = CLAMP_INT(atoi(value), 0, 100);
 	} else if (strcmp(key, "group_bar_decorate_padding_y") == 0) {
 		config->groupbardata.padding_y = CLAMP_INT(atoi(value), 0, 100);
+	} else if (is_title_message_bar_decorate_key(key, "font_desc")) {
+		if (config->title_message_bardata.font_desc)
+			free((void *)config->title_message_bardata.font_desc);
+		config->title_message_bardata.font_desc = strdup(value);
+	} else if (is_title_message_bar_decorate_key(key, "fg_color")) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			mango_error(false, WLR_ERROR,
+						"Invalid "
+						"title_message_bar_decorate_fg_color "
+						"format: \033[1m\033[31m%s\033[0m\n",
+						value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->title_message_bardata.fg_color, color);
+		}
+	} else if (is_title_message_bar_decorate_key(key, "bg_color")) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			mango_error(false, WLR_ERROR,
+						"Invalid "
+						"title_message_bar_decorate_bg_color "
+						"format: \033[1m\033[31m%s\033[0m\n",
+						value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->title_message_bardata.bg_color, color);
+		}
+	} else if (is_title_message_bar_decorate_key(key, "focus_fg_color")) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			mango_error(false, WLR_ERROR,
+						"Invalid "
+						"title_message_bar_decorate_focus_fg_color "
+						"format: \033[1m\033[31m%s\033[0m\n",
+						value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->title_message_bardata.focus_fg_color,
+								color);
+		}
+	} else if (is_title_message_bar_decorate_key(key, "focus_bg_color")) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			mango_error(false, WLR_ERROR,
+						"Invalid "
+						"title_message_bar_decorate_focus_bg_color "
+						"format: \033[1m\033[31m%s\033[0m\n",
+						value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->title_message_bardata.focus_bg_color,
+								color);
+		}
+	} else if (is_title_message_bar_decorate_key(key, "border_color")) {
+		int64_t color = parse_color(value);
+		if (color == -1) {
+			mango_error(false, WLR_ERROR,
+						"Invalid "
+						"title_message_bar_decorate_border_color "
+						"format: \033[1m\033[31m%s\033[0m\n",
+						value);
+			return false;
+		} else {
+			convert_hex_to_rgba(config->title_message_bardata.border_color,
+								color);
+		}
+	} else if (is_title_message_bar_decorate_key(key, "border_width")) {
+		config->title_message_bardata.border_width =
+			CLAMP_INT(atoi(value), 0, 100);
+	} else if (is_title_message_bar_decorate_key(key, "corner_radius")) {
+		config->title_message_bardata.corner_radius =
+			CLAMP_INT(atoi(value), 0, 100);
+	} else if (is_title_message_bar_decorate_key(key, "padding_x")) {
+		config->title_message_bardata.padding_x =
+			CLAMP_INT(atoi(value), 0, 100);
+	} else if (is_title_message_bar_decorate_key(key, "padding_y")) {
+		config->title_message_bardata.padding_y =
+			CLAMP_INT(atoi(value), 0, 100);
 	} else if (strcmp(key, "tab_bar_decorate_font_desc") == 0) {
 		if (config->tabbardata.font_desc)
 			free((void *)config->tabbardata.font_desc);
@@ -803,6 +891,10 @@ bool parse_option(Config *config, char *key, char *value, int line_number) {
 		config->group_bar_height = atoi(value);
 	} else if (strcmp(key, "tab_bar_height") == 0) {
 		config->tab_bar_height = atoi(value);
+	} else if (strcmp(key, "title_message_bar_height") == 0) {
+		config->title_message_bar_height = atoi(value);
+	} else if (strcmp(key, "title_message_bar_gap") == 0) {
+		config->title_message_bar_gap = atoi(value);
 	} else if (strcmp(key, "always_show_group_bar") == 0) {
 		config->always_show_group_bar = atoi(value);
 	} else if (strcmp(key, "group_bar_close_button_enable") == 0) {
@@ -2327,6 +2419,8 @@ void set_value_default() {
 	config.borderpx = 4;
 	config.group_bar_height = 33;
 	config.tab_bar_height = 33;
+	config.title_message_bar_height = 52;
+	config.title_message_bar_gap = 20;
 	config.always_show_group_bar = 0;
 	config.group_bar_close_button_enable = 0;
 	config.group_bar_button_size = 16;
@@ -2445,6 +2539,9 @@ void set_value_default() {
 	config.groupbardata.corner_radius = 5;
 	config.groupbardata.padding_x = 0;
 	config.groupbardata.padding_y = 0;
+	config.title_message_bardata = config.groupbardata;
+	config.title_message_bardata.border_width = 0;
+	config.title_message_bardata.corner_radius = 15;
 
 	config.tabbardata.fg_color[0] = 0xc0 / 255.0f;
 	config.tabbardata.fg_color[1] = 0xca / 255.0f;
@@ -2734,6 +2831,10 @@ void override_config(void) {
 	config.borderpx = CLAMP_INT(config.borderpx, 0, 200);
 	config.group_bar_height = CLAMP_INT(config.group_bar_height, 0, 500);
 	config.tab_bar_height = CLAMP_INT(config.tab_bar_height, 0, 500);
+	config.title_message_bar_height =
+		CLAMP_INT(config.title_message_bar_height, 0, 500);
+	config.title_message_bar_gap =
+		CLAMP_INT(config.title_message_bar_gap, 0, 500);
 	config.always_show_group_bar =
 		CLAMP_INT(config.always_show_group_bar, 0, 1);
 	config.group_bar_close_button_enable =
@@ -2756,6 +2857,15 @@ void override_config(void) {
 		CLAMP_INT(config.groupbardata.padding_x, 0, 100);
 	config.groupbardata.padding_y =
 		CLAMP_INT(config.groupbardata.padding_y, 0, 100);
+
+	config.title_message_bardata.border_width =
+		CLAMP_INT(config.title_message_bardata.border_width, 0, 100);
+	config.title_message_bardata.corner_radius =
+		CLAMP_INT(config.title_message_bardata.corner_radius, 0, 100);
+	config.title_message_bardata.padding_x =
+		CLAMP_INT(config.title_message_bardata.padding_x, 0, 100);
+	config.title_message_bardata.padding_y =
+		CLAMP_INT(config.title_message_bardata.padding_y, 0, 100);
 
 	config.tabbardata.border_width =
 		CLAMP_INT(config.tabbardata.border_width, 0, 100);

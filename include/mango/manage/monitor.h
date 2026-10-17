@@ -73,6 +73,7 @@ struct Monitor {
 	uint32_t visible_fake_tiling_clients;
 	uint32_t hide_clients;
 	struct wlr_scene_rect *special_dim_rect;
+	MangoBarDecoration *title_message_bar;
 	char last_open_surface[256];
 	struct wlr_ext_workspace_group_handle_v1 *ext_group;
 	bool iscleanuping;
