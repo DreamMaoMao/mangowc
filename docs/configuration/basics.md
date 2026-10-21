@@ -34,7 +34,7 @@ mangowm also reads TOML config files. When looking for a user config,
 `~/.config/mango/config.conf` is preferred, then `~/.config/mango/config.toml`
 (likewise under `/etc/mango/`).
 
-See [TOML Conversion](/docs/configuration/toml) for the syntax and how to convert
+See [TOML Conversion](./toml.md) for the syntax and how to convert
 an existing conf file.
 
 ### Sub-Configuration
