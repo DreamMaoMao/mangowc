@@ -129,7 +129,7 @@ void arrange_layers(Monitor *m) {
 	for (i = 3; i >= 0; i--) {
 		LayerSurface *l;
 		wl_list_for_each(l, &m->layers[i], link) {
-			if (!l->mapped || l->being_unmapped)
+			if (!l->layer_surface->surface->mapped || l->being_unmapped)
 				continue;
 			if (l->layer_surface->current.exclusive_zone <= 0)
 				continue;
@@ -161,8 +161,6 @@ void handle_layer_surface_map(struct wl_listener *listener, void *data) {
 	struct wlr_layer_surface_v1 *layer_surface = l->layer_surface;
 	int32_t ji;
 	ConfigLayerRule *r;
-
-	l->mapped = 1;
 
 	if (!l->mon)
 		return;
@@ -225,6 +223,7 @@ void handle_layer_surface_commit(struct wl_listener *listener, void *data) {
 		server.layers[layermap[layer_surface->current.layer]];
 	struct wlr_layer_surface_v1_state old_state;
 	struct wlr_box box = l->geom;
+	bool mapped_changed = l->mapped != layer_surface->surface->mapped;
 
 	if (l->layer_surface->initial_commit) {
 		client_set_scale(layer_surface->surface, l->mon->wlr_output->scale);
@@ -240,6 +239,14 @@ void handle_layer_surface_commit(struct wl_listener *listener, void *data) {
 			l->layer_surface->current.keyboard_interactive ==
 				ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND) {
 			layer_focus(l);
+		}
+		if (mapped_changed) {
+			l->mapped = layer_surface->surface->mapped;
+			wlr_scene_node_set_enabled(&l->scene->node,
+									   layer_surface->surface->mapped);
+		}
+		if (mapped_changed) {
+			pointer_process_motion(0, NULL, 0, 0, 0, 0);
 		}
 		return;
 	}
@@ -277,8 +284,7 @@ void handle_layer_surface_commit(struct wl_listener *listener, void *data) {
 		}
 	}
 
-	if (layer_surface->current.committed == 0 &&
-		l->mapped == layer_surface->surface->mapped)
+	if (layer_surface->current.committed == 0 && !mapped_changed)
 		return;
 	l->mapped = layer_surface->surface->mapped;
 
@@ -301,6 +307,10 @@ void handle_layer_surface_commit(struct wl_listener *listener, void *data) {
 	if (layer_surface->current.committed &
 		WLR_LAYER_SURFACE_V1_STATE_KEYBOARD_INTERACTIVITY) {
 		reset_exclusive_layers_focus(l->mon);
+	}
+
+	if (mapped_changed) {
+		pointer_process_motion(0, NULL, 0, 0, 0, 0);
 	}
 }
 
@@ -439,9 +449,6 @@ void handle_new_layer_surface(struct wl_listener *listener, void *data) {
 	l->type = LayerShell;
 	l->animation_type_open = ANIM_TYPE_UNSET;
 	l->animation_type_close = ANIM_TYPE_UNSET;
-	LISTEN(&surface->events.map, &l->map, handle_layer_surface_map);
-	LISTEN(&surface->events.commit, &l->surface_commit,
-		   handle_layer_surface_commit);
 	LISTEN(&surface->events.unmap, &l->unmap, handle_layer_surface_unmap);
 
 	l->layer_surface = layer_surface;
@@ -449,6 +456,13 @@ void handle_new_layer_surface(struct wl_listener *listener, void *data) {
 	l->scene_layer =
 		wlr_scene_layer_surface_v1_create(scene_layer, layer_surface);
 	l->scene = l->scene_layer->tree;
+	// The scene subsurface tree's map listener enables the surface node.
+	// Register ours afterwards so the node can be found during the hit test.
+	LISTEN(&surface->events.map, &l->map, handle_layer_surface_map);
+	// Scene commit listeners must update the surface buffer before our hit
+	// test.
+	LISTEN(&surface->events.commit, &l->surface_commit,
+		   handle_layer_surface_commit);
 	l->popups = surface->data = wlr_scene_tree_create(
 		layer_surface->current.layer < ZWLR_LAYER_SHELL_V1_LAYER_TOP
 			? server.layers[LyrTop]
