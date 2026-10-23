@@ -273,6 +273,9 @@ void handle_layer_surface_map(struct wl_listener *listener, void *data) {
 	arrange_layers(l->mon);
 	reset_exclusive_layers_focus(l->mon);
 	printstatus(IPC_WATCH_LAST_OPEN_SURFACE);
+	// A surface mapping under a still pointer gets its enter now, not on the
+	// next motion; unmap already refocuses the same way.
+	pointer_process_motion(0, NULL, 0, 0, 0, 0);
 }
 
 void handle_layer_surface_commit(struct wl_listener *listener, void *data) {
@@ -511,7 +514,6 @@ void handle_new_layer_surface(struct wl_listener *listener, void *data) {
 	l->type = LayerShell;
 	l->animation_type_open = ANIM_TYPE_UNSET;
 	l->animation_type_close = ANIM_TYPE_UNSET;
-	LISTEN(&surface->events.map, &l->map, handle_layer_surface_map);
 	LISTEN(&surface->events.commit, &l->surface_commit,
 		   handle_layer_surface_commit);
 	LISTEN(&surface->events.unmap, &l->unmap, handle_layer_surface_unmap);
@@ -521,6 +523,9 @@ void handle_new_layer_surface(struct wl_listener *listener, void *data) {
 	l->scene_layer =
 		wlr_scene_layer_surface_v1_create(scene_layer, layer_surface);
 	l->scene = l->scene_layer->tree;
+	// The scene subsurface tree's map listener enables the surface node.
+	// Register ours afterwards so the node can be found during the hit test.
+	LISTEN(&surface->events.map, &l->map, handle_layer_surface_map);
 	l->popups = surface->data = wlr_scene_tree_create(
 		layer_surface->current.layer < ZWLR_LAYER_SHELL_V1_LAYER_TOP
 			? server.layers[LyrTop]
