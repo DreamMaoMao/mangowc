@@ -66,6 +66,7 @@ struct wlr_surface *client_surface(Client *c) {
 #endif
 	return c->surface.xdg->surface;
 }
+
 int32_t toplevel_from_wlr_surface(struct wlr_surface *s, Client **pc,
 								  LayerSurface **pl) {
 	struct wlr_xdg_surface *xdg_surface, *tmp_xdg_surface;
